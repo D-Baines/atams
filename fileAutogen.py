@@ -48,8 +48,54 @@ def generateEnum(prefixString,
     targetFile.write(" = " + str(iterator) + "U,\n")
     iterator += 1
 
+def generateConstLists(block, columnHeader: str, targetFile):
+  memberIterator = 0
+  memberNames    = []
+  for memberID in block["Member ID"]:
+    memberNames.append(memberID.replace(" ", "_").upper())
+  types         = block["Data Type"]
+  values        = block[columnHeader]
+  preStringRequiredSpace  = getLongestString(types)
+  postStringRequiredSpace = getLongestString(values)
+  
+  for memberName in memberNames:
+      type           = types[memberIterator]
+      value          = values[memberIterator]
+      preNameSpaces  = preStringRequiredSpace  - len(type)
+      postNameSpaces = postStringRequiredSpace - len(memberName)
+  
+      if (value != "-"):
+        targetFile.write("constexpr inline " + type + " ")
+        writeSpaces(preNameSpaces, targetFile)
+        targetFile.write((columnHeader.replace(' ', '_').upper()) + "_" + memberName)
+        writeSpaces(postNameSpaces, targetFile)
+        suffix = "!!!INPUT ERROR!!!"
+        match type:
+          case "uint8_t":
+            suffix = "U"
+          case "int8_t":
+            suffix = ""
+          case "uint16_t":
+            suffix = "U"
+          case "int16_t":
+            suffix = ""
+          case "uint32_t":
+            suffix = "UL"
+          case "int32_t":
+            suffix = "L"
+          case "float":
+            suffix = "F"
+        targetFile.write(" = " + value)
+        listItemNoSignNoPoint = value.replace('.', '')
+        listItemNoSignNoPoint = listItemNoSignNoPoint.replace('-', '')
+        if (listItemNoSignNoPoint.isnumeric()):
+          targetFile.write(suffix)
+        targetFile.write(";\n")
+      memberIterator += 1
+
 def generateBlockDefinitions(platform: Platforms, 
                              dataBlockNamesCamel,
+                             dataBlockNamesUpper,
                              dataBlocks,
                              targetFile):
   blockIterator = 0
@@ -58,10 +104,15 @@ def generateBlockDefinitions(platform: Platforms,
     memberIDs = []
     for memberID in block["Member ID"]:
       memberIDs.append(memberID.replace(" ", "_").upper())
-    targetFile.write("/*--- DATA BLOCK TEMPLATE -----------------------------------------------------------*/\n\n")
+    targetFile.write("/*--- DATA BLOCK " + dataBlockNamesUpper[blockIterator] + " -----------------------------------------------------------*/\n\n")
     targetFile.write("namespace Block" + blockName + " {\n\n")
-    targetFile.write("/*--- Member List ---*/\n\n")
+    targetFile.write("/*--- Member List ---*/\n")
+    targetFile.write("typedef enum: uint16_t\n{\n")
     generateEnum("  MEMBER_ID_", memberIDs, targetFile)
+    targetFile.write("  NUMBER_OF_" + dataBlockNamesUpper[blockIterator] + "_DATA_MEMBERS\n")
+    targetFile.write("} DataMemberID_t;\n\n")
+    targetFile.write("/*--- Defaults ---*/\n")
+    generateConstLists(block, "Default", targetFile)
     blockIterator += 1 
 
 def autogenCall(platform: Platforms,
@@ -93,6 +144,7 @@ def autogenCall(platform: Platforms,
     case "DATA_BLOCK_DEFINITIONS":
       generateBlockDefinitions(platform, 
                                dataBlockNamesCamel,
+                               dataBlockNamesUpper,
                                dataBlocks,
                                targetFile)
 
