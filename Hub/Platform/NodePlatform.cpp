@@ -1,11 +1,10 @@
 /**
   ******************************************************************************
-  * @file    MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.cpp
+  * @file    NodePlatform.cpp
   *
   * @author  D. Baines
   *
-  * @brief   Auto-generated file containing public function definitions
-  *          for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
+  * @brief
   *
   * @version v1.0
   ******************************************************************************
@@ -14,9 +13,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This Source Code Form is subject to the terms of the Mozilla Public
-  * License, v. 2.0. If a copy of the MPL was not distributed with this
-  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
@@ -25,36 +24,50 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.hpp"
+#include "NodePlatform.hpp"
 
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace SMI { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
-
-
-/*************************************************************************************/
-/* GLOBAL CONSTANTS                                                                  */
-/*************************************************************************************/
-
-const Node::MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,
-                                  $$$AUTOGEN$$$DATA_BLOCK_ARRAY$$$AUTOGEN$$$,
-                                  initDefaults,
-                                  initLimits);
+namespace Atams {
 
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-$$$AUTOGEN$$$INIT_DEFAULTS_DEFINITION$$$AUTOGEN$$$
+NodePlatform::NodePlatform(NodePlatform::UserData_t userData)
+{
+  _userData = userData;
+}
 
-$$$AUTOGEN$$$INIT_LIMITS_DEFINITION$$$AUTOGEN$$$
+
+NodePlatform::~NodePlatform(void)
+{
+
+}
+
+void NodePlatform::acquireMemoryLock(void)
+{
+
+}
+
+void NodePlatform::releaseMemoryLock(void)
+{
+
+}
 
 
-} } /* End Namespace - SMI::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
+/*************************************************************************************/
+/* PRIVATE FUNCTION DEFINITIONS                                                      */
+/*************************************************************************************/
+
+
+
+} /* End Namespace - Atams */
+
 
 /**
   * @}End of File

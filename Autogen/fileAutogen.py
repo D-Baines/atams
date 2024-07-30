@@ -9,8 +9,8 @@ from   typing import List
 FRAMEWORK_NAME = "Atams"
 
 class Platforms(Enum):
-  NODE                = 0
-  HUB                 = 1
+  NODE = 0
+  HUB  = 1
 
 class OpenMethods(StrEnum):
   READ_ONLY   = 'r'
@@ -22,19 +22,24 @@ class Error(StrEnum):
   FILE_OPEN_FAILED    = "Generation Error: Failed to Open Files"
   INAVLID_FILE_FORMAT = "Generation Error: Invalid Memory Map Xlsx Format"
 
-fileSuffix = [".cpp", ".hpp"]
-
 def getLongestString(strings: List[str]) -> int:
-  longestString = 0
+  maxStringLength = 0
   for string in strings:
-    if (len(string) > longestString):
-      longestString = len(string)
-  return (longestString)
+    if (len(string) > maxStringLength):
+      maxStringLength = len(string)
+  return (maxStringLength)
 
 def writeSpaces(noOfSpaces: int, targetFile):
   while (noOfSpaces > 0):
     targetFile.write(" ")
     noOfSpaces -= 1
+
+def getSuffixString(typeString: str):
+  typeStrings   = ["uint8_t", "int8_t", "uint16_t", "int16_t", "uint32_t", "int32_t", "float"]
+  suffixStrings = ["U",       "",       "U",        "",        "UL",       "L",       "F"    ]
+  try:    suffixIndex = typeStrings.index(typeString)
+  except: return("")
+  return (suffixStrings[suffixIndex])
 
 def generateEnum(prefixString, 
                  stringList, 
@@ -48,50 +53,77 @@ def generateEnum(prefixString,
     targetFile.write(" = " + str(iterator) + "U,\n")
     iterator += 1
 
-def generateConstLists(block, columnHeader: str, targetFile):
-  memberIterator = 0
-  memberNames    = []
-  for memberID in block["Member ID"]:
-    memberNames.append(memberID.replace(" ", "_").upper())
-  types         = block["Data Type"]
-  values        = block[columnHeader]
+def generateConstList(block, memberNames:str, columnHeader: str, targetFile):
+  memberIterator          = 0
+  memberNamesWithValue    = []
+  types                   = block["Data Type"]
+  values                  = block[columnHeader]
   preStringRequiredSpace  = getLongestString(types)
-  postStringRequiredSpace = getLongestString(values)
-  
   for memberName in memberNames:
-      type           = types[memberIterator]
-      value          = values[memberIterator]
-      preNameSpaces  = preStringRequiredSpace  - len(type)
-      postNameSpaces = postStringRequiredSpace - len(memberName)
+    value = values[memberIterator]
+    if ((value != "-") and (value != "")):
+      memberNamesWithValue.append(memberName)
+    memberIterator += 1
+  memberIterator = 0
+  postStringRequiredSpace = getLongestString(memberNamesWithValue)
+  for memberName in memberNames:
+    type           = types[memberIterator]
+    value          = values[memberIterator]
+    preNameSpaces  = preStringRequiredSpace  - len(type)
+    postNameSpaces = postStringRequiredSpace - len(memberName)
+    if ((value != "-") and (value != "")):
+      targetFile.write("constexpr inline " + type + " ")
+      writeSpaces(preNameSpaces, targetFile)
+      targetFile.write((columnHeader.replace(' ', '_').upper()) + "_" + memberName)
+      writeSpaces(postNameSpaces, targetFile)
+      suffix = getSuffixString(type)
+      targetFile.write(" = " + value)
+      listItemNoSignNoPoint = value.replace('.', '')
+      listItemNoSignNoPoint = listItemNoSignNoPoint.replace('-', '')
+      if (listItemNoSignNoPoint.isnumeric()):
+        targetFile.write(suffix)
+      targetFile.write(";\n")
+    memberIterator += 1
+
+def generateBlockDescriptor(platform: Platforms, 
+                            blockNameCamel,
+                            blockNameUpper,
+                            block,
+                            memberNamesUpper,
+                            targetFile):
+  memberIterator = 0
+  targetFile.write("const Node::DataBlockInfo_t blockDescriptor =\n{\n")
+  targetFile.write("  /* .noOfDataMembers = */ BlockTEMPLATE::NUMBER_OF_"+blockNameUpper+"_DATA_MEMBERS,\n")
+  targetFile.write("  /* .dataMemberInfo  = */\n  {\n")
+  types        = block["Data Type"]
+  accessLevels = block["External Access"]
+  NVMOffsets   = block["NVM Offset"]
+  OTPOffsets   = block["OTP Offset"]
   
-      if (value != "-"):
-        targetFile.write("constexpr inline " + type + " ")
-        writeSpaces(preNameSpaces, targetFile)
-        targetFile.write((columnHeader.replace(' ', '_').upper()) + "_" + memberName)
-        writeSpaces(postNameSpaces, targetFile)
-        suffix = "!!!INPUT ERROR!!!"
-        match type:
-          case "uint8_t":
-            suffix = "U"
-          case "int8_t":
-            suffix = ""
-          case "uint16_t":
-            suffix = "U"
-          case "int16_t":
-            suffix = ""
-          case "uint32_t":
-            suffix = "UL"
-          case "int32_t":
-            suffix = "L"
-          case "float":
-            suffix = "F"
-        targetFile.write(" = " + value)
-        listItemNoSignNoPoint = value.replace('.', '')
-        listItemNoSignNoPoint = listItemNoSignNoPoint.replace('-', '')
-        if (listItemNoSignNoPoint.isnumeric()):
-          targetFile.write(suffix)
-        targetFile.write(";\n")
-      memberIterator += 1
+  for memberName in memberNamesUpper:
+    access    = accessLevels[memberIterator]
+    NVMOffset = NVMOffsets[memberIterator]
+    OTPOffset = OTPOffsets[memberIterator]
+    accessString = ""
+    if ((NVMOffset == "-") or (NVMOffset == "")):
+      NVMOffset = "NVM_OFFSET_NULL"
+    if ((OTPOffset == "-") or (OTPOffset == "")):
+      OTPOffset = "NVM_OFFSET_NULL"
+    if (access == "RW"): accessString = "WRITE"
+    else:                accessString = "READ"
+    typeUpper = types[memberIterator].replace("_t", "").upper()
+    targetFile.write("    [Block"+blockNameCamel+"::MEMBER_ID_"+memberName+"] =\n    {\n")
+    targetFile.write("      /* .type           = */ TYPE_"+typeUpper+",\n")
+    targetFile.write("      /* .externalAccess = */ ACCESS_"+accessString+"\n")
+    if (platform == Platforms.NODE):
+      targetFile.write("      /* .NVMOffset      = */ "+NVMOffset)
+      if (NVMOffset != "NVM_OFFSET_NULL"): targetFile.write("U")
+      targetFile.write("\n")
+      targetFile.write("      /* .OTPOffset      = */ "+OTPOffset)
+      if (OTPOffset != "NVM_OFFSET_NULL"): targetFile.write("U")
+      targetFile.write("\n")
+    targetFile.write("    },\n")
+    memberIterator += 1
 
 def generateBlockDefinitions(platform: Platforms, 
                              dataBlockNamesCamel,
@@ -99,20 +131,29 @@ def generateBlockDefinitions(platform: Platforms,
                              dataBlocks,
                              targetFile):
   blockIterator = 0
-  for blockName in dataBlockNamesCamel:
-    block = dataBlocks[blockIterator]
-    memberIDs = []
+  for blockNameCamel in dataBlockNamesCamel:
+    block          = dataBlocks[blockIterator]
+    blockNameUpper = dataBlockNamesUpper[blockIterator]
+    memberIDsUpper = []
     for memberID in block["Member ID"]:
-      memberIDs.append(memberID.replace(" ", "_").upper())
-    targetFile.write("/*--- DATA BLOCK " + dataBlockNamesUpper[blockIterator] + " -----------------------------------------------------------*/\n\n")
-    targetFile.write("namespace Block" + blockName + " {\n\n")
+      memberIDsUpper.append(memberID.replace(" ", "_").upper())
+    targetFile.write("/*--- DATA BLOCK " + blockNameUpper + " -----------------------------------------------------------*/\n")
+    targetFile.write("namespace Block" + blockNameCamel + " {\n\n")
     targetFile.write("/*--- Member List ---*/\n")
     targetFile.write("typedef enum: uint16_t\n{\n")
-    generateEnum("  MEMBER_ID_", memberIDs, targetFile)
-    targetFile.write("  NUMBER_OF_" + dataBlockNamesUpper[blockIterator] + "_DATA_MEMBERS\n")
+    generateEnum("  VAR_ID_", memberIDsUpper, targetFile)
+    targetFile.write("  NUMBER_OF_" + blockNameUpper + "_DATA_MEMBERS\n")
     targetFile.write("} DataMemberID_t;\n\n")
     targetFile.write("/*--- Defaults ---*/\n")
-    generateConstLists(block, "Default", targetFile)
+    generateConstList(block, memberIDsUpper, "Default", targetFile)
+    targetFile.write("\n/*--- Minimum Limits ---*/\n")
+    generateConstList(block, memberIDsUpper, "Min Limit", targetFile)
+    targetFile.write("\n/*--- Maximum Limits ---*/\n")
+    generateConstList(block, memberIDsUpper, "Max Limit", targetFile)
+    targetFile.write("\n/*--- Descriptor ---*/\n")
+    generateBlockDescriptor(platform, blockNameCamel, blockNameUpper, block, memberIDsUpper, targetFile)
+    targetFile.write("  }\n};\n\n")
+    targetFile.write("} /* End Namespace - Block"+blockNameCamel+" */\n\n")
     blockIterator += 1 
 
 def autogenCall(platform: Platforms,

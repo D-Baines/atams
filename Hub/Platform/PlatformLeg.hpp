@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
-  * @file    MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.hpp
+  * @file    PlatformOptions.hpp
   *
   * @author  D. Baines
   *
-  * @brief   Auto-generated file containing typedefs, constants, and function
-  *          declarations for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
+  * @brief
+  *
   *
   * @version v1.0
   ******************************************************************************
@@ -14,9 +14,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This Source Code Form is subject to the terms of the Mozilla Public
-  * License, v. 2.0. If a copy of the MPL was not distributed with this
-  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
@@ -29,51 +29,43 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../Node.hpp"
+
+#include "../../AtamsTypedefs.hpp"
 
 
 /*************************************************************************************/
-/* MEMORY MAP NAMESPACE                                                              */
+/* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace SMI { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
+namespace Atams { namespace Platform {
 
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
-             
+
 typedef enum: uint8_t
 {
-$$$AUTOGEN$$$BLOCK_ID_LIST$$$AUTOGEN$$$
-  NUMBER_OF_DATA_BLOCKS
-} DataBlockID_t;
+  BUS_ID_TEST = 0U,
+} BusID_t;
+
+/*************************************************************************************/
+/* PUBLIC CONSTANTS                                                                  */
+/*************************************************************************************/
 
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-$$$AUTOGEN$$$INIT_DEFAULTS_DECLARATION$$$AUTOGEN$$$
+void    setReceiveCallback(CommsReceiveCallback_t receiveCallback);
 
-$$$AUTOGEN$$$INIT_LIMITS_DECLARATION$$$AUTOGEN$$$
-
-
-/*************************************************************************************/
-/* GLOBAL CONSTANTS                                                                  */
-/*************************************************************************************/
-
-extern const Node::MemoryMap_t memoryMap;
+Error_t transmitBuffer(uint8_t *buffer, uint16_t length);
 
 
-/*************************************************************************************/
-/* DATA BLOCK DEFINITIONS                                                            */
-/*************************************************************************************/
 
-$$$AUTOGEN$$$DATA_BLOCK_DEFINITIONS$$$AUTOGEN$$$
+} } /* End Atams Namespace */
 
-
-} } /* End Namespace - SMI::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
 
 /**
   * @}End of File
