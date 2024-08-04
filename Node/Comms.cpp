@@ -87,10 +87,15 @@ static uint32_t _meshPacketRXLength;
 static bool     _systemIsBigEndian = false;
 
 static uint8_t                 _localNodeID                       = 0x00U;
-static uint8_t                 _responseBufferIndex                 = 0U;
-static bool                    _responseAborted               = false;
+static uint16_t                 _responseBufferIndex              = 0U;
+static bool                    _responseAborted                   = false;
 static uint8_t                 _responseBuffer[MAX_NODE_PACKET_SIZE];
 static CommsTransmitCallback_t _transmitCallback                  = nullptr;
+
+static uint8_t  _prevSyncNodeID  = NODE_ID_NULL;
+static uint8_t  _finalSyncNodeID = NODE_ID_NULL;
+static uint8_t  _firstSyncNodeID = NODE_ID_NULL;
+
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -195,7 +200,7 @@ static inline void resetResponse(void)
 {
   _responseAborted                     = false;
   _responseBuffer[MESH_INDEX_NODE_ID]  = _localNodeID;
-  _responseBuffer[MESH_INDEX_MSG_TYPE] = MESSAGE_RESPONSE;
+  _responseBuffer[MESH_INDEX_MSG_TYPE] = MESSAGE_RESPONSE_SYNCED;
   _responseBufferIndex                 = MESH_INDEX_FIRST_DATAGRAM;
 }
 
@@ -228,80 +233,53 @@ static void sendResponsePacket(void)
                        _responseBufferIndex,
                        encodedResponseBuffer,
                        sizeof(encodedResponseBuffer),
-                       encodedLength         ) == ERROR_NONE)
+                       encodedLength                 ) == ERROR_NONE)
   {
     Platform::transmitBuffer(encodedResponseBuffer, encodedLength);
   }
 }
 
-/* WARNING - No checks done on datagramHeader sybsystemID or memberIndex.
- *           This function should only ever be called after checks have been completed in DMIB_ProcessNodePacket
- */
-static void processDatagramRead(DatagramHeader_t datagramHeader, uint8_t payloadLength)
+
+static inline void processDatagramRead(DatagramHeader_t datagramHeader,
+                                       uint8_t          payloadLength)
 {
-  Error_t transferStatus;
-
-  uint16_t datagramLength        = DATAGRAM_SIZE_HEADER + payloadLength;
-  uint16_t remainingBufferLength = static_cast<uint8_t>(sizeof(_responseBuffer)) - _responseBufferIndex;
-
-  if (datagramLength > remainingBufferLength)
-  {
-    /* fatal error - ping response buffer overflow */
-    abortResponse(ERROR_RESPONSE_BUFFER_OVERFLOW);
-    return;
-  }
-
-  uint8_t datagramHeaderIndex = _responseBufferIndex;
-
-  _responseBufferIndex += DATAGRAM_SIZE_HEADER;
-
-  transferStatus = Node::externalTransfer(ACCESS_READ_ACK,
-                                          datagramHeader.blockID,
-                                          datagramHeader.memberID,
-                                          &_responseBuffer[_responseBufferIndex],
-                                          payloadLength);
+  Error_t transferStatus = Node::externalTransfer(ACCESS_READ_ACK,
+                                                  datagramHeader.blockID,
+                                                  datagramHeader.memberID,
+                                                  &_responseBuffer[_responseBufferIndex + DATAGRAM_SIZE_HEADER],
+                                                  payloadLength);
 
   if (transferStatus != ERROR_NONE)
   {
     datagramHeader.command = ACCESS_NONE_NACK;
-    memcpy(&_responseBuffer[datagramHeaderIndex], &datagramHeader, DATAGRAM_SIZE_HEADER);
+    memcpy(&_responseBuffer[_responseBufferIndex], &datagramHeader, DATAGRAM_SIZE_HEADER);
+    _responseBufferIndex += DATAGRAM_SIZE_HEADER;
     _responseBuffer[_responseBufferIndex] = transferStatus;
     _responseBufferIndex += sizeof(transferStatus);
   }
   else
   {
     datagramHeader.command = ACCESS_READ_ACK;
-    memcpy(&_responseBuffer[datagramHeaderIndex], &datagramHeader, DATAGRAM_SIZE_HEADER);
-    _responseBufferIndex += payloadLength;
+    memcpy(&_responseBuffer[_responseBufferIndex], &datagramHeader, DATAGRAM_SIZE_HEADER);
+    _responseBufferIndex += DATAGRAM_SIZE_HEADER + payloadLength;
   }
 }
 
 /* WARNING - No checks done on datagramHeader subsystemID or memberIndex.
  *           This function should only ever be called after checks have been completed in DMIB_ProcessNodePacket
  */
-static void processDatagramWrite(DatagramHeader_t datagramHeader, uint8_t *datagramPayload, uint8_t datagramPayloadLength)
+static inline void processDatagramWrite(DatagramHeader_t datagramHeader,
+                                        uint8_t         *datagramPayload,
+                                        uint8_t          payloadLength)
 {
-  Error_t transferStatus;
-
-  uint16_t datagramLength        = DATAGRAM_SIZE_HEADER + datagramPayloadLength;
-  uint16_t remainingBufferLength = static_cast<uint8_t>(sizeof(_responseBuffer)) - _responseBufferIndex;
-
-  if (datagramLength > remainingBufferLength)
-  {
-    /* fatal error - ping response buffer overflow */
-    abortResponse(ERROR_RESPONSE_BUFFER_OVERFLOW);
-    return;
-  }
-
-  transferStatus = Node::externalTransfer(ACCESS_WRITE_ACK,
-                                          datagramHeader.blockID,
-                                          datagramHeader.memberID,
-                                          datagramPayload,
-                                          datagramPayloadLength);
+  Error_t transferStatus = Node::externalTransfer(ACCESS_WRITE_ACK,
+                                                  datagramHeader.blockID,
+                                                  datagramHeader.memberID,
+                                                  datagramPayload,
+                                                  payloadLength);
 
   if (transferStatus != ERROR_NONE)
   {
-    //recordError(transferStatus);
     datagramHeader.command = ACCESS_NONE_NACK;
     memcpy(&_responseBuffer[_responseBufferIndex], &datagramHeader, DATAGRAM_SIZE_HEADER);
     _responseBufferIndex += DATAGRAM_SIZE_HEADER;
@@ -314,14 +292,14 @@ static void processDatagramWrite(DatagramHeader_t datagramHeader, uint8_t *datag
     datagramHeader.command = ACCESS_WRITE_ACK;
     memcpy(&_responseBuffer[_responseBufferIndex], &datagramHeader, DATAGRAM_SIZE_HEADER);
     _responseBufferIndex += DATAGRAM_SIZE_HEADER;
+    memcpy(&_responseBuffer[_responseBufferIndex], datagramPayload, payloadLength);
   }
 }
 
 static inline void processRequestPacket(uint8_t *meshPacket,
-                                        uint16_t meshPacketLength)
+                                        uint16_t meshPacketLength,
+                                        bool     universalBroadcast)
 {
-  if (meshPacket == nullptr) return;
-
   bool             cancelProcessing   = false;
   volatile uint8_t datagramStartIndex = MESH_INDEX_FIRST_DATAGRAM;
 
@@ -332,41 +310,55 @@ static inline void processRequestPacket(uint8_t *meshPacket,
 
     memcpy(&datagramHeader, &meshPacket[datagramStartIndex], DATAGRAM_SIZE_HEADER);
 
-    if (systemIsBigEndian()) swapEndiannessType(datagramHeader);
+    if (systemIsBigEndian()) swapEndiannessType(datagramHeader); /* CAN BE DONE BETTER WITH SHIFTS/MASKS */
 
-    DataStatusReturn_t<uint8_t> datagramPayloadLength = Node::getMemberLength(datagramHeader.blockID,
-                                                                              datagramHeader.memberID);
-
-    if (datagramPayloadLength.status != ERROR_NONE)
+    if ((universalBroadcast                               ) &&
+        (datagramHeader.blockID != UNIVERSAL_DATA_BLOCK_ID) )
     {
-      /* Fatal Error - Data member doesn't exist */
-      abortResponse(datagramPayloadLength.status);
-      cancelProcessing = true;
-      break;
+      abortResponse(ERROR_BLOCK_ID);
+      return;
+    }
+
+    DataStatusReturn_t<uint8_t> varLength = Node::getMemberLength(datagramHeader.blockID,
+                                                                  datagramHeader.memberID);
+
+    if (varLength.status != ERROR_NONE)
+    {
+      abortResponse(varLength.status);
+      return;
+    }
+
+    uint16_t datagramLength        = DATAGRAM_SIZE_HEADER + varLength.data;
+    uint16_t remainingOutputLength = sizeof(_responseBuffer) - _responseBufferIndex;
+
+    if (datagramLength > remainingOutputLength)
+    {
+      /* Response buffer overflow */
+      abortResponse(ERROR_RESPONSE_BUFFER_OVERFLOW);
+      return;
     }
 
     switch (static_cast<Access_t>(datagramHeader.command))
     {
       case ACCESS_READ_ACK:
-        processDatagramRead(datagramHeader, datagramPayloadLength.data);
+        processDatagramRead(datagramHeader, varLength.data);
         datagramStartIndex += DATAGRAM_SIZE_HEADER;
         break;
 
       case ACCESS_WRITE_ACK:
       {
-        uint16_t datagramLength        = DATAGRAM_SIZE_HEADER + datagramPayloadLength.data;
-        uint16_t remainingBufferLength = meshPacketLength     - datagramStartIndex;
+        uint16_t remainingInputLength = meshPacketLength - datagramStartIndex;
 
-        if (datagramLength > remainingBufferLength)
+        if (datagramLength > remainingInputLength)
         {
-          /* Fatal Error - Data member overflows node packet */
+          /* Input packet overflow */
           abortResponse(ERROR_DATAGRAM_BUFFER_LENGTH);
           cancelProcessing = true;
         }
         else
         {
-          processDatagramWrite(datagramHeader, &meshPacket[datagramStartIndex + DATAGRAM_INDEX_PAYLOAD], datagramPayloadLength.data);
-          datagramStartIndex += (DATAGRAM_SIZE_HEADER + datagramPayloadLength.data);
+          processDatagramWrite(datagramHeader, &meshPacket[datagramStartIndex + DATAGRAM_INDEX_PAYLOAD], varLength.data);
+          datagramStartIndex += (DATAGRAM_SIZE_HEADER + varLength.data);
         }
 
         break;
@@ -399,9 +391,6 @@ static void processEncodedMeshPacket(void)
   static uint16_t decodedLength  = 0U;
   static uint16_t syncLength     = 0U;
   static uint8_t  localSyncCount = 0U;
-  static uint8_t  _prevSyncNodeID = NODE_ID_NULL; /* This will need to be expanded to file scope */
-  static uint8_t  _finalSyncNodeID = 0U;
-  static uint8_t  _firstSyncNodeID = 0U;
 
   if (decodeMeshPacket(_meshPacketRXBuffer,
                        _meshPacketRXLength,
@@ -415,14 +404,18 @@ static void processEncodedMeshPacket(void)
 
     switch (messageType)
     {
-      case MESSAGE_REQUEST:
+      case MESSAGE_BROADCAST_UNIVERSAL:
+        resetResponse();
+        processRequestPacket(decodedPacket, decodedLength, true);
+        break;
+      case MESSAGE_REQUEST_SYNCED:
         if (packetNodeID == _localNodeID)
         {
           resetResponse();
           localSyncCount = packetSyncCount;
           if (_localNodeID == _finalSyncNodeID)
           {
-            processRequestPacket(decodedPacket, decodedLength);
+            processRequestPacket(decodedPacket, decodedLength, false);
           }
           else
           {
@@ -433,11 +426,11 @@ static void processEncodedMeshPacket(void)
         }
         else if (packetNodeID == _finalSyncNodeID)
         {
-          processRequestPacket(syncPacket, syncLength);
+          processRequestPacket(syncPacket, syncLength, false);
         }
         break;
 
-      case MESSAGE_RESPONSE:
+      case MESSAGE_RESPONSE_SYNCED:
         if (packetSyncCount != localSyncCount ) abortResponse(ERROR_SYNC_COUNT);
         if (packetNodeID    == _prevSyncNodeID) sendResponsePacket();
         break;

@@ -92,7 +92,7 @@ template <typename T>
 Atams::Error_t DataBlock::write(const uint16_t  memberID,
                                 const T         writeData)
 {
-  if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_MEMBER_ID_OOR);
+  if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_MEMBER_ID);
 
   const MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[memberID];
 
@@ -124,7 +124,7 @@ template <typename T>
 Atams::Error_t DataBlock::read(const uint16_t  memberID,
                                      T        &readData)
 {
-  if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_MEMBER_ID_OOR);
+  if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_MEMBER_ID);
 
   const MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[memberID];
 
@@ -155,7 +155,7 @@ Atams::Error_t DataBlock::assertLimits(const uint16_t memberID,
                                        const T        limitMax,
                                        const T        limitMin)
 {
-  if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_MEMBER_ID_OOR);
+  if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_MEMBER_ID);
 
   const MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[memberID];
 
@@ -186,7 +186,7 @@ template Atams::Error_t DataBlock::assertLimits<float   >(const uint16_t memberI
 Atams::Error_t DataBlock::setWriteLock(const uint16_t memberID,
                                        const bool     writeLock)
 {
-  if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_MEMBER_ID_OOR);
+  if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_MEMBER_ID);
 
   DataMember_t &dataMember  = _dataMembers[memberID];
 
@@ -205,7 +205,7 @@ DataStatusReturn_t<uint8_t> DataBlock::getMemberLength(const uint16_t memberID)
 
   if (memberID >= _blockDescriptor.noOfDataMembers)
   {
-    lengthReturn.status = ERROR_MEMBER_ID_OOR;
+    lengthReturn.status = ERROR_MEMBER_ID;
     return (lengthReturn);
   }
 
@@ -222,7 +222,7 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
                                     uint8_t * const dataStoragePtr,
                                     const uint8_t   length)
 {
-  if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_MEMBER_ID_OOR);
+  if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_MEMBER_ID);
 
   const MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[memberID];
 

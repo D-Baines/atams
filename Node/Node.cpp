@@ -122,7 +122,7 @@ Error_t write(const uint8_t   blockID,
               const uint16_t  memberID,
               const T         writeData)
 {
-  if (blockID >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID_OOR);
+  if (blockID >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID);
 
   return (_dataBlocks[blockID].write(memberID, writeData));
 }
@@ -141,7 +141,7 @@ Error_t read(const uint8_t   blockID,
              const uint16_t  memberID,
                    T        &readData)
 {
-  if (blockID >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID_OOR);
+  if (blockID >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID);
 
   return (_dataBlocks[blockID].read(memberID, readData));
 }
@@ -160,7 +160,7 @@ Error_t assertLimits(const uint8_t   blockID,
                      const T         limitMax,
                      const T         limitMin)
 {
-  if (blockID >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID_OOR);
+  if (blockID >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID);
 
   return (_dataBlocks[blockID].assertLimits(memberID, limitMax, limitMin));
 }
@@ -177,7 +177,7 @@ Error_t setWriteLock(const uint8_t  blockID,
                      const uint16_t memberID,
                      const bool     writeLock)
 {
-  if (blockID  >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID_OOR);
+  if (blockID  >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID);
 
   return (_dataBlocks[blockID].setWriteLock(memberID, writeLock));
 }
@@ -188,7 +188,7 @@ Error_t externalTransfer(const Access_t  accessRequest,
                          uint8_t * const dataStoragePtr,
                          const uint8_t   length)
 {
-  if (blockID  >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID_OOR);
+  if (blockID  >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID);
 
   return (_dataBlocks[blockID].externalTransfer(accessRequest, memberID, dataStoragePtr, length));
 }
@@ -199,7 +199,7 @@ DataStatusReturn_t<uint8_t> getMemberLength(const uint8_t blockID, const uint16_
 
   if (blockID >= _memoryMap.noOfDataBlocks)
   {
-    lengthReturn.status = ERROR_BLOCK_ID_OOR;
+    lengthReturn.status = ERROR_BLOCK_ID;
     return (lengthReturn);
   }
 

@@ -49,9 +49,8 @@ namespace Atams
 
 constexpr uint8_t  NODE_ID_MAX                    = 254U;
 constexpr uint8_t  NODE_ID_NULL                   = 255U;
-constexpr uint8_t  MESH_ID_NULL                   = 255U;
 constexpr uint8_t  MAX_NUMBER_OF_NODE_IDS         = 255U;
-constexpr uint8_t  BITS_IN_A_BYTE                 = 8U;
+constexpr uint8_t  UNIVERSAL_DATA_BLOCK_ID        = 0U;
 constexpr uint16_t MAX_MESH_PACKET_DATAGRAM_COUNT = 256U;
 constexpr uint16_t MAX_MESH_PACKET_SIZE           = 256U;
 constexpr uint16_t MAX_NODE_PACKET_SIZE           = 256U;
@@ -67,6 +66,9 @@ constexpr int32_t  MAX_INT32                       = 2147483647U;
 constexpr int32_t  MIN_INT32                       = -2147483648U;
 constexpr uint32_t MAX_UINT32                      = 0U;
 constexpr uint32_t MIN_UINT32                      = 0U;
+constexpr uint8_t  BITS_IN_A_BYTE                 = 8U;
+
+
 
 
 /*************************************************************************************/
@@ -83,11 +85,12 @@ typedef enum: uint8_t
 
 typedef enum: uint8_t
 {
-  MESSAGE_UNKNOWN          = 0U,
-  MESSAGE_REQUEST          = 1U,
-  MESSAGE_RESPONSE         = 2U,
-  MESSAGE_SYNC_JOG         = 3U,
-  MESSAGE_ABORTED_RESPONSE = 4U,
+  MESSAGE_UNKNOWN             = 0U,
+  MESSAGE_BROADCAST_UNIVERSAL = 1U,
+  MESSAGE_REQUEST_SYNCED      = 2U,
+  MESSAGE_RESPONSE_SYNCED     = 3U,
+  MESSAGE_SYNC_JOG            = 4U,
+  MESSAGE_ABORTED_RESPONSE    = 5U,
 } MessageType_t;
 
 typedef enum: uint8_t
@@ -131,8 +134,8 @@ typedef enum: uint8_t
 {
   ERROR_NONE                     = 0U,
   ERROR_NODE_TYPE                = 1U,
-  ERROR_BLOCK_ID_OOR             = 4U,
-  ERROR_MEMBER_ID_OOR            = 5U,
+  ERROR_BLOCK_ID             = 4U,
+  ERROR_MEMBER_ID            = 5U,
   ERROR_MEMBER_TYPE              = 35U,
   ERROR_MEMBER_LENGTH            = 6U,
   ERROR_MESH_BUFFER_LENGTH       = 7U,

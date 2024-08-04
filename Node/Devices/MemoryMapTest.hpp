@@ -43,7 +43,7 @@ namespace SMI { namespace MapTest {
              
 typedef enum: uint8_t
 {
-  BLOCK_ID_UNIVERSAL = 0U,
+  BLOCK_ID_UNIVERSAL = UNIVERSAL_DATA_BLOCK_ID,
   BLOCK_ID_EXAMPLE1  = 1U,
   BLOCK_ID_EXAMPLE2  = 2U,
 
