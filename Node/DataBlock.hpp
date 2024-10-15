@@ -6,6 +6,7 @@
   *
   * @brief
   *
+  *
   * @version v1.0
   ******************************************************************************
   * @attention
@@ -13,9 +14,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
+  * This Source Code Form is subject to the terms of the Mozilla Public
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
   *
   ******************************************************************************
   */
@@ -29,14 +30,15 @@
 
 #include <stdint.h>
 
-#include "../../Atams/Node/Platform.hpp"
+#include "Platform.hpp"
 #include "../AtamsTypedefs.hpp"
+
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace Node {
+namespace Atams {
 
 
 /*************************************************************************************/
@@ -55,14 +57,13 @@ class DataBlock
   struct MemberInfo_t
   {
     DataType_t type           = TYPE_NULL;
-    Access_t   externalAccess = ACCESS_NONE_NACK;
-    uint32_t   NVMOffset      = 0U;
-    uint32_t   OTPOffset      = 0U;
+    Access_t   externalAccess = ACCESS_NONE;
+    bool       NVMStorage     = false;
   };
 
   struct BlockDescriptor_t
   {
-    uint16_t     noOfDataMembers;
+    uint16_t     noOfDataMembers = 0U;
     MemberInfo_t dataMemberInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
   };
 
@@ -81,6 +82,8 @@ class DataBlock
   DataBlock & operator=(const DataBlock &other) = delete;
 
   Error_t init(const BlockDescriptor_t &blockDescriptor);
+
+  void deinit(void);
 
   template <typename T>
   Error_t write(const uint16_t memberID,
@@ -133,13 +136,13 @@ class DataBlock
   Error_t checkLimitsType(const DataMember_t    &dataMember,
                           const uint8_t * const  dataStoragePtr);
 
-  Error_t checkLimits(const MemberInfo_t &memberInfo,
-                      const DataMember_t       &dataMember,
-                      const uint8_t * const    dataStoragePtr);
+  Error_t checkLimits(const MemberInfo_t    &memberInfo,
+                      const DataMember_t    &dataMember,
+                      const uint8_t * const dataStoragePtr);
 };
 
 
-} } /* End Namespace - Atams::Node */
+} /* End Namespace - Atams */
 
 
 /**

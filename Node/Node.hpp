@@ -14,9 +14,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
+  * This Source Code Form is subject to the terms of the Mozilla Public
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
   *
   ******************************************************************************
   */
@@ -30,16 +30,16 @@
 
 #include <stdint.h>
 
-#include "../../Atams/AtamsTypedefs.hpp"
-#include "../../Atams/Node/DataBlock.hpp"
-#include "../../Atams/Node/Platform.hpp"
+#include "../AtamsTypedefs.hpp"
+#include "DataBlock.hpp"
+#include "Platform.hpp"
 
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace Node {
+namespace Atams {
 
 
 /*************************************************************************************/
@@ -62,12 +62,29 @@ struct MemoryMap_t
   InitLimitsFunction_t         initLimits;
   DataBlock::BlockDescriptor_t blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
 
-  MemoryMap_t(void) = delete;
+  MemoryMap_t(void)
+  {
+    noOfDataBlocks = 0U;
+    initDefaults   = nullptr;
+    initLimits     = nullptr;
+
+    for (DataBlock::BlockDescriptor_t &blockDescriptor : blockDescriptors)
+    {
+      blockDescriptor.noOfDataMembers = 0U;
+
+      for (DataBlock::MemberInfo_t &varInfo : blockDescriptor.dataMemberInfo)
+      {
+        varInfo.type           = TYPE_NULL;
+        varInfo.externalAccess = ACCESS_NONE;
+        varInfo.NVMStorage     = false;
+      }
+    }
+  }
 
   MemoryMap_t(const uint16_t                     initNoOfDataFields,
-              const DataBlock::BlockDescriptor_t (&initBlockDescriptors)[Platform::NODE_NUMBER_OF_DATA_BLOCKS],
               const InitDefaultsFunction_t       initDefaultsPtr,
-              const InitLimitsFunction_t         initLimitsPtr)
+              const InitLimitsFunction_t         initLimitsPtr,
+              const DataBlock::BlockDescriptor_t (&initBlockDescriptors)[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
   {
     noOfDataBlocks = initNoOfDataFields;
     initDefaults   = initDefaultsPtr;
@@ -101,6 +118,8 @@ struct MemoryMap_t
 
 Error_t init(const MemoryMap_t &memoryMap);
 
+void update(void);
+
 template <typename T>
 Error_t write(const uint8_t blockID, const uint16_t memberID, const T writeData);
 
@@ -112,6 +131,12 @@ Error_t assertLimits(const uint8_t blockID, const uint16_t memberID, const T lim
 
 Error_t setWriteLock(const uint8_t blockID, const uint16_t memberID, const bool writeLock);
 
+bool watchdogFaultActive(void);
+
+void resetWatchdog(void);
+
+DataBlock* getBlockPointer(const uint8_t blockID);
+
 Error_t externalTransfer(const Access_t  accessRequest,
                          const uint8_t   blockID,
                          const uint16_t  memberID,
@@ -121,7 +146,7 @@ Error_t externalTransfer(const Access_t  accessRequest,
 DataStatusReturn_t<uint8_t> getMemberLength(const uint8_t blockID, const uint16_t memberID);
 
 
-} } /* End Namespace - Atams::Node */
+} /* End Namespace - Atams */
 
 
 /**

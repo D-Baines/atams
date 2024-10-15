@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    AtamsPlatform.hpp
+  * @file    Platform.hpp
   *
   * @author  D. Baines
   *
@@ -14,9 +14,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
+  * This Source Code Form is subject to the terms of the Mozilla Public
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
   *
   ******************************************************************************
   */
@@ -57,6 +57,8 @@ constexpr inline uint16_t NODE_NUMBER_OF_DATA_BLOCKS  = 2U;   /* Must be <= MAX_
 /*************************************************************************************/
 
 void     setReceiveCallback(CommsReceiveCallback_t receiveCallback);
+
+void     update(void);
 
 Error_t  transmitBuffer(uint8_t *buffer, uint16_t length);
 

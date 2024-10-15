@@ -129,14 +129,14 @@ def generateButtonPressed(memoryMapName: str, memoryMapXlsxPath:str, nodeDir: st
 customtkinter.set_appearance_mode("dark")      # Modes:  system (default), light, dark
 customtkinter.set_default_color_theme("green") # Themes: blue (default), dark-blue, green
 app = customtkinter.CTk()
-app.title(FRAMEWORK_NAME + "Memory Map Generator")
+app.title(FRAMEWORK_NAME.upper() + " Memory Map Generator")
 app.geometry('850x600')
 app.minsize(width=850, height=600)
         
 fullFrame = customtkinter.CTkFrame(app, fg_color="transparent")
 fullFrame.place(relwidth=0.7, relx=0.5, rely=0.5, anchor=customtkinter.CENTER)
 
-title = customtkinter.CTkLabel(fullFrame, text=(FRAMEWORK_NAME + "\n Memory Map Generator"))
+title = customtkinter.CTkLabel(fullFrame, text=(FRAMEWORK_NAME.upper() + "\n Memory Map Generator"))
 title.pack(side='top', pady=(0,30))
 title.configure(font=("TkDefaultFont", 26), text_color="#666")
 
@@ -199,9 +199,8 @@ generateButton = customtkinter.CTkButton(generateFrame,
                                          width=100)
 
 generateButton.pack(side='right', fill='y', pady=(10,0))
-
-memMapSearch.entry.insert(0, "/Users/dan/Desktop/"+FRAMEWORK_NAME+"/Example_Memory_Map.xlsx")
-nodeDirSearch.entry.insert(0, "/Users/dan/Desktop/"+FRAMEWORK_NAME+"/Node")
-hubDirSearch.entry.insert(0, "/Users/dan/Desktop/"+FRAMEWORK_NAME+"/Hub")
+memMapSearch.entry.insert(0, "/Users/dan/Desktop/AtamsDev/Core/Src/"+FRAMEWORK_NAME+"/Autogen/Example_Memory_Map.xlsx")
+nodeDirSearch.entry.insert(0, "/Users/dan/Desktop/AtamsDev/Core/Src/"+FRAMEWORK_NAME+"/Node")
+hubDirSearch.entry.insert(0, "/Users/dan/Desktop/AtamsDev/Core/Src/"+FRAMEWORK_NAME+"/Hub")
 
 app.mainloop()

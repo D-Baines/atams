@@ -6,6 +6,7 @@
   *
   * @brief
   *
+  *
   * @version v1.0
   ******************************************************************************
   * @attention
@@ -13,9 +14,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
+  * This Source Code Form is subject to the terms of the Mozilla Public
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
   *
   ******************************************************************************
   */
@@ -25,17 +26,20 @@
 /*************************************************************************************/
 
 #include <cstring>
+#include <typeinfo>
 
-#include "../../Atams/Node/DataBlock.hpp"
-#include "../../Atams/Utilities/AtamsUtilities.hpp"
-
+#include "DataBlock.hpp"
+#include "../Utilities/AtamsUtilities.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace Node {
+namespace Atams {
 
+/*************************************************************************************/
+/* PRIVATE STATIC CONSTANTS                                                          */
+/*************************************************************************************/
 
 static const char * PLATFORM_TYPE_NAMES[NUMBER_OF_TYPES] =
 {
@@ -49,7 +53,6 @@ static const char * PLATFORM_TYPE_NAMES[NUMBER_OF_TYPES] =
   [TYPE_FLOAT ] = typeid(float   ).name(),
 };
 
-
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
@@ -58,7 +61,6 @@ DataBlock::DataBlock(void)
 {
 
 }
-
 
 DataBlock::~DataBlock(void)
 {
@@ -86,6 +88,28 @@ Atams::Error_t DataBlock::init(const BlockDescriptor_t &blockDescriptor)
   }
 
   return (ERROR_NONE);
+}
+
+void DataBlock::deinit(void)
+{
+  _blockDescriptor.noOfDataMembers = 0U;
+
+  for (MemberInfo_t &varInfo : _blockDescriptor.dataMemberInfo)
+  {
+    varInfo.type           = TYPE_NULL;
+    varInfo.externalAccess = ACCESS_NONE;
+    varInfo.NVMStorage     = false;
+  }
+
+  for (DataMember_t &dataMember : _dataMembers)
+    {
+      //TODO:: Volatile memset may be required
+      memset(dataMember.data,     0U, sizeof(dataMember.data));
+      memset(dataMember.limitMax, 0U, sizeof(dataMember.limitMax));
+      memset(dataMember.limitMin, 0U, sizeof(dataMember.limitMin));
+      dataMember.limitsAsserted = false;
+      dataMember.writeLock      = false;
+    }
 }
 
 template <typename T>
@@ -188,7 +212,7 @@ Atams::Error_t DataBlock::setWriteLock(const uint16_t memberID,
 {
   if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_MEMBER_ID);
 
-  DataMember_t &dataMember  = _dataMembers[memberID];
+  DataMember_t &dataMember = _dataMembers[memberID];
 
   Platform::acquireMemoryLock();
 
@@ -237,12 +261,12 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
 
   switch (accessRequest)
   {
-    case ACCESS_READ_ACK:
+    case ACCESS_READ:
       memcpy(dataStoragePtr, dataMember.data, TYPE_LENGTHS[memberInfo.type]);
       if (systemIsBigEndian()) swapEndiannessRaw(dataStoragePtr, TYPE_LENGTHS[memberInfo.type]);
       break;
 
-    case ACCESS_WRITE_ACK:
+    case ACCESS_WRITE:
       if (systemIsBigEndian()) swapEndiannessRaw(dataStoragePtr, TYPE_LENGTHS[memberInfo.type]);
 
       if (dataMember.writeLock)
@@ -333,7 +357,7 @@ Atams::Error_t DataBlock::checkLimits(const MemberInfo_t &memberInfo,
 }
 
 
-} } /* End Namespace - Atams::Node */
+} /* End Namespace - Atams */
 
 
 /**

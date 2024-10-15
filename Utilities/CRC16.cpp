@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
-  * @file    MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.cpp
+  * @file    CRC16.hpp
   *
   * @author  D. Baines
   *
-  * @brief   Auto-generated file containing public function definitions
-  *          for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
+  * @brief
+  *
   *
   * @version v1.0
   ******************************************************************************
@@ -25,33 +25,60 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.hpp"
-#include "DataBlockUniversal.hpp"
+#include "CRC16.hpp"
+
 
 /*************************************************************************************/
-/* MEMORY MAP NAMESPACE                                                              */
+/* PRIVATE CONSTANTS                                                                 */
 /*************************************************************************************/
 
-namespace Atams { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
 
-/*************************************************************************************/
-/* GLOBAL CONSTANTS                                                                  */
-/*************************************************************************************/
-
-const MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,                          
-                            initDefaults,
-                            initLimits,
-                            $$$AUTOGEN$$$DATA_BLOCK_ARRAY$$$AUTOGEN$$$);
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-$$$AUTOGEN$$$INIT_DEFAULTS_DEFINITION$$$AUTOGEN$$$
+CRC16::CRC16(uint16_t generatorPolynomial)
+{
+  /* iterate over all byte values 0 - 255 */
+  for (uint16_t divident = 0U; divident < DECIMAL_WIDTH_8_BIT; divident++)
+  {
+    uint16_t currentByte = (divident << CRC16_BITSHIFT);
 
-$$$AUTOGEN$$$INIT_LIMITS_DEFINITION$$$AUTOGEN$$$
+    /* calculate the CRC-16 value for current byte */
+    for (uint8_t bit = 0U; bit < BITS_IN_A_BYTE; bit++)
+    {
+      if ((currentByte & WORD_MSB_HIGH) != 0U)
+      {
+        currentByte <<= 1U;
+        currentByte ^= generatorPolynomial;
+      }
+      else
+      {
+        currentByte <<= 1U;
+      }
+    }
 
-} } /* End Namespace - Atams::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
+    /* store CRC value in lookup table */
+    _CRCTable[divident] = currentByte;
+  }
+}
+
+
+uint16_t CRC16::calculateCRC16(volatile const uint8_t *byteBuffer, uint16_t length)
+{
+  uint16_t crc = 0U;
+
+  for (uint8_t index = 0U; index < length; index++)
+  {
+    uint8_t pos = static_cast<uint8_t>((crc >> CRC16_BITSHIFT) ^ byteBuffer[index]);
+
+    crc = (crc << BITS_IN_A_BYTE) ^ _CRCTable[pos];
+  }
+
+  return (crc);
+}
+
 
 /**
   * @}End of File

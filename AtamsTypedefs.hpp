@@ -29,11 +29,9 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include <typeinfo>
 
-#include "../Atams/Utilities/AtamsWriteList.hpp"
-#include "../Atams/Utilities/List.hpp"
-
+#include "Utilities/AtamsWriteList.hpp"
+#include "Utilities/List.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -42,7 +40,6 @@
 namespace Atams
 {
 
-
 /*************************************************************************************/
 /* PRE-TYPEDEF CONSTANTS                                                             */
 /*************************************************************************************/
@@ -50,26 +47,21 @@ namespace Atams
 constexpr uint8_t  NODE_ID_MAX                    = 254U;
 constexpr uint8_t  NODE_ID_NULL                   = 255U;
 constexpr uint8_t  MAX_NUMBER_OF_NODE_IDS         = 255U;
-constexpr uint8_t  UNIVERSAL_DATA_BLOCK_ID        = 0U;
+constexpr uint8_t  BLOCK_ID_UNIVERSAL             = 0U;
+constexpr uint8_t  USER_DATA_BLOCK_ID_START       = 1U;
 constexpr uint16_t MAX_MESH_PACKET_DATAGRAM_COUNT = 256U;
 constexpr uint16_t MAX_MESH_PACKET_SIZE           = 256U;
 constexpr uint16_t MAX_NODE_PACKET_SIZE           = 256U;
 constexpr uint8_t  MAX_NUMBER_OF_MESH             = 10U;
-constexpr uint8_t  MAX_NUMBER_OF_DATA_BLOCKS      = 16U;
+constexpr uint8_t  MAX_NUMBER_OF_DATA_BLOCKS      = 15U;
 constexpr uint16_t MAX_NUMBER_OF_DATA_MEMBERS     = 512U;
 constexpr uint8_t  MAX_TYPE_SIZE                  = 4U;
 constexpr uint8_t  EOL_BYTE                       = 0U;
-constexpr uint32_t NULL_NVM_OFFSET                = 0U;
-
-
-constexpr int32_t  MAX_INT32                       = 2147483647U;
-constexpr int32_t  MIN_INT32                       = -2147483648U;
-constexpr uint32_t MAX_UINT32                      = 0U;
-constexpr uint32_t MIN_UINT32                      = 0U;
+constexpr int32_t  MAX_INT32                      = 2147483647U;
+constexpr int32_t  MIN_INT32                      = -2147483648U;
+constexpr uint32_t MAX_UINT32                     = 4294967295U;
+constexpr uint32_t MIN_UINT32                     = 0U;
 constexpr uint8_t  BITS_IN_A_BYTE                 = 8U;
-
-
-
 
 /*************************************************************************************/
 /* TYPEDEFS                                                                          */
@@ -87,10 +79,11 @@ typedef enum: uint8_t
 {
   MESSAGE_UNKNOWN             = 0U,
   MESSAGE_BROADCAST_UNIVERSAL = 1U,
-  MESSAGE_REQUEST_SYNCED      = 2U,
-  MESSAGE_RESPONSE_SYNCED     = 3U,
-  MESSAGE_SYNC_JOG            = 4U,
-  MESSAGE_ABORTED_RESPONSE    = 5U,
+  MESSAGE_REQUEST             = 2U,
+  MESSAGE_REQUEST_SYNCED      = 3U,
+  MESSAGE_RESPONSE_SYNCED     = 4U,
+  MESSAGE_SYNC_JOG            = 5U,
+  MESSAGE_ABORTED_RESPONSE    = 6U,
 } MessageType_t;
 
 typedef enum: uint8_t
@@ -125,31 +118,26 @@ typedef enum: uint8_t
 
 typedef enum: uint8_t
 {
-  DATAGRAM_HEADER_BITS_COMMAND   = 3U,
-  DATAGRAM_HEADER_BITS_MEMBER_ID = 9U,
-  DATAGRAM_HEADER_BITS_BLOCK_ID  = 4U,
+  DATAGRAM_HEADER_BITS_COMMAND  = 3U,
+  DATAGRAM_HEADER_BITS_VAR_ID   = 9U,
+  DATAGRAM_HEADER_BITS_BLOCK_ID = 4U,
 } DatagramHeaderBitSize_t;
 
 typedef enum: uint8_t
 {
   ERROR_NONE                     = 0U,
-  ERROR_NODE_TYPE                = 1U,
-  ERROR_BLOCK_ID             = 4U,
-  ERROR_MEMBER_ID            = 5U,
+  ERROR_BLOCK_ID                 = 4U,
+  ERROR_MEMBER_ID                = 5U,
   ERROR_MEMBER_TYPE              = 35U,
   ERROR_MEMBER_LENGTH            = 6U,
-  ERROR_MESH_BUFFER_LENGTH       = 7U,
-  ERROR_NODE_BUFFER_LENGTH       = 8U,
-  ERROR_DATAGRAM_BUFFER_LENGTH   = 9U,
+  ERROR_REQUEST_BUFFER_LENGTH    = 7U,
   ERROR_NULL_PTR                 = 10U,
   ERROR_ACCESS_INVALID           = 11U,
   ERROR_MEMORY                   = 12U,
-  ERROR_MESH_OVERFLOW            = 13U,
-  ERROR_NODE_OVERFLOW            = 14U,
   ERROR_WRITE_LIST               = 15U,
   ERROR_NODE_FATAL               = 16U,
   ERROR_MEMBER_PATH_INVALID      = 17U,
-  ERROR_RESPONSE_BUFFER_OVERFLOW = 18U,
+  ERROR_RESPONSE_BUFFER_LENGTH   = 18U,
   ERROR_ABORT_FAILURE            = 19U,
   ERROR_ENCODE                   = 20U,
   ERROR_DECODE                   = 21U,
@@ -172,36 +160,35 @@ typedef enum: uint8_t
 
 typedef enum: uint8_t
 {
-  ACCESS_NONE_NACK  = 0U,
-  ACCESS_READ_ACK   = 1U,
-  ACCESS_WRITE_ACK  = 2U,
-  ACCESS_FATAL      = 3U,
+  ACCESS_NONE  = 0U,
+  ACCESS_READ  = 1U,
+  ACCESS_WRITE = 2U,
 } Access_t;
 
 typedef enum: uint8_t
 {
-  TYPE_NULL    = 0U,
-  TYPE_UINT8   = 1U,
-  TYPE_INT8    = 2U,
-  TYPE_UINT16  = 3U,
-  TYPE_INT16   = 4U,
-  TYPE_UINT32  = 5U,
-  TYPE_INT32   = 6U,
-  TYPE_FLOAT   = 7U,
+  TYPE_NULL   = 0U,
+  TYPE_UINT8  = 1U,
+  TYPE_INT8   = 2U,
+  TYPE_UINT16 = 3U,
+  TYPE_INT16  = 4U,
+  TYPE_UINT32 = 5U,
+  TYPE_INT32  = 6U,
+  TYPE_FLOAT  = 7U,
   NUMBER_OF_TYPES
 } DataType_t;
 
 typedef enum: uint8_t
 {
-  COMMAND_INACTIVE  = 0U,
-  COMMAND_ACTIVE    = 1U,
-  COMMAND_UNTIL_ACK = 2U,
-} CommandPattern_t;
+  REQUEST_INACTIVE  = 0U,
+  REQUEST_ACTIVE    = 1U,
+  REQUEST_UNTIL_ACK = 2U,
+} RequestPattern_t;
 
 struct DatagramHeader_t // TODO: Replace bitfield with masks/shifts
 {
   uint8_t  command  : DATAGRAM_HEADER_BITS_COMMAND;
-  uint16_t memberID : DATAGRAM_HEADER_BITS_MEMBER_ID;
+  uint16_t varID    : DATAGRAM_HEADER_BITS_VAR_ID;
   uint8_t  blockID  : DATAGRAM_HEADER_BITS_BLOCK_ID;
 };
 

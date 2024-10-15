@@ -35,7 +35,7 @@
 /* MEMORY MAP NAMESPACE                                                              */
 /*************************************************************************************/
 
-namespace SMI { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
+namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
@@ -56,17 +56,32 @@ $$$AUTOGEN$$$INIT_DEFAULTS_DECLARATION$$$AUTOGEN$$$
 $$$AUTOGEN$$$INIT_LIMITS_DECLARATION$$$AUTOGEN$$$
 
 /*************************************************************************************/
-/* GLOBAL CONSTANTS                                                                  */
+/* PUBLIC EXTERN CONSTANTS                                                           */
 /*************************************************************************************/
 
-extern const Node::MemoryMap_t memoryMap;
+extern const MemoryMap_t memoryMap;
+
+/*************************************************************************************/
+/* PUBLIC CONSTANTS                                                                  */
+/*************************************************************************************/
+
+inline constexpr float    AUTOGEN_ATAMS_VERSION_NUMBER = $$$AUTOGEN$$$VERSION_NUMBER$$$AUTOGEN$$$;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_DAY          = $$$AUTOGEN$$$GENERATION_DAY$$$AUTOGEN$$$;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_MONTH        = $$$AUTOGEN$$$GENERATION_MONTH$$$AUTOGEN$$$;
+inline constexpr uint16_t AUTOGEN_MAP_GEN_YEAR         = $$$AUTOGEN$$$GENERATION_YEAR$$$AUTOGEN$$$;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_HOUR         = $$$AUTOGEN$$$GENERATION_HOUR$$$AUTOGEN$$$;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = $$$AUTOGEN$$$GENERATION_MINUTE$$$AUTOGEN$$$;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = $$$AUTOGEN$$$GENERATION_SECOND$$$AUTOGEN$$$;
+inline constexpr uint8_t  AUTOGEN_MAP_NUMBER_OF_BLOCKS = $$$AUTOGEN$$$NUMBER_OF_BLOCKS$$$AUTOGEN$$$;
+inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = $$$AUTOGEN$$$GENERATION_CHECKSUM$$$AUTOGEN$$$;
 
 /*************************************************************************************/
 /* DATA BLOCK DEFINITIONS                                                            */
 /*************************************************************************************/
 
 $$$AUTOGEN$$$DATA_BLOCK_DEFINITIONS$$$AUTOGEN$$$
-} } /* End Namespace - SMI::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
+
+} } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
 
 /**
   * @}End of File

@@ -29,13 +29,13 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../Node.hpp"
+#include "DataBlockUniversal.hpp"
 
 /*************************************************************************************/
 /* MEMORY MAP NAMESPACE                                                              */
 /*************************************************************************************/
 
-namespace SMI { namespace MapTest {
+namespace Atams { namespace MapTest {
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
@@ -43,9 +43,8 @@ namespace SMI { namespace MapTest {
              
 typedef enum: uint8_t
 {
-  BLOCK_ID_UNIVERSAL = UNIVERSAL_DATA_BLOCK_ID,
-  BLOCK_ID_EXAMPLE1  = 1U,
-  BLOCK_ID_EXAMPLE2  = 2U,
+  BLOCK_ID_EXAMPLE1 = 1U,
+  BLOCK_ID_EXAMPLE2 = 2U,
 
   NUMBER_OF_DATA_BLOCKS
 } DataBlockID_t;
@@ -59,109 +58,28 @@ Error_t initDefaults(void);
 Error_t initLimits(void);
 
 /*************************************************************************************/
-/* GLOBAL CONSTANTS                                                                  */
+/* PUBLIC EXTERN CONSTANTS                                                           */
 /*************************************************************************************/
 
-extern const Node::MemoryMap_t memoryMap;
+extern const MemoryMap_t memoryMap;
+
+/*************************************************************************************/
+/* PUBLIC CONSTANTS                                                                  */
+/*************************************************************************************/
+
+inline constexpr float    AUTOGEN_ATAMS_VERSION_NUMBER = 0.1F;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_DAY          = 15U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_MONTH        = 10U;
+inline constexpr uint16_t AUTOGEN_MAP_GEN_YEAR         = 2024U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_HOUR         = 11U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = 33U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = 20U;
+inline constexpr uint8_t  AUTOGEN_MAP_NUMBER_OF_BLOCKS = 2U;
+inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = 32457U;
 
 /*************************************************************************************/
 /* DATA BLOCK DEFINITIONS                                                            */
 /*************************************************************************************/
-
-/*--- DATA BLOCK UNIVERSAL -----------------------------------------------------------*/
-namespace BlockUniversal {
-
-/*--- Member List ---*/
-typedef enum: uint16_t
-{
-  VAR_ID_NODE_ID             = 0U,
-  VAR_ID_STORE_NVM           = 1U,
-  VAR_ID_RESTORE_FACTORY_NVM = 2U,
-  VAR_ID_STORE_OTP           = 3U,
-  VAR_ID_WATCHDOG_TIMEOUT    = 4U,
-  VAR_ID_MEMORY_MAP_GEN_DATE = 5U,
-  VAR_ID_MEMORY_MAP_GEN_TIME = 6U,
-  VAR_ID_MEMORY_MAP_CHECKSUM = 7U,
-  NUMBER_OF_UNIVERSAL_DATA_MEMBERS
-} DataMemberID_t;
-
-/*--- Defaults ---*/
-constexpr inline uint32_t DEFAULT_MEMORY_MAP_GEN_DATE = AUTOGEN;
-constexpr inline uint32_t DEFAULT_MEMORY_MAP_GEN_TIME = AUTOGEN;
-constexpr inline uint32_t DEFAULT_MEMORY_MAP_CHECKSUM = AUTOGEN;
-
-/*--- Minimum Limits ---*/
-constexpr inline uint8_t  MIN_LIMIT_NODE_ID = 0U;
-
-/*--- Maximum Limits ---*/
-constexpr inline uint8_t  MAX_LIMIT_NODE_ID = NODE_ID_MAX;
-
-/*--- Descriptor ---*/
-const Node::DataBlockInfo_t blockDescriptor =
-{
-  /* .noOfDataMembers = */ BlockTEMPLATE::NUMBER_OF_UNIVERSAL_DATA_MEMBERS,
-  /* .dataMemberInfo  = */
-  {
-    [BlockUniversal::MEMBER_ID_NODE_ID] =
-    {
-      /* .type           = */ TYPE_UINT8,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ 0U
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
-    },
-    [BlockUniversal::MEMBER_ID_STORE_NVM] =
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
-    },
-    [BlockUniversal::MEMBER_ID_RESTORE_FACTORY_NVM] =
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
-    },
-    [BlockUniversal::MEMBER_ID_STORE_OTP] =
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
-    },
-    [BlockUniversal::MEMBER_ID_WATCHDOG_TIMEOUT] =
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
-    },
-    [BlockUniversal::MEMBER_ID_MEMORY_MAP_GEN_DATE] =
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_READ
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
-    },
-    [BlockUniversal::MEMBER_ID_MEMORY_MAP_GEN_TIME] =
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_READ
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
-    },
-    [BlockUniversal::MEMBER_ID_MEMORY_MAP_CHECKSUM] =
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_READ
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
-    },
-  }
-};
-
-} /* End Namespace - BlockUniversal */
 
 /*--- DATA BLOCK EXAMPLE1 -----------------------------------------------------------*/
 namespace BlockExample1 {
@@ -169,89 +87,81 @@ namespace BlockExample1 {
 /*--- Member List ---*/
 typedef enum: uint16_t
 {
-  VAR_ID_NODE_ID             = 0U,
-  VAR_ID_STORE_NVM           = 1U,
-  VAR_ID_RESTORE_FACTORY_NVM = 2U,
-  VAR_ID_STORE_OTP           = 3U,
-  VAR_ID_WATCHDOG_TIMEOUT    = 4U,
-  VAR_ID_MEMORY_MAP_GEN_DATE = 5U,
-  VAR_ID_MEMORY_MAP_GEN_TIME = 6U,
-  VAR_ID_MEMORY_MAP_CHECKSUM = 7U,
+  MEMBER_ID_NODE_ID             = 0U,
+  MEMBER_ID_STORE_NVM           = 1U,
+  MEMBER_ID_RESTORE_FACTORY_NVM = 2U,
+  MEMBER_ID_STORE_OTP           = 3U,
+  MEMBER_ID_WATCHDOG_TIMEOUT    = 4U,
+  MEMBER_ID_MEMORY_MAP_GEN_DATE = 5U,
+  MEMBER_ID_MEMORY_MAP_GEN_TIME = 6U,
+  MEMBER_ID_MEMORY_MAP_CHECKSUM = 7U,
   NUMBER_OF_EXAMPLE1_DATA_MEMBERS
 } DataMemberID_t;
 
 /*--- Defaults ---*/
-constexpr inline uint32_t DEFAULT_MEMORY_MAP_GEN_DATE = 49856UL;
-constexpr inline float    DEFAULT_MEMORY_MAP_GEN_TIME = 4.0F;
-constexpr inline int8_t   DEFAULT_MEMORY_MAP_CHECKSUM = -7;
+inline constexpr uint32_t DEFAULT_MEMORY_MAP_GEN_DATE = 49856UL;
+inline constexpr float    DEFAULT_MEMORY_MAP_GEN_TIME = 4.0F;
+inline constexpr int8_t   DEFAULT_MEMORY_MAP_CHECKSUM = -7;
 
 /*--- Minimum Limits ---*/
-constexpr inline uint8_t  MIN_LIMIT_NODE_ID = 0U;
+inline constexpr uint8_t  MIN_LIMIT_NODE_ID = 0U;
 
 /*--- Maximum Limits ---*/
-constexpr inline uint8_t  MAX_LIMIT_NODE_ID = NODE_ID_MAX;
+inline constexpr uint8_t  MAX_LIMIT_NODE_ID = NODE_ID_MAX;
 
 /*--- Descriptor ---*/
-const Node::DataBlockInfo_t blockDescriptor =
+constexpr DataBlock::BlockDescriptor_t blockDescriptor =
 {
-  /* .noOfDataMembers = */ BlockTEMPLATE::NUMBER_OF_EXAMPLE1_DATA_MEMBERS,
+  /* .noOfDataMembers = */ BlockExample1::NUMBER_OF_EXAMPLE1_DATA_MEMBERS,
   /* .dataMemberInfo  = */
   {
     [BlockExample1::MEMBER_ID_NODE_ID] =
     {
       /* .type           = */ TYPE_UINT8,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ 0U
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false
     },
     [BlockExample1::MEMBER_ID_STORE_NVM] =
     {
       /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false
     },
     [BlockExample1::MEMBER_ID_RESTORE_FACTORY_NVM] =
     {
       /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false
     },
     [BlockExample1::MEMBER_ID_STORE_OTP] =
     {
       /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false
     },
     [BlockExample1::MEMBER_ID_WATCHDOG_TIMEOUT] =
     {
       /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false
     },
     [BlockExample1::MEMBER_ID_MEMORY_MAP_GEN_DATE] =
     {
       /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_READ
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false
     },
     [BlockExample1::MEMBER_ID_MEMORY_MAP_GEN_TIME] =
     {
       /* .type           = */ TYPE_FLOAT,
-      /* .externalAccess = */ ACCESS_READ
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false
     },
     [BlockExample1::MEMBER_ID_MEMORY_MAP_CHECKSUM] =
     {
       /* .type           = */ TYPE_INT8,
-      /* .externalAccess = */ ACCESS_READ
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false
     },
   }
 };
@@ -264,89 +174,81 @@ namespace BlockExample2 {
 /*--- Member List ---*/
 typedef enum: uint16_t
 {
-  VAR_ID_NODE_ID             = 0U,
-  VAR_ID_STORE_NVM           = 1U,
-  VAR_ID_RESTORE_FACTORY_NVM = 2U,
-  VAR_ID_STORE_OTP           = 3U,
-  VAR_ID_WATCHDOG_TIMEOUT    = 4U,
-  VAR_ID_MEMORY_MAP_GEN_DATE = 5U,
-  VAR_ID_MEMORY_MAP_GEN_TIME = 6U,
-  VAR_ID_MEMORY_MAP_CHECKSUM = 7U,
+  MEMBER_ID_NODE_ID             = 0U,
+  MEMBER_ID_STORE_NVM           = 1U,
+  MEMBER_ID_RESTORE_FACTORY_NVM = 2U,
+  MEMBER_ID_STORE_OTP           = 3U,
+  MEMBER_ID_WATCHDOG_TIMEOUT    = 4U,
+  MEMBER_ID_MEMORY_MAP_GEN_DATE = 5U,
+  MEMBER_ID_MEMORY_MAP_GEN_TIME = 6U,
+  MEMBER_ID_MEMORY_MAP_CHECKSUM = 7U,
   NUMBER_OF_EXAMPLE2_DATA_MEMBERS
 } DataMemberID_t;
 
 /*--- Defaults ---*/
-constexpr inline uint16_t DEFAULT_MEMORY_MAP_GEN_DATE = 64563U;
-constexpr inline int32_t  DEFAULT_MEMORY_MAP_GEN_TIME = -655346L;
-constexpr inline float    DEFAULT_MEMORY_MAP_CHECKSUM = 0.0001F;
+inline constexpr uint32_t DEFAULT_MEMORY_MAP_GEN_DATE = 49856UL;
+inline constexpr float    DEFAULT_MEMORY_MAP_GEN_TIME = 4.0F;
+inline constexpr int8_t   DEFAULT_MEMORY_MAP_CHECKSUM = -7;
 
 /*--- Minimum Limits ---*/
-constexpr inline uint8_t  MIN_LIMIT_NODE_ID = 0U;
+inline constexpr uint8_t  MIN_LIMIT_NODE_ID = 0U;
 
 /*--- Maximum Limits ---*/
-constexpr inline uint8_t  MAX_LIMIT_NODE_ID = NODE_ID_MAX;
+inline constexpr uint8_t  MAX_LIMIT_NODE_ID = NODE_ID_MAX;
 
 /*--- Descriptor ---*/
-const Node::DataBlockInfo_t blockDescriptor =
+constexpr DataBlock::BlockDescriptor_t blockDescriptor =
 {
-  /* .noOfDataMembers = */ BlockTEMPLATE::NUMBER_OF_EXAMPLE2_DATA_MEMBERS,
+  /* .noOfDataMembers = */ BlockExample2::NUMBER_OF_EXAMPLE2_DATA_MEMBERS,
   /* .dataMemberInfo  = */
   {
     [BlockExample2::MEMBER_ID_NODE_ID] =
     {
       /* .type           = */ TYPE_UINT8,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ 0U
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false
     },
     [BlockExample2::MEMBER_ID_STORE_NVM] =
     {
       /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false
     },
     [BlockExample2::MEMBER_ID_RESTORE_FACTORY_NVM] =
     {
       /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false
     },
     [BlockExample2::MEMBER_ID_STORE_OTP] =
     {
       /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false
     },
     [BlockExample2::MEMBER_ID_WATCHDOG_TIMEOUT] =
     {
       /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false
     },
     [BlockExample2::MEMBER_ID_MEMORY_MAP_GEN_DATE] =
     {
-      /* .type           = */ TYPE_UINT16,
-      /* .externalAccess = */ ACCESS_READ
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .type           = */ TYPE_UINT32,
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false
     },
     [BlockExample2::MEMBER_ID_MEMORY_MAP_GEN_TIME] =
     {
-      /* .type           = */ TYPE_INT32,
-      /* .externalAccess = */ ACCESS_READ
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .type           = */ TYPE_FLOAT,
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false
     },
     [BlockExample2::MEMBER_ID_MEMORY_MAP_CHECKSUM] =
     {
-      /* .type           = */ TYPE_FLOAT,
-      /* .externalAccess = */ ACCESS_READ
-      /* .NVMOffset      = */ NVM_OFFSET_NULL
-      /* .OTPOffset      = */ NVM_OFFSET_NULL
+      /* .type           = */ TYPE_INT8,
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false
     },
   }
 };
@@ -354,7 +256,8 @@ const Node::DataBlockInfo_t blockDescriptor =
 } /* End Namespace - BlockExample2 */
 
 
-} } /* End Namespace - SMI::MapTest */
+
+} } /* End Namespace - Atams::MapTest */
 
 /**
   * @}End of File

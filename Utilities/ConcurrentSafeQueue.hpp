@@ -69,7 +69,7 @@ class ConcurrentSafeQueue
   }
 
   ConcurrentSafeQueue(const ConcurrentSafeQueue &other)             = delete;
-  ConcurrentSafeQueue & operator=(const ConcurrentSafeQueue &other) =  delete;
+  ConcurrentSafeQueue & operator=(const ConcurrentSafeQueue &other) = delete;
 
   Return_t getFront(void)
   {

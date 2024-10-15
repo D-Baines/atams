@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    Comms.hpp
+  * @file    CRC16.hpp
   *
   * @author  D. Baines
   *
@@ -14,9 +14,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
+  * This Source Code Form is subject to the terms of the Mozilla Public
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
   *
   ******************************************************************************
   */
@@ -30,35 +30,39 @@
 
 #include <stdint.h>
 
-#include "../../Atams/AtamsTypedefs.hpp"
-
-
 /*************************************************************************************/
-/* NAMESPACE                                                                         */
+/* CLASS DEFINITIONS                                                                 */
 /*************************************************************************************/
 
-namespace Atams { namespace Comms {
+class CRC16
+{
+
+  public:
+
+  /*-- Public Prototypes ------------------------------------------------------------*/
+
+  CRC16(uint16_t generatorPolynomial);
+
+  uint16_t calculateCRC16(volatile const uint8_t *byteBuffer, uint16_t length);
 
 
-/*************************************************************************************/
-/* PUBLIC TYPEDEFS                                                                   */
-/*************************************************************************************/
+  private:
 
+  /*-- Private Constants ------------------------------------------------------------*/
 
+  static const uint16_t DECIMAL_WIDTH_8_BIT = 256U;
 
-/*************************************************************************************/
-/* PUBLIC FUNCTION DECLARATIONS                                                      */
-/*************************************************************************************/
+  static const uint16_t CRC16_BITSHIFT = 8U;
 
+  static const uint16_t WORD_MSB_HIGH = 0x8000;
 
-Error_t init(void);
+  static const uint8_t  BITS_IN_A_BYTE = 8U;
 
-void beginUpdateLoop(void);
+  /*-- Private Variables ------------------------------------------------------------*/
 
+  uint16_t _CRCTable[DECIMAL_WIDTH_8_BIT];
 
-
-} } /* End Namespace - Atams */
-
+};
 
 /**
   * @}End of File
