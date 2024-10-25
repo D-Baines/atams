@@ -110,7 +110,7 @@ inline constexpr uint8_t  MIN_LIMIT_NODE_ID = 0U;
 inline constexpr uint8_t  MAX_LIMIT_NODE_ID = NODE_ID_MAX;
 
 /*--- Descriptor ---*/
-constexpr DataBlock::BlockDescriptor_t blockDescriptor =
+inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
 {
   /* .noOfDataMembers = */ BlockExample1::NUMBER_OF_EXAMPLE1_DATA_MEMBERS,
   /* .dataMemberInfo  = */
@@ -197,7 +197,7 @@ inline constexpr uint8_t  MIN_LIMIT_NODE_ID = 0U;
 inline constexpr uint8_t  MAX_LIMIT_NODE_ID = NODE_ID_MAX;
 
 /*--- Descriptor ---*/
-constexpr DataBlock::BlockDescriptor_t blockDescriptor =
+inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
 {
   /* .noOfDataMembers = */ BlockExample2::NUMBER_OF_EXAMPLE2_DATA_MEMBERS,
   /* .dataMemberInfo  = */

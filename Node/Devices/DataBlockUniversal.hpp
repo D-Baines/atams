@@ -31,13 +31,11 @@
 #include <stdint.h>
 #include "../Node.hpp"
 
-
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
 namespace Atams { namespace BlockUniversal {
-
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
@@ -62,21 +60,19 @@ typedef enum: uint16_t
   MEMBER_ID_MAP_GEN_HOUR          = 5U,
   MEMBER_ID_MAP_GEN_MINUTE        = 6U,
   MEMBER_ID_MAP_GEN_SECOND        = 7U,
-  MEMBER_ID_MAP_NUMBER_OF_BLOCKS  = 8U,
-  MEMBER_ID_MAP_CHECKSUM          = 9U,
-  MEMBER_ID_NODE_ID               = 10U,
-  MEMBER_ID_FIRST_NODE_ID         = 11U,
-  MEMBER_ID_LAST_NODE_ID          = 12U,
-  MEMBER_ID_PREVIOUS_NODE_ID      = 13U,
-  MEMBER_ID_WATCHDOG_TIMEOUT      = 14U,
-  MEMBER_ID_WATCHDOG_FAULT_ACTIVE = 15U,
-  MEMBER_ID_WATCHDOG_RESET        = 16U,
-  MEMBER_ID_STORE_NVM             = 17U,
-  MEMBER_ID_RESTORE_FACTORY_NVM   = 18U,
-  MEMBER_ID_NVM_STATUS            = 19U,
+  MEMBER_ID_MAP_CHECKSUM          = 8U,
+  MEMBER_ID_NODE_ID               = 9U,
+  MEMBER_ID_FIRST_NODE_ID         = 10U,
+  MEMBER_ID_LAST_NODE_ID          = 11U,
+  MEMBER_ID_PREVIOUS_NODE_ID      = 12U,
+  MEMBER_ID_WATCHDOG_TIMEOUT      = 13U,
+  MEMBER_ID_WATCHDOG_FAULT_ACTIVE = 14U,
+  MEMBER_ID_WATCHDOG_RESET        = 15U,
+  MEMBER_ID_STORE_NVM             = 16U,
+  MEMBER_ID_RESTORE_FACTORY_NVM   = 17U,
+  MEMBER_ID_NVM_STATUS            = 18U,
   NUMBER_OF_UNIVERSAL_DATA_MEMBERS
 } DataMemberID_t;
-
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
@@ -102,7 +98,7 @@ inline constexpr uint8_t  MAX_LIMIT_LAST_NODE_ID     = NODE_ID_MAX;
 inline constexpr uint8_t  MAX_LIMIT_PREVIOUS_NODE_ID = NODE_ID_MAX;
 
 /*--- Descriptor ---*/
-constexpr DataBlock::BlockDescriptor_t blockDescriptor =
+inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
 {
   /* .noOfDataMembers = */ BlockUniversal::NUMBER_OF_UNIVERSAL_DATA_MEMBERS,
   /* .dataMemberInfo  = */
@@ -150,12 +146,6 @@ constexpr DataBlock::BlockDescriptor_t blockDescriptor =
       /* .NVMStorage     = */ false
     },
     [BlockUniversal::MEMBER_ID_MAP_GEN_SECOND] =
-    {
-      /* .type           = */ TYPE_UINT8,
-      /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false
-    },
-    [BlockUniversal::MEMBER_ID_MAP_NUMBER_OF_BLOCKS] =
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,

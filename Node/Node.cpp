@@ -95,8 +95,8 @@ static uint32_t _crcErrorCount                            = 0U;
 static uint32_t _cobsErrorCount                           = 0U;
 
 /* Core Init Synchronisation */
-static uint8_t  _controlCoreInitComplete = CORE_INIT_IN_PROGRESS;
-static uint32_t _previousCoreCheckTime   = 0U;
+static CoreInitStatus_t _controlCoreInitComplete = CORE_INIT_IN_PROGRESS;
+static uint32_t         _previousCoreCheckTime   = 0U;
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -462,24 +462,39 @@ static Error_t recordError(Error_t error)
   return (error);
 }
 
-
 static void updateWatchdog(void)
 {
   uint32_t        currentTime                   = Platform::getMillis();
   static uint32_t previousWatchdogIncrementTime = currentTime;
   static uint32_t watchdogCount                 = 0U;
   static uint32_t watchdogTimeout               = 0U;
+  static uint8_t  prevWatchdogClear             = WATCHDOG_FAULT_INACTIVE;
 
   if ((currentTime - previousWatchdogIncrementTime) > WATCHDOG_INCREMENT_PERIOD_MILLIS)
   {
     if (watchdogCount < MAX_UINT32) watchdogCount++;
 
     if ((_universalBlock.read(BlockUniversal::MEMBER_ID_WATCHDOG_TIMEOUT, watchdogTimeout) != ERROR_NONE) ||
-        ((watchdogCount > watchdogTimeout) &&
-         (watchdogTimeout != 0U          )                                           )  )
+        ((watchdogCount    > watchdogTimeout) &&
+         (watchdogTimeout != 0U             )                                                           ) )
     {
       _universalBlock.write(BlockUniversal::MEMBER_ID_WATCHDOG_FAULT_ACTIVE, WATCHDOG_FAULT_ACTIVE);
     }
+    else
+    {
+      uint8_t watchdogClear = WATCHDOG_FAULT_INACTIVE;
+
+      static_cast<void>(_universalBlock.read(BlockUniversal::MEMBER_ID_WATCHDOG_RESET, watchdogClear));
+
+      if ((watchdogClear     == WATCHDOG_FAULT_ACTIVE  ) &&
+          (prevWatchdogClear == WATCHDOG_FAULT_INACTIVE) )
+      {
+        _universalBlock.write(BlockUniversal::MEMBER_ID_WATCHDOG_FAULT_ACTIVE, WATCHDOG_FAULT_INACTIVE);
+      }
+
+      prevWatchdogClear = watchdogClear;
+    }
+
     previousWatchdogIncrementTime = currentTime;
   }
 }
@@ -543,7 +558,7 @@ static void waitForControlCoreInit(void)
 
 Error_t initSingleCore(const MemoryMap_t &memoryMap)
 {
-  /* sharedInit will run in each of the core init functions - no negative impact */
+  /* sharedInit() will run in each of the core init functions - no negative impact */
 
   Error_t initStatus = initControlCore(memoryMap);
 
@@ -583,6 +598,8 @@ Error_t initControlCore(const MemoryMap_t &memoryMap)
   if (initStatus == ERROR_NONE) initStatus = memoryMap.initDefaults();
 
   if (initStatus == ERROR_NONE) initStatus = memoryMap.initLimits();
+
+  /* NVM Init Here */
 
   if (initStatus == ERROR_NONE)
   {
@@ -677,11 +694,6 @@ bool watchdogFaultActive(void)
   uint8_t watchdogFaultState = WATCHDOG_FAULT_ACTIVE;
   _universalBlock.read(BlockUniversal::MEMBER_ID_WATCHDOG_FAULT_ACTIVE, watchdogFaultState);
   return (static_cast<bool>(watchdogFaultState));
-}
-
-void resetWatchdog(void)
-{
-  _universalBlock.write(BlockUniversal::MEMBER_ID_WATCHDOG_FAULT_ACTIVE, WATCHDOG_FAULT_INACTIVE);
 }
 
 DataBlock * getBlockPointer(const uint8_t blockID)

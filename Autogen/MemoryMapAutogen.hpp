@@ -30,6 +30,7 @@
 
 #include <stdint.h>
 #include "../Node.hpp"
+$$$AUTOGEN$$$BLOCK_FILE_INCLUDES$$$AUTOGEN$$$
 
 /*************************************************************************************/
 /* MEMORY MAP NAMESPACE                                                              */
