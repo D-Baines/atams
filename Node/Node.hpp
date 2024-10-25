@@ -116,9 +116,13 @@ struct MemoryMap_t
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-Error_t init(const MemoryMap_t &memoryMap);
+Error_t initSingleCore(const MemoryMap_t &memoryMap);
 
-void update(void);
+Error_t initCommsCore(const MemoryMap_t &memoryMap);
+
+Error_t initControlCore(const MemoryMap_t &memoryMap);
+
+void updateComms(void);
 
 template <typename T>
 Error_t write(const uint8_t blockID, const uint16_t memberID, const T writeData);
@@ -135,7 +139,7 @@ bool watchdogFaultActive(void);
 
 void resetWatchdog(void);
 
-DataBlock* getBlockPointer(const uint8_t blockID);
+DataBlock * getBlockPointer(const uint8_t blockID);
 
 Error_t externalTransfer(const Access_t  accessRequest,
                          const uint8_t   blockID,

@@ -51,12 +51,17 @@ static constexpr uint8_t  ABORT_RESPONSE_SIZE              = MESH_SIZE_HEADER + 
 static constexpr uint32_t WATCHDOG_INCREMENT_PERIOD_MILLIS = 1U;
 static constexpr uint8_t  WATCHDOG_FAULT_ACTIVE            = 1U;
 static constexpr uint8_t  WATCHDOG_FAULT_INACTIVE          = 0U;
-
+static constexpr uint32_t CORE_STATUS_CHECK_PERIOD         = 10U;
 
 /*************************************************************************************/
 /* PRIVATE TYPEDEFS                                                                  */
 /*************************************************************************************/
 
+typedef enum: uint8_t
+{
+  CORE_INIT_IN_PROGRESS = 0U,
+  CORE_INIT_COMPLETE    = 1U
+} CoreInitStatus_t;
 
 /*************************************************************************************/
 /* PRIVATE VARIABLES                                                                 */
@@ -89,6 +94,9 @@ static uint8_t  _firstSyncNodeID                          = NODE_ID_NULL;
 static uint32_t _crcErrorCount                            = 0U;
 static uint32_t _cobsErrorCount                           = 0U;
 
+/* Core Init Synchronisation */
+static uint8_t  _controlCoreInitComplete = CORE_INIT_IN_PROGRESS;
+static uint32_t _previousCoreCheckTime   = 0U;
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -477,11 +485,7 @@ static void updateWatchdog(void)
 }
 
 
-/*************************************************************************************/
-/* PUBLIC FUNCTION DEFINITIONS                                                       */
-/*************************************************************************************/
-
-Error_t init(const MemoryMap_t &memoryMap)
+static Error_t sharedInit(const MemoryMap_t &memoryMap)
 {
   if ((memoryMap.initDefaults == nullptr) ||
       (memoryMap.initLimits   == nullptr) )
@@ -489,42 +493,77 @@ Error_t init(const MemoryMap_t &memoryMap)
     return (ERROR_NULL_PTR); /* Early Return */
   }
 
-  if ((memoryMap.noOfDataBlocks > Platform::NODE_NUMBER_OF_DATA_BLOCKS) ||
-      (memoryMap.noOfDataBlocks >           MAX_NUMBER_OF_DATA_BLOCKS ) )
+  else if ((memoryMap.noOfDataBlocks > Platform::NODE_NUMBER_OF_DATA_BLOCKS) ||
+           (memoryMap.noOfDataBlocks >           MAX_NUMBER_OF_DATA_BLOCKS ) )
   {
-    return (ERROR_MEMORY); /* Early Return */
+    return (ERROR_MEMORY);   /* Early Return */
   }
 
-  if (sizeof(float) != TYPE_LENGTHS[TYPE_FLOAT])
+  else if (sizeof(float) != TYPE_LENGTHS[TYPE_FLOAT])
   {
-    return (ERROR_PLATFORM);
+    return (ERROR_PLATFORM); /* Early Return */
   }
 
-
-
-  Error_t initStatus = _dataBlocks[BLOCK_ID_UNIVERSAL].init(BlockUniversal::blockDescriptor);
+  Error_t initStatus = _dataBlocks[BLOCK_ID_UNIVERSAL].initDescriptor(BlockUniversal::blockDescriptor);
 
   for (uint8_t blockIndex = USER_DATA_BLOCK_ID_START; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
   {
     const DataBlock::BlockDescriptor_t &blockDescriptor = memoryMap.blockDescriptors[blockIndex];
           DataBlock                    &block           = _dataBlocks[blockIndex];
 
-    if (initStatus == ERROR_NONE) initStatus = block.init(blockDescriptor);
+    if (initStatus == ERROR_NONE) initStatus = block.initDescriptor(blockDescriptor);
   }
 
-  if (initStatus == ERROR_NONE) initStatus = memoryMap.initDefaults();
+  return (ERROR_NONE);
+}
 
-  if (initStatus == ERROR_NONE) initStatus = memoryMap.initLimits();
+static void waitForControlCoreInit(void)
+{
+  volatile CoreInitStatus_t coreInitStatus = CORE_INIT_IN_PROGRESS;
 
-  // TODO:: NVM Init
+  while (coreInitStatus == CORE_INIT_IN_PROGRESS)
+  {
+    uint32_t currentTime = Platform::getMillis();
+
+    if (currentTime - _previousCoreCheckTime >= CORE_STATUS_CHECK_PERIOD)
+    {
+      Platform::acquireMemoryLock();
+
+      volatile CoreInitStatus_t status = _controlCoreInitComplete;
+
+      Platform::releaseMemoryLock();
+    }
+  }
+}
+
+
+/*************************************************************************************/
+/* PUBLIC FUNCTION DEFINITIONS                                                       */
+/*************************************************************************************/
+
+Error_t initSingleCore(const MemoryMap_t &memoryMap)
+{
+  /* sharedInit will run in each of the core init functions - no negative impact */
+
+  Error_t initStatus = initControlCore(memoryMap);
+
+  if (initStatus == ERROR_NONE) initStatus = initCommsCore(memoryMap);
+
+  return (initStatus);
+}
+
+Error_t initCommsCore(const MemoryMap_t &memoryMap)
+{
+  waitForControlCoreInit();
+
+  Error_t initStatus = sharedInit(memoryMap);
 
   if (initStatus == ERROR_NONE)
   {
     _systemIsBigEndian = systemIsBigEndian();
     Platform::setReceiveCallback(receiveCallback);
   }
-
-  if (initStatus != ERROR_NONE)
+  else
   {
     for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinit();
   }
@@ -532,7 +571,34 @@ Error_t init(const MemoryMap_t &memoryMap)
   return (initStatus);
 }
 
-void update(void)
+Error_t initControlCore(const MemoryMap_t &memoryMap)
+{
+  Error_t initStatus = sharedInit(memoryMap);
+
+  if (initStatus == ERROR_NONE)
+  {
+    for (DataBlock &dataBlock : _dataBlocks) dataBlock.resetDataMembers();
+  }
+
+  if (initStatus == ERROR_NONE) initStatus = memoryMap.initDefaults();
+
+  if (initStatus == ERROR_NONE) initStatus = memoryMap.initLimits();
+
+  if (initStatus == ERROR_NONE)
+  {
+    Platform::acquireMemoryLock();
+    _controlCoreInitComplete = CORE_INIT_COMPLETE;
+    Platform::releaseMemoryLock();
+  }
+  else
+  {
+    for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinit();
+  }
+
+  return (initStatus);
+}
+
+void updateComms(void)
 {
   Platform::update();
 

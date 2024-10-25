@@ -81,7 +81,9 @@ class DataBlock
   /* Copy Assignment Operator */
   DataBlock & operator=(const DataBlock &other) = delete;
 
-  Error_t init(const BlockDescriptor_t &blockDescriptor);
+  Error_t initDescriptor(const BlockDescriptor_t &blockDescriptor);
+
+  void resetDataMembers(void);
 
   void deinit(void);
 

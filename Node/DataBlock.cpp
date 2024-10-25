@@ -67,15 +67,26 @@ DataBlock::~DataBlock(void)
 
 }
 
-Atams::Error_t DataBlock::init(const BlockDescriptor_t &blockDescriptor)
+Atams::Error_t DataBlock::initDescriptor(const BlockDescriptor_t &blockDescriptor)
 {
+  Error_t initStatus = ERROR_NONE;
+
   if ((blockDescriptor.noOfDataMembers > Platform::NODE_NUMBER_OF_DATA_MEMBERS) ||
       (blockDescriptor.noOfDataMembers >           MAX_NUMBER_OF_DATA_BLOCKS  ) )
   {
-    return (ERROR_MEMORY);
+    initStatus = ERROR_MEMORY;
+  }
+  else
+  {
+    _blockDescriptor = blockDescriptor;
   }
 
-  _blockDescriptor = blockDescriptor;
+  return (initStatus);
+}
+
+void DataBlock::resetDataMembers(void)
+{
+  Platform::acquireMemoryLock();
 
   for (DataMember_t &dataMember : _dataMembers)
   {
@@ -87,7 +98,7 @@ Atams::Error_t DataBlock::init(const BlockDescriptor_t &blockDescriptor)
     dataMember.writeLock      = false;
   }
 
-  return (ERROR_NONE);
+  Platform::releaseMemoryLock();
 }
 
 void DataBlock::deinit(void)
@@ -100,16 +111,6 @@ void DataBlock::deinit(void)
     varInfo.externalAccess = ACCESS_NONE;
     varInfo.NVMStorage     = false;
   }
-
-  for (DataMember_t &dataMember : _dataMembers)
-    {
-      //TODO:: Volatile memset may be required
-      memset(dataMember.data,     0U, sizeof(dataMember.data));
-      memset(dataMember.limitMax, 0U, sizeof(dataMember.limitMax));
-      memset(dataMember.limitMin, 0U, sizeof(dataMember.limitMin));
-      dataMember.limitsAsserted = false;
-      dataMember.writeLock      = false;
-    }
 }
 
 template <typename T>
