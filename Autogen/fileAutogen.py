@@ -272,11 +272,11 @@ def autogenCall(platformNameCamel: str,
           targetFile.write("Error_t initLimits(void);")
         case "Hub":
           targetFile.write("Error_t initLimits(Node &nodeToInit);")
-    case "DATA_BLOCK_DEFINITIONS":
-      generateBlockDefinitions(platformNameCamel, 
-                               dataBlockNamesCamel,
-                               dataBlocks,
-                               targetFile)
+    #case "DATA_BLOCK_DEFINITIONS":
+    #  generateBlockDefinitions(platformNameCamel, 
+    #                           dataBlockNamesCamel,
+    #                           dataBlocks,
+    #                           targetFile)
     case "DATA_BLOCK_ARRAY":
       generateBlockArray(dataBlockNamesCamel, targetFile)
     case "INIT_DEFAULTS_DEFINITION":
@@ -303,8 +303,6 @@ def autogenCall(platformNameCamel: str,
       targetFile.write("33"+"U")
     case "GENERATION_SECOND":
       targetFile.write("20"+"U")
-    case "NUMBER_OF_BLOCKS":
-      targetFile.write(str(len(dataBlockNamesCamel))+"U")
     case "GENERATION_CHECKSUM":
       targetFile.write("32457"+"U")
 

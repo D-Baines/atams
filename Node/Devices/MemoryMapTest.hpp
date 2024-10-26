@@ -74,7 +74,6 @@ inline constexpr uint16_t AUTOGEN_MAP_GEN_YEAR         = 2024U;
 inline constexpr uint8_t  AUTOGEN_MAP_GEN_HOUR         = 11U;
 inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = 33U;
 inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = 20U;
-inline constexpr uint8_t  AUTOGEN_MAP_NUMBER_OF_BLOCKS = 2U;
 inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = 32457U;
 
 /*************************************************************************************/

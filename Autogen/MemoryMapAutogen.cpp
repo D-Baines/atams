@@ -27,6 +27,7 @@
 
 #include "MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.hpp"
 #include "DataBlockUniversal.hpp"
+$$$AUTOGEN$$$BLOCK_FILE_INCLUDES$$$AUTOGEN$$$
 
 /*************************************************************************************/
 /* MEMORY MAP NAMESPACE                                                              */

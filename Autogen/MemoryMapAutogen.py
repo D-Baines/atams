@@ -28,8 +28,10 @@ def center(window):
     window.geometry("+%d+%d" % (x, y))
     window.update()
 
-tooltipImage = customtkinter.CTkImage(light_image=Image.open('Images/tooltip.png'), 
-                                      dark_image=Image.open('Images/tooltip.png'), 
+scriptDir = os.path.dirname(__file__)
+tooltipImageDir = scriptDir + "/Images/tooltip.png"
+tooltipImage = customtkinter.CTkImage(light_image=Image.open(tooltipImageDir), 
+                                      dark_image=Image.open(tooltipImageDir), 
                                       size=(16,16))
 
 class directorySearchBox:
@@ -75,8 +77,9 @@ def overwritePopup(memoryMapName: str, memoryMapXlsxPath:str, nodeDir: str, hubD
   popup.title("Overwrite Check")
   popupFrame = customtkinter.CTkFrame(popup, fg_color="transparent")
   popupFrame.place(relwidth=0.7, relx=0.5, rely=0.5, anchor=customtkinter.CENTER)
-  warningIcon = customtkinter.CTkImage(light_image=Image.open('Images/warning.png'), 
-                                       dark_image=Image.open('Images/warning.png'), 
+  warningImageDir = scriptDir + "/Images/warning.png"
+  warningIcon = customtkinter.CTkImage(light_image=Image.open(warningImageDir), 
+                                       dark_image=Image.open(warningImageDir), 
                                        size=(100,100))
   warningIconLabel = customtkinter.CTkLabel(popupFrame, text="", image=warningIcon)
   warningIconLabel.pack(side='top', pady=(0, 10))
@@ -143,8 +146,9 @@ title.configure(font=("TkDefaultFont", 26), text_color="#666")
 entryFrame = customtkinter.CTkFrame(fullFrame, height=123, fg_color="transparent")
 entryFrame.pack(side='top', fill='x')
 
-fileIcons = customtkinter.CTkImage(light_image=Image.open('Images/fileIcons.png'), 
-                                   dark_image=Image.open('Images/fileIcons.png'), 
+fileIconsImageDir = scriptDir + "/Images/fileIcons.png"
+fileIcons = customtkinter.CTkImage(light_image=Image.open(fileIconsImageDir), 
+                                   dark_image=Image.open(fileIconsImageDir), 
                                    size=(123,245))
 
 fileIconsLabel = customtkinter.CTkLabel(entryFrame, text="", image=fileIcons)

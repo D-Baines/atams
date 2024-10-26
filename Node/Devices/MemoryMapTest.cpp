@@ -80,10 +80,6 @@ Error_t initDefaults(void)
                                                    AUTOGEN_MAP_GEN_SECOND);
 
   if (initStatus == ERROR_NONE) initStatus = write(BLOCK_ID_UNIVERSAL,
-                                                   BlockUniversal::MEMBER_ID_MAP_NUMBER_OF_BLOCKS,
-                                                   AUTOGEN_MAP_NUMBER_OF_BLOCKS);
-
-  if (initStatus == ERROR_NONE) initStatus = write(BLOCK_ID_UNIVERSAL,
                                                    BlockUniversal::MEMBER_ID_MAP_CHECKSUM,
                                                    AUTOGEN_MAP_CHECKSUM);
 

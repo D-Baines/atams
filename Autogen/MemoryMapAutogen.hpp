@@ -30,7 +30,6 @@
 
 #include <stdint.h>
 #include "../Node.hpp"
-$$$AUTOGEN$$$BLOCK_FILE_INCLUDES$$$AUTOGEN$$$
 
 /*************************************************************************************/
 /* MEMORY MAP NAMESPACE                                                              */
@@ -75,12 +74,6 @@ inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = $$$AUTOGEN$$$GENERATION
 inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = $$$AUTOGEN$$$GENERATION_SECOND$$$AUTOGEN$$$;
 inline constexpr uint8_t  AUTOGEN_MAP_NUMBER_OF_BLOCKS = $$$AUTOGEN$$$NUMBER_OF_BLOCKS$$$AUTOGEN$$$;
 inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = $$$AUTOGEN$$$GENERATION_CHECKSUM$$$AUTOGEN$$$;
-
-/*************************************************************************************/
-/* DATA BLOCK DEFINITIONS                                                            */
-/*************************************************************************************/
-
-$$$AUTOGEN$$$DATA_BLOCK_DEFINITIONS$$$AUTOGEN$$$
 
 } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
 
