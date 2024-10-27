@@ -1,11 +1,12 @@
 /**
   ******************************************************************************
-  * @file    MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.cpp
+  * @file    DataBlock$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.cpp
   *
   * @author  D. Baines
   *
-  * @brief   Auto-generated file containing public function definitions
-  *          for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
+  * @brief   Auto-generated file containing function definitions for an 
+  *          $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Data Block with name: $$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.
+  *          The Data Block is part of an Atams Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
   *
   * @version v1.0
   ******************************************************************************
@@ -25,24 +26,13 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.hpp"
-#include "DataBlockUniversal.hpp"
-$$$AUTOGEN$$$BLOCK_FILE_INCLUDES$$$AUTOGEN$$$
+#include "DataBlock$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.hpp"
 
 /*************************************************************************************/
-/* MEMORY MAP NAMESPACE                                                              */
+/* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
-
-/*************************************************************************************/
-/* GLOBAL CONSTANTS                                                                  */
-/*************************************************************************************/
-
-const MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,                          
-                            initDefaults,
-                            initLimits,
-                            $$$AUTOGEN$$$DATA_BLOCK_ARRAY$$$AUTOGEN$$$);
+namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ { namespace Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ {
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
@@ -52,7 +42,7 @@ $$$AUTOGEN$$$INIT_DEFAULTS_DEFINITION$$$AUTOGEN$$$
 
 $$$AUTOGEN$$$INIT_LIMITS_DEFINITION$$$AUTOGEN$$$
 
-} } /* End Namespace - Atams::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
+} } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ */
 
 /**
   * @}End of File

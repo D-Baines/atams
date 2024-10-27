@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
-  * @file    Platform.hpp
+  * @file    MemoryMapTest.hpp
   *
   * @author  D. Baines
   *
-  * @brief
-  *
+  * @brief   Auto-generated file containing typedefs, constants, and function
+  *          declarations for an Atams Memory Map with name: Test.
   *
   * @version v1.0
   ******************************************************************************
@@ -21,98 +21,63 @@
   ******************************************************************************
   */
 
+/* Pragma to prevent recursive inclusion --------------------------------------------*/
+#pragma once
+
 /*************************************************************************************/
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "Platform.hpp"
-
-#include "../../../PeripheralLayer/SerialPort.hpp"
-#include "main.h"
+#include <stdint.h>
+#include "../../Node.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace Platform {
-
-
-/*************************************************************************************/
-/* PRIVATE TYPEDEFS                                                                  */
-/*************************************************************************************/
-
+namespace Atams { namespace MapTest {
 
 /*************************************************************************************/
-/* PRIVATE CONSTANTS                                                                 */
+/* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
-
-
-/*************************************************************************************/
-/* PRIVATE VARIABLES                                                                 */
-/*************************************************************************************/
-
-static SerialPort _meshPort(SerialPort::PORT_ID_MESH);
-
-
-/*************************************************************************************/
-/* PRIVATE FUNCTION DEFINITIONS                                                      */
-/*************************************************************************************/
-
-
-/*************************************************************************************/
-/* PUBLIC FUNCTION DEFINITIONS                                                       */
-/*************************************************************************************/
-
-void setReceiveCallback(CommsReceiveCallback_t receiveCallback)
+             
+typedef enum: uint8_t
 {
-  _meshPort.setReceiveCallback(receiveCallback);
-  while (_meshPort.beginReceive() != SerialPort::ERROR_NONE);
-}
+  BLOCK_ID_EXAMPLE1 = 1U,
+  BLOCK_ID_EXAMPLE2 = 2U,
 
-void update(void)
-{
+  NUMBER_OF_DATA_BLOCKS
+} DataBlockID_t;
 
-}
+/*************************************************************************************/
+/* PUBLIC EXTERN CONSTANTS                                                           */
+/*************************************************************************************/
 
-Error_t transmitBuffer(uint8_t *buffer, uint16_t length)
-{
-  SerialPort::Error_t transmitResult = _meshPort.transmitBuffer(buffer, length);
+extern const MemoryMap_t memoryMap;
 
-  if (transmitResult != SerialPort::ERROR_NONE) return (ERROR_PLATFORM);
+/*************************************************************************************/
+/* PUBLIC CONSTANTS                                                                  */
+/*************************************************************************************/
 
-  return (ERROR_NONE);
-}
+inline constexpr float    AUTOGEN_ATAMS_VERSION_NUMBER = 0.1F;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_DAY          = 15U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_MONTH        = 10U;
+inline constexpr uint16_t AUTOGEN_MAP_GEN_YEAR         = 2024U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_HOUR         = 11U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = 33U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = 20U;
+inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = 32457U;
 
-uint32_t getMillis(void)
-{
-  return (HAL_GetTick());
-}
+/*************************************************************************************/
+/* PUBLIC FUNCTION DECLARATIONS                                                      */
+/*************************************************************************************/
 
-void acquireMemoryLock(void)
-{
-  HAL_NVIC_DisableIRQ(TIM8_UP_TIM13_IRQn);
-  HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
-}
+Error_t initDefaults(void);
 
-void releaseMemoryLock(void)
-{
-  HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-}
-
-void acquireCommsBufferLock(void)
-{
-  HAL_NVIC_DisableIRQ(UART4_IRQn);
-}
-
-void releaseCommsBufferLock(void)
-{
-  HAL_NVIC_EnableIRQ(UART4_IRQn);
-}
+Error_t initLimits(void);
 
 
-} } /* End Namespace - Atams::Platform */
-
+} } /* End Namespace - Atams::MapTest */
 
 /**
   * @}End of File

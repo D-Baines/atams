@@ -28,11 +28,11 @@ def center(window):
     window.geometry("+%d+%d" % (x, y))
     window.update()
 
-scriptDir = os.path.dirname(__file__)
-tooltipImageDir = scriptDir + "/Images/tooltip.png"
-tooltipImage = customtkinter.CTkImage(light_image=Image.open(tooltipImageDir), 
-                                      dark_image=Image.open(tooltipImageDir), 
-                                      size=(16,16))
+scriptDir       = os.path.dirname(__file__)
+tooltipImageDir = os.path.join(scriptDir, 'Images', 'tooltip.png')
+tooltipImage    = customtkinter.CTkImage(light_image=Image.open(tooltipImageDir), 
+                                         dark_image=Image.open(tooltipImageDir), 
+                                         size=(16,16))
 
 class directorySearchBox:
   def __init__(self, parentFrame: customtkinter.CTkFrame, labelText: str, search: SearchType, topPad: int, tipMessage: str):
@@ -77,7 +77,7 @@ def overwritePopup(memoryMapName: str, memoryMapXlsxPath:str, nodeDir: str, hubD
   popup.title("Overwrite Check")
   popupFrame = customtkinter.CTkFrame(popup, fg_color="transparent")
   popupFrame.place(relwidth=0.7, relx=0.5, rely=0.5, anchor=customtkinter.CENTER)
-  warningImageDir = scriptDir + "/Images/warning.png"
+  warningImageDir = os.path.join(scriptDir, 'Images', 'warning.png')
   warningIcon = customtkinter.CTkImage(light_image=Image.open(warningImageDir), 
                                        dark_image=Image.open(warningImageDir), 
                                        size=(100,100))
@@ -105,10 +105,10 @@ def generateButtonPressed(memoryMapName: str, memoryMapXlsxPath:str, nodeDir: st
   if (not memoryMapXlsxPath.endswith('.xlsx')):
     statusLabel.configure(text="Invalid Memory Map File Type")
     return # Early Return
-  elif (not nodeDir.endswith(FRAMEWORK_NAME+"/Node")):
+  elif (not nodeDir.endswith(os.path.join(FRAMEWORK_NAME, 'Node'))):
     statusLabel.configure(text="Invalid Node Directory")
     return # Early Return
-  elif (not hubDir.endswith(FRAMEWORK_NAME+"/Hub")):
+  elif (not hubDir.endswith(os.path.join(FRAMEWORK_NAME, 'Hub'))):
     statusLabel.configure(text="Invalid Hub Directory")
     return # Early Return
   elif (memoryMapName == ""):
@@ -117,13 +117,11 @@ def generateButtonPressed(memoryMapName: str, memoryMapXlsxPath:str, nodeDir: st
 
   memoryMapNameCamel = memoryMapName.lower().capitalize()
   memoryMapNameCamel = memoryMapNameCamel.replace(" ", "")
-  memoryMapFilename = "MemoryMap" + memoryMapNameCamel + ".hpp"
+  nodeMemoryMapDir   = os.path.join(nodeDir, 'Devices', 'MemoryMap' + memoryMapNameCamel)
+  hubMemoryMapDir    = os.path.join(hubDir,  'Devices', 'MemoryMap' + memoryMapNameCamel)
 
-  nodeDeviceDir = os.path.join(nodeDir, "Devices")
-  hubDeviceDir = os.path.join(hubDir, "Devices")
-
-  if ((find(memoryMapFilename, nodeDeviceDir)) or
-      (find(memoryMapFilename, hubDeviceDir )) ):
+  if ((os.path.isdir(nodeMemoryMapDir)) or
+      (os.path.isdir(hubMemoryMapDir)) ):
     overwritePopup(memoryMapNameCamel, memoryMapXlsxPath, nodeDir, hubDir)
   else:
     runFileGeneration(memoryMapNameCamel, memoryMapXlsxPath, nodeDir, hubDir)
@@ -146,7 +144,7 @@ title.configure(font=("TkDefaultFont", 26), text_color="#666")
 entryFrame = customtkinter.CTkFrame(fullFrame, height=123, fg_color="transparent")
 entryFrame.pack(side='top', fill='x')
 
-fileIconsImageDir = scriptDir + "/Images/fileIcons.png"
+fileIconsImageDir = os.path.join(scriptDir, 'Images', 'fileIcons.png')
 fileIcons = customtkinter.CTkImage(light_image=Image.open(fileIconsImageDir), 
                                    dark_image=Image.open(fileIconsImageDir), 
                                    size=(123,245))
@@ -203,8 +201,8 @@ generateButton = customtkinter.CTkButton(generateFrame,
                                          width=100)
 
 generateButton.pack(side='right', fill='y', pady=(10,0))
-memMapSearch.entry.insert(0, "/Users/dan/Desktop/AtamsDev/Core/Src/"+FRAMEWORK_NAME+"/Autogen/Example_Memory_Map.xlsx")
-nodeDirSearch.entry.insert(0, "/Users/dan/Desktop/AtamsDev/Core/Src/"+FRAMEWORK_NAME+"/Node")
-hubDirSearch.entry.insert(0, "/Users/dan/Desktop/AtamsDev/Core/Src/"+FRAMEWORK_NAME+"/Hub")
+memMapSearch.entry.insert(0, "/Users/dan/Desktop/Atams Workspace/TestKitSoftware/CM7/Core/Src/Libraries/Atams/Autogen/Example_Memory_Map.xlsx")
+nodeDirSearch.entry.insert(0, "/Users/dan/Desktop/Atams Workspace/TestKitSoftware/CM7/Core/Src/Libraries/Atams/Node")
+hubDirSearch.entry.insert(0, "/Users/dan/Desktop/Atams Workspace/TestKitSoftware/CM7/Core/Src/Libraries/Atams/Hub")
 
 app.mainloop()

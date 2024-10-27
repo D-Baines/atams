@@ -6,7 +6,7 @@
   *
   * @brief   Auto-generated file containing typedefs, constants, and function
   *          declarations for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Data Block with name: $$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.
-  *          The Data Block is part of a Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
+  *          The Data Block is part of an Atams Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
   *
   * @version v1.0
   ******************************************************************************
@@ -30,8 +30,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../../Node.hpp"
-
+#include "../../DataBlock.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -46,10 +45,9 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 /*--- Member List ---*/
 typedef enum: uint16_t
 {
-  $$$AUTOGEN$$$MEMBER_ID_LIST$$$AUTOGEN$$$
-  NUMBER_OF_$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ _DATA_MEMBERS
+$$$AUTOGEN$$$MEMBER_ID_LIST$$$AUTOGEN$$$
+  NUMBER_OF_$$$AUTOGEN$$$BLOCK_NAME_UPPER$$$AUTOGEN$$$_DATA_MEMBERS
 } DataMemberID_t;
-
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
@@ -66,6 +64,14 @@ $$$AUTOGEN$$$MAX_LIMITS$$$AUTOGEN$$$
 
 /*--- Descriptor ---*/
 $$$AUTOGEN$$$BLOCK_DESCRIPTOR$$$AUTOGEN$$$
+
+/*************************************************************************************/
+/* PUBLIC FUNCTION DECLARATIONS                                                      */
+/*************************************************************************************/
+
+$$$AUTOGEN$$$INIT_DEFAULTS_DECLARATION$$$AUTOGEN$$$
+
+$$$AUTOGEN$$$INIT_LIMITS_DECLARATION$$$AUTOGEN$$$
 
 
 } } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ */

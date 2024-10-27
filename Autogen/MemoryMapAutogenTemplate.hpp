@@ -29,10 +29,10 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../Node.hpp"
+#include "../../Node.hpp"
 
 /*************************************************************************************/
-/* MEMORY MAP NAMESPACE                                                              */
+/* NAMESPACE                                                                         */
 /*************************************************************************************/
 
 namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
@@ -46,14 +46,6 @@ typedef enum: uint8_t
 $$$AUTOGEN$$$BLOCK_ID_LIST$$$AUTOGEN$$$
   NUMBER_OF_DATA_BLOCKS
 } DataBlockID_t;
-
-/*************************************************************************************/
-/* PUBLIC FUNCTION DECLARATIONS                                                      */
-/*************************************************************************************/
-
-$$$AUTOGEN$$$INIT_DEFAULTS_DECLARATION$$$AUTOGEN$$$
-
-$$$AUTOGEN$$$INIT_LIMITS_DECLARATION$$$AUTOGEN$$$
 
 /*************************************************************************************/
 /* PUBLIC EXTERN CONSTANTS                                                           */
@@ -72,8 +64,16 @@ inline constexpr uint16_t AUTOGEN_MAP_GEN_YEAR         = $$$AUTOGEN$$$GENERATION
 inline constexpr uint8_t  AUTOGEN_MAP_GEN_HOUR         = $$$AUTOGEN$$$GENERATION_HOUR$$$AUTOGEN$$$;
 inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = $$$AUTOGEN$$$GENERATION_MINUTE$$$AUTOGEN$$$;
 inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = $$$AUTOGEN$$$GENERATION_SECOND$$$AUTOGEN$$$;
-inline constexpr uint8_t  AUTOGEN_MAP_NUMBER_OF_BLOCKS = $$$AUTOGEN$$$NUMBER_OF_BLOCKS$$$AUTOGEN$$$;
 inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = $$$AUTOGEN$$$GENERATION_CHECKSUM$$$AUTOGEN$$$;
+
+/*************************************************************************************/
+/* PUBLIC FUNCTION DECLARATIONS                                                      */
+/*************************************************************************************/
+
+$$$AUTOGEN$$$INIT_DEFAULTS_DECLARATION$$$AUTOGEN$$$
+
+$$$AUTOGEN$$$INIT_LIMITS_DECLARATION$$$AUTOGEN$$$
+
 
 } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
 
