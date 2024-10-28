@@ -55,13 +55,10 @@ $$$AUTOGEN$$$MEMBER_ID_LIST$$$AUTOGEN$$$
 
 /*--- Defaults ---*/
 $$$AUTOGEN$$$DEFAULTS$$$AUTOGEN$$$
-
 /*--- Minimum Limits ---*/
 $$$AUTOGEN$$$MIN_LIMITS$$$AUTOGEN$$$
-
 /*--- Maximum Limits ---*/
 $$$AUTOGEN$$$MAX_LIMITS$$$AUTOGEN$$$
-
 /*--- Descriptor ---*/
 $$$AUTOGEN$$$BLOCK_DESCRIPTOR$$$AUTOGEN$$$
 

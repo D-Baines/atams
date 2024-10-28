@@ -66,14 +66,11 @@ inline constexpr uint32_t DEFAULT_MEMORY_MAP_GEN_DATE = 49856UL;
 inline constexpr float    DEFAULT_MEMORY_MAP_GEN_TIME = 4.0F;
 inline constexpr int8_t   DEFAULT_MEMORY_MAP_CHECKSUM = -7;
 
-
 /*--- Minimum Limits ---*/
 inline constexpr uint8_t  MIN_LIMIT_NODE_ID = 0U;
 
-
 /*--- Maximum Limits ---*/
 inline constexpr uint8_t  MAX_LIMIT_NODE_ID = NODE_ID_MAX;
-
 
 /*--- Descriptor ---*/
 inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =

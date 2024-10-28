@@ -145,11 +145,11 @@ def generateBlockDefinitions(platformNameCamel: str,
     targetFile.write("} DataMemberID_t;\n\n")
     targetFile.write("/*--- Defaults ---*/\n")
     generateConstList(block, memberIDsUpper, "Default", targetFile)
-    targetFile.write("\n/*--- Minimum Limits ---*/\n")
+    targetFile.write("/*--- Minimum Limits ---*/\n")
     generateConstList(block, memberIDsUpper, "Min Limit", targetFile)
-    targetFile.write("\n/*--- Maximum Limits ---*/\n")
+    targetFile.write("/*--- Maximum Limits ---*/\n")
     generateConstList(block, memberIDsUpper, "Max Limit", targetFile)
-    targetFile.write("\n/*--- Descriptor ---*/\n")
+    targetFile.write("/*--- Descriptor ---*/\n")
     generateBlockDescriptor(platformNameCamel, blockNameCamel, blockNameUpper, block, memberIDsUpper, targetFile)
 
 def generateBlockArray(dataBlockNamesCamel, targetFile):
