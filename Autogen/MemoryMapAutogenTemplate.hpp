@@ -70,9 +70,7 @@ inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = $$$AUTOGEN$$$GENERATION
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-$$$AUTOGEN$$$INIT_DEFAULTS_DECLARATION$$$AUTOGEN$$$
-
-$$$AUTOGEN$$$INIT_LIMITS_DECLARATION$$$AUTOGEN$$$
+$$$AUTOGEN$$$INIT_MAP_UNIVERSAL_INFO_DECLARATION$$$AUTOGEN$$$
 
 
 } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */

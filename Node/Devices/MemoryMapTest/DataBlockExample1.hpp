@@ -79,68 +79,68 @@ inline constexpr uint8_t  MAX_LIMIT_NODE_ID = NODE_ID_MAX;
 inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
 {
   /* .noOfDataMembers = */ BlockExample1::NUMBER_OF_EXAMPLE1_DATA_MEMBERS,
+  /* .initDefaults    = */ nullptr, 
+  /* .initLimits      = */ nullptr, 
   /* .dataMemberInfo  = */
   {
     /* [BlockExample1::MEMBER_ID_NODE_ID] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false
+      /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::MEMBER_ID_STORE_NVM] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false
+      /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::MEMBER_ID_RESTORE_FACTORY_NVM] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false
+      /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::MEMBER_ID_STORE_OTP] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false
+      /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::MEMBER_ID_WATCHDOG_TIMEOUT] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false
+      /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::MEMBER_ID_MEMORY_MAP_GEN_DATE] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false
+      /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::MEMBER_ID_MEMORY_MAP_GEN_TIME] = */
     {
       /* .type           = */ TYPE_FLOAT,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false
+      /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::MEMBER_ID_MEMORY_MAP_CHECKSUM] = */
     {
       /* .type           = */ TYPE_INT8,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false
+      /* .NVMStorage     = */ false,
     },
   }
 };
-
-
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-Error_t initDefaults(void);
+Error_t initDefaults(DataBlock blockToInit);
 
-Error_t initLimits(void);
+Error_t initLimits(DataBlock blockToInit);
 
 
 } } } /* End Namespace - Atams::MapTest::BlockExample1 */

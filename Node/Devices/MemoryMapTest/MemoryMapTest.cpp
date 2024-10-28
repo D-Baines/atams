@@ -42,8 +42,6 @@ namespace Atams { namespace MapTest {
 /*************************************************************************************/
 
 const MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,                          
-                            initDefaults,
-                            initLimits,
                             {BlockExample1::blockDescriptor,
                              BlockExample2::blockDescriptor });
 
@@ -51,8 +49,44 @@ const MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
+Error_t initMemoryMapUniversalInfo(void)
+{
+  Error_t initStatus = BlockUniversal::initDefaults();
 
+  if (initStatus == ERROR_NONE) initStatus = write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_ATAMS_VERSION_NUMBER,
+                                                   AUTOGEN_ATAMS_VERSION_NUMBER);
 
+  if (initStatus == ERROR_NONE) initStatus = write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_MAP_GEN_DAY,
+                                                   AUTOGEN_MAP_GEN_DAY);
+
+  if (initStatus == ERROR_NONE) initStatus = write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_MAP_GEN_MONTH,
+                                                   AUTOGEN_MAP_GEN_MONTH);
+
+  if (initStatus == ERROR_NONE) initStatus = write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_MAP_GEN_YEAR,
+                                                   AUTOGEN_MAP_GEN_YEAR);
+
+  if (initStatus == ERROR_NONE) initStatus = write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_MAP_GEN_HOUR,
+                                                   AUTOGEN_MAP_GEN_HOUR);
+
+  if (initStatus == ERROR_NONE) initStatus = write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_MAP_GEN_MINUTE,
+                                                   AUTOGEN_MAP_GEN_MINUTE);
+
+  if (initStatus == ERROR_NONE) initStatus = write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_MAP_GEN_SECOND,
+                                                   AUTOGEN_MAP_GEN_SECOND);
+
+  if (initStatus == ERROR_NONE) initStatus = write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_MAP_CHECKSUM,
+                                                   AUTOGEN_MAP_CHECKSUM);
+
+  return (initStatus); 
+}
 
 
 } } /* End Namespace - Atams::MapTest */

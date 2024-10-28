@@ -502,14 +502,8 @@ static void updateWatchdog(void)
 
 static Error_t sharedInit(const MemoryMap_t &memoryMap)
 {
-  if ((memoryMap.initDefaults == nullptr) ||
-      (memoryMap.initLimits   == nullptr) )
-  {
-    return (ERROR_NULL_PTR); /* Early Return */
-  }
-
-  else if ((memoryMap.noOfDataBlocks > Platform::NODE_NUMBER_OF_DATA_BLOCKS) ||
-           (memoryMap.noOfDataBlocks >           MAX_NUMBER_OF_DATA_BLOCKS ) )
+  if ((memoryMap.noOfDataBlocks > Platform::NODE_NUMBER_OF_DATA_BLOCKS) ||
+      (memoryMap.noOfDataBlocks >           MAX_NUMBER_OF_DATA_BLOCKS ) )
   {
     return (ERROR_MEMORY);   /* Early Return */
   }
@@ -518,6 +512,8 @@ static Error_t sharedInit(const MemoryMap_t &memoryMap)
   {
     return (ERROR_PLATFORM); /* Early Return */
   }
+
+  _memoryMap.noOfDataBlocks = memoryMap;
 
   Error_t initStatus = _dataBlocks[BLOCK_ID_UNIVERSAL].initDescriptor(BlockUniversal::blockDescriptor);
 
@@ -595,9 +591,22 @@ Error_t initControlCore(const MemoryMap_t &memoryMap)
     for (DataBlock &dataBlock : _dataBlocks) dataBlock.resetDataMembers();
   }
 
-  if (initStatus == ERROR_NONE) initStatus = memoryMap.initDefaults();
+  for (uint8_t blockIndex = BLOCK_ID_UNIVERSAL; blockIndex < memoryMap.noOfDataBlocks; blockIndex++)
+  {
+    DataBlock                          &dataBlock       = _dataBlocks[blockIndex];
+    const DataBlock::BlockDescriptor_t &blockDescriptor = memoryMap.blockDescriptors[blockIndex];
 
-  if (initStatus == ERROR_NONE) initStatus = memoryMap.initLimits();
+    if ((blockDescriptor.initDefaults == nullptr) ||
+        (blockDescriptor.initLimits   == nullptr) )
+    {
+      initStatus = ERROR_NULL_PTR;
+    }
+
+    if (initStatus == ERROR_NONE) initStatus = blockDescriptor.initDefaults(dataBlock);
+    if (initStatus == ERROR_NONE) initStatus = blockDescriptor.initLimits(dataBlock);
+  }
+
+  if (initStatus == ERROR_NONE) initStatus = memory
 
   /* NVM Init Here */
 

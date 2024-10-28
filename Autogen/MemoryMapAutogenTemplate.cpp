@@ -40,17 +40,14 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 /*************************************************************************************/
 
 const MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,                          
-                            initDefaults,
-                            initLimits,
                             $$$AUTOGEN$$$DATA_BLOCK_ARRAY$$$AUTOGEN$$$);
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-$$$AUTOGEN$$$INIT_DEFAULTS_DEFINITION$$$AUTOGEN$$$
+$$$AUTOGEN$$$INIT_MAP_UNIVERSAL_INFO_DEFINITION$$$AUTOGEN$$$
 
-$$$AUTOGEN$$$INIT_LIMITS_DEFINITION$$$AUTOGEN$$$
 
 } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
 

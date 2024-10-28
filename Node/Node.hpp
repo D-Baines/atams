@@ -51,22 +51,14 @@ namespace Atams {
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
 
-typedef Error_t (*InitDefaultsFunction_t)(void);
-
-typedef Error_t (*InitLimitsFunction_t  )(void);
-
 struct MemoryMap_t
 {
   uint16_t                     noOfDataBlocks;
-  InitDefaultsFunction_t       initDefaults;
-  InitLimitsFunction_t         initLimits;
   DataBlock::BlockDescriptor_t blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
 
   MemoryMap_t(void)
   {
     noOfDataBlocks = 0U;
-    initDefaults   = nullptr;
-    initLimits     = nullptr;
 
     for (DataBlock::BlockDescriptor_t &blockDescriptor : blockDescriptors)
     {
@@ -82,13 +74,9 @@ struct MemoryMap_t
   }
 
   MemoryMap_t(const uint16_t                     initNoOfDataFields,
-              const InitDefaultsFunction_t       initDefaultsPtr,
-              const InitLimitsFunction_t         initLimitsPtr,
               const DataBlock::BlockDescriptor_t (&initBlockDescriptors)[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
   {
     noOfDataBlocks = initNoOfDataFields;
-    initDefaults   = initDefaultsPtr;
-    initLimits     = initLimitsPtr;
 
     for (uint16_t index = 0U; index < noOfDataBlocks; index++)
     {
@@ -99,8 +87,6 @@ struct MemoryMap_t
   MemoryMap_t(const MemoryMap_t &other)
   {
     noOfDataBlocks = other.noOfDataBlocks;
-    initDefaults   = other.initDefaults;
-    initLimits     = other.initLimits;
 
     for (uint16_t index = 0U; index < noOfDataBlocks; index++)
     {

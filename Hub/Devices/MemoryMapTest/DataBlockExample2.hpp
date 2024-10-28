@@ -79,6 +79,8 @@ inline constexpr uint8_t  MAX_LIMIT_NODE_ID = NODE_ID_MAX;
 inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
 {
   /* .noOfDataMembers = */ BlockExample2::NUMBER_OF_EXAMPLE2_DATA_MEMBERS,
+  /* .initDefaults    = */ nullptr, 
+  /* .initLimits      = */ nullptr, 
   /* .dataMemberInfo  = */
   {
     /* [BlockExample2::MEMBER_ID_NODE_ID] = */
@@ -124,15 +126,13 @@ inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
   }
 };
 
-
-
 /*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-Error_t initDefaults(Node &nodeToInit);
+Error_t initDefaults(DataBlock blockToInit);
 
-Error_t initLimits(Node &nodeToInit);
+Error_t initLimits(DataBlock blockToInit);
 
 
 } } } /* End Namespace - Atams::MapTest::BlockExample2 */

@@ -98,6 +98,8 @@ def generateBlockDescriptor(platformNameCamel: str,
   memberIterator = 0
   targetFile.write("inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =\n{\n")
   targetFile.write("  /* .noOfDataMembers = */ Block"+blockNameCamel+"::NUMBER_OF_"+blockNameUpper+"_DATA_MEMBERS,\n")
+  targetFile.write("  /* .initDefaults    = */ nullptr, \n")
+  targetFile.write("  /* .initLimits      = */ nullptr, \n")
   targetFile.write("  /* .dataMemberInfo  = */\n  {\n")
   types        = block["Data Type"]
   accessLevels = block["External Access"]
@@ -118,11 +120,10 @@ def generateBlockDescriptor(platformNameCamel: str,
     targetFile.write("      /* .type           = */ TYPE_"+typeUpper+",\n")
     targetFile.write("      /* .externalAccess = */ ACCESS_"+accessString+",\n")
     if (platformNameCamel == "Node"):
-      targetFile.write("      /* .NVMStorage     = */ "+NVMStorage)
-      targetFile.write("\n")
+      targetFile.write("      /* .NVMStorage     = */ "+NVMStorage+",\n")
     targetFile.write("    },\n")
     memberIterator += 1
-  targetFile.write("  }\n};\n\n")
+  targetFile.write("  }\n};")
 
 def generateBlockDefinitions(platformNameCamel: str, 
                              dataBlockNamesCamel,
@@ -166,14 +167,11 @@ def generateBlockArray(dataBlockNamesCamel, targetFile):
       targetFile.write(",\n")
     iterator += 1
 
-def generateInitDefaultsDefinitionMap(platformNameCamel,
-                                      dataBlockNamesCamel,
-                                      dataBlocks,
-                                      targetFile):
+def generateInitUniversalMapInfo(platformNameCamel,
+                                 targetFile):
   if (platformNameCamel != "Node"):
     return
-  blockIterator = 0
-  targetFile.write("Error_t initDefaults(void)\n{\n")
+  targetFile.write("Error_t initMemoryMapUniversalInfo(void)\n{\n")
   targetFile.write("  Error_t initStatus = BlockUniversal::initDefaults();\n\n")
 
   universalMembersToSet    = ["ATAMS_VERSION_NUMBER",
@@ -190,24 +188,6 @@ def generateInitDefaultsDefinitionMap(platformNameCamel,
     targetFile.write("                                                   BlockUniversal::MEMBER_ID_"+memberString+",\n")
     targetFile.write("                                                   AUTOGEN_"+memberString+");\n\n")
 
-  for block in dataBlocks:
-    memberIDsUpper = []
-    for memberID in block["Member ID"]:
-      memberIDsUpper.append(memberID.replace(" ", "_").upper())
-    blockNameCamel = dataBlockNamesCamel[blockIterator]
-    blockNameUpper = blockNameCamel.upper()
-    defaults = block["Default"]
-    memberIterator = 0
-    for memberIDUpper in memberIDsUpper:
-      default = defaults[memberIterator]
-      if (default and (default != "-")):
-        targetFile.write("  if (initStatus == ERROR_NONE) initStatus = write(")
-        targetFile.write("BLOCK_ID_" +blockNameUpper+",\n")
-        targetFile.write("                                                   Block"+blockNameCamel+"::MEMBER_ID_" + memberIDUpper+",\n")
-        targetFile.write("                                                   Block"+blockNameCamel+"::DEFAULT_"   + memberIDUpper+");\n\n")
-      memberIterator += 1
-    blockIterator += 1
-
   targetFile.write("""  return (initStatus); \n}""")
 
 def generateInitDefaultsDefinitionBlock(platformNameCamel,
@@ -216,7 +196,7 @@ def generateInitDefaultsDefinitionBlock(platformNameCamel,
                                         targetFile):
   if (platformNameCamel != "Node"):
     return
-  targetFile.write("Error_t initDefaults(void)\n{\n")
+  targetFile.write("Error_t initDefaults(DataBlock &block)\n{\n")
   targetFile.write("  Error_t initStatus = ERROR_NONE;\n\n")
 
   memberIDsUpper = []
@@ -228,10 +208,9 @@ def generateInitDefaultsDefinitionBlock(platformNameCamel,
   for memberIDUpper in memberIDsUpper:
     default = defaults[memberIterator]
     if (default and (default != "-")):
-      targetFile.write("  if (initStatus == ERROR_NONE) initStatus = write(")
-      targetFile.write("BLOCK_ID_" +blockNameUpper+",\n")
-      targetFile.write("                                                   Block"+blockNameCamel+"::MEMBER_ID_" + memberIDUpper+",\n")
-      targetFile.write("                                                   Block"+blockNameCamel+"::DEFAULT_"   + memberIDUpper+");\n\n")
+      targetFile.write("  if (initStatus == ERROR_NONE) initStatus = block.write(")
+      targetFile.write("Block"+blockNameCamel+"::MEMBER_ID_" + memberIDUpper+",\n")
+      targetFile.write("                                                         Block"+blockNameCamel+"::DEFAULT_"   + memberIDUpper+");\n\n")
     memberIterator += 1
 
   targetFile.write("""  return (initStatus); \n}""")
@@ -276,7 +255,7 @@ def generateInitLimitsDefinitionBlock(platformNameCamel,
                                       targetFile):
   if (platformNameCamel != "Node"):
     return
-  targetFile.write("Error_t initLimits(void)\n{\n")
+  targetFile.write("Error_t initLimits(DataBlock &block)\n{\n")
   targetFile.write("  Error_t initStatus = ERROR_NONE;\n\n")
 
   memberIDsUpper = []
@@ -291,11 +270,10 @@ def generateInitLimitsDefinitionBlock(platformNameCamel,
     maxLimit = maxLimits[memberIterator]
     if (minLimit and (minLimit != "-") and 
         maxLimit and (maxLimit != "-") ):
-      targetFile.write("  if (initStatus == ERROR_NONE) initStatus = assertLimits(")
-      targetFile.write("BLOCK_ID_" +blockNameUpper+",\n")
-      targetFile.write("                                                          Block"+blockNameCamel+"::MEMBER_ID_" + memberIDUpper+",\n")
-      targetFile.write("                                                          Block"+blockNameCamel+"::MAX_LIMIT_" + memberIDUpper+",\n")
-      targetFile.write("                                                          Block"+blockNameCamel+"::MIN_LIMIT_" + memberIDUpper+");\n\n")
+      targetFile.write("  if (initStatus == ERROR_NONE) initStatus = block.assertLimits(")
+      targetFile.write("Block"+blockNameCamel+"::MEMBER_ID_" + memberIDUpper+",\n")
+      targetFile.write("                                                                Block"+blockNameCamel+"::MAX_LIMIT_" + memberIDUpper+",\n")
+      targetFile.write("                                                                Block"+blockNameCamel+"::MIN_LIMIT_" + memberIDUpper+");\n\n")
     memberIterator += 1
 
   targetFile.write("""  return (initStatus); \n}""")
@@ -316,18 +294,22 @@ def autogenCallMap(platformNameCamel: str,
       targetFile.write(FRAMEWORK_NAME)
     case "BLOCK_ID_LIST":
       generateEnum(1, "  BLOCK_ID_", dataBlockNamesUpper, targetFile)
-    case "INIT_DEFAULTS_DECLARATION":
-      match (platformNameCamel):
-        case "Node":
-          targetFile.write("Error_t initDefaults(void);")
-        case "Hub":
-          targetFile.write("Error_t initDefaults(Node &nodeToInit);")
-    case "INIT_LIMITS_DECLARATION":
-      match (platformNameCamel):
-        case "Node":
-          targetFile.write("Error_t initLimits(void);")
-        case "Hub":
-          targetFile.write("Error_t initLimits(Node &nodeToInit);")
+    case "INIT_MAP_UNIVERSAL_INFO_DECLARATION":
+      targetFile.write("Error_t initMemoryMapUniversalInfo(void)")
+    case "INIT_MAP_UNIVERSAL_INFO_DEFINITION":
+      generateInitUniversalMapInfo(platformNameCamel, targetFile)
+    #case "INIT_DEFAULTS_DECLARATION":
+    #  match (platformNameCamel):
+    #    case "Node":
+    #      targetFile.write("Error_t initDefaults(void);")
+    #    case "Hub":
+    #      targetFile.write("Error_t initDefaults(Node &nodeToInit);")
+    #case "INIT_LIMITS_DECLARATION":
+    #  match (platformNameCamel):
+    #    case "Node":
+    #      targetFile.write("Error_t initLimits(void);")
+    #    case "Hub":
+    #      targetFile.write("Error_t initLimits(Node &nodeToInit);")
     #case "DATA_BLOCK_DEFINITIONS":
     #  generateBlockDefinitions(platformNameCamel, 
     #                           dataBlockNamesCamel,
@@ -429,17 +411,9 @@ def autogenCallBlock(platformNameCamel: str,
     case "BLOCK_DESCRIPTOR":
       generateBlockDescriptor(platformNameCamel, blockNameCamel, blockNameUpper, dataBlock, memberIDsUpper, targetFile)
     case "INIT_DEFAULTS_DECLARATION":
-      match (platformNameCamel):
-        case "Node":
-          targetFile.write("Error_t initDefaults(void);")
-        case "Hub":
-          targetFile.write("Error_t initDefaults(Node &nodeToInit);")
+      targetFile.write("Error_t initDefaults(DataBlock blockToInit);")
     case "INIT_LIMITS_DECLARATION":
-      match (platformNameCamel):
-        case "Node":
-          targetFile.write("Error_t initLimits(void);")
-        case "Hub":
-          targetFile.write("Error_t initLimits(Node &nodeToInit);")
+      targetFile.write("Error_t initLimits(DataBlock blockToInit);")
     case "INIT_DEFAULTS_DEFINITION":
       generateInitDefaultsDefinitionBlock(platformNameCamel,
                                           blockNameCamel,

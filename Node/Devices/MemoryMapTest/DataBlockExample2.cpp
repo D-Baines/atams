@@ -38,18 +38,29 @@ namespace Atams { namespace MapTest { namespace BlockExample2 {
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-Error_t initDefaults(void)
+Error_t initDefaults(DataBlock &block)
 {
   Error_t initStatus = ERROR_NONE;
 
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample2::MEMBER_ID_MEMORY_MAP_GEN_DATE,
+                                                         BlockExample2::DEFAULT_MEMORY_MAP_GEN_DATE);
+
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample2::MEMBER_ID_MEMORY_MAP_GEN_TIME,
+                                                         BlockExample2::DEFAULT_MEMORY_MAP_GEN_TIME);
+
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample2::MEMBER_ID_MEMORY_MAP_CHECKSUM,
+                                                         BlockExample2::DEFAULT_MEMORY_MAP_CHECKSUM);
 
   return (initStatus); 
 }
 
-Error_t initLimits(void)
+Error_t initLimits(DataBlock &block)
 {
   Error_t initStatus = ERROR_NONE;
 
+  if (initStatus == ERROR_NONE) initStatus = block.assertLimits(BlockExample2::MEMBER_ID_NODE_ID,
+                                                                BlockExample2::MAX_LIMIT_NODE_ID,
+                                                                BlockExample2::MIN_LIMIT_NODE_ID);
 
   return (initStatus); 
 }

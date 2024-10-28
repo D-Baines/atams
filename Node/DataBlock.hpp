@@ -61,10 +61,15 @@ class DataBlock
     bool       NVMStorage     = false;
   };
 
+  typedef Error_t (*InitDefaultsFunction_t)(DataBlock &blockToInit);
+  typedef Error_t (*InitLimitsFunction_t  )(DataBlock &blockToInit);
+
   struct BlockDescriptor_t
   {
-    uint16_t     noOfDataMembers = 0U;
-    MemberInfo_t dataMemberInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
+    uint16_t               noOfDataMembers = 0U;
+    InitDefaultsFunction_t initDefaults;
+    InitLimitsFunction_t   initLimits;
+    MemberInfo_t           dataMemberInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
   };
 
   /*-- Public Function Declarations -------------------------------------------------*/

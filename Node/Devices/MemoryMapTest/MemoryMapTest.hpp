@@ -72,9 +72,7 @@ inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = 32457U;
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-Error_t initDefaults(void);
-
-Error_t initLimits(void);
+Error_t initMemoryMapUniversalInfo(void)
 
 
 } } /* End Namespace - Atams::MapTest */
