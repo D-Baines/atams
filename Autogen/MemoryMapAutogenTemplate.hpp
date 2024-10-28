@@ -66,12 +66,6 @@ inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = $$$AUTOGEN$$$GENERATION
 inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = $$$AUTOGEN$$$GENERATION_SECOND$$$AUTOGEN$$$;
 inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = $$$AUTOGEN$$$GENERATION_CHECKSUM$$$AUTOGEN$$$;
 
-/*************************************************************************************/
-/* PUBLIC FUNCTION DECLARATIONS                                                      */
-/*************************************************************************************/
-
-$$$AUTOGEN$$$INIT_MAP_UNIVERSAL_INFO_DECLARATION$$$AUTOGEN$$$
-
 
 } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
 

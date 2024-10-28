@@ -171,8 +171,8 @@ def generateInitUniversalMapInfo(platformNameCamel,
                                  targetFile):
   if (platformNameCamel != "Node"):
     return
-  targetFile.write("Error_t initMemoryMapUniversalInfo(void)\n{\n")
-  targetFile.write("  Error_t initStatus = BlockUniversal::initDefaults();\n\n")
+  targetFile.write("Error_t initUniversalInfo(void)\n{\n")
+  targetFile.write("  Error_t initStatus = ERROR_NONE;\n\n")
 
   universalMembersToSet    = ["ATAMS_VERSION_NUMBER",
                               "MAP_GEN_DAY",    
@@ -294,8 +294,6 @@ def autogenCallMap(platformNameCamel: str,
       targetFile.write(FRAMEWORK_NAME)
     case "BLOCK_ID_LIST":
       generateEnum(1, "  BLOCK_ID_", dataBlockNamesUpper, targetFile)
-    case "INIT_MAP_UNIVERSAL_INFO_DECLARATION":
-      targetFile.write("Error_t initMemoryMapUniversalInfo(void)")
     case "INIT_MAP_UNIVERSAL_INFO_DEFINITION":
       generateInitUniversalMapInfo(platformNameCamel, targetFile)
     #case "INIT_DEFAULTS_DECLARATION":

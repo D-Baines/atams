@@ -4,8 +4,8 @@
   *
   * @author  D. Baines
   *
-  * @brief   Auto-generated file containing public function definitions
-  *          for an Atams Memory Map with name: Universal.
+  * @brief   Auto-generated file containing function definitions for an 
+  *          Atams Data Block with name: Universal.
   *
   * @version v1.0
   ******************************************************************************
@@ -28,7 +28,7 @@
 #include "DataBlockUniversal.hpp"
 
 /*************************************************************************************/
-/* MEMORY MAP NAMESPACE                                                              */
+/* NAMESPACE                                                                         */
 /*************************************************************************************/
 
 namespace Atams { namespace BlockUniversal {
@@ -37,62 +37,52 @@ namespace Atams { namespace BlockUniversal {
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-Error_t initDefaults(void)
+Error_t initDefaults(DataBlock &block)
 {
-  Error_t transferStatus = ERROR_NONE;
+  Error_t initStatus = ERROR_NONE;
 
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::MEMBER_ID_NODE_ID,
+                                                         BlockUniversal::DEFAULT_NODE_ID);
 
-  if (transferStatus == ERROR_NONE) transferStatus = write(BLOCK_ID_UNIVERSAL,
-                                                           BlockUniversal::MEMBER_ID_NODE_ID,
-                                                           BlockUniversal::DEFAULT_NODE_ID);
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::MEMBER_ID_FIRST_NODE_ID,
+                                                         BlockUniversal::DEFAULT_FIRST_NODE_ID);
 
-  if (transferStatus == ERROR_NONE) transferStatus = write(BLOCK_ID_UNIVERSAL,
-                                                           BlockUniversal::MEMBER_ID_FIRST_NODE_ID,
-                                                           BlockUniversal::DEFAULT_FIRST_NODE_ID);
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::MEMBER_ID_LAST_NODE_ID,
+                                                         BlockUniversal::DEFAULT_LAST_NODE_ID);
 
-  if (transferStatus == ERROR_NONE) transferStatus = write(BLOCK_ID_UNIVERSAL,
-                                                           BlockUniversal::MEMBER_ID_LAST_NODE_ID,
-                                                           BlockUniversal::DEFAULT_LAST_NODE_ID);
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::MEMBER_ID_PREVIOUS_NODE_ID,
+                                                         BlockUniversal::DEFAULT_PREVIOUS_NODE_ID);
 
-  if (transferStatus == ERROR_NONE) transferStatus = write(BLOCK_ID_UNIVERSAL,
-                                                           BlockUniversal::MEMBER_ID_PREVIOUS_NODE_ID,
-                                                           BlockUniversal::DEFAULT_PREVIOUS_NODE_ID);
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::MEMBER_ID_WATCHDOG_TIMEOUT,
+                                                         BlockUniversal::DEFAULT_WATCHDOG_TIMEOUT);
 
-  if (transferStatus == ERROR_NONE) transferStatus = write(BLOCK_ID_UNIVERSAL,
-                                                           BlockUniversal::MEMBER_ID_WATCHDOG_TIMEOUT,
-                                                           BlockUniversal::DEFAULT_WATCHDOG_TIMEOUT);
-
-  return (transferStatus); 
+  return (initStatus); 
 }
 
-Error_t initLimits(void)
+Error_t initLimits(DataBlock &block)
 {
-  Error_t transferStatus = ERROR_NONE;
+  Error_t initStatus = ERROR_NONE;
 
-  if (transferStatus == ERROR_NONE) transferStatus = assertLimits(BLOCK_ID_UNIVERSAL,
-                                                                  BlockUniversal::MEMBER_ID_NODE_ID,
-                                                                  BlockUniversal::MAX_LIMIT_NODE_ID,
-                                                                  BlockUniversal::MIN_LIMIT_NODE_ID);
+  if (initStatus == ERROR_NONE) initStatus = block.assertLimits(BlockUniversal::MEMBER_ID_NODE_ID,
+                                                                BlockUniversal::MAX_LIMIT_NODE_ID,
+                                                                BlockUniversal::MIN_LIMIT_NODE_ID);
 
-  if (transferStatus == ERROR_NONE) transferStatus = assertLimits(BLOCK_ID_UNIVERSAL,
-                                                                  BlockUniversal::MEMBER_ID_FIRST_NODE_ID,
-                                                                  BlockUniversal::MAX_LIMIT_FIRST_NODE_ID,
-                                                                  BlockUniversal::MIN_LIMIT_FIRST_NODE_ID);
+  if (initStatus == ERROR_NONE) initStatus = block.assertLimits(BlockUniversal::MEMBER_ID_FIRST_NODE_ID,
+                                                                BlockUniversal::MAX_LIMIT_FIRST_NODE_ID,
+                                                                BlockUniversal::MIN_LIMIT_FIRST_NODE_ID);
 
-  if (transferStatus == ERROR_NONE) transferStatus = assertLimits(BLOCK_ID_UNIVERSAL,
-                                                                  BlockUniversal::MEMBER_ID_LAST_NODE_ID,
-                                                                  BlockUniversal::MAX_LIMIT_LAST_NODE_ID,
-                                                                  BlockUniversal::MIN_LIMIT_LAST_NODE_ID);
+  if (initStatus == ERROR_NONE) initStatus = block.assertLimits(BlockUniversal::MEMBER_ID_LAST_NODE_ID,
+                                                                BlockUniversal::MAX_LIMIT_LAST_NODE_ID,
+                                                                BlockUniversal::MIN_LIMIT_LAST_NODE_ID);
 
-  if (transferStatus == ERROR_NONE) transferStatus = assertLimits(BLOCK_ID_UNIVERSAL,
-                                                                  BlockUniversal::MEMBER_ID_PREVIOUS_NODE_ID,
-                                                                  BlockUniversal::MAX_LIMIT_PREVIOUS_NODE_ID,
-                                                                  BlockUniversal::MIN_LIMIT_PREVIOUS_NODE_ID);
+  if (initStatus == ERROR_NONE) initStatus = block.assertLimits(BlockUniversal::MEMBER_ID_PREVIOUS_NODE_ID,
+                                                                BlockUniversal::MAX_LIMIT_PREVIOUS_NODE_ID,
+                                                                BlockUniversal::MIN_LIMIT_PREVIOUS_NODE_ID);
 
-  return (transferStatus); 
+  return (initStatus); 
 }
 
-} } /* End Namespace - Atams::DataBlockUniversal */
+} } /* End Namespace - Atams::BlockUniversal */
 
 /**
   * @}End of File

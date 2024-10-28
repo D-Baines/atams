@@ -26,7 +26,7 @@
 /*************************************************************************************/
 
 #include "string.h"
-
+#include "Node.hpp"
 #include "Devices/DataBlockUniversal.hpp"
 #include "../Utilities/AtamsUtilities.hpp"
 #include "../Utilities/CircularBuffer.hpp"
@@ -499,7 +499,6 @@ static void updateWatchdog(void)
   }
 }
 
-
 static Error_t sharedInit(const MemoryMap_t &memoryMap)
 {
   if ((memoryMap.noOfDataBlocks > Platform::NODE_NUMBER_OF_DATA_BLOCKS) ||
@@ -513,11 +512,11 @@ static Error_t sharedInit(const MemoryMap_t &memoryMap)
     return (ERROR_PLATFORM); /* Early Return */
   }
 
-  _memoryMap.noOfDataBlocks = memoryMap;
+  _memoryMap.noOfDataBlocks = memoryMap.noOfDataBlocks;
 
   Error_t initStatus = _dataBlocks[BLOCK_ID_UNIVERSAL].initDescriptor(BlockUniversal::blockDescriptor);
 
-  for (uint8_t blockIndex = USER_DATA_BLOCK_ID_START; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
+  for (uint8_t blockIndex = USER_DATA_BLOCK_ID_START; blockIndex <= Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
   {
     const DataBlock::BlockDescriptor_t &blockDescriptor = memoryMap.blockDescriptors[blockIndex];
           DataBlock                    &block           = _dataBlocks[blockIndex];
@@ -591,7 +590,7 @@ Error_t initControlCore(const MemoryMap_t &memoryMap)
     for (DataBlock &dataBlock : _dataBlocks) dataBlock.resetDataMembers();
   }
 
-  for (uint8_t blockIndex = BLOCK_ID_UNIVERSAL; blockIndex < memoryMap.noOfDataBlocks; blockIndex++)
+  for (uint8_t blockIndex = BLOCK_ID_UNIVERSAL; blockIndex <= memoryMap.noOfDataBlocks; blockIndex++)
   {
     DataBlock                          &dataBlock       = _dataBlocks[blockIndex];
     const DataBlock::BlockDescriptor_t &blockDescriptor = memoryMap.blockDescriptors[blockIndex];
@@ -606,7 +605,9 @@ Error_t initControlCore(const MemoryMap_t &memoryMap)
     if (initStatus == ERROR_NONE) initStatus = blockDescriptor.initLimits(dataBlock);
   }
 
-  if (initStatus == ERROR_NONE) initStatus = memory
+  if (_memoryMap.initUniversalData == nullptr) initStatus = ERROR_NULL_PTR;
+
+  if (initStatus == ERROR_NONE) initStatus = _memoryMap.initUniversalData();
 
   /* NVM Init Here */
 

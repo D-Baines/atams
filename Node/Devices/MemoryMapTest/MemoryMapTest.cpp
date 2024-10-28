@@ -38,20 +38,12 @@
 namespace Atams { namespace MapTest {
 
 /*************************************************************************************/
-/* GLOBAL CONSTANTS                                                                  */
+/* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-const MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,                          
-                            {BlockExample1::blockDescriptor,
-                             BlockExample2::blockDescriptor });
-
-/*************************************************************************************/
-/* PUBLIC FUNCTION DEFINITIONS                                                       */
-/*************************************************************************************/
-
-Error_t initMemoryMapUniversalInfo(void)
+Error_t initUniversalInfo(void)
 {
-  Error_t initStatus = BlockUniversal::initDefaults();
+  Error_t initStatus = ERROR_NONE;
 
   if (initStatus == ERROR_NONE) initStatus = write(BLOCK_ID_UNIVERSAL,
                                                    BlockUniversal::MEMBER_ID_ATAMS_VERSION_NUMBER,
@@ -87,6 +79,15 @@ Error_t initMemoryMapUniversalInfo(void)
 
   return (initStatus); 
 }
+
+/*************************************************************************************/
+/* GLOBAL CONSTANTS                                                                  */
+/*************************************************************************************/
+
+const MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,    
+                            initUniversalInfo,          
+                            {BlockExample1::blockDescriptor,
+                             BlockExample2::blockDescriptor });
 
 
 } } /* End Namespace - Atams::MapTest */

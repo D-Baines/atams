@@ -36,17 +36,18 @@ $$$AUTOGEN$$$DATA_BLOCK_FILE_INCLUDES$$$AUTOGEN$$$
 namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
 
 /*************************************************************************************/
-/* GLOBAL CONSTANTS                                                                  */
-/*************************************************************************************/
-
-const MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,                          
-                            $$$AUTOGEN$$$DATA_BLOCK_ARRAY$$$AUTOGEN$$$);
-
-/*************************************************************************************/
-/* PUBLIC FUNCTION DEFINITIONS                                                       */
+/* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
 $$$AUTOGEN$$$INIT_MAP_UNIVERSAL_INFO_DEFINITION$$$AUTOGEN$$$
+
+/*************************************************************************************/
+/* GLOBAL CONSTANTS                                                                  */
+/*************************************************************************************/
+
+const MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,    
+                            initUniversalInfo,          
+                            $$$AUTOGEN$$$DATA_BLOCK_ARRAY$$$AUTOGEN$$$);
 
 
 } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */

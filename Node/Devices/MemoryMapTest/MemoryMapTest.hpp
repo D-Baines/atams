@@ -68,12 +68,6 @@ inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = 33U;
 inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = 20U;
 inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = 32457U;
 
-/*************************************************************************************/
-/* PUBLIC FUNCTION DECLARATIONS                                                      */
-/*************************************************************************************/
-
-Error_t initMemoryMapUniversalInfo(void)
-
 
 } } /* End Namespace - Atams::MapTest */
 

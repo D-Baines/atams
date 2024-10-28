@@ -29,18 +29,15 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-
 #include "../AtamsTypedefs.hpp"
 #include "DataBlock.hpp"
 #include "Platform.hpp"
-
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
 namespace Atams {
-
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
@@ -51,15 +48,18 @@ namespace Atams {
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
 
+typedef Error_t (*InitUniversalDataFunction_t)(void);
+
 struct MemoryMap_t
 {
   uint16_t                     noOfDataBlocks;
+  InitUniversalDataFunction_t  initUniversalData;
   DataBlock::BlockDescriptor_t blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
 
   MemoryMap_t(void)
   {
-    noOfDataBlocks = 0U;
-
+    noOfDataBlocks    = 0U;
+    initUniversalData = nullptr;
     for (DataBlock::BlockDescriptor_t &blockDescriptor : blockDescriptors)
     {
       blockDescriptor.noOfDataMembers = 0U;
@@ -73,10 +73,12 @@ struct MemoryMap_t
     }
   }
 
-  MemoryMap_t(const uint16_t                     initNoOfDataFields,
+  MemoryMap_t(const uint16_t                     initNoOfDataBlocks,
+              const InitUniversalDataFunction_t  universalDataInitPtr,
               const DataBlock::BlockDescriptor_t (&initBlockDescriptors)[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
   {
-    noOfDataBlocks = initNoOfDataFields;
+    noOfDataBlocks    = initNoOfDataBlocks;
+    initUniversalData = universalDataInitPtr;
 
     for (uint16_t index = 0U; index < noOfDataBlocks; index++)
     {
@@ -86,7 +88,8 @@ struct MemoryMap_t
 
   MemoryMap_t(const MemoryMap_t &other)
   {
-    noOfDataBlocks = other.noOfDataBlocks;
+    noOfDataBlocks    = other.noOfDataBlocks;
+    initUniversalData = other.initUniversalData;
 
     for (uint16_t index = 0U; index < noOfDataBlocks; index++)
     {
