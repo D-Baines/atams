@@ -300,7 +300,7 @@ struct TXMessage_t
 
 typedef void (*CommsReceiveCallback_t)(      uint8_t       *rxBufferPtr,
                                        const uint16_t       rxBufferLength,
-                                       const CommsStorage_t storageMethod);
+                                       const Platform::CommsChannel_t storageMethod);
 
 typedef void (*CommsTransmitCallback_t)(TXMessage_t message);
 

@@ -43,6 +43,16 @@ namespace Atams { namespace Platform {
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
 
+typedef enum: uint8_t
+{
+  COMMS_CHANNEL_DEFAULT = 0,
+
+  NUMBER_OF_COMMS_CHANNELS
+} CommsChannel_t;
+
+typedef void (*CommsReceiveCallback_t)(      uint8_t                 *rxBufferPtr,
+                                       const uint16_t                 rxBufferLength,
+                                       const Platform::CommsChannel_t storageMethod);
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */

@@ -76,9 +76,7 @@ static Error_t     _latestError                         = ERROR_NONE;
 static uint16_t    _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
 
 /*-- Comms --*/
-CircularBuffer _circularBuffer(EOL_BYTE,
-                               Platform::acquireCommsBufferLock,
-                               Platform::releaseCommsBufferLock);
+CircularBuffer _circularBuffer[Platform::NUMBER_OF_COMMS_CHANNELS];
 
 static CRC32    _crcAtams(CRC32_POLYNOMIAL);
 static uint8_t  _meshPacketRXBuffer[MAX_MESH_PACKET_SIZE] = {0U};
@@ -102,11 +100,14 @@ static uint32_t         _previousCoreCheckTime   = 0U;
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-static void receiveCallback(      uint8_t       *rxBufferPtr,
-                            const uint16_t       rxBufferLength,
-                            const CommsStorage_t storageMethod)
+static void receiveCallback(      uint8_t                 *rxBufferPtr,
+                            const uint16_t                 rxBufferLength,
+                            const Platform::CommsChannel_t commsChannel)
 {
-  _circularBuffer.pushHead(rxBufferPtr, rxBufferLength);
+  if (commsChannel < Platform::NUMBER_OF_COMMS_CHANNELS)
+  {
+    _circularBuffer[commsChannel].pushHead(rxBufferPtr, rxBufferLength);
+  }
 }
 
 static Error_t decodeMeshPacket(const uint8_t  *inputPacket,
@@ -357,7 +358,8 @@ static inline void processRequestPacket(uint8_t *meshPacket,
 }
 
 static void processEncodedMeshPacket(uint8_t *packetBufferPtr,
-                                     uint16_t packetLength)
+                                     uint16_t packetLength,
+                                     Platform::CommsChannel_t commsChannel)
 {
   static uint8_t  decodedPacket[MAX_MESH_PACKET_SIZE];
   static uint8_t  syncPacket[MAX_MESH_PACKET_SIZE];
@@ -428,27 +430,30 @@ static void processEncodedMeshPacket(uint8_t *packetBufferPtr,
 
 static void processRawMeshData(void)
 {
-  uint16_t packetLength = 0U;
-
-  CircularBuffer::Error_t bufferStatus = _circularBuffer.getPacket(&_meshPacketRXBuffer[_meshPacketRXLength],
-                                                                   sizeof(_meshPacketRXBuffer),
-                                                                   packetLength);
-
-  /* Early return if no packets ready */
-  if (bufferStatus != CircularBuffer::ERROR_NONE)
+  for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_CHANNELS; commsChannel++)
   {
-    if (bufferStatus == CircularBuffer::ERROR_NO_EOL_BUFFER_FULL ||
-        bufferStatus == CircularBuffer::ERROR_OUTPUT_BUFFER_LENGTH)
+    uint16_t packetLength = 0U;
+
+    CircularBuffer::Error_t bufferStatus = _circularBuffer[commsChannel].getPacket(&_meshPacketRXBuffer[_meshPacketRXLength],
+                                                                                   sizeof(_meshPacketRXBuffer),
+                                                                                   packetLength);
+
+    /* Early return if no packets ready */
+    if (bufferStatus != CircularBuffer::ERROR_NONE)
     {
-      /* Reset the buffer if no valid packet has been found or if
-       * the valid packet is too long for the mesh packet buffer */
-      _circularBuffer.reset();
+      if (bufferStatus == CircularBuffer::ERROR_NO_EOL_BUFFER_FULL ||
+          bufferStatus == CircularBuffer::ERROR_OUTPUT_BUFFER_LENGTH)
+      {
+        /* Reset the buffer if no valid packet has been found or if
+         * the valid packet is too long for the mesh packet buffer */
+        _circularBuffer[commsChannel].reset();
+      }
     }
-  }
-  else
-  {
-    /* Process the packet that has been copied into the mesh packet buffer */
-    processEncodedMeshPacket(_meshPacketRXBuffer, packetLength);
+    else
+    {
+      /* Process the packet that has been copied into the mesh packet buffer */
+      processEncodedMeshPacket(_meshPacketRXBuffer, packetLength, static_cast<Platform::CommsChannel_t>(commsChannel));
+    }
   }
 }
 

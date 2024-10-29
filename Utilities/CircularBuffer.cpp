@@ -25,9 +25,7 @@
 /*************************************************************************************/
 
 #include "string.h"
-
 #include "CircularBuffer.hpp"
-
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
@@ -45,12 +43,10 @@ releaseLock(unlockFunction)
   _atomicByteCount = 0U;
 }
 
-
 CircularBuffer::~CircularBuffer(void)
 {
   /* Do Nothing - No dynamic allocation */
 }
-
 
 void CircularBuffer::reset(void)
 {
@@ -61,7 +57,6 @@ void CircularBuffer::reset(void)
   _atomicByteCount = 0U;
   releaseLock();
 }
-
 
 CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
                                                   const uint16_t  maxOutputLength,
@@ -112,10 +107,16 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
 CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
                                                  const uint16_t inputLength)
 {
-  if (inputBuffer == nullptr)                                return (ERROR_NULLPTR);
+  if (inputBuffer == nullptr)
+  {
+    return (ERROR_NULLPTR);
+  }
 
   /* No lock required - _atomicByteCount read must be atomic on target platform */
-  if((_atomicByteCount + inputLength) >= STATIC_BUFFER_SIZE) return (ERROR_FULL);
+  if((_atomicByteCount + inputLength) >= STATIC_BUFFER_SIZE)
+  {
+    return (ERROR_FULL);
+  }
 
   acquireLock();
 
@@ -139,7 +140,6 @@ CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
   return (ERROR_NONE);
 }
 
-
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
@@ -151,14 +151,12 @@ inline void CircularBuffer::increaseHeadIndex(uint16_t length)
   _eolToHead       += length;
 }
 
-
 inline void CircularBuffer::increaseTailIndex(uint16_t length)
 {
   _tailIndex        = (_tailIndex + length) % STATIC_BUFFER_SIZE;
   _atomicByteCount -= length;
   _eolToTail       -= length;
 }
-
 
 inline void CircularBuffer::incrementEOLIndex(void)
 {
@@ -167,14 +165,12 @@ inline void CircularBuffer::incrementEOLIndex(void)
   _eolToTail++;
 }
 
-
 inline void CircularBuffer::resetEOLIndex(void)
 {
   _eolSearchIndex  = _tailIndex;
   _eolToTail       = 0U;
   _eolToHead       = _atomicByteCount;
 }
-
 
 inline CircularBuffer::Error_t CircularBuffer::eolSearch(void)
 {
