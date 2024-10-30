@@ -28,7 +28,13 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+#include "../Platform.hpp"
 
+/*************************************************************************************/
+/* NAMESPACE                                                                         */
+/*************************************************************************************/
+
+namespace Atams {
 
 /*************************************************************************************/
 /* PROTOTYPES/CLASS DEFINITIONS                                                      */
@@ -41,8 +47,8 @@ class CircularBuffer
 
   /*-- Public Constants -------------------------------------------------------------*/
 
-  static inline constexpr uint8_t DEFAULT_EOL_CHAR      = 0U;
-  static inline constexpr uint8_t DEFAULT_LOCK_ARGUMENT = 0U;
+  static inline constexpr uint8_t                  DEFAULT_EOL_CHAR      = 0U;
+  static inline constexpr Platform::CommsChannel_t DEFAULT_LOCK_ARGUMENT = static_cast<Platform::CommsChannel_t>(0U);
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
@@ -58,24 +64,18 @@ class CircularBuffer
 
   } Error_t;
 
-  typedef void (*LockFunction_t)(uint8_t lockArgument);
-
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Default Constructor */
   CircularBuffer(void);
 
   /* Constructor */
-  CircularBuffer(const uint8_t endOfLineChar,
-                 LockFunction_t lockFunction,
-                 LockFunction_t unlockFunction,
-                 const uint8_t lockArgument);
+  CircularBuffer(const uint8_t                  endOfLineChar,
+                 const Platform::CommsChannel_t channelToLock);
 
   void setEOLChar(const uint8_t endOfLineChar);
 
-  void setLockFunctions(LockFunction_t lockFunction,
-                        LockFunction_t unlockFunction,
-                        const uint8_t  lockArgument);
+  void setLockArgument(const Platform::CommsChannel_t channelToLock);
 
   /* Copy Constructor */
   CircularBuffer(const CircularBuffer &other) = delete;
@@ -102,15 +102,11 @@ class CircularBuffer
 
   static inline constexpr uint16_t STATIC_BUFFER_SIZE = 1024U;
 
-
   /*-- Private Constants ------------------------------------------------------------*/
 
-
   /*-- Private Constants ------------------------------------------------------------*/
-
 
   /*-- Private Typedefs -------------------------------------------------------------*/
-
 
   /*-- Private Variables ------------------------------------------------------------*/
 
@@ -122,14 +118,9 @@ class CircularBuffer
   volatile uint16_t _eolToTail       = 0U;
 
   uint8_t _buffer[STATIC_BUFFER_SIZE];
-  uint8_t _eolChar;
-  uint8_t _lockArgument;
 
-
-  /*-- Lock Function Pointers -------------------------------------------------------*/
-  LockFunction_t acquireLock;
-  LockFunction_t releaseLock;
-
+  uint8_t                  _eolChar      = DEFAULT_EOL_CHAR;
+  Platform::CommsChannel_t _lockArgument = DEFAULT_LOCK_ARGUMENT;
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
@@ -145,6 +136,7 @@ class CircularBuffer
 
 };
 
+} /* End Namespace - Atams */
 
 
 /**

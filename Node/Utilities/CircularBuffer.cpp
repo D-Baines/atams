@@ -28,26 +28,26 @@
 #include "CircularBuffer.hpp"
 
 /*************************************************************************************/
+/* NAMESPACE                                                                         */
+/*************************************************************************************/
+
+namespace Atams {
+
+/*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
 CircularBuffer::CircularBuffer(void)
 {
-  _eolChar      = DEFAULT_EOL_CHAR;
-  _lockArgument = DEFAULT_LOCK_ARGUMENT;
-  acquireLock   = nullptr;
-  releaseLock   = nullptr;
+  for (uint8_t &byte :_buffer) byte = 0U;
 }
 
-CircularBuffer::CircularBuffer(const uint8_t endOfLineChar,
-                               LockFunction_t lockFunction,
-                               LockFunction_t unlockFunction,
-                               const uint8_t lockArgument)
+CircularBuffer::CircularBuffer(const uint8_t                  endOfLineChar,
+                               const Platform::CommsChannel_t channelToLock)
 {
   _eolChar      = endOfLineChar;
-  _lockArgument = lockArgument;
-  acquireLock   = lockFunction;
-  releaseLock   = unlockFunction;
+  _lockArgument = channelToLock;
+  for (uint8_t &byte :_buffer) byte = 0U;
 }
 
 void CircularBuffer::setEOLChar(const uint8_t endOfLineChar)
@@ -55,13 +55,9 @@ void CircularBuffer::setEOLChar(const uint8_t endOfLineChar)
   _eolChar = endOfLineChar;
 }
 
-void CircularBuffer::setLockFunctions(LockFunction_t lockFunction,
-                                      LockFunction_t unlockFunction,
-                                      const uint8_t  lockArgument)
+void CircularBuffer::setLockArgument(const Platform::CommsChannel_t channelToLock)
 {
-  acquireLock   = lockFunction;
-  releaseLock   = unlockFunction;
-  _lockArgument = lockArgument;
+  _lockArgument = channelToLock;
 }
 
 CircularBuffer::~CircularBuffer(void)
@@ -71,12 +67,12 @@ CircularBuffer::~CircularBuffer(void)
 
 void CircularBuffer::reset(void)
 {
-  if (acquireLock != nullptr) acquireLock(_lockArgument);
+  Platform::acquireCommsBufferLock(_lockArgument);
   _headIndex       = 0U;
   _tailIndex       = 0U;
   _eolSearchIndex  = 0U;
   _atomicByteCount = 0U;
-  if (releaseLock != nullptr) releaseLock(_lockArgument);
+  Platform::releaseCommsBufferLock(_lockArgument);
 }
 
 CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
@@ -92,7 +88,7 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
     return (statusReturn);
   }
 
-  if (acquireLock != nullptr) acquireLock(_lockArgument);
+  Platform::acquireCommsBufferLock(_lockArgument);
 
   Error_t eolSearchResult = eolSearch();
 
@@ -125,7 +121,7 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
     increaseTailIndex(outputLength);
   }
 
-  if (releaseLock != nullptr) releaseLock(_lockArgument);
+  Platform::releaseCommsBufferLock(_lockArgument);
 
   return (ERROR_NONE);
 }
@@ -144,7 +140,7 @@ CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
     return (ERROR_FULL);
   }
 
-  if (acquireLock != nullptr) acquireLock(_lockArgument);
+  Platform::acquireCommsBufferLock(_lockArgument);
 
   uint16_t preWrapLength  = STATIC_BUFFER_SIZE - _headIndex;
 
@@ -161,7 +157,7 @@ CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
 
   increaseHeadIndex(inputLength);
 
-  if (releaseLock != nullptr) releaseLock(_lockArgument);
+  Platform::releaseCommsBufferLock(_lockArgument);
 
   return (ERROR_NONE);
 }
@@ -212,6 +208,9 @@ inline CircularBuffer::Error_t CircularBuffer::eolSearch(void)
   if (_atomicByteCount == STATIC_BUFFER_SIZE) return (ERROR_NO_EOL_BUFFER_FULL);
   else                                        return (ERROR_NO_EOL_FOUND);
 }
+
+
+} /* End Namespace - Atams */
 
 
 /**

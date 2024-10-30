@@ -100,12 +100,12 @@ void releaseMemoryLock(void)
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
 
-void acquireCommsBufferLock(void)
+void acquireCommsBufferLock(CommsChannel_t channelToLock)
 {
   HAL_NVIC_DisableIRQ(UART4_IRQn);
 }
 
-void releaseCommsBufferLock(void)
+void releaseCommsBufferLock(CommsChannel_t channelToLock)
 {
   HAL_NVIC_EnableIRQ(UART4_IRQn);
 }

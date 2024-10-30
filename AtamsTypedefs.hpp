@@ -298,10 +298,6 @@ struct TXMessage_t
   }
 };
 
-typedef void (*CommsReceiveCallback_t)(      uint8_t       *rxBufferPtr,
-                                       const uint16_t       rxBufferLength,
-                                       const Platform::CommsChannel_t storageMethod);
-
 typedef void (*CommsTransmitCallback_t)(TXMessage_t message);
 
 typedef void (&MeshPacketClearCallback_t)(uint8_t nodeID);

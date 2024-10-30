@@ -78,9 +78,9 @@ void acquireMemoryLock(void);
 
 void releaseMemoryLock(void);
 
-void acquireCommsBufferLock(void);
+void acquireCommsBufferLock(CommsChannel_t channelToLock);
 
-void releaseCommsBufferLock(void);
+void releaseCommsBufferLock(CommsChannel_t channelToLock);
 
 
 } } /* End Atams::Platform Namespace */

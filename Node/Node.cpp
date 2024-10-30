@@ -29,7 +29,7 @@
 #include "Node.hpp"
 #include "Devices/DataBlockUniversal.hpp"
 #include "../Utilities/AtamsUtilities.hpp"
-#include "../Utilities/CircularBuffer.hpp"
+#include "Utilities/CircularBuffer.hpp"
 #include "../Utilities/COBS.hpp"
 #include "../Utilities/CRC32.hpp"
 
@@ -577,11 +577,18 @@ Error_t initCommsCore(const MemoryMap_t &memoryMap)
   {
     _systemIsBigEndian = systemIsBigEndian();
     Platform::setReceiveCallback(receiveCallback);
+
+    for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_CHANNELS; commsChannel++)
+    {
+      _circularBuffer[commsChannel].setEOLChar(EOL_BYTE);
+      _circularBuffer[commsChannel].setLockArgument(static_cast<Platform::CommsChannel_t>(commsChannel));
+    }
   }
   else
   {
     for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinit();
   }
+
 
   return (initStatus);
 }
