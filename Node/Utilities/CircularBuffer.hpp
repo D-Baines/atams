@@ -6,6 +6,7 @@
   *
   * @brief
   *
+  *
   * @version v1.0
   ******************************************************************************
   * @attention
@@ -13,9 +14,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
+  * This Source Code Form is subject to the terms of the Mozilla Public
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
   *
   ******************************************************************************
   */
@@ -100,7 +101,7 @@ class CircularBuffer
 
   /*-- Private Static Constants -----------------------------------------------------*/
 
-  static inline constexpr uint16_t STATIC_BUFFER_SIZE = 1024U;
+  static inline constexpr uint16_t STATIC_BUFFER_SIZE = Platform::COMMS_BUFFER_SIZE;
 
   /*-- Private Constants ------------------------------------------------------------*/
 

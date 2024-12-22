@@ -43,14 +43,14 @@ namespace Atams {
 
 static const char * PLATFORM_TYPE_NAMES[NUMBER_OF_TYPES] =
 {
-  [TYPE_NULL  ] = "NULL",
-  [TYPE_UINT8 ] = typeid(uint8_t ).name(),
-  [TYPE_INT8  ] = typeid(int8_t  ).name(),
-  [TYPE_UINT16] = typeid(uint16_t).name(),
-  [TYPE_INT16 ] = typeid(int16_t ).name(),
-  [TYPE_UINT32] = typeid(uint32_t).name(),
-  [TYPE_INT32 ] = typeid(int32_t ).name(),
-  [TYPE_FLOAT ] = typeid(float   ).name(),
+  /* [TYPE_NULL  ] = */ "NULL",
+  /* [TYPE_UINT8 ] = */ typeid(uint8_t ).name(),
+  /* [TYPE_INT8  ] = */ typeid(int8_t  ).name(),
+  /* [TYPE_UINT16] = */ typeid(uint16_t).name(),
+  /* [TYPE_INT16 ] = */ typeid(int16_t ).name(),
+  /* [TYPE_UINT32] = */ typeid(uint32_t).name(),
+  /* [TYPE_INT32 ] = */ typeid(int32_t ).name(),
+  /* [TYPE_FLOAT ] = */ typeid(float   ).name(),
 };
 
 /*************************************************************************************/
@@ -128,8 +128,8 @@ Atams::Error_t DataBlock::write(const uint16_t  memberID,
 
   Platform::acquireMemoryLock();
 
-  if (dataMember.writeLock) accessError                             = ERROR_WRITE_LOCK;
-  else                     *(reinterpret_cast<T*>(dataMember.data)) = writeData;
+  if (dataMember.writeLock) accessError = ERROR_WRITE_LOCK;
+  else                      memcpy(&dataMember.data, &writeData, sizeof(dataMember.data));
 
   Platform::releaseMemoryLock();
 
@@ -159,7 +159,7 @@ Atams::Error_t DataBlock::read(const uint16_t  memberID,
 
   Platform::acquireMemoryLock();
 
-  readData = *(reinterpret_cast<T*>(dataMember.data));
+  memcpy(&readData, &dataMember.data, sizeof(readData));
 
   Platform::releaseMemoryLock();
 
@@ -190,9 +190,9 @@ Atams::Error_t DataBlock::assertLimits(const uint16_t memberID,
 
   Platform::acquireMemoryLock();
 
-  *(reinterpret_cast<T*>(dataMember.limitMax)) = limitMax;
-  *(reinterpret_cast<T*>(dataMember.limitMin)) = limitMin;
-  dataMember.limitsAsserted                    = true;
+  memcpy(&dataMember.limitMax, &limitMax, sizeof(dataMember.limitMax));
+  memcpy(&dataMember.limitMin, &limitMin, sizeof(dataMember.limitMin));
+  dataMember.limitsAsserted = true;
 
   Platform::releaseMemoryLock();
 
@@ -244,7 +244,7 @@ DataStatusReturn_t<uint8_t> DataBlock::getMemberLength(const uint16_t memberID)
 
 Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
                                     const uint16_t  memberID,
-                                    uint8_t * const dataStoragePtr,
+                                    uint8_t * const inputPtr,
                                     const uint8_t   length)
 {
   if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_MEMBER_ID);
@@ -252,7 +252,7 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
   const MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[memberID];
 
   if (TYPE_LENGTHS[memberInfo.type] != length)                    return (ERROR_MEMBER_LENGTH);
-  if (dataStoragePtr                == nullptr)                   return (ERROR_NULL_PTR);
+  if (inputPtr                == nullptr)                   return (ERROR_NULL_PTR);
   if (accessRequest                 >  memberInfo.externalAccess) return (ERROR_ACCESS_INVALID);
 
   DataMember_t &dataMember  = _dataMembers[memberID];
@@ -263,25 +263,25 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
   switch (accessRequest)
   {
     case ACCESS_READ:
-      memcpy(dataStoragePtr, dataMember.data, TYPE_LENGTHS[memberInfo.type]);
-      if (systemIsBigEndian()) swapEndiannessRaw(dataStoragePtr, TYPE_LENGTHS[memberInfo.type]);
+      memcpy(inputPtr, dataMember.data, TYPE_LENGTHS[memberInfo.type]);
+      if (systemIsBigEndian()) swapEndiannessRaw(inputPtr, TYPE_LENGTHS[memberInfo.type]);
       break;
 
     case ACCESS_WRITE:
-      if (systemIsBigEndian()) swapEndiannessRaw(dataStoragePtr, TYPE_LENGTHS[memberInfo.type]);
+      if (systemIsBigEndian()) swapEndiannessRaw(inputPtr, TYPE_LENGTHS[memberInfo.type]);
 
       if (dataMember.writeLock)
       {
         accessError = ERROR_WRITE_LOCK;
       }
       else if ((dataMember.limitsAsserted                                            ) &&
-               (checkLimits(memberInfo, dataMember, dataStoragePtr) != ERROR_NONE) )
+               (checkLimits(memberInfo, dataMember, inputPtr) != ERROR_NONE) )
       {
         accessError = ERROR_LIMITS;
       }
       else
       {
-        memcpy(dataMember.data, dataStoragePtr, TYPE_LENGTHS[memberInfo.type]);
+        memcpy(dataMember.data, inputPtr, TYPE_LENGTHS[memberInfo.type]);
       }
       break;
 
@@ -300,15 +300,18 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-// TODO:: Remove all use of reinterpret_cast for type punning in this file - replace with memcpy
 // TODO:: Make memory map data volatile - volatile memcpy function will be required
 template <typename T>
 Atams::Error_t DataBlock::checkLimitsType(const DataMember_t    &dataMember,
-                                          const uint8_t * const  dataStoragePtr)
+                                          const uint8_t * const  inputPtr)
 {
-  volatile const T inputAsType    = *(reinterpret_cast<volatile const T* const>(dataStoragePtr));
-  volatile const T limitMaxAsType = *(reinterpret_cast<volatile const T* const>(dataMember.limitMax));
-  volatile const T limitMinAsType = *(reinterpret_cast<volatile const T* const>(dataMember.limitMin));
+  T inputAsType;
+  T limitMaxAsType;
+  T limitMinAsType;
+
+  memcpy(&inputAsType,    inputPtr,            sizeof(inputAsType));
+  memcpy(&limitMaxAsType, dataMember.limitMax, sizeof(limitMaxAsType));
+  memcpy(&limitMinAsType, dataMember.limitMin, sizeof(limitMinAsType));
 
   if ((inputAsType > limitMaxAsType) ||
       (inputAsType < limitMinAsType) )
@@ -320,34 +323,34 @@ Atams::Error_t DataBlock::checkLimitsType(const DataMember_t    &dataMember,
 }
 
 /* Warning - Length checks are omitted and should be handled by calling function */
-Atams::Error_t DataBlock::checkLimits(const MemberInfo_t &memberInfo,
-                                      const DataMember_t       &dataMember,
-                                      const uint8_t * const     dataStoragePtr)
+Atams::Error_t DataBlock::checkLimits(const MemberInfo_t    &memberInfo,
+                                      const DataMember_t    &dataMember,
+                                      const uint8_t * const  inputPtr)
 {
   Atams::Error_t limitStatus = ERROR_NONE;
 
   switch (memberInfo.type)
   {
     case TYPE_UINT8:
-      if (checkLimitsType<uint8_t> (dataMember, dataStoragePtr)) limitStatus = ERROR_LIMITS;
+      if (checkLimitsType<uint8_t> (dataMember, inputPtr)) limitStatus = ERROR_LIMITS;
       break;
     case TYPE_INT8:
-      if (checkLimitsType<int8_t>  (dataMember, dataStoragePtr)) limitStatus = ERROR_LIMITS;
+      if (checkLimitsType<int8_t>  (dataMember, inputPtr)) limitStatus = ERROR_LIMITS;
       break;
     case TYPE_UINT16:
-      if (checkLimitsType<uint16_t>(dataMember, dataStoragePtr)) limitStatus = ERROR_LIMITS;
+      if (checkLimitsType<uint16_t>(dataMember, inputPtr)) limitStatus = ERROR_LIMITS;
       break;
     case TYPE_INT16:
-      if (checkLimitsType<int16_t> (dataMember, dataStoragePtr)) limitStatus = ERROR_LIMITS;
+      if (checkLimitsType<int16_t> (dataMember, inputPtr)) limitStatus = ERROR_LIMITS;
       break;
     case TYPE_UINT32:
-      if (checkLimitsType<uint32_t>(dataMember, dataStoragePtr)) limitStatus = ERROR_LIMITS;
+      if (checkLimitsType<uint32_t>(dataMember, inputPtr)) limitStatus = ERROR_LIMITS;
       break;
     case TYPE_INT32:
-      if (checkLimitsType<int32_t> (dataMember, dataStoragePtr)) limitStatus = ERROR_LIMITS;
+      if (checkLimitsType<int32_t> (dataMember, inputPtr)) limitStatus = ERROR_LIMITS;
       break;
     case TYPE_FLOAT:
-      if (checkLimitsType<float>   (dataMember, dataStoragePtr)) limitStatus = ERROR_LIMITS;
+      if (checkLimitsType<float>   (dataMember, inputPtr)) limitStatus = ERROR_LIMITS;
       break;
     default:
       limitStatus = ERROR_LIMITS;

@@ -67,8 +67,8 @@ class DataBlock
   struct BlockDescriptor_t
   {
     uint16_t               noOfDataMembers = 0U;
-    InitDefaultsFunction_t initDefaults;
-    InitLimitsFunction_t   initLimits;
+    InitDefaultsFunction_t initDefaults    = nullptr;
+    InitLimitsFunction_t   initLimits      = nullptr;
     MemberInfo_t           dataMemberInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
   };
 
@@ -114,7 +114,6 @@ class DataBlock
                            const uint16_t  memberID,
                            uint8_t * const dataStoragePtr,
                            const uint8_t   length);
-
 
   private:
 

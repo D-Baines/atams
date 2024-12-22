@@ -243,9 +243,9 @@ inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-Error_t initDefaults(DataBlock blockToInit);
+Error_t initDefaults(DataBlock &blockToInit);
 
-Error_t initLimits(DataBlock blockToInit);
+Error_t initLimits(DataBlock &blockToInit);
 
 
 } } /* End Namespace - Atams::BlockUniversal */

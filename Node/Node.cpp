@@ -63,6 +63,20 @@ typedef enum: uint8_t
   CORE_INIT_COMPLETE    = 1U
 } CoreInitStatus_t;
 
+struct ChannelResponse_t
+{
+  uint8_t  buffer[MAX_MESH_PACKET_SIZE];
+  uint16_t index   = 0U;
+  bool     aborted = false;
+};
+
+struct ChannelSyncPacket_t
+{
+  uint8_t  buffer[MAX_MESH_PACKET_SIZE];
+  uint16_t length    = 0U;
+  uint8_t  syncCount = 0U;
+};
+
 /*************************************************************************************/
 /* PRIVATE VARIABLES                                                                 */
 /*************************************************************************************/
@@ -79,18 +93,7 @@ static uint16_t    _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
 CircularBuffer _circularBuffer[Platform::NUMBER_OF_COMMS_CHANNELS];
 
 static CRC32    _crcAtams(CRC32_POLYNOMIAL);
-static uint8_t  _meshPacketRXBuffer[MAX_MESH_PACKET_SIZE] = {0U};
-static uint8_t  _responseBuffer[MAX_NODE_PACKET_SIZE]     = {0U};
-static uint32_t _meshPacketRXLength                       = 0U;
-static uint16_t _responseBufferIndex                      = 0U;
-static bool     _responseAborted                          = false;
-static bool     _systemIsBigEndian                        = false;
-static uint8_t  _localNodeID                              = 0x00U;
-static uint8_t  _prevSyncNodeID                           = NODE_ID_NULL;
-static uint8_t  _finalSyncNodeID                          = NODE_ID_NULL;
-static uint8_t  _firstSyncNodeID                          = NODE_ID_NULL;
-static uint32_t _crcErrorCount                            = 0U;
-static uint32_t _cobsErrorCount                           = 0U;
+static bool     _systemIsBigEndian = false;
 
 /* Core Init Synchronisation */
 static CoreInitStatus_t _controlCoreInitComplete = CORE_INIT_IN_PROGRESS;
@@ -100,9 +103,9 @@ static uint32_t         _previousCoreCheckTime   = 0U;
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-static void receiveCallback(      uint8_t                 *rxBufferPtr,
-                            const uint16_t                 rxBufferLength,
-                            const Platform::CommsChannel_t commsChannel)
+static void receiveCallback(const Platform::CommsChannel_t commsChannel,
+                                  uint8_t                 *rxBufferPtr,
+                            const uint16_t                 rxBufferLength)
 {
   if (commsChannel < Platform::NUMBER_OF_COMMS_CHANNELS)
   {
@@ -120,7 +123,6 @@ static Error_t decodeMeshPacket(const uint8_t  *inputPacket,
 
   if (COBSDecodeResult.status != COBS::ERROR_NONE)
   {
-    _cobsErrorCount++;
     return (ERROR_DECODE);
   }
 
@@ -129,13 +131,12 @@ static Error_t decodeMeshPacket(const uint8_t  *inputPacket,
     return (ERROR_DECODE);
   }
 
-  uint32_t packetCRC = *reinterpret_cast<uint32_t*>(&decodedPacket[MESH_INDEX_CRC]);
+  uint32_t packetCRC = bufferToUint32(&decodedPacket[MESH_INDEX_CRC]);
 
-  *reinterpret_cast<uint32_t*>(&decodedPacket[MESH_INDEX_CRC]) = 0U;
+  memset(&decodedPacket[MESH_INDEX_CRC], 0U, MESH_SIZE_CRC);
 
   if (packetCRC != _crcAtams.calculateCRC32(decodedPacket, COBSDecodeResult.outputLength))
   {
-    _crcErrorCount++;
     return (ERROR_DECODE);
   }
 
@@ -155,13 +156,11 @@ static Error_t encodeMeshPacket(      uint8_t  *txPacket,
     return (ERROR_ENCODE);
   }
 
-  *reinterpret_cast<uint32_t*>(&txPacket[MESH_INDEX_CRC]) = 0U;
+  memset(&txPacket[MESH_INDEX_CRC], 0U, MESH_SIZE_CRC);
 
   uint32_t CRCResult = _crcAtams.calculateCRC32(txPacket, txLength);
 
-  if (_systemIsBigEndian) swapEndiannessType<uint32_t>(CRCResult);
-
-  *reinterpret_cast<uint32_t*>(&txPacket[MESH_INDEX_CRC]) = CRCResult;
+  uint32ToBuffer(CRCResult, &txPacket[MESH_INDEX_CRC]);
 
   COBS::Result_t COBSEncodeResult = COBS::encode(txPacket, txLength, encodedPacket, encodedPacketMaxLength);
 
@@ -175,41 +174,39 @@ static Error_t encodeMeshPacket(      uint8_t  *txPacket,
   return (ERROR_NONE);
 }
 
-static inline void resetResponse(void)
+static inline void resetResponse(ChannelResponse_t &response, uint8_t localNodeID)
 {
-  _responseAborted                     = false;
-  _responseBuffer[MESH_INDEX_NODE_ID]  = _localNodeID;
-  _responseBuffer[MESH_INDEX_MSG_TYPE] = MESSAGE_RESPONSE_SYNCED;
-  _responseBufferIndex                 = MESH_INDEX_FIRST_DATAGRAM;
+  response.aborted                     = false;
+  response.buffer[MESH_INDEX_NODE_ID]  = localNodeID;
+  response.buffer[MESH_INDEX_MSG_TYPE] = MESSAGE_RESPONSE_SYNCED;
+  response.index                       = MESH_INDEX_FIRST_DATAGRAM;
 }
 
-static inline void abortResponse(Error_t error)
+static inline void abortResponse(ChannelResponse_t &response, uint8_t localNodeID, Error_t error)
 {
-  _responseBuffer[MESH_INDEX_NODE_ID]  = _localNodeID;
-  _responseBuffer[MESH_INDEX_MSG_TYPE] = MESSAGE_ABORTED_RESPONSE;
-  _responseBufferIndex                 = MESH_SIZE_HEADER;
-  _responseAborted                     = true;
-
-  _responseBuffer[_responseBufferIndex] = error;
-  _responseBufferIndex += sizeof(error);
+  response.buffer[MESH_INDEX_NODE_ID]  = localNodeID;
+  response.buffer[MESH_INDEX_MSG_TYPE] = MESSAGE_ABORTED_RESPONSE;
+  response.buffer[MESH_SIZE_HEADER]    = error;
+  response.index                       = MESH_SIZE_HEADER + sizeof(error);
+  response.aborted                     = true;
 }
 
-static void sendResponsePacket(void)
+static void sendResponsePacket(ChannelResponse_t &response)
 {
   static uint8_t  encodedResponseBuffer[MAX_MESH_PACKET_SIZE] = {0U};
   static uint16_t encodedLength                               = 0U;
 
-  if (_responseAborted)
+  if (response.aborted)
   {
-    if ((_responseBuffer[MESH_INDEX_MSG_TYPE] != MESSAGE_ABORTED_RESPONSE) ||
-        (_responseBufferIndex                 != ABORT_RESPONSE_SIZE     ) )
+    if ((response.buffer[MESH_INDEX_MSG_TYPE] != MESSAGE_ABORTED_RESPONSE) ||
+        (response.index                       != ABORT_RESPONSE_SIZE     ) )
     {
-      abortResponse(ERROR_ABORT_FAILURE);
+      //abortResponse(response, ERROR_ABORT_FAILURE);
     }
   }
 
-  if (encodeMeshPacket(_responseBuffer,
-                       _responseBufferIndex,
+  if (encodeMeshPacket(response.buffer,
+                       response.index,
                        encodedResponseBuffer,
                        sizeof(encodedResponseBuffer),
                        encodedLength                 ) == ERROR_NONE)
@@ -219,37 +216,39 @@ static void sendResponsePacket(void)
 }
 
 
-static inline void processDatagramRead(DatagramHeader_t datagramHeader,
-                                       uint8_t          payloadLength)
+static inline void processDatagramRead(ChannelResponse_t &response,
+                                       DatagramHeader_t   datagramHeader,
+                                       uint8_t            payloadLength)
 {
   Error_t transferStatus = externalTransfer(ACCESS_READ,
                                             datagramHeader.blockID,
                                             datagramHeader.varID,
-                                            &_responseBuffer[_responseBufferIndex + DATAGRAM_SIZE_HEADER],
+                                            &response.buffer[response.index + DATAGRAM_SIZE_HEADER],
                                             payloadLength);
 
   if (transferStatus != ERROR_NONE)
   {
     datagramHeader.command = ACCESS_NONE;
-    memcpy(&_responseBuffer[_responseBufferIndex], &datagramHeader, DATAGRAM_SIZE_HEADER);
-    _responseBufferIndex += DATAGRAM_SIZE_HEADER;
-    _responseBuffer[_responseBufferIndex] = transferStatus;
-    _responseBufferIndex += sizeof(transferStatus);
+    memcpy(&response.buffer[response.index], &datagramHeader, DATAGRAM_SIZE_HEADER);
+    response.index += DATAGRAM_SIZE_HEADER;
+    response.buffer[response.index] = transferStatus;
+    response.index += sizeof(transferStatus);
   }
   else
   {
     datagramHeader.command = ACCESS_READ;
-    memcpy(&_responseBuffer[_responseBufferIndex], &datagramHeader, DATAGRAM_SIZE_HEADER);
-    _responseBufferIndex += DATAGRAM_SIZE_HEADER + payloadLength;
+    memcpy(&response.buffer[response.index], &datagramHeader, DATAGRAM_SIZE_HEADER);
+    response.index += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + payloadLength);
   }
 }
 
 /* WARNING - No checks done on datagramHeader subsystemID or memberIndex.
  *           This function should only ever be called after checks have been completed in DMIB_ProcessNodePacket
  */
-static inline void processDatagramWrite(DatagramHeader_t datagramHeader,
-                                        uint8_t         *datagramPayload,
-                                        uint8_t          payloadLength)
+static inline void processDatagramWrite(ChannelResponse_t &response,
+                                        DatagramHeader_t   datagramHeader,
+                                        uint8_t           *datagramPayload,
+                                        uint8_t            payloadLength)
 {
   Error_t transferStatus = externalTransfer(ACCESS_WRITE,
                                             datagramHeader.blockID,
@@ -260,39 +259,41 @@ static inline void processDatagramWrite(DatagramHeader_t datagramHeader,
   if (transferStatus != ERROR_NONE)
   {
     datagramHeader.command = ACCESS_NONE;
-    memcpy(&_responseBuffer[_responseBufferIndex], &datagramHeader, DATAGRAM_SIZE_HEADER);
-    _responseBufferIndex += DATAGRAM_SIZE_HEADER;
-    _responseBuffer[_responseBufferIndex] = transferStatus;
-    _responseBufferIndex += sizeof(transferStatus);
+    memcpy(&response.buffer[response.index], &datagramHeader, DATAGRAM_SIZE_HEADER);
+    response.index += DATAGRAM_SIZE_HEADER;
+    response.buffer[response.index] = transferStatus;
+    response.index += sizeof(transferStatus);
   }
   else
   {
     datagramHeader.command = ACCESS_WRITE;
-    memcpy(&_responseBuffer[_responseBufferIndex], &datagramHeader, DATAGRAM_SIZE_HEADER);
-    _responseBufferIndex += DATAGRAM_SIZE_HEADER;
-    memcpy(&_responseBuffer[_responseBufferIndex], datagramPayload, payloadLength);
+    memcpy(&response.buffer[response.index], &datagramHeader, DATAGRAM_SIZE_HEADER);
+    response.index += DATAGRAM_SIZE_HEADER;
+    memcpy(&response.buffer[response.index], datagramPayload, payloadLength);
   }
 }
 
-static inline void processRequestPacket(uint8_t *meshPacket,
-                                        uint16_t meshPacketLength,
-                                        bool     universalBroadcast)
+static inline void processRequestPacket(ChannelResponse_t &response,
+                                        uint8_t           *meshPacket,
+                                        uint16_t           meshPacketLength,
+                                        bool               universalBroadcast)
 {
-  bool             cancelProcessing   = false;
-  volatile uint8_t datagramStartIndex = MESH_INDEX_FIRST_DATAGRAM;
+  bool               cancelProcessing   = false;
+  volatile uint8_t   datagramStartIndex = MESH_INDEX_FIRST_DATAGRAM;
 
   while (datagramStartIndex + DATAGRAM_SIZE_HEADER <= meshPacketLength)
   {
     DatagramHeader_t datagramHeader;
 
-    memcpy(&datagramHeader, &meshPacket[datagramStartIndex], DATAGRAM_SIZE_HEADER);
+    datagramHeader.command = (meshPacket[datagramStartIndex]  & DATAGRAM_HEADER_MASK_COMMAND  ) >> DATAGRAM_HEADER_SHIFT_COMMAND;
+    datagramHeader.blockID = (meshPacket[datagramStartIndex]  & DATAGRAM_HEADER_MASK_BLOCK_ID ) >> DATAGRAM_HEADER_SHIFT_BLOCK_ID;
+    datagramHeader.varID   = ((meshPacket[datagramStartIndex] & DATAGRAM_HEADER_MASK_VAR_ID_HI) << DATAGRAM_HEADER_SHIFT_VAR_ID_HI) &
+                             (meshPacket[datagramStartIndex + 1U]);
 
-    if (systemIsBigEndian()) swapEndiannessType(datagramHeader); /* TODO:: CAN BE DONE BETTER WITH SHIFTS/MASKS */
-
-    if ((universalBroadcast                               ) &&
+    if ((universalBroadcast                          ) &&
         (datagramHeader.blockID != BLOCK_ID_UNIVERSAL) )
     {
-      abortResponse(ERROR_BLOCK_ID);
+      //abortResponse(response, ERROR_BLOCK_ID);
       return; /* Early Return */
     }
 
@@ -301,23 +302,23 @@ static inline void processRequestPacket(uint8_t *meshPacket,
 
     if (varLength.status != ERROR_NONE)
     {
-      abortResponse(varLength.status);
+      //abortResponse(response, varLength.status);
       return; /* Early Return */
     }
 
     uint16_t datagramLength        = DATAGRAM_SIZE_HEADER + varLength.data;
-    uint16_t remainingOutputLength = sizeof(_responseBuffer) - _responseBufferIndex;
+    uint16_t remainingOutputLength = sizeof(response.buffer) - response.index;
 
     if (datagramLength > remainingOutputLength)
     {
-      abortResponse(ERROR_RESPONSE_BUFFER_LENGTH);
+      //abortResponse(response, ERROR_RESPONSE_BUFFER_LENGTH);
       return; /* Early Return */
     }
 
     switch (static_cast<Access_t>(datagramHeader.command))
     {
       case ACCESS_READ:
-        processDatagramRead(datagramHeader, varLength.data);
+        processDatagramRead(response, datagramHeader, varLength.data);
         datagramStartIndex += DATAGRAM_SIZE_HEADER;
         break;
 
@@ -327,13 +328,13 @@ static inline void processRequestPacket(uint8_t *meshPacket,
 
         if (datagramLength > remainingInputLength)
         {
-          abortResponse(ERROR_REQUEST_BUFFER_LENGTH);
+          //abortResponse(response, ERROR_REQUEST_BUFFER_LENGTH);
           return; /* Early Return */
         }
         else
         {
-          processDatagramWrite(datagramHeader, &meshPacket[datagramStartIndex + DATAGRAM_INDEX_PAYLOAD], varLength.data);
-          datagramStartIndex += (DATAGRAM_SIZE_HEADER + varLength.data);
+          processDatagramWrite(response, datagramHeader, &meshPacket[datagramStartIndex + DATAGRAM_INDEX_PAYLOAD], varLength.data);
+          datagramStartIndex += static_cast<uint8_t>(DATAGRAM_SIZE_HEADER + varLength.data);
         }
 
         break;
@@ -342,7 +343,7 @@ static inline void processRequestPacket(uint8_t *meshPacket,
       case ACCESS_NONE:
       //case ACCESS_FATAL:
       default:
-        abortResponse(ERROR_ACCESS_INVALID);
+        //abortResponse(response, ERROR_ACCESS_INVALID);
         return;
     }
   }
@@ -357,15 +358,18 @@ static inline void processRequestPacket(uint8_t *meshPacket,
   }
 }
 
-static void processEncodedMeshPacket(uint8_t *packetBufferPtr,
-                                     uint16_t packetLength,
-                                     Platform::CommsChannel_t commsChannel)
+static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
+                                     uint8_t                 *packetBufferPtr,
+                                     uint16_t                 packetLength)
 {
-  static uint8_t  decodedPacket[MAX_MESH_PACKET_SIZE];
-  static uint8_t  syncPacket[MAX_MESH_PACKET_SIZE];
-  static uint16_t decodedLength  = 0U;
-  static uint16_t syncLength     = 0U;
-  static uint8_t  localSyncCount = 0U;
+  static uint8_t             decodedPacket[MAX_MESH_PACKET_SIZE];
+  static uint16_t            decodedLength  = 0U;
+  static ChannelSyncPacket_t commsChannelSyncPackets[Platform::NUMBER_OF_COMMS_CHANNELS];
+  static ChannelResponse_t   commsChannelResponses[Platform::NUMBER_OF_COMMS_CHANNELS];
+  static uint8_t             localNodeID     = 0U;
+  static uint8_t             prevSyncNodeID  = NODE_ID_NULL;
+  static uint8_t             finalSyncNodeID = NODE_ID_NULL;
+  static uint8_t             firstSyncNodeID = NODE_ID_NULL;
 
   if (decodeMeshPacket(packetBufferPtr,
                        packetLength,
@@ -373,53 +377,55 @@ static void processEncodedMeshPacket(uint8_t *packetBufferPtr,
                        sizeof(decodedPacket),
                        decodedLength         ) == ERROR_NONE)
   {
-    MessageType_t messageType     = static_cast<MessageType_t>(decodedPacket[MESH_INDEX_MSG_TYPE]);
-    uint8_t       packetNodeID    = decodedPacket[MESH_INDEX_NODE_ID];
-    uint8_t       packetSyncCount = decodedPacket[MESH_INDEX_SYNC];
+    MessageType_t        messageType     = static_cast<MessageType_t>(decodedPacket[MESH_INDEX_MSG_TYPE]);
+    uint8_t              packetNodeID    = decodedPacket[MESH_INDEX_NODE_ID];
+    uint8_t              packetSyncCount = decodedPacket[MESH_INDEX_SYNC];
+    ChannelSyncPacket_t &syncPacket      = commsChannelSyncPackets[commsChannel];
+    ChannelResponse_t   &response        = commsChannelResponses[commsChannel];
 
     switch (messageType)
     {
       case MESSAGE_BROADCAST_UNIVERSAL:
-        resetResponse();
-        processRequestPacket(decodedPacket, decodedLength, true);
-        sendResponsePacket();
+        resetResponse(response, localNodeID);
+        processRequestPacket(response, decodedPacket, decodedLength, true);
+        sendResponsePacket(response);
         break;
       case MESSAGE_REQUEST:
-        if (packetNodeID == _localNodeID)
+        if (packetNodeID == localNodeID)
         {
-          resetResponse();
-          processRequestPacket(decodedPacket, decodedLength, false);
-          sendResponsePacket();
+          resetResponse(response, localNodeID);
+          processRequestPacket(response, decodedPacket, decodedLength, false);
+          sendResponsePacket(response);
         }
         break;
       case MESSAGE_REQUEST_SYNCED:
-        if (packetNodeID == _localNodeID)
+        if (packetNodeID == localNodeID)
         {
-          resetResponse();
-          localSyncCount = packetSyncCount;
-          if (_localNodeID == _finalSyncNodeID)
+          resetResponse(response, localNodeID);
+          syncPacket.syncCount = packetSyncCount;
+          if (localNodeID == finalSyncNodeID)
           {
-            processRequestPacket(decodedPacket, decodedLength, false);
+            processRequestPacket(response, decodedPacket, decodedLength, false);
           }
           else
           {
-            memcpy(syncPacket, decodedPacket, decodedLength);
-            syncLength = decodedLength;
+            memcpy(syncPacket.buffer, decodedPacket, decodedLength);
+            syncPacket.length = decodedLength;
           }
-          if (_localNodeID == _firstSyncNodeID) sendResponsePacket();
+          if (localNodeID == firstSyncNodeID) sendResponsePacket(response);
         }
-        else if (packetNodeID == _finalSyncNodeID)
+        else if (packetNodeID == finalSyncNodeID)
         {
-          processRequestPacket(syncPacket, syncLength, false);
+          processRequestPacket(response, syncPacket.buffer, syncPacket.length, false);
         }
         break;
       case MESSAGE_RESPONSE_SYNCED:
-        if (packetSyncCount != localSyncCount ) abortResponse(ERROR_SYNC_COUNT);
-        if (packetNodeID    == _prevSyncNodeID) sendResponsePacket();
+        if (packetSyncCount != syncPacket.syncCount) abortResponse(response, localNodeID, ERROR_SYNC_COUNT);
+        if (packetNodeID    == prevSyncNodeID      ) sendResponsePacket(response);
         break;
       case MESSAGE_SYNC_JOG:
-        if (packetSyncCount != localSyncCount) abortResponse(ERROR_SYNC_COUNT);
-        if (packetNodeID    == _localNodeID  ) sendResponsePacket();
+        if (packetSyncCount != syncPacket.syncCount) abortResponse(response, localNodeID, ERROR_SYNC_COUNT);
+        if (packetNodeID    == localNodeID         ) sendResponsePacket(response);
         break;
       default:
         /* Do Nothing */
@@ -430,6 +436,9 @@ static void processEncodedMeshPacket(uint8_t *packetBufferPtr,
 
 static void processRawMeshData(void)
 {
+  static uint8_t  _meshPacketRXBuffer[MAX_MESH_PACKET_SIZE] = {0U};
+  static uint32_t _meshPacketRXLength                       = 0U;
+
   for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_CHANNELS; commsChannel++)
   {
     uint16_t packetLength = 0U;
@@ -452,7 +461,9 @@ static void processRawMeshData(void)
     else
     {
       /* Process the packet that has been copied into the mesh packet buffer */
-      processEncodedMeshPacket(_meshPacketRXBuffer, packetLength, static_cast<Platform::CommsChannel_t>(commsChannel));
+      processEncodedMeshPacket(static_cast<Platform::CommsChannel_t>(commsChannel),
+                               _meshPacketRXBuffer,
+                               packetLength);
     }
   }
 }
@@ -519,9 +530,9 @@ static Error_t sharedInit(const MemoryMap_t &memoryMap)
 
   _memoryMap.noOfDataBlocks = memoryMap.noOfDataBlocks;
 
-  Error_t initStatus = _dataBlocks[BLOCK_ID_UNIVERSAL].initDescriptor(BlockUniversal::blockDescriptor);
+  Error_t initStatus = ERROR_NONE;
 
-  for (uint8_t blockIndex = USER_DATA_BLOCK_ID_START; blockIndex <= Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
+  for (uint8_t blockIndex = 0U; blockIndex <= Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
   {
     const DataBlock::BlockDescriptor_t &blockDescriptor = memoryMap.blockDescriptors[blockIndex];
           DataBlock                    &block           = _dataBlocks[blockIndex];
@@ -529,7 +540,7 @@ static Error_t sharedInit(const MemoryMap_t &memoryMap)
     if (initStatus == ERROR_NONE) initStatus = block.initDescriptor(blockDescriptor);
   }
 
-  return (ERROR_NONE);
+  return (initStatus);
 }
 
 static void waitForControlCoreInit(void)
@@ -544,13 +555,14 @@ static void waitForControlCoreInit(void)
     {
       Platform::acquireMemoryLock();
 
-      volatile CoreInitStatus_t status = _controlCoreInitComplete;
+      coreInitStatus = _controlCoreInitComplete;
 
       Platform::releaseMemoryLock();
+
+      _previousCoreCheckTime = currentTime;
     }
   }
 }
-
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
@@ -718,11 +730,14 @@ bool watchdogFaultActive(void)
   return (static_cast<bool>(watchdogFaultState));
 }
 
-DataBlock * getBlockPointer(const uint8_t blockID)
+DataBlock * getBlockPtr(const uint8_t blockID)
 {
-  if (blockID >= _memoryMap.noOfDataBlocks) return (nullptr);
+  if (blockID < _memoryMap.noOfDataBlocks)
+  {
+    return (&_dataBlocks[blockID]);
+  }
 
-  return (&_dataBlocks[blockID]);
+  return (nullptr);
 }
 
 Error_t externalTransfer(const Access_t  accessRequest,

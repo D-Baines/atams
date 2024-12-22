@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    Atams.hpp
+  * @file    AtamsUtilities.hpp
   *
   * @author  D. Baines
   *
@@ -14,9 +14,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
+  * This Source Code Form is subject to the terms of the Mozilla Public
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
   *
   ******************************************************************************
   */
@@ -43,6 +43,10 @@ namespace Atams
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
+inline constexpr uint8_t THREE_BYTE_SHIFT  = 24U;
+inline constexpr uint8_t TWO_BYTE_SHIFT    = 16U;
+inline constexpr uint8_t SINGLE_BYTE_SHIFT = 8U;
+inline constexpr uint8_t SINGLE_BYTE_MASK  = 0xFFU;
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
@@ -63,23 +67,11 @@ constexpr bool systemIsBigEndian(void)
   return (asPtr[3U] == 1U);
 }
 
-template <typename T>
-void swapEndiannessType(T& value)
-{
-  const size_t size = sizeof(value);
-  
-  uint8_t* bytes = reinterpret_cast<uint8_t*>(&value);
-
-  for (size_t i = 0U; i < (size / 2U); ++i)
-  {
-    uint8_t temp = bytes[i];
-    bytes[i] = bytes[size - i - 1U];
-    bytes[size - i - 1U] = temp;
-  }
-}
-
-
 void swapEndiannessRaw(uint8_t* buffer, uint8_t bufferLength);
+
+uint32_t bufferToUint32(const uint8_t* buffer);
+
+void uint32ToBuffer(const uint32_t value, uint8_t* buffer);
 
 
 } /* End Namespace - Atams */

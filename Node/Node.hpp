@@ -126,7 +126,7 @@ Error_t setWriteLock(const uint8_t blockID, const uint16_t memberID, const bool 
 
 bool watchdogFaultActive(void);
 
-DataBlock * getBlockPointer(const uint8_t blockID);
+DataBlock * getBlockPtr(const uint8_t blockID);
 
 Error_t externalTransfer(const Access_t  accessRequest,
                          const uint8_t   blockID,

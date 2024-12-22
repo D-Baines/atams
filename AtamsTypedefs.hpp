@@ -6,7 +6,6 @@
   *
   * @brief
   *
-  *
   * @version v1.0
   ******************************************************************************
   * @attention
@@ -14,9 +13,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
+  * This Source Code Form is subject to the terms of the Mozilla Public
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
   *
   ******************************************************************************
   */
@@ -118,10 +117,19 @@ typedef enum: uint8_t
 
 typedef enum: uint8_t
 {
-  DATAGRAM_HEADER_BITS_COMMAND  = 3U,
-  DATAGRAM_HEADER_BITS_VAR_ID   = 9U,
-  DATAGRAM_HEADER_BITS_BLOCK_ID = 4U,
-} DatagramHeaderBitSize_t;
+  DATAGRAM_HEADER_SHIFT_COMMAND   = 5U,
+  DATAGRAM_HEADER_SHIFT_BLOCK_ID  = 1U,
+  DATAGRAM_HEADER_SHIFT_VAR_ID_HI = 8U,
+  DATAGRAM_HEADER_SHIFT_VAR_ID_LO = 0U
+} DatagramHeaderShift_t;
+
+typedef enum: uint8_t
+{
+  DATAGRAM_HEADER_MASK_COMMAND   = 0xE0U,
+  DATAGRAM_HEADER_MASK_BLOCK_ID  = 0x1EU,
+  DATAGRAM_HEADER_MASK_VAR_ID_HI = 0x01U,
+  DATAGRAM_HEADER_MASK_VAR_ID_LO = 0xFFU,
+} DatagramHeaderMask_t;
 
 typedef enum: uint8_t
 {
@@ -185,11 +193,11 @@ typedef enum: uint8_t
   REQUEST_UNTIL_ACK = 2U,
 } RequestPattern_t;
 
-struct DatagramHeader_t // TODO: Replace bitfield with masks/shifts
+struct DatagramHeader_t
 {
-  uint8_t  command  : DATAGRAM_HEADER_BITS_COMMAND;
-  uint16_t varID    : DATAGRAM_HEADER_BITS_VAR_ID;
-  uint8_t  blockID  : DATAGRAM_HEADER_BITS_BLOCK_ID;
+  uint8_t  command;
+  uint8_t  blockID;
+  uint16_t varID;
 };
 
 struct MeshPacket_t
@@ -222,40 +230,6 @@ typedef enum: uint8_t
   COMMS_STORAGE_COPY      = 0U,
   COMMS_STORAGE_ZERO_COPY = 1U
 } CommsStorage_t;
-
-struct ZeroCopyRXMessage_t
-{
-  uint8_t *bufferPtr    = nullptr;
-  uint16_t bufferLength = 0U;
-
-  ZeroCopyRXMessage_t(void)
-  {
-    bufferPtr    = nullptr;
-    bufferLength = 0U;
-  };
-
-  ZeroCopyRXMessage_t(uint8_t *newBufferPtr, uint16_t newBufferLength)
-  {
-    bufferPtr    = newBufferPtr;
-    bufferLength = newBufferLength;
-  };
-
-  ZeroCopyRXMessage_t(const ZeroCopyRXMessage_t &other)
-  {
-    bufferPtr    = other.bufferPtr;
-    bufferLength = other.bufferLength;
-  };
-
-  ZeroCopyRXMessage_t & operator=(const ZeroCopyRXMessage_t &other)
-  {
-    if (this == &other) return (*this);
-
-    bufferPtr    = other.bufferPtr;
-    bufferLength = other.bufferLength;
-
-    return (*this);
-  }
-};
 
 struct TXMessage_t
 {
@@ -309,14 +283,14 @@ typedef void (&MeshPacketClearCallback_t)(uint8_t nodeID);
 
 constexpr uint8_t TYPE_LENGTHS[NUMBER_OF_TYPES] =
 {
-  [TYPE_NULL  ] = 0U,
-  [TYPE_UINT8 ] = 1U,
-  [TYPE_INT8  ] = 1U,
-  [TYPE_UINT16] = 2U,
-  [TYPE_INT16 ] = 2U,
-  [TYPE_UINT32] = 4U,
-  [TYPE_INT32 ] = 4U,
-  [TYPE_FLOAT ] = 4U,
+  /* [TYPE_NULL  ] = */ 0U,
+  /* [TYPE_UINT8 ] = */ 1U,
+  /* [TYPE_INT8  ] = */ 1U,
+  /* [TYPE_UINT16] = */ 2U,
+  /* [TYPE_INT16 ] = */ 2U,
+  /* [TYPE_UINT32] = */ 4U,
+  /* [TYPE_INT32 ] = */ 4U,
+  /* [TYPE_FLOAT ] = */ 4U,
 };
 
 
