@@ -39,8 +39,7 @@ namespace Atams {
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-Bus::Bus(BusPlatform::UserData_t userData) :
-BusPlatform(userData)
+Bus::Bus(void)
 {
 
 }
@@ -66,22 +65,22 @@ Bus::InitState_t Bus::updateInitProcedure(void)
 
 }
 
-void Bus::update(void)
+Atams::Error_t startUpdateCycle(void)
 {
 
 }
 
-Atams::Error_t Bus::startCollectionCycle(void)
+Atams::Error_t Bus::update(void)
 {
 
 }
 
-bool Bus::isNewDataReady(void)
+bool updateCycleComplete(void)
 {
 
 }
 
-Atams::Error_t Bus::processCollectedData(void)
+Atams::Error_t Bus::processBuffers(void)
 {
 
 }

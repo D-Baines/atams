@@ -43,24 +43,25 @@ namespace Atams
 /* PRE-TYPEDEF CONSTANTS                                                             */
 /*************************************************************************************/
 
-constexpr uint8_t  NODE_ID_MAX                    = 254U;
-constexpr uint8_t  NODE_ID_NULL                   = 255U;
-constexpr uint8_t  MAX_NUMBER_OF_NODE_IDS         = 255U;
-constexpr uint8_t  BLOCK_ID_UNIVERSAL             = 0U;
-constexpr uint8_t  USER_DATA_BLOCK_ID_START       = 1U;
-constexpr uint16_t MAX_MESH_PACKET_DATAGRAM_COUNT = 256U;
-constexpr uint16_t MAX_MESH_PACKET_SIZE           = 256U;
-constexpr uint16_t MAX_NODE_PACKET_SIZE           = 256U;
-constexpr uint8_t  MAX_NUMBER_OF_MESH             = 10U;
-constexpr uint8_t  MAX_NUMBER_OF_DATA_BLOCKS      = 15U;
-constexpr uint16_t MAX_NUMBER_OF_DATA_MEMBERS     = 512U;
-constexpr uint8_t  MAX_TYPE_SIZE                  = 4U;
-constexpr uint8_t  EOL_BYTE                       = 0U;
-constexpr int32_t  MAX_INT32                      = 2147483647U;
-constexpr int32_t  MIN_INT32                      = -2147483648U;
-constexpr uint32_t MAX_UINT32                     = 4294967295U;
-constexpr uint32_t MIN_UINT32                     = 0U;
-constexpr uint8_t  BITS_IN_A_BYTE                 = 8U;
+inline constexpr uint8_t  NODE_ID_MAX                    = 254U;
+inline constexpr uint8_t  NODE_ID_NULL                   = 255U;
+inline constexpr uint8_t  MAX_NUMBER_OF_NODE_IDS         = 255U;
+inline constexpr uint8_t  BLOCK_ID_UNIVERSAL             = 0U;
+inline constexpr uint8_t  USER_DATA_BLOCK_ID_START       = 1U;
+inline constexpr uint16_t MAX_MESH_PACKET_DATAGRAM_COUNT = 256U;
+inline constexpr uint16_t MAX_MESH_PACKET_SIZE           = 256U;
+inline constexpr uint16_t MAX_NODE_PACKET_SIZE           = 256U;
+inline constexpr uint8_t  MAX_NUMBER_OF_MESH             = 10U;
+inline constexpr uint8_t  MAX_NUMBER_OF_DATA_BLOCKS      = 15U;
+inline constexpr uint16_t MAX_NUMBER_OF_DATA_MEMBERS     = 512U;
+inline constexpr uint8_t  MAX_TYPE_SIZE                  = 4U;
+inline constexpr uint8_t  EOL_BYTE                       = 0U;
+inline constexpr int32_t  MAX_INT32                      = 2147483647U;
+inline constexpr int32_t  MIN_INT32                      = -2147483648U;
+inline constexpr uint32_t MAX_UINT32                     = 4294967295U;
+inline constexpr uint32_t MIN_UINT32                     = 0U;
+inline constexpr uint8_t  BITS_IN_A_BYTE                 = 8U;
+inline constexpr uint32_t CRC32_POLYNOMIAL               = 0x04C11DB7;
 
 /*************************************************************************************/
 /* TYPEDEFS                                                                          */

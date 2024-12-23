@@ -26,13 +26,11 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include <cstring>
-
+#include "string.h"
 #include "Node.hpp"
 #include "Bus.hpp"
-#include "../Options.hpp"
 #include "../Utilities/AtamsUtilities.hpp"
-#include "Devices/UniversalMemoryMap.hpp"
+#include "Devices/DataBlockUniversal.hpp"
 
 
 /*************************************************************************************/
@@ -41,300 +39,139 @@
 
 namespace Atams {
 
-
-/*************************************************************************************/
-/* PRIVATE CONSTANTS                                                                 */
-/*************************************************************************************/
-
-static const char * PLATFORM_TYPE_NAMES[NUMBER_OF_TYPES] =
-{
-  [TYPE_NULL  ] = "NULL",
-  [TYPE_UINT8 ] = typeid(uint8_t ).name(),
-  [TYPE_INT8  ] = typeid(int8_t  ).name(),
-  [TYPE_UINT16] = typeid(uint16_t).name(),
-  [TYPE_INT16 ] = typeid(int16_t ).name(),
-  [TYPE_UINT32] = typeid(uint32_t).name(),
-  [TYPE_INT32 ] = typeid(int32_t ).name(),
-  [TYPE_FLOAT ] = typeid(float   ).name(),
-};
-
-/*************************************************************************************/
-/* PRIVATE VARIABLES                                                                 */
-/*************************************************************************************/
-
-
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-Node::Node(const MemoryMap_t &memoryMap, const Bus &bus, NodePlatform::UserData_t userData) :
-NodePlatform(userData),
-_memoryMap(memoryMap),
+Node::Node(Bus &bus) :
 _bus(bus)
 {
-  /* Do Nothing */
+  _bus.addNodeToBus(*this);
 }
 
-Error_t Node::init(void)
+Error_t Node::init(const MemoryMap_t &memoryMap)
 {
+  if ((memoryMap.noOfDataBlocks > Platform::NODE_NUMBER_OF_DATA_BLOCKS) ||
+      (memoryMap.noOfDataBlocks >           MAX_NUMBER_OF_DATA_BLOCKS ) )
+  {
+    return (ERROR_MEMORY);   /* Early Return */
+  }
+
+  else if (sizeof(float) != TYPE_LENGTHS[TYPE_FLOAT])
+  {
+    return (ERROR_PLATFORM); /* Early Return */
+  }
+
+  _memoryMap.noOfDataBlocks = memoryMap.noOfDataBlocks;
+
   Error_t initStatus = ERROR_NONE;
 
-  initStatus = _memoryMap.initDefaults(*this);
+  for (uint8_t blockIndex = 0U; blockIndex <= Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
+  {
+    const DataBlock::BlockDescriptor_t &blockDescriptor = memoryMap.blockDescriptors[blockIndex];
+          DataBlock                    &block           = _dataBlocks[blockIndex];
 
-  if (initStatus == ERROR_NONE) initStatus = _memoryMap.initLimits(*this);
+    if (initStatus == ERROR_NONE) initStatus = block.initDescriptor(blockDescriptor);
+  }
+
+  if (initStatus != ERROR_NONE)
+  {
+    _memoryMap.noOfDataBlocks = 0U;
+    for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinit();
+  }
 
   return (initStatus);
 }
 
 template <typename T>
-Error_t Node::write(const uint8_t   blockID,
-                    const uint16_t  memberID,
-                    const T        &writeData)
+Error_t Node::write(const uint8_t  blockID,
+                    const uint16_t varID,
+                    const T        writeData)
 {
-  if (blockID  >= _memoryMap.noOfDataFields)                      return (ERROR_BLOCK_ID_OOR);
-  if (memberID >= _memoryMap.dataFields[blockID].noOfDataMembers) return (ERROR_MEMBER_ID_OOR);
+  if (blockID >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID);
 
-  DataMember_t &dataMember = _memoryMap.dataFields[blockID].dataMembers[memberID];
-
-  if (PLATFORM_TYPE_NAMES[dataMember.type] != typeid(T).name())   return (ERROR_MEMBER_TYPE);
-
-  Error_t accessError = ERROR_NONE;
-
-  NodePlatform::acquireMemoryLock();
-
-  if (dataMember.writeLock) accessError = ERROR_WRITE_LOCK;
-  else                      std::memcpy(&dataMember.data, &writeData, sizeof(T));
-
-  NodePlatform::releaseMemoryLock();
-
-  return (accessError);
+  return (_dataBlocks[blockID].write(varID, writeData));
 }
 
-template Error_t Node::write<uint8_t >(const uint8_t blockID, const uint16_t memberID, const uint8_t  &writeData);
-template Error_t Node::write<int8_t  >(const uint8_t blockID, const uint16_t memberID, const int8_t   &writeData);
-template Error_t Node::write<uint16_t>(const uint8_t blockID, const uint16_t memberID, const uint16_t &writeData);
-template Error_t Node::write<int16_t >(const uint8_t blockID, const uint16_t memberID, const int16_t  &writeData);
-template Error_t Node::write<uint32_t>(const uint8_t blockID, const uint16_t memberID, const uint32_t &writeData);
-template Error_t Node::write<int32_t >(const uint8_t blockID, const uint16_t memberID, const int32_t  &writeData);
-template Error_t Node::write<float   >(const uint8_t blockID, const uint16_t memberID, const float    &writeData);
+template Error_t Node::write<uint8_t >(const uint8_t blockID, const uint16_t varID, const uint8_t  writeData);
+template Error_t Node::write<int8_t  >(const uint8_t blockID, const uint16_t varID, const int8_t   writeData);
+template Error_t Node::write<uint16_t>(const uint8_t blockID, const uint16_t varID, const uint16_t writeData);
+template Error_t Node::write<int16_t >(const uint8_t blockID, const uint16_t varID, const int16_t  writeData);
+template Error_t Node::write<uint32_t>(const uint8_t blockID, const uint16_t varID, const uint32_t writeData);
+template Error_t Node::write<int32_t >(const uint8_t blockID, const uint16_t varID, const int32_t  writeData);
+template Error_t Node::write<float   >(const uint8_t blockID, const uint16_t varID, const float    writeData);
 
 
 template <typename T>
 Error_t Node::read(const uint8_t   blockID,
-                   const uint16_t  memberID,
+                   const uint16_t  varID,
                          T        &readData)
 {
-  if (blockID  >= _memoryMap.noOfDataFields)                      return (ERROR_BLOCK_ID_OOR);
-  if (memberID >= _memoryMap.dataFields[blockID].noOfDataMembers) return (ERROR_MEMBER_ID_OOR);
+  if (blockID >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID);
 
-  DataMember_t &dataMember = _memoryMap.dataFields[blockID].dataMembers[memberID];
-
-  if (PLATFORM_TYPE_NAMES[dataMember.type] != typeid(T).name())   return (ERROR_MEMBER_TYPE);
-
-  NodePlatform::acquireMemoryLock();
-
-  memcpy(&readData, &dataMember.data, sizeof(readData));
-
-  NodePlatform::releaseMemoryLock();
-
-  return (ERROR_NONE);
+  return (_dataBlocks[blockID].read(varID, readData));
 }
 
-template Error_t Node::read<uint8_t >(const uint8_t blockID, const uint16_t memberID, uint8_t  &readData);
-template Error_t Node::read<int8_t  >(const uint8_t blockID, const uint16_t memberID, int8_t   &readData);
-template Error_t Node::read<uint16_t>(const uint8_t blockID, const uint16_t memberID, uint16_t &readData);
-template Error_t Node::read<int16_t >(const uint8_t blockID, const uint16_t memberID, int16_t  &readData);
-template Error_t Node::read<uint32_t>(const uint8_t blockID, const uint16_t memberID, uint32_t &readData);
-template Error_t Node::read<int32_t >(const uint8_t blockID, const uint16_t memberID, int32_t  &readData);
-template Error_t Node::read<float   >(const uint8_t blockID, const uint16_t memberID, float    &readData);
+template Error_t Node::read<uint8_t >(const uint8_t blockID, const uint16_t varID, uint8_t  &readData);
+template Error_t Node::read<int8_t  >(const uint8_t blockID, const uint16_t varID, int8_t   &readData);
+template Error_t Node::read<uint16_t>(const uint8_t blockID, const uint16_t varID, uint16_t &readData);
+template Error_t Node::read<int16_t >(const uint8_t blockID, const uint16_t varID, int16_t  &readData);
+template Error_t Node::read<uint32_t>(const uint8_t blockID, const uint16_t varID, uint32_t &readData);
+template Error_t Node::read<int32_t >(const uint8_t blockID, const uint16_t varID, int32_t  &readData);
+template Error_t Node::read<float   >(const uint8_t blockID, const uint16_t varID, float    &readData);
 
-
-template <typename T>
-Error_t Node::assertLimits(const uint8_t   blockID,
-                           const uint16_t  memberID,
-                           const T         limitMax,
-                           const T         limitMin)
+DataBlock * Node::getBlockPtr(const uint8_t blockID)
 {
-  if (blockID  >= _memoryMap.noOfDataFields)                      return (ERROR_BLOCK_ID_OOR);
-  if (memberID >= _memoryMap.dataFields[blockID].noOfDataMembers) return (ERROR_MEMBER_ID_OOR);
+  if (blockID < _memoryMap.noOfDataBlocks)
+  {
+    return (&_dataBlocks[blockID]);
+  }
 
-  DataMember_t &dataMember = _memoryMap.dataFields[blockID].dataMembers[memberID];
-
-  if (TYPE_LENGTHS[dataMember.type] != sizeof(T))                 return (ERROR_MEMBER_LENGTH);
-
-  NodePlatform::acquireMemoryLock();
-
-  memcpy(&dataMember.limitMax, &limitMax, sizeof(dataMember.limitMax));
-  memcpy(&dataMember.limitMin, &limitMin, sizeof(dataMember.limitMin));
-  dataMember.limitsAsserted = true;
-
-  NodePlatform::releaseMemoryLock();
-
-  return (ERROR_NONE);
+  return (nullptr);
 }
 
-template Error_t Node::assertLimits<uint8_t >(const uint8_t blockID, const uint16_t memberID, const uint8_t  limitMax, const uint8_t  limitMin);
-template Error_t Node::assertLimits<int8_t  >(const uint8_t blockID, const uint16_t memberID, const int8_t   limitMax, const int8_t   limitMin);
-template Error_t Node::assertLimits<uint16_t>(const uint8_t blockID, const uint16_t memberID, const uint16_t limitMax, const uint16_t limitMin);
-template Error_t Node::assertLimits<int16_t >(const uint8_t blockID, const uint16_t memberID, const int16_t  limitMax, const int16_t  limitMin);
-template Error_t Node::assertLimits<uint32_t>(const uint8_t blockID, const uint16_t memberID, const uint32_t limitMax, const uint32_t limitMin);
-template Error_t Node::assertLimits<int32_t >(const uint8_t blockID, const uint16_t memberID, const int32_t  limitMax, const int32_t  limitMin);
-template Error_t Node::assertLimits<float   >(const uint8_t blockID, const uint16_t memberID, const float    limitMax, const float    limitMin);
+Error_t Node::externalTransfer(const Access_t  accessRequest,
+                               const uint8_t   blockID,
+                               const uint16_t  varID,
+                               uint8_t * const dataStoragePtr,
+                               const uint8_t   length)
+{
+  if (blockID  >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID);
+
+  return (_dataBlocks[blockID].externalTransfer(accessRequest, varID, dataStoragePtr, length));
+}
+
+DataStatusReturn_t<uint8_t> Node::getMemberLength(const uint8_t blockID, const uint16_t varID)
+{
+  DataStatusReturn_t<uint8_t> lengthReturn;
+
+  if (blockID >= _memoryMap.noOfDataBlocks)
+  {
+    lengthReturn.status = ERROR_BLOCK_ID;
+    return (lengthReturn);
+  }
+
+  return (_dataBlocks[blockID].getMemberLength(varID));
+}
+
+Error_t Node::setRequestPattern(const uint8_t          blockID,
+                                const uint16_t         memberID,
+                                const RequestPattern_t updatePattern)
+{
+  if (blockID >= _memoryMap.noOfDataBlocks)
+  {
+    return (ERROR_BLOCK_ID);
+  }
+
+  return(_bus.setRequestPattern(this, blockID, memberID, updatePattern));
+}
 
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-DataStatusReturn_t<uint8_t> Node::getMemberLength(const uint8_t blockID, const uint16_t memberID)
-{
-  DataStatusReturn_t<uint8_t> lengthReturn;
-
-  if (blockID >= _memoryMap.noOfDataFields)
-  {
-    lengthReturn.status = ERROR_BLOCK_ID_OOR;
-    return (lengthReturn);
-  }
-
-  if (memberID >= _memoryMap.dataFields[blockID].noOfDataMembers)
-  {
-    lengthReturn.status = ERROR_MEMBER_ID_OOR;
-    return (lengthReturn);
-  }
-
-  DataMember_t &dataMember = _memoryMap.dataFields[blockID].dataMembers[memberID];
-
-  lengthReturn.data   = TYPE_LENGTHS[dataMember.type];
-  lengthReturn.status = ERROR_NONE;
-
-  return (lengthReturn);
-}
-
-Error_t Node::externalTransfer(const Access_t  accessRequest,
-                               const uint8_t   blockID,
-                               const uint16_t  memberID,
-                               uint8_t * const inputPtr,
-                               const uint8_t   length)
-{
-  if (blockID  >= _memoryMap.noOfDataFields)                      return (recordError(ERROR_BLOCK_ID_OOR));
-  if (memberID >= _memoryMap.dataFields[blockID].noOfDataMembers) return (recordError(ERROR_MEMBER_ID_OOR));
-
-  DataMember_t &dataMember = _memoryMap.dataFields[blockID].dataMembers[memberID];
-
-  if (TYPE_LENGTHS[dataMember.type] != length)                    return (recordError(ERROR_MEMBER_LENGTH));
-  if (inputPtr                      == nullptr)                   return (recordError(ERROR_NULL_PTR));
-  if (accessRequest                 >  dataMember.externalAccess) return (recordError(ERROR_ACCESS_INVALID));
-
-  Error_t accessError = ERROR_NONE;
-
-  NodePlatform::acquireMemoryLock();
-
-  switch (accessRequest)
-  {
-    case ACCESS_READ_ACK:
-      memcpy(dataStoragePtr, dataMember.data, TYPE_LENGTHS[dataMember.type]);
-      if (systemIsBigEndian()) swapEndiannessRaw(inputPtr, TYPE_LENGTHS[dataMember.type]);
-      break;
-
-    case ACCESS_WRITE_ACK:
-      if (systemIsBigEndian()) swapEndiannessRaw(inputPtr, TYPE_LENGTHS[dataMember.type]);
-
-      if (dataMember.writeLock)
-      {
-        accessError = ERROR_WRITE_LOCK;
-      }
-      else if ((dataMember.limitsAsserted                            ) &&
-               (checkLimits(dataMember, inputPtr) != ERROR_NONE) )
-      {
-        accessError = ERROR_LIMITS;
-      }
-      else
-      {
-        memcpy(dataMember.data, inputPtr, TYPE_LENGTHS[dataMember.type]);
-      }
-      break;
-
-    default:
-      accessError = ERROR_ACCESS_INVALID;
-      recordError(accessError);
-      break;
-  }
-
-  NodePlatform::releaseMemoryLock();
-
-  return (accessError);
-}
-
-template <typename T>
-Error_t Node::checkLimitsType(const DataMember_t    &dataMember,
-                              const uint8_t * const  inputPtr)
-{
-
-  volatile const T inputAsType;
-  volatile const T limitMaxAsType;
-  volatile const T limitMinAsType;
-
-  memcpy(&inputAsType,    inputPtr,            sizeof(inputAsType));
-  memcpy(&limitMaxAsType, dataMember.limitMax, sizeof(limitMaxAsType));
-  memcpy(&limitMinAsType, dataMember.limitMin, sizeof(limitMinAsType));
-
-  if ((inputAsType > limitMaxAsType) ||
-      (inputAsType < limitMinAsType) )
-  {
-    return (ERROR_LIMITS);
-  }
-
-  return (ERROR_NONE);
-}
-
-
-/* Warning - Length checks are omitted and should be handled by calling function */
-Error_t Node::checkLimits(const DataMember_t    &dataMember,
-                          const uint8_t * const  inputPtr)
-{
-  Error_t limitStatus = ERROR_NONE;
-
-  switch (dataMember.type)
-  {
-    case TYPE_UINT8:
-      if (checkLimitsType<uint8_t> (dataMember, inputPtr)) limitStatus = ERROR_LIMITS;
-      break;
-    case TYPE_INT8:
-      if (checkLimitsType<int8_t>  (dataMember, inputPtr)) limitStatus = ERROR_LIMITS;
-      break;
-    case TYPE_UINT16:
-      if (checkLimitsType<uint16_t>(dataMember, inputPtr)) limitStatus = ERROR_LIMITS;
-      break;
-    case TYPE_INT16:
-      if (checkLimitsType<int16_t> (dataMember, inputPtr)) limitStatus = ERROR_LIMITS;
-      break;
-    case TYPE_UINT32:
-      if (checkLimitsType<uint32_t>(dataMember, inputPtr)) limitStatus = ERROR_LIMITS;
-      break;
-    case TYPE_INT32:
-      if (checkLimitsType<int32_t> (dataMember, inputPtr)) limitStatus = ERROR_LIMITS;
-      break;
-    case TYPE_FLOAT:
-      if (checkLimitsType<float>   (dataMember, inputPtr)) limitStatus = ERROR_LIMITS;
-      break;
-    default:
-      limitStatus = ERROR_LIMITS;
-      break;
-  }
-
-  return (limitStatus);
-}
-
-
-Error_t Node::recordError( Error_t error)
-{
-  if (error > NUMBER_OF_Atams_ERRORS) error = ERROR_ERROR_MANAGEMENT;
-
-  _latestError = error;
-  _errorCounts[error]++;
-
-  return (error);
-}
+void processCommsBuffer(uint8_t buffer, uint16_t length);
 
 
 } /* End Namespace - Atams */

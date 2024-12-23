@@ -28,10 +28,8 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-
 #include "../AtamsTypedefs.hpp"
-#include "Platform/BusPlatform.hpp"
-
+#include "Platform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -39,22 +37,23 @@
 
 namespace Atams {
 
-
 /*************************************************************************************/
 /* FORWARD DECLARATIONS                                                              */
 /*************************************************************************************/
 
 class Node;
 
-
 /*************************************************************************************/
 /* CLASS DEFINITIONS                                                                 */
 /*************************************************************************************/
 
-
 class   Bus :
-private BusPlatform
+private Platform::CommsLock
 {
+  /*-- Friend Declarations ----------------------------------------------------------*/
+
+  friend class Node;
+
   /*-- Public -----------------------------------------------------------------------*/
 
   public:
@@ -71,10 +70,19 @@ private BusPlatform
     INIT_STATE_FAILURE     = 3U
   } InitState_t;
 
+  struct NodeHandle_t
+  {
+    Node   *nodeContext;
+    uint8_t nodeID;
+    uint8_t inactiveBuffer[Platform::COMMS_BUFFER_SIZE];
+    uint8_t activeBuffer[Platform::COMMS_BUFFER_SIZE];
+  };
+  
+
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Constructor */
-  Bus(BusPlatform::UserData_t userData);
+  Bus(void);
 
   /* Copy Constructor */
   Bus(const Bus &other) = delete;
@@ -83,35 +91,35 @@ private BusPlatform
   Bus & operator=(const Bus &other) = delete;
 
   /* Destructor */
-  ~Bus(void);
-
-  Atams::Error_t addNodeToBus(Node &node);
-
-  Atams::Error_t removeNodeFromBus(Node &node);
+  ~Bus(void) = delete;
 
   Bus::InitState_t updateInitProcedure(void);
 
-  void update(void);
+  Atams::Error_t startUpdateCycle(void);
 
-  Atams::Error_t startCollectionCycle(void);
+  Atams::Error_t update(void);
 
-  bool isNewDataReady(void);
+  bool updateCycleComplete(void);
 
-  Atams::Error_t processCollectedData(void);
-
+  Atams::Error_t processBuffers(void);
 
   /*-- Private ----------------------------------------------------------------------*/
 
   private:
 
-
   /*-- Private Constants ------------------------------------------------------------*/
 
   /*-- Private Typedefs -------------------------------------------------------------*/
 
-  /*-- Private Variables ------------------------------------------------------------*/
+  /*-- Private Variables ------------------------------------------------------------*/\
+  
+  NodeHandle_t _nodeHandles[Platform::NUMBER_OF_NODES_PER_BUS];
 
   /*-- Private Function Declarations ------------------------------------------------*/
+
+  Atams::Error_t addNodeToBus(Node &node);
+
+  Atams::Error_t removeNodeFromBus(Node &node);
 
 };
 

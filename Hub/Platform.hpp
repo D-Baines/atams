@@ -29,9 +29,8 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-
+#include <mutex>
 #include "../../AtamsTypedefs.hpp"
-
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -39,29 +38,72 @@
 
 namespace Atams { namespace Platform {
 
-
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
 
-typedef enum: uint8_t
+class MemoryLock
 {
-  BUS_ID_TEST = 0U,
-} BusID_t;
+  public:
+
+  Error_t init(void)
+  {
+    /* Init user lock mechanisam - not required when using std::mutex */
+    return (ERROR_NONE);
+  }
+
+  void acquireLock(void)
+  {
+    _memoryLock.lock();
+  }
+
+  void releaseLock(void)
+  {
+    _memoryLock.unlock();
+  }
+
+  private:
+
+  std::mutex _memoryLock;
+};
+
+class CommsLock
+{
+  public:
+
+  Error_t init(void)
+  {
+    /* Init user lock mechanisam - not required when using std::mutex */
+    return (ERROR_NONE);
+  }
+
+  void acquireLock(void)
+  {
+    _commsLock.lock();
+  }
+
+  void releaseLock(void)
+  {
+    _commsLock.unlock();
+  }
+
+  private:
+
+  std::mutex _commsLock;
+};
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
+inline constexpr uint16_t NUMBER_OF_NODES_PER_BUS     = 10U;
+inline constexpr uint16_t NODE_NUMBER_OF_DATA_MEMBERS = 200U; 
+inline constexpr uint16_t NODE_NUMBER_OF_DATA_BLOCKS  = 2U; 
+inline constexpr uint16_t COMMS_BUFFER_SIZE           = 512U;
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
-
-void    setReceiveCallback(CommsReceiveCallback_t receiveCallback);
-
-Error_t transmitBuffer(uint8_t *buffer, uint16_t length);
-
 
 
 } } /* End Atams Namespace */
