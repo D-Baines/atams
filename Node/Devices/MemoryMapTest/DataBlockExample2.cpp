@@ -65,6 +65,7 @@ Error_t initLimits(DataBlock &block)
   return (initStatus); 
 }
 
+
 } } } /* End Namespace - Atams::MapTest::BlockExample2 */
 
 /**

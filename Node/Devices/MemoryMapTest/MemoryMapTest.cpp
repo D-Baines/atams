@@ -86,8 +86,7 @@ Error_t initUniversalInfo(void)
 
 const MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,    
                             initUniversalInfo,          
-                            {BlockUniversal::blockDescriptor,
-                             BlockExample1::blockDescriptor,
+                            {BlockExample1::blockDescriptor,
                              BlockExample2::blockDescriptor });
 
 

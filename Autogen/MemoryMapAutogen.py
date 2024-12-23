@@ -203,6 +203,6 @@ generateButton = customtkinter.CTkButton(generateFrame,
 generateButton.pack(side='right', fill='y', pady=(10,0))
 memMapSearch.entry.insert(0, "/Users/dan/Desktop/Atams Workspace/TestKitSoftware/CM7/Core/Src/Libraries/Atams/Autogen/Example_Memory_Map.xlsx")
 nodeDirSearch.entry.insert(0, "/Users/dan/Desktop/Atams Workspace/TestKitSoftware/CM7/Core/Src/Libraries/Atams/Node")
-hubDirSearch.entry.insert(0, "/Users/dan/Desktop/Atams Workspace/TestKitSoftware/CM7/Core/Src/Libraries/Atams/Hub")
+hubDirSearch.entry.insert(0, "/Users/dan/Desktop/Atams Workspace/HubSoftware/src/Atams/Hub")
 
 app.mainloop()

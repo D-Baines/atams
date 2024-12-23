@@ -194,8 +194,6 @@ def generateInitDefaultsDefinitionBlock(platformNameCamel,
                                         blockNameCamel,
                                         dataBlock,
                                         targetFile):
-  if (platformNameCamel != "Node"):
-    return
   targetFile.write("Error_t initDefaults(DataBlock &block)\n{\n")
   targetFile.write("  Error_t initStatus = ERROR_NONE;\n\n")
 
@@ -276,7 +274,7 @@ def generateInitLimitsDefinitionBlock(platformNameCamel,
       targetFile.write("                                                                Block"+blockNameCamel+"::MIN_LIMIT_" + memberIDUpper+");\n\n")
     memberIterator += 1
 
-  targetFile.write("""  return (initStatus); \n}""")
+  targetFile.write("""  return (initStatus); \n}\n""")
 
 def autogenCallMap(platformNameCamel: str,
                    autogenHint: str,
@@ -366,12 +364,12 @@ def generateMemoryMapFile(platformNameCamel: str,
     elif (nextStringAutogenCall == True):
       splitStrings.remove(string)
       autogenCallMap(platformNameCamel,
-                  string,
-                  memMapNameCamel,
-                  dataBlockNamesCamel, 
-                  dataBlockNamesUpper, 
-                  dataBlocks,
-                  targetFile)
+                     string,
+                     memMapNameCamel,
+                     dataBlockNamesCamel, 
+                     dataBlockNamesUpper, 
+                     dataBlocks,
+                     targetFile)
       nextStringAutogenCall = False
     else:
       targetFile.write(string)
@@ -408,10 +406,17 @@ def autogenCallBlock(platformNameCamel: str,
       generateConstList(dataBlock, memberIDsUpper, "Max Limit", targetFile)
     case "BLOCK_DESCRIPTOR":
       generateBlockDescriptor(platformNameCamel, blockNameCamel, blockNameUpper, dataBlock, memberIDsUpper, targetFile)
+    case "PUBLIC_FUNCTIONS_DECLARATION_HEADER":
+      if (platformNameCamel == "Node"):
+        targetFile.write("/*************************************************************************************/\n")
+        targetFile.write("/* PUBLIC FUNCTION DECLARATIONS                                                      */\n")
+        targetFile.write("/*************************************************************************************/\n")
     case "INIT_DEFAULTS_DECLARATION":
-      targetFile.write("Error_t initDefaults(DataBlock blockToInit);")
+      if (platformNameCamel == "Node"):
+        targetFile.write("Error_t initDefaults(DataBlock blockToInit);\n")
     case "INIT_LIMITS_DECLARATION":
-      targetFile.write("Error_t initLimits(DataBlock blockToInit);")
+      if (platformNameCamel == "Node"):
+        targetFile.write("Error_t initLimits(DataBlock blockToInit);\n")
     case "INIT_DEFAULTS_DEFINITION":
       generateInitDefaultsDefinitionBlock(platformNameCamel,
                                           blockNameCamel,
@@ -439,19 +444,19 @@ def generateDataBlockFile(platformNameCamel: str,
 
   for string in splitStrings:
     if (string == "AUTOGEN"):
-      if (nextStringAutogenEnd == True): 
+      if (nextStringAutogenEnd): 
         nextStringAutogenEnd = False
       else:
         nextStringAutogenCall = True
-    elif (nextStringAutogenCall == True):
+    elif (nextStringAutogenCall):
       splitStrings.remove(string)
       autogenCallBlock(platformNameCamel,
-                  string,
-                  memMapNameCamel,
-                  blockNameCamel,
-                  blockNameUpper,
-                  dataBlock,
-                  targetFile)
+                       string,
+                       memMapNameCamel,
+                       blockNameCamel,
+                       blockNameUpper,
+                       dataBlock,
+                       targetFile)
       nextStringAutogenCall = False
     else:
       targetFile.write(string)
@@ -463,9 +468,6 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
   dataBlocks          = []
   dataBlockNamesCamel = []
   dataBlockNamesUpper = []
-  dataBlockFileNames  = []
-  dataBlockNodePaths  = []
-  dataBlockHubPaths   = []
   dataBlockHppTemplatePath = os.path.join(os.path.dirname(__file__), 'DataBlockAutogenTemplate.hpp')
   dataBlockCppTemplatePath = os.path.join(os.path.dirname(__file__), 'DataBlockAutogenTemplate.cpp')
   memMapTemplateHppPath = os.path.join(os.path.dirname(__file__), 'MemoryMapAutogenTemplate.hpp')
@@ -494,7 +496,7 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
   nodeMemMapHppPath = os.path.join(memMapNodeDir, memMapHppName)
   nodeMemMapCppPath = os.path.join(memMapNodeDir, memMapCppName)
   hubMemMapHppPath  = os.path.join(memMapHubDir,  memMapHppName)
-  hubMemMapCppPath  = os.path.join(memMapHubDir,  memMapCppName)
+  #hubMemMapCppPath  = os.path.join(memMapHubDir,  memMapCppName)
 
   memMapTemplateHpp = open(memMapTemplateHppPath, OpenMethods.READ_ONLY)
   nodeMemMapHpp     = open(nodeMemMapHppPath,     OpenMethods.WRITE_FORCE)
@@ -506,6 +508,7 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
                         memMapTemplateHpp, 
                         nodeMemMapHpp)
   nodeMemMapHpp.close()
+  memMapTemplateHpp.seek(0)
   hubMemMapHpp = open(hubMemMapHppPath, OpenMethods.WRITE_FORCE)
   generateMemoryMapFile("Hub",
                         memMapNameCamel, 
@@ -527,15 +530,15 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
                         memMapTemplateCpp,
                         nodeMemMapCpp)
   nodeMemMapCpp.close()
-  hubMemMapCpp = open(hubMemMapCppPath, OpenMethods.WRITE_FORCE)
-  generateMemoryMapFile("Hub",
-                        memMapNameCamel,
-                        dataBlockNamesCamel,
-                        dataBlockNamesUpper,
-                        dataBlocks,
-                        memMapTemplateCpp,
-                        hubMemMapCpp)
-  hubMemMapCpp.close()
+  #hubMemMapCpp = open(hubMemMapCppPath, OpenMethods.WRITE_FORCE)
+  #generateMemoryMapFile("Hub",
+  #                      memMapNameCamel,
+  #                      dataBlockNamesCamel,
+  #                      dataBlockNamesUpper,
+  #                      dataBlocks,
+  #                      memMapTemplateCpp,
+  #                      hubMemMapCpp)
+  #hubMemMapCpp.close()
   memMapTemplateCpp.close()
 
   blockIterator = 0
@@ -584,17 +587,17 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
                           dataBlockHubHpp)
     dataBlockHubHpp.close()
 
-    dataBlockCppName = "DataBlock" + dataBlockNamesCamel[blockIterator] + ".cpp"
-    dataBlockCppHubPath = os.path.join(memMapHubDir, dataBlockCppName)
-    dataBlockHubCpp = open(dataBlockCppHubPath, OpenMethods.WRITE_FORCE)
-    generateDataBlockFile("Hub",
-                          memMapNameCamel,
-                          dataBlockNamesCamel[blockIterator],
-                          dataBlockNamesUpper[blockIterator],
-                          dataBlock,
-                          dataBlockCppTemplate,
-                          dataBlockHubCpp)
-    dataBlockHubCpp.close()
+    #dataBlockCppName = "DataBlock" + dataBlockNamesCamel[blockIterator] + ".cpp"
+    #dataBlockCppHubPath = os.path.join(memMapHubDir, dataBlockCppName)
+    #dataBlockHubCpp = open(dataBlockCppHubPath, OpenMethods.WRITE_FORCE)
+    #generateDataBlockFile("Hub",
+    #                      memMapNameCamel,
+    #                      dataBlockNamesCamel[blockIterator],
+    #                      dataBlockNamesUpper[blockIterator],
+    #                      dataBlock,
+    #                      dataBlockCppTemplate,
+    #                      dataBlockHubCpp)
+    #dataBlockHubCpp.close()
     blockIterator += 1
 
   return (Error.NONE)

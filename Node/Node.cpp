@@ -191,7 +191,7 @@ static inline void abortResponse(ChannelResponse_t &response, uint8_t localNodeI
   response.aborted                     = true;
 }
 
-static void sendResponsePacket(ChannelResponse_t &response)
+static void sendResponsePacket(Platform::CommsChannel_t commsChannel, ChannelResponse_t &response)
 {
   static uint8_t  encodedResponseBuffer[MAX_MESH_PACKET_SIZE] = {0U};
   static uint16_t encodedLength                               = 0U;
@@ -211,7 +211,7 @@ static void sendResponsePacket(ChannelResponse_t &response)
                        sizeof(encodedResponseBuffer),
                        encodedLength                 ) == ERROR_NONE)
   {
-    Platform::transmitBuffer(encodedResponseBuffer, encodedLength);
+    Platform::transmitBuffer(commsChannel, encodedResponseBuffer, encodedLength);
   }
 }
 
@@ -388,14 +388,14 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
       case MESSAGE_BROADCAST_UNIVERSAL:
         resetResponse(response, localNodeID);
         processRequestPacket(response, decodedPacket, decodedLength, true);
-        sendResponsePacket(response);
+        sendResponsePacket(commsChannel, response);
         break;
       case MESSAGE_REQUEST:
         if (packetNodeID == localNodeID)
         {
           resetResponse(response, localNodeID);
           processRequestPacket(response, decodedPacket, decodedLength, false);
-          sendResponsePacket(response);
+          sendResponsePacket(commsChannel, response);
         }
         break;
       case MESSAGE_REQUEST_SYNCED:
@@ -412,7 +412,7 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
             memcpy(syncPacket.buffer, decodedPacket, decodedLength);
             syncPacket.length = decodedLength;
           }
-          if (localNodeID == firstSyncNodeID) sendResponsePacket(response);
+          if (localNodeID == firstSyncNodeID) sendResponsePacket(commsChannel, response);
         }
         else if (packetNodeID == finalSyncNodeID)
         {
@@ -421,11 +421,11 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
         break;
       case MESSAGE_RESPONSE_SYNCED:
         if (packetSyncCount != syncPacket.syncCount) abortResponse(response, localNodeID, ERROR_SYNC_COUNT);
-        if (packetNodeID    == prevSyncNodeID      ) sendResponsePacket(response);
+        if (packetNodeID    == prevSyncNodeID      ) sendResponsePacket(commsChannel, response);
         break;
       case MESSAGE_SYNC_JOG:
         if (packetSyncCount != syncPacket.syncCount) abortResponse(response, localNodeID, ERROR_SYNC_COUNT);
-        if (packetNodeID    == localNodeID         ) sendResponsePacket(response);
+        if (packetNodeID    == localNodeID         ) sendResponsePacket(commsChannel, response);
         break;
       default:
         /* Do Nothing */
@@ -598,6 +598,7 @@ Error_t initCommsCore(const MemoryMap_t &memoryMap)
   }
   else
   {
+    _memoryMap.noOfDataBlocks = 0U;
     for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinit();
   }
 
@@ -643,6 +644,7 @@ Error_t initControlCore(const MemoryMap_t &memoryMap)
   }
   else
   {
+    _memoryMap.noOfDataBlocks = 0U;
     for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinit();
   }
 

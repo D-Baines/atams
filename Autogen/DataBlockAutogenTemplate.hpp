@@ -61,15 +61,9 @@ $$$AUTOGEN$$$MIN_LIMITS$$$AUTOGEN$$$
 $$$AUTOGEN$$$MAX_LIMITS$$$AUTOGEN$$$
 /*--- Descriptor ---*/
 $$$AUTOGEN$$$BLOCK_DESCRIPTOR$$$AUTOGEN$$$
-
-/*************************************************************************************/
-/* PUBLIC FUNCTION DECLARATIONS                                                      */
-/*************************************************************************************/
-
+$$$AUTOGEN$$$PUBLIC_FUNCTIONS_DECLARATION_HEADER$$$AUTOGEN$$$
 $$$AUTOGEN$$$INIT_DEFAULTS_DECLARATION$$$AUTOGEN$$$
-
 $$$AUTOGEN$$$INIT_LIMITS_DECLARATION$$$AUTOGEN$$$
-
 
 } } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ */
 

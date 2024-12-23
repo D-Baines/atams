@@ -74,7 +74,7 @@ void update(void)
 
 }
 
-Error_t transmitBuffer(uint8_t *buffer, uint16_t length)
+Error_t transmitBuffer(CommsChannel_t commsChannel, uint8_t *buffer, uint16_t length)
 {
   SerialPort::Error_t transmitResult = _meshPort.transmitBuffer(buffer, length);
 

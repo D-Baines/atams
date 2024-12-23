@@ -94,7 +94,11 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
   Error_t eolSearchResult = eolSearch();
 
   /* Early return if no EOL byte found */
-  if (eolSearchResult != ERROR_NONE) return (eolSearchResult);
+  if (eolSearchResult != ERROR_NONE)
+  {
+    Platform::releaseCommsBufferLock(_lockArgument);
+    return (eolSearchResult);
+  }
 
   outputLength = _eolToTail;
 
