@@ -39,8 +39,44 @@
 namespace Atams { namespace Platform {
 
 /*************************************************************************************/
-/* PUBLIC TYPEDEFS                                                                   */
+/* PUBLIC CLASSES                                                                    */
 /*************************************************************************************/
+
+class BusPeripheral
+{
+  public:
+  
+  struct UserData_t
+  {
+
+  };
+
+  BusPeripheral(UserData_t userData) :
+  _userData(userData)
+  {
+  
+  }
+
+  bool startPeripheral(void)
+  {
+    
+  }
+
+  bool transmitReady(void)
+  {
+    return (true);
+  }
+
+  void transmit(uint8_t *buffer, uint16_t length)
+  {
+    /* Transmit Buffer */
+  }
+  
+  private:
+
+  const UserData_t _userData;
+
+};
 
 class MemoryLock
 {
@@ -105,6 +141,7 @@ inline constexpr uint16_t COMMS_BUFFER_SIZE           = 512U;
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
+uint64_t getMillis(void);
 
 } } /* End Atams Namespace */
 

@@ -26,6 +26,7 @@
 /*************************************************************************************/
 
 #include "Platform.hpp"
+#include <chrono>
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -49,7 +50,6 @@ namespace Atams { namespace Hub { namespace Platform {
 /*************************************************************************************/
 
 
-
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
@@ -59,6 +59,10 @@ namespace Atams { namespace Hub { namespace Platform {
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
+uint64_t getMillis(void)
+{
+  return (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+}
 
 
 } } } /* End Namspace - Atams::Hub::Platform */

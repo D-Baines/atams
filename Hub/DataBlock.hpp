@@ -92,20 +92,16 @@ private Platform::MemoryLock
   Error_t read(const uint16_t  memberID,
                      T        &readData);
 
-  template <typename T>
-  Error_t assertLimits(const uint16_t memberID,
-                       const T        limitMax,
-                       const T        limitMin);
-
   DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t memberID);
-
-  Error_t setWriteLock(const uint16_t memberID,
-                       const bool     writeLock);
 
   Error_t externalTransfer(const Access_t  accessRequest,
                            const uint16_t  memberID,
                            uint8_t * const dataStoragePtr,
                            const uint8_t   length);
+
+  DataStatusReturn_t<bool> setRequestPattern(const uint16_t         varID,
+                                             const Access_t         accessRequest,
+                                             const RequestPattern_t requestPattern);
 
   private:
 
@@ -115,25 +111,15 @@ private Platform::MemoryLock
 
   struct DataMember_t
   {
-    uint8_t data[MAX_TYPE_SIZE]     = {0U, 0U, 0U, 0U};
-    bool    limitsAsserted          = false;
-    bool    writeLock               = false;
+    uint8_t          data[MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
+    RequestPattern_t readRequestPattern;
+    RequestPattern_t writeRequestPattern;
   };
 
   /*-- Private Variables ------------------------------------------------------------*/
 
   BlockDescriptor_t _blockDescriptor;
   DataMember_t      _dataMembers[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
-
-  /*-- Private Function Declarations ------------------------------------------------*/
-
-  template <typename T>
-  Error_t checkLimitsType(const DataMember_t    &dataMember,
-                          const uint8_t * const  dataStoragePtr);
-
-  Error_t checkLimits(const MemberInfo_t    &memberInfo,
-                      const DataMember_t    &dataMember,
-                      const uint8_t * const dataStoragePtr);
 };
 
 

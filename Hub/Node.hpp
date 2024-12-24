@@ -53,8 +53,13 @@ class Bus;
 /* CLASS DEFINITIONS                                                                 */
 /*************************************************************************************/
 
-class Node 
+class Node :
+private Platform::MemoryLock
 {
+  /*-- Friend Declarations ----------------------------------------------------------*/
+
+  friend class Bus;
+
   /*-- Public -----------------------------------------------------------------------*/
 
   public:
@@ -141,8 +146,9 @@ class Node
   DataStatusReturn_t<uint8_t> getMemberLength(const uint8_t blockID, const uint16_t memberID);
 
   Error_t setRequestPattern(const uint8_t          blockID,
-                            const uint16_t         memberID,
-                            const RequestPattern_t updatePattern);
+                            const uint16_t         varID,
+                            const Access_t         accessRequest,
+                            const RequestPattern_t requestPattern);
 
 
   /*-- PRIVATE -----------------------------------------------------------------------*/
@@ -151,23 +157,48 @@ class Node
 
   /*-- PRIVATE CONSTANTS --------------*/
 
-
   /*-- PRIVATE TYPEDEFS ---------------*/
 
+  struct Packet_t 
+  {
+    uint8_t   buffer[MAX_MESH_PACKET_SIZE] = {0U};
+    uint16_t  length                       = MESH_SIZE_HEADER;
+    WriteList writeList;
+  };
+
+  struct PacketChangeConfig_t
+  {
+    Access_t         accessRequest;
+    RequestPattern_t commandPattern;
+    uint8_t          blockID; 
+    uint16_t         memberID;
+    DatagramHeader_t newDatagramHeader;
+    uint8_t          newDatagramBuffer[DATAGRAM_SIZE_HEADER + MAX_TYPE_SIZE];
+    DatagramHeader_t currentDatagramHeader;
+    uint8_t          newDatagramLength      = 0U;
+    uint8_t          currentDatagramLength  = 0U;
+    uint16_t         datagramStartIndex     = 0U;
+  };
 
   /*-- PRIVATE VARIABLES --------------*/
 
+  uint8_t     _nodeID;
   Atams::Bus &_bus;
   MemoryMap_t _memoryMap;
   DataBlock   _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS + 1U];
   DataBlock  &_universalBlock                      = _dataBlocks[BLOCK_ID_UNIVERSAL];
   Error_t     _latestError                         = ERROR_NONE;
   uint16_t    _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
+  Packet_t    _primaryPacket;
+  Packet_t    _secondaryPacket;
+  Packet_t   *_activePacketPtr;
+  Packet_t   *_inactivePacketPtr;
 
   /*-- PRIVATE FUNCTION DECLARATIONS --*/
 
-  void processCommsBuffer(uint8_t buffer, uint16_t length);
-
+  void copyToActiveBuffer(uint8_t *buffer, uint16_t length);
+  
+  void swapAndProcessBuffers(void);
 };
 
 } /* End Namespace - Atams */

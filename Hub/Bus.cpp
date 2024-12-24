@@ -26,7 +26,7 @@
 
 #include "Bus.hpp"
 #include "Node.hpp"
-
+#include "../Utilities/AtamsUtilities.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -39,9 +39,11 @@ namespace Atams {
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-Bus::Bus(void)
+Bus::Bus(BusPeripheral::UserData_t userData) :
+CircularBuffer(CircularBuffer::DEFAULT_EOL_CHAR),
+BusPeripheral(userData)
 {
-
+  for (Node *nodePtr : _nodePtrs) nodePtr = nullptr;
 }
 
 
@@ -62,27 +64,117 @@ Atams::Error_t Bus::removeNodeFromBus(Node &node)
 
 Bus::InitState_t Bus::updateInitProcedure(void)
 {
-
+  
 }
 
-Atams::Error_t startUpdateCycle(void)
+Atams::Error_t Bus::startUpdateCycle(void)
 {
 
 }
 
 Atams::Error_t Bus::update(void)
 {
+  Node    *activeNodePtr = _nodePtrs[_activeNodeIndex];
+  uint64_t currentTime   = Platform::getMillis();
 
+  switch (_updateState)
+  {
+    case UPDATE_STATE_READY:
+      /* Do Nothing */
+      break;
+    case UPDATE_STATE_SEND_REQUEST_PACKETS:
+      if (Platform::BusPeripheral::transmitReady())
+      {
+        encodeMeshPacket(activeNodePtr->_activePacketPtr->buffer, activeNodePtr->_activePacketPtr->length, _encodedBuffer, sizeof(_encodedBuffer), _encodedLength);
+        Platform::BusPeripheral::transmit(_encodedBuffer, _encodedLength);
+        if (_activeNodeIndex < _noOfNodesOnBus - 1U)
+        {
+          _activeNodeIndex++;
+        }
+        else                                         
+        {
+          _activeNodeIndex      = 0U;
+          _previousResponseTime = currentTime;
+          _updateState          = UPDATE_STATE_COLLECT_RESPONSES;
+        }
+      }
+      break;
+    case UPDATE_STATE_COLLECT_RESPONSES:
+      if (CircularBuffer::getPacket(_rxBuffer, 
+                                    sizeof(_rxBuffer),
+                                    _rxLength))
+      {
+        if (decodeMeshPacket(_rxBuffer, 
+                             _rxLength, 
+                             _decodedBuffer, 
+                             sizeof(_decodedBuffer), 
+                             _decodedLength        ) == ERROR_NONE)
+        {
+          uint8_t packetNodeID    = _decodedBuffer[MESH_INDEX_NODE_ID];
+          uint8_t packetSyncCount = _decodedBuffer[MESH_INDEX_SYNC];
+          if (packetSyncCount != _activeSyncCount) 
+          {
+            /* Throw Error */
+          }
+          else
+          {
+            for (Node *nodePtr : _nodePtrs)
+            {
+              if (nodePtr->_nodeID == packetNodeID) nodePtr->copyToActiveBuffer(_decodedBuffer, _decodedLength);
+            }
+          }
+        }
+        if (_activeNodeIndex < _noOfNodesOnBus - 1U)
+        {
+          _activeNodeIndex++;
+        }
+        else                                         
+        {
+          _activeNodeIndex = 0U;
+          _updateState     = UPDATE_STATE_CYCLE_COMPLETE;
+        }           
+      }
+      else if (currentTime - _previousResponseTime > RESPONSE_TIMEOUT)
+      { 
+        if (_activeNodeIndex < _noOfNodesOnBus - 1U)
+        {
+          _activeNodeIndex++;
+          _updateState = UPDATE_STATE_JOG_NODE;
+        }
+        else                                         
+        {
+          _activeNodeIndex = 0U;
+          _updateState     = UPDATE_STATE_CYCLE_COMPLETE;
+        }   
+      }
+      break;
+    case UPDATE_STATE_JOG_NODE:
+      _jogBuffer[MESH_INDEX_NODE_ID] = _nodePtrs[_activeNodeIndex]->_nodeID;
+      if (Platform::BusPeripheral::transmitReady()) 
+      {
+        encodeMeshPacket(_jogBuffer, MESH_SIZE_HEADER, _encodedBuffer, sizeof(_encodedBuffer), _encodedLength);
+        Platform::BusPeripheral::transmit(_encodedBuffer, _encodedLength);
+      }
+      break;
+    case UPDATE_STATE_CYCLE_COMPLETE:
+      /* Do Nothing */
+      break;
+  }
 }
 
-bool updateCycleComplete(void)
+bool Bus::updateCycleComplete(void)
 {
+  /* Wait on condition variable for update cycle complete */
 
+  return (_updateState == UPDATE_STATE_CYCLE_COMPLETE);
 }
 
-Atams::Error_t Bus::processBuffers(void)
+Atams::Error_t Bus::swapAndProcessBuffers(void)
 {
-
+  for (Node *nodePtr : _nodePtrs)
+  {
+    if (nodePtr != nullptr) nodePtr->swapAndProcessBuffers();
+  }
 }
 
 

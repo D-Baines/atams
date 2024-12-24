@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    AtamsWriteList.cpp
+  * @file    WriteList.cpp
   *
   * @author  D. Baines
   *
@@ -25,7 +25,7 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "../../Atams/Utilities/AtamsWriteList.hpp"
+#include "WriteList.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -38,21 +38,18 @@ namespace Atams
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-
-WriteList::WriteList(uint16_t maxConfigCount)
+WriteList::WriteList(void)
 {
-  _maxConfigCount = maxConfigCount;
+
 }
 
-
-WriteList::SearchResult_t WriteList::findConfig(MemberWriteConfig_t configToFind)
+WriteList::SearchResult_t WriteList::findConfig(WriteConfig_t configToFind)
 {
   SearchResult_t searchResult;
 
   for (uint16_t listIndex = 0U; listIndex < _configCount; listIndex++)
   {
-    if ((configToFind.nodeID   == _configList[listIndex].nodeID  ) &&
-        (configToFind.blockID  == _configList[listIndex].blockID ) &&
+    if ((configToFind.blockID  == _configList[listIndex].blockID ) &&
         (configToFind.memberID == _configList[listIndex].memberID) ) 
     {
       searchResult.configIndex = listIndex;
@@ -66,11 +63,9 @@ WriteList::SearchResult_t WriteList::findConfig(MemberWriteConfig_t configToFind
   return (searchResult);
 }
 
-
-WriteList::Error_t WriteList::addConfig(MemberWriteConfig_t newWriteConfig)
+WriteList::Error_t WriteList::addConfig(WriteConfig_t newWriteConfig)
 {
-  if ((_configCount >= LIST_MAX_LENGTH) ||
-      (_configCount >= _maxConfigCount ) )
+  if (_configCount >= LIST_MAX_LENGTH)
   {
     return (ERROR_FULL);
   }
@@ -81,8 +76,7 @@ WriteList::Error_t WriteList::addConfig(MemberWriteConfig_t newWriteConfig)
   return (ERROR_NONE);
 }
 
-
-void WriteList::removeConfig(MemberWriteConfig_t configToRemove)
+void WriteList::removeConfig(WriteConfig_t configToRemove)
 {
   SearchResult_t searchResult = findConfig(configToRemove);
 
@@ -92,22 +86,9 @@ void WriteList::removeConfig(MemberWriteConfig_t configToRemove)
   }
 }
 
-
-void WriteList::removeNode(uint8_t nodeID)
-{
-  for (uint16_t listIndex = 0U; listIndex < _configCount; listIndex++)
-  {
-    if (_configList[listIndex].nodeID == nodeID)
-    {
-      removeConfigAtIndex(listIndex);
-    }
-  }   
-}
-
-
 void WriteList::updateIndexes(uint16_t referenceIndex, int8_t shiftLength)
 {
-  for (MemberWriteConfig_t &writeConfig : _configList)
+  for (WriteConfig_t &writeConfig : _configList)
   {
     if (writeConfig.meshPacketDataIndex >= referenceIndex)
     {
@@ -115,7 +96,6 @@ void WriteList::updateIndexes(uint16_t referenceIndex, int8_t shiftLength)
     }
   }   
 }
-
 
 WriteList::Return_t WriteList::getConfigAtIndex(uint16_t configIndex)
 { 
@@ -133,17 +113,14 @@ WriteList::Return_t WriteList::getConfigAtIndex(uint16_t configIndex)
   return (configReturn);
 }
 
-
 uint16_t WriteList::getConfigCount(void)
 {
   return (_configCount);
 }
 
-
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
-
 
 void WriteList::removeConfigAtIndex(uint16_t configIndex)
 {

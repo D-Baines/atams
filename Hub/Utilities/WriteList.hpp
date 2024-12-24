@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    AtamsWriteList.hpp
+  * @file    WriteList.hpp
   *
   * @author  D. Baines
   *
@@ -30,18 +30,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
-
 /***************************************************************************/
 /* NAMESPACE                                                               */
 /***************************************************************************/
 
 namespace Atams
 {
-
-/***************************************************************************/
-/* TYPEDEFS                                                                */
-/***************************************************************************/
-
 
 /***************************************************************************/
 /* CLASS DEFINITIONS                                                       */
@@ -54,15 +48,14 @@ class WriteList
 
   /*-- PUBLIC TYPEDEFS ----------------*/
 
-  typedef struct MemberWriteConfig_t
+  typedef struct WriteConfig_t
   {
-    uint8_t  nodeID;
     uint8_t  blockID;
     uint16_t memberID;
     uint16_t meshPacketDataIndex;
     uint8_t  dataLength;
   
-  } MemberWriteConfig_t;
+  } WriteConfig_t;
 
   typedef enum: uint8_t
   {
@@ -73,8 +66,8 @@ class WriteList
   
   typedef struct ListReturn_t
   {
-    Error_t             status;
-    MemberWriteConfig_t writeConfig;
+    Error_t       status;
+    WriteConfig_t writeConfig;
   } Return_t;
 
   typedef struct SearchResult_t
@@ -85,13 +78,13 @@ class WriteList
 
   /*-- PUBLIC FUNCTION DEFINITIONS ----*/
 
-  WriteList(uint16_t maxConfigCount);
+  WriteList(void);
 
-  SearchResult_t findConfig(MemberWriteConfig_t configToFind);
+  SearchResult_t findConfig(WriteConfig_t configToFind);
 
-  Error_t addConfig(MemberWriteConfig_t newWriteConfig);
+  Error_t addConfig(WriteConfig_t newWriteConfig);
 
-  void removeConfig(MemberWriteConfig_t configToRemove);
+  void removeConfig(WriteConfig_t configToRemove);
 
   void removeNode(uint8_t nodeID);
 
@@ -109,10 +102,8 @@ class WriteList
 
   /*-- PRIVATE VARIABLES --------------*/
 
-  MemberWriteConfig_t _configList[LIST_MAX_LENGTH];
-
-  uint16_t _configCount    = 0U;
-  uint16_t _maxConfigCount = 0U;
+  WriteConfig_t _configList[LIST_MAX_LENGTH];
+  uint16_t      _configCount = 0U;
 
 
   /*-- PRIVATE FUNCTION DEFINITIONS ---*/

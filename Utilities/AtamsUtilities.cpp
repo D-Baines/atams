@@ -25,12 +25,11 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "../../Atams/Utilities/AtamsUtilities.hpp"
-
 #include <string.h>
-
+#include "AtamsUtilities.hpp"
 #include "../AtamsTypedefs.hpp"
-
+#include "COBS.hpp"
+#include "CRC32.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -40,29 +39,10 @@ namespace Atams
 {
 
 /*************************************************************************************/
-/* PRIVATE TYPEDEFS                                                                  */
-/*************************************************************************************/
-
-
-/*************************************************************************************/
-/* PRIVATE CONSTANTS                                                                 */
-/*************************************************************************************/
-
-
-/*************************************************************************************/
 /* PRIVATE VARIABLES                                                                 */
 /*************************************************************************************/
 
-
-/*************************************************************************************/
-/* PRIVATE OBJECTS                                                                   */
-/*************************************************************************************/
-
-
-/*************************************************************************************/
-/* PRIVATE FUNCTION DEFINITIONS                                                      */
-/*************************************************************************************/
-
+static CRC32 _crcAtams(CRC32_POLYNOMIAL);
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
@@ -99,6 +79,67 @@ void uint32ToBuffer(const uint32_t value, uint8_t* buffer)
   buffer[1U] = static_cast<uint8_t>((value >> TWO_BYTE_SHIFT   ) & SINGLE_BYTE_MASK);
   buffer[2U] = static_cast<uint8_t>((value >> SINGLE_BYTE_SHIFT) & SINGLE_BYTE_MASK);
   buffer[3U] = static_cast<uint8_t>((value                     ) & SINGLE_BYTE_MASK);
+}
+
+Error_t decodeMeshPacket(const uint8_t  *inputPacket,
+                         const uint16_t  inputPacketLength,
+                               uint8_t  *decodedPacket,
+                         const uint16_t  decodedPacketMaxLength,
+                               uint16_t &decodedLength)
+{
+  COBS::Result_t COBSDecodeResult = COBS::decode(inputPacket, inputPacketLength, decodedPacket, decodedPacketMaxLength);
+
+  if (COBSDecodeResult.status != COBS::ERROR_NONE)
+  {
+    return (ERROR_DECODE);
+  }
+
+  if (COBSDecodeResult.outputLength < MESH_SIZE_HEADER)
+  {
+    return (ERROR_DECODE);
+  }
+
+  uint32_t packetCRC = bufferToUint32(&decodedPacket[MESH_INDEX_CRC]);
+
+  memset(&decodedPacket[MESH_INDEX_CRC], 0U, MESH_SIZE_CRC);
+
+  if (packetCRC != _crcAtams.calculateCRC32(decodedPacket, COBSDecodeResult.outputLength))
+  {
+    return (ERROR_DECODE);
+  }
+
+  decodedLength = COBSDecodeResult.outputLength;
+
+  return (ERROR_NONE);
+}
+
+Error_t encodeMeshPacket(      uint8_t  *txPacket,
+                         const uint16_t  txLength,
+                               uint8_t  *encodedPacket,
+                         const uint16_t  encodedPacketMaxLength,
+                               uint16_t &encodedLength)
+{
+  if (txLength < MESH_SIZE_HEADER)
+  {
+    return (ERROR_ENCODE);
+  }
+
+  memset(&txPacket[MESH_INDEX_CRC], 0U, MESH_SIZE_CRC);
+
+  uint32_t CRCResult = _crcAtams.calculateCRC32(txPacket, txLength);
+
+  uint32ToBuffer(CRCResult, &txPacket[MESH_INDEX_CRC]);
+
+  COBS::Result_t COBSEncodeResult = COBS::encode(txPacket, txLength, encodedPacket, encodedPacketMaxLength);
+
+  if (COBSEncodeResult.status != COBS::ERROR_NONE)
+  {
+    return (ERROR_ENCODE);
+  }
+
+  encodedLength = COBSEncodeResult.outputLength;
+
+  return (ERROR_NONE);
 }
 
 

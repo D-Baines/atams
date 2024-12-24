@@ -29,6 +29,8 @@
 
 #include <stdint.h>
 #include "../AtamsTypedefs.hpp"
+#include "Utilities/CircularBuffer.hpp"
+#include "Utilities/WriteList.hpp"
 #include "Platform.hpp"
 
 /*************************************************************************************/
@@ -48,7 +50,8 @@ class Node;
 /*************************************************************************************/
 
 class   Bus :
-private Platform::CommsLock
+private CircularBuffer,
+private Platform::BusPeripheral
 {
   /*-- Friend Declarations ----------------------------------------------------------*/
 
@@ -70,19 +73,20 @@ private Platform::CommsLock
     INIT_STATE_FAILURE     = 3U
   } InitState_t;
 
-  struct NodeHandle_t
+  typedef enum: uint8_t
   {
-    Node   *nodeContext;
-    uint8_t nodeID;
-    uint8_t inactiveBuffer[Platform::COMMS_BUFFER_SIZE];
-    uint8_t activeBuffer[Platform::COMMS_BUFFER_SIZE];
-  };
-  
+    UPDATE_STATE_INIT_REQUIRED        = 0U,
+    UPDATE_STATE_READY                = 1U,
+    UPDATE_STATE_SEND_REQUEST_PACKETS = 2U,
+    UPDATE_STATE_COLLECT_RESPONSES    = 3U,
+    UPDATE_STATE_JOG_NODE             = 4U,
+    UPDATE_STATE_CYCLE_COMPLETE       = 5U,
+  } UpdateState_t;
 
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Constructor */
-  Bus(void);
+  Bus(BusPeripheral::UserData_t userData);
 
   /* Copy Constructor */
   Bus(const Bus &other) = delete;
@@ -91,7 +95,7 @@ private Platform::CommsLock
   Bus & operator=(const Bus &other) = delete;
 
   /* Destructor */
-  ~Bus(void) = delete;
+  ~Bus(void);
 
   Bus::InitState_t updateInitProcedure(void);
 
@@ -101,7 +105,7 @@ private Platform::CommsLock
 
   bool updateCycleComplete(void);
 
-  Atams::Error_t processBuffers(void);
+  Atams::Error_t swapAndProcessBuffers(void);
 
   /*-- Private ----------------------------------------------------------------------*/
 
@@ -109,18 +113,31 @@ private Platform::CommsLock
 
   /*-- Private Constants ------------------------------------------------------------*/
 
+  static inline constexpr uint64_t RESPONSE_TIMEOUT = 5U;
+
   /*-- Private Typedefs -------------------------------------------------------------*/
 
-  /*-- Private Variables ------------------------------------------------------------*/\
+  /*-- Private Variables ------------------------------------------------------------*/
   
-  NodeHandle_t _nodeHandles[Platform::NUMBER_OF_NODES_PER_BUS];
+  Node         *_nodePtrs[Platform::NUMBER_OF_NODES_PER_BUS];
+  uint16_t      _activeNodeIndex      = 0U;
+  uint16_t      _noOfNodesOnBus       = 0U;
+  UpdateState_t _updateState          = UPDATE_STATE_READY;
+  uint8_t       _rxBuffer[MAX_MESH_PACKET_SIZE];
+  uint8_t       _decodedBuffer[MAX_MESH_PACKET_SIZE];
+  uint8_t       _encodedBuffer[MAX_MESH_PACKET_SIZE];
+  uint8_t       _jogBuffer[MESH_SIZE_HEADER];
+  uint16_t      _rxLength             = 0U;
+  uint16_t      _decodedLength        = 0U;
+  uint16_t      _encodedLength        = 0U;
+  uint8_t       _activeSyncCount      = 0U;
+  uint64_t      _previousResponseTime = 0U;
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
   Atams::Error_t addNodeToBus(Node &node);
 
   Atams::Error_t removeNodeFromBus(Node &node);
-
 };
 
 

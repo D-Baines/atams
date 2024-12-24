@@ -46,6 +46,8 @@ namespace Atams {
 Node::Node(Bus &bus) :
 _bus(bus)
 {
+  _activePacketPtr   = &_primaryPacket;
+  _inactivePacketPtr = &_secondaryPacket;
   _bus.addNodeToBus(*this);
 }
 
@@ -155,15 +157,28 @@ DataStatusReturn_t<uint8_t> Node::getMemberLength(const uint8_t blockID, const u
 }
 
 Error_t Node::setRequestPattern(const uint8_t          blockID,
-                                const uint16_t         memberID,
-                                const RequestPattern_t updatePattern)
+                                const uint16_t         varID,
+                                const Access_t         accessRequest,
+                                const RequestPattern_t requestPattern)
 {
   if (blockID >= _memoryMap.noOfDataBlocks)
   {
     return (ERROR_BLOCK_ID);
   }
 
-  return(_bus.setRequestPattern(this, blockID, memberID, updatePattern));
+  Error_t                  meshChangeReturn;
+  DataStatusReturn_t<bool> requestReturn = _dataBlocks[blockID].setRequestPattern(varID, accessRequest, requestPattern);
+
+  if (requestReturn.data == true)
+  {
+
+    meshChangeReturn = processPacketChange(blockID,
+                                           varID,
+                                           accessRequest, 
+                                           requestPattern);
+  }
+  
+  return (meshChangeReturn);
 }
 
 
@@ -171,7 +186,181 @@ Error_t Node::setRequestPattern(const uint8_t          blockID,
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-void processCommsBuffer(uint8_t buffer, uint16_t length);
+void Node::copyToActiveBuffer(uint8_t *buffer, uint16_t length)
+{
+  if (length <= MAX_MESH_PACKET_SIZE) memcpy(_activePacketPtr->buffer, buffer, length);
+
+  _activePacketPtr->length = length;
+}
+
+void Node::swapAndProcessBuffers(void)
+{
+  Platform::MemoryLock::acquireLock();
+  
+  /* Swap the inactive/active mesh packet pointers */
+  Packet_t* tempPacketPtr = _activePacketPtr;
+  _activePacketPtr        = _inactivePacketPtr;
+  _inactivePacketPtr      = tempPacketPtr;
+
+   /* Copy contents of the now active mesh packet into the now inactive mesh packet for editing */
+  *_inactivePacketPtr = *_activePacketPtr;
+
+  Platform::MemoryLock::releaseLock();
+}
+
+/* Warning - No OOR checks, should be completed before calling this function */
+Error_t Node::processPacketChange(const uint8_t          blockID,
+                                  const uint16_t         varID,
+                                  const Access_t         accessRequest,
+                                  const RequestPattern_t requestPattern)
+{
+  PacketChangeConfig_t packetChangeConfig;
+
+  packetChangeConfig.accessRequest  = accessRequest;
+  packetChangeConfig.commandPattern = commandPattern;
+  packetChangeConfig.nodeType       = _meshNodes[nodeID].getNodeType();
+  packetChangeConfig.nodeID         = nodeID;
+  packetChangeConfig.fieldID        = fieldID;
+  packetChangeConfig.memberID       = memberID;
+
+  MeshPacket_t *meshPacket = _inactiveMeshPacketPtr;
+  Error_t   statusReturn;
+
+  statusReturn = meshPacketConstructDatagram(meshChangeConfig);
+
+  if (statusReturn != ERROR_NONE)
+  {
+    return (statusReturn);
+  }
+
+  /* Begin editing of inactive mesh packet */
+  Platform::MemoryLock::acquireLock();
+
+  /* Search Node packet for a datagram matching the new datagram */
+  DataStatusReturn_t<bool> datagramSearchResult = packetFindDatagramMatch(packetChangeConfig);
+  
+  if (datagramSearchResult.status != ERROR_NONE)
+  {
+    return (datagramSearchResult.status);
+  }
+
+  if (datagramSearchResult.data == true)
+  { /* Datagram already exists in Node packet but either needs editing or removing */
+
+    if (requestPattern == REQUEST_INACTIVE)
+    { /* Datagram needs to be removed from Mesh packet */
+
+      statusReturn = packetRemoveCurrentDatagram(packetChangeConfig);
+
+      if (statusReturn != ERROR_NONE)
+      {
+        return (statusReturn);
+      }
+
+    }
+    else /* commandPattern != COMMAND_INACTIVE */
+    {
+      statusReturn = packetAdjustCurrentDatagram(packetChangeConfig);
+
+      if (statusReturn != ERROR_NONE)
+      {
+        return (statusReturn);
+      }
+    }
+  }
+  else 
+  { /* No matching datagram already in Node/Mesh packet */
+    statusReturn = packetAppendDatagramToNode(packetChangeConfig);
+
+    if (statusReturn != ERROR_NONE)
+    {
+      return (statusReturn);
+    }
+  }
+
+  Platform::MemoryLock::releaseLock();
+
+  return (ERROR_NONE);
+}
+
+Error_t MeshController::setCommandPattern(const Access_t         accessRequest,
+                                          const CommandPattern_t commandPattern,
+                                          const uint8_t          nodeID,
+                                          const uint8_t          fieldID, 
+                                          const uint16_t         memberID)
+{
+  DataStatusReturn_t<bool> commandReturn;
+  bool                     commandChanged = &commandReturn.data;
+  Error_t                  meshChangeReturn;
+
+  if (nodeID > NODE_ID_MAX)
+  {
+    commandReturn.status = recordError(ERROR_NODE_ID_OOR);
+
+    return (commandReturn.status);
+  }
+
+  commandReturn = _meshNodes[nodeID].setCommandPattern(accessRequest,
+                                                       commandPattern,
+                                                       fieldID,
+                                                       memberID);
+
+  /* If setMemberCommand returned an error or the new command was not different from the last, return */
+  if (commandReturn.status != ERROR_NONE)
+  {
+    recordError(commandReturn.status);
+    return (commandReturn.status);
+  }
+
+  if (commandChanged == false)
+  {
+    return (commandReturn.status);
+  }
+
+  meshChangeReturn = processMeshPacketChange(accessRequest,
+                                             commandPattern,
+                                             nodeID,
+                                             fieldID, 
+                                             memberID);
+  
+  return (meshChangeReturn);
+}
+
+void MeshController::updateCommandPattern(const Access_t  access,
+                                          const uint8_t   nodeID,
+                                          const uint8_t   fieldID, 
+                                          const uint16_t  memberID)
+{ 
+  if (nodeID > NODE_ID_MAX)
+  {
+    recordError(ERROR_NODE_ID_OOR);
+    return;
+  }
+
+  Error_t                          meshChangeStatus;
+  DataStatusReturn_t<CommandPattern_t> commandPattern;
+  
+  commandPattern = _meshNodes[nodeID].getCommandPattern(access,
+                                                        fieldID,
+                                                        memberID);
+
+  
+  if (commandPattern.status != ERROR_NONE)
+  {
+    recordError(ERROR_PATTERN_AUTO_UPDATE);
+    return;
+  }
+
+  if (commandPattern.data == COMMAND_UNTIL_ACK)
+  {
+    meshChangeStatus = setCommandPattern(access, COMMAND_INACTIVE, nodeID, fieldID, memberID);
+
+    if (meshChangeStatus != ERROR_NONE)
+    {
+      recordError(ERROR_PATTERN_AUTO_UPDATE);
+    }
+  }
+}
 
 
 } /* End Namespace - Atams */
