@@ -50,7 +50,8 @@ inline constexpr uint16_t MAX_MESH_PACKET_DATAGRAM_COUNT = 256U;
 inline constexpr uint16_t MAX_MESH_PACKET_SIZE           = 256U;
 inline constexpr uint16_t MAX_NODE_PACKET_SIZE           = 256U;
 inline constexpr uint8_t  MAX_NUMBER_OF_MESH             = 10U;
-inline constexpr uint8_t  MAX_NUMBER_OF_DATA_BLOCKS      = 15U;
+inline constexpr uint8_t  MAX_NUMBER_OF_DATA_BLOCKS      = 14U;
+inline constexpr uint8_t  BLOCK_ID_ERROR_INDICATOR       = 14U;
 inline constexpr uint16_t MAX_NUMBER_OF_DATA_MEMBERS     = 512U;
 inline constexpr uint8_t  MAX_TYPE_SIZE                  = 4U;
 inline constexpr uint8_t  EOL_BYTE                       = 0U;
@@ -174,6 +175,14 @@ typedef enum: uint8_t
 
 typedef enum: uint8_t
 {
+  RESPONSE_NACK      = 0U,
+  RESPONSE_ACK_READ  = 1U,
+  RESPONSE_ACK_WRITE = 2U,
+  RESPONSE_FATAL     = 3U
+} AccessResponse_t;
+
+typedef enum: uint8_t
+{
   TYPE_NULL   = 0U,
   TYPE_UINT8  = 1U,
   TYPE_INT8   = 2U,
@@ -199,16 +208,6 @@ struct DatagramHeader_t
   uint16_t varID;
 };
 
-struct MeshPacket_t
-{
-  uint8_t        buffer[MAX_MESH_PACKET_SIZE] = {0U};
-  uint16_t       length                       = MESH_SIZE_HEADER;
-  List<uint8_t>  nodeIDList                   = {MAX_NUMBER_OF_NODE_IDS};
-  uint8_t        pingResponseCount            = 0U;
-  WriteList      writeList                    = {MAX_MESH_PACKET_DATAGRAM_COUNT};
-  uint8_t        syncCount                    = 0U;
-};
-
 template <typename T>
 struct DataStatusReturn_t
 {
@@ -223,12 +222,6 @@ typedef enum: uint8_t
   COMMS_TRANSMIT = 0U,
   COMMS_RECEIVE  = 1U,
 } CommsDirection_t;
-
-typedef enum: uint8_t
-{
-  COMMS_STORAGE_COPY      = 0U,
-  COMMS_STORAGE_ZERO_COPY = 1U
-} CommsStorage_t;
 
 struct TXMessage_t
 {

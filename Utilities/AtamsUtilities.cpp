@@ -142,6 +142,22 @@ Error_t encodeMeshPacket(      uint8_t  *txPacket,
   return (ERROR_NONE);
 }
 
+void datagramHeaderToBuffer(const DatagramHeader_t &datagramHeader, uint8_t* buffer)
+{
+  buffer[0U] = (((datagramHeader.command << DATAGRAM_HEADER_SHIFT_COMMAND  ) & DATAGRAM_HEADER_MASK_COMMAND  ) |
+                ((datagramHeader.blockID << DATAGRAM_HEADER_SHIFT_BLOCK_ID ) & DATAGRAM_HEADER_MASK_BLOCK_ID ) |
+                ((datagramHeader.varID   << DATAGRAM_HEADER_MASK_VAR_ID_HI ) & DATAGRAM_HEADER_MASK_VAR_ID_HI) );
+  buffer[1U] =  ((datagramHeader.varID   << DATAGRAM_HEADER_SHIFT_VAR_ID_LO) & DATAGRAM_HEADER_MASK_VAR_ID_LO);
+}
+
+void bufferToDatagramHeader(const uint8_t *buffer, DatagramHeader_t &datagramHeader)
+{
+  datagramHeader.command =   (buffer[0U] & DATAGRAM_HEADER_MASK_COMMAND  ) >> DATAGRAM_HEADER_SHIFT_COMMAND;
+  datagramHeader.blockID =   (buffer[0U] & DATAGRAM_HEADER_MASK_BLOCK_ID ) >> DATAGRAM_HEADER_SHIFT_BLOCK_ID;
+  datagramHeader.varID   = (((buffer[0U] & DATAGRAM_HEADER_MASK_VAR_ID_HI) << DATAGRAM_HEADER_SHIFT_VAR_ID_HI) &
+                            ((buffer[1U] & DATAGRAM_HEADER_MASK_VAR_ID_LO) << DATAGRAM_HEADER_SHIFT_VAR_ID_LO) );
+}
+
 
 } /* End Namespace - Atams */
 

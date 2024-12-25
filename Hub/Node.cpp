@@ -186,11 +186,104 @@ Error_t Node::setRequestPattern(const uint8_t          blockID,
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-void Node::copyToActiveBuffer(uint8_t *buffer, uint16_t length)
+void Node::copyToResponseBuffer(uint8_t *buffer, uint16_t length)
 {
-  if (length <= MAX_MESH_PACKET_SIZE) memcpy(_activePacketPtr->buffer, buffer, length);
+  if (length <= sizeof(_responseBuffer)) 
+  {
+    memcpy(_responseBuffer, buffer, length);
+    _responseBufferLength = length;
+  }
+}
 
-  _activePacketPtr->length = length;
+void Node::processNodePacket(uint8_t *buffer, uint16_t length)
+{
+  bool                        cancelProcessing = false;
+  uint8_t                     datagramIndex    = MESH_INDEX_FIRST_DATAGRAM;
+  uint8_t                     nodeID           = buffer[MESH_INDEX_NODE_ID];
+  Error_t                     transferStatus   = ERROR_NONE;
+  MessageType_t               messageType      = static_cast<MessageType_t>(buffer[MESH_INDEX_MSG_TYPE]);
+  DatagramHeader_t            datagramHeader;
+  DataStatusReturn_t<uint8_t> datagramPayloadLength;
+
+  if (messageType != MESSAGE_REQUEST_SYNCED)
+  {
+    /* Register error and return early */
+    return;
+  }
+
+  while ((datagramIndex + DATAGRAM_SIZE_HEADER <= length) &&
+         (cancelProcessing                     == false ) )
+  {
+    bufferToDatagramHeader(&buffer[datagramIndex], datagramHeader);
+
+    if (datagramHeader.blockID == BLOCK_ID_ERROR_INDICATOR ||
+        datagramHeader.blockID >= _memoryMap.noOfDataBlocks)
+    {
+      datagramIndex += DATAGRAM_SIZE_HEADER;
+      Error_t error = static_cast<Error_t>(buffer[datagramIndex]);
+      //recordError(ERROR_PACKET_PROCESSING);
+      break;
+    }
+
+    DataBlock &datablock = _dataBlocks[datagramHeader.blockID];
+  
+    datagramPayloadLength = datablock.getMemberLength(datagramHeader.varID);
+  
+    if (datagramPayloadLength.status != ERROR_NONE)
+    {
+      //recordError(ERROR_PACKET_PROCESSING);
+      break;
+    }
+
+    switch (static_cast<AccessResponse_t>(datagramHeader.command))
+    {      
+      case RESPONSE_NACK:
+      {
+        datagramIndex += DATAGRAM_SIZE_HEADER;
+        Error_t accessError = static_cast<Error_t>(buffer[datagramIndex]);
+        //recordError(ERROR_PACKET_PROCESSING);
+        datagramIndex += sizeof(accessError);
+        break;
+      }
+
+      case RESPONSE_ACK_READ:
+      {
+        /* Mesh packet data is sent with little endian byte order, order must be swapped when data enters/exits the mesh packet on big endian systems */
+        if (systemIsBigEndian()) swapEndiannessRaw(&buffer[datagramIndex + DATAGRAM_INDEX_PAYLOAD], datagramPayloadLength.data);
+
+        transferStatus = datablock.externalTransfer(ACCESS_WRITE,
+                                                    datagramHeader.varID,
+                                                    &buffer[datagramIndex + DATAGRAM_INDEX_PAYLOAD],
+                                                    datagramPayloadLength.data);
+
+        if (transferStatus == ERROR_NONE)
+        {
+          updateCommandPattern(ACCESS_READ, nodeID, datagramHeader.blockID, datagramHeader.varID);
+        }
+        else 
+        {
+          //recordError(ERROR_PACKET_PROCESSING);
+        }
+
+        datagramIndex += (DATAGRAM_SIZE_HEADER + datagramPayloadLength.data);
+        
+        break;
+      }
+
+      case RESPONSE_ACK_WRITE:
+        updateCommandPattern(ACCESS_WRITE, nodeID, datagramHeader.blockID, datagramHeader.varID);
+        datagramIndex += DATAGRAM_SIZE_HEADER;
+        break;
+
+      case RESPONSE_FATAL:
+        /* Fatal Error - Inappropriate access command received by node */
+      default:
+        /* Fatal Error - Inappropriate response */
+        //recordError(ERROR_COMMAND_RESPONSE_INVALID);
+        cancelProcessing = true;
+        break;
+    }
+  }
 }
 
 void Node::swapAndProcessBuffers(void)
@@ -202,8 +295,10 @@ void Node::swapAndProcessBuffers(void)
   _activePacketPtr        = _inactivePacketPtr;
   _inactivePacketPtr      = tempPacketPtr;
 
-   /* Copy contents of the now active mesh packet into the now inactive mesh packet for editing */
+  /* Copy contents of the now active mesh packet into the now inactive mesh packet for processing and editing */
   *_inactivePacketPtr = *_activePacketPtr;
+
+  processNodePacket(_responseBuffer, _responseBufferLength);
 
   Platform::MemoryLock::releaseLock();
 }
@@ -282,6 +377,8 @@ Error_t Node::processPacketChange(const uint8_t          blockID,
 
   return (ERROR_NONE);
 }
+
+/* MESH CONTROLLER EXAMPLES*/
 
 Error_t MeshController::setCommandPattern(const Access_t         accessRequest,
                                           const CommandPattern_t commandPattern,
@@ -362,6 +459,167 @@ void MeshController::updateCommandPattern(const Access_t  access,
   }
 }
 
+void MeshController::processPingResponse(uint8_t *pingResponseBuffer, const uint16_t pingResponseLength)
+{
+  if (pingResponseBuffer == nullptr)
+  {
+    recordError(ERROR_NULL_PTR);
+    return;
+  }
+
+  if (pingResponseLength < MESH_SIZE_HEADER + NODE_SIZE_HEADER) 
+  {
+    recordError(ERROR_MESH_BUFFER_LENGTH);
+    return;
+  }
+
+  const uint8_t   syncCount             = pingResponseBuffer[MESH_INDEX_SYNC];
+  const uint8_t   nodeID                = pingResponseBuffer[MESH_INDEX_FIRST_NODE + NODE_INDEX_ID];
+  const uint16_t  nodeType              = pingResponseBuffer[MESH_INDEX_FIRST_NODE + NODE_INDEX_TYPE];
+  const uint8_t   nodePacketLength      = pingResponseBuffer[MESH_INDEX_FIRST_NODE + NODE_INDEX_LENGTH];
+  const uint16_t  remainingBufferLength = pingResponseLength - MESH_INDEX_FIRST_NODE;
+        Node      &node                  = _meshNodes[nodeID];
+
+  if (nodeID > NODE_ID_MAX)
+  {
+    recordError(ERROR_NODE_ID_OOR);
+    return;
+  }
+
+  if ((nodePacketLength > remainingBufferLength ) ||
+      (nodePacketLength < NODE_SIZE_HEADER      ) )
+  {
+    node.recordError(ERROR_NODE_BUFFER_LENGTH);
+    recordError(ERROR_PACKET_PROCESSING);
+    return;
+  }
+
+  std::unique_lock<std::mutex> lock(_meshPacketAccess);
+
+  //if (syncCount != _activeMeshPacketPtr->syncCount)
+  //{
+  //  /* Received mesh packet is out of date */
+  //  node.recordError(ERROR_SYNC_COUNT);
+  //  recordError(ERROR_PACKET_PROCESSING);
+  //  return;
+  //}   
+
+  NodeType_t internalNodeType = _meshNodes[nodeID].getNodeType();
+
+  if ((internalNodeType != NODE_TYPE_UNIVERSAL) &&
+      (nodeType         != internalNodeType   ) )
+  {
+    /* Received node packet was sent from an unexpected node type */
+    node.recordError(ERROR_NODE_TYPE);
+    recordError(ERROR_PACKET_PROCESSING);
+    return;
+  }
+  
+  if (nodeID != _activeMeshPacketPtr->pingResponseCount)
+  {
+    /* Received node packet was sent from the unexpected node ID */
+    recordError(ERROR_SYNC_NODE);
+    return;
+  }
+
+  meshUpdateCycleStep();
+
+  _meshPacketAccess.unlock();
+
+  processNodePacket(&pingResponseBuffer[MESH_INDEX_FIRST_NODE], nodePacketLength);
+}
+
+/* Warning - nullptr, length, nodeType, nodeID checks not performed, completed in processPingResponse */
+void MeshController::processNodePacket(uint8_t *nodePacket, const uint8_t nodePacketLength)
+{
+  bool                        cancelProcessing = false;
+  uint8_t                     datagramIndex    = NODE_INDEX_FIRST_DATAGRAM;
+  uint8_t                     nodeID           = nodePacket[NODE_INDEX_ID];
+  Error_t                     transferStatus   = ERROR_NONE;
+  DatagramHeader_t            datagramHeader;
+  DataStatusReturn_t<uint8_t> datagramPayloadLength;
+  Node                       &node             = _meshNodes[nodeID];
+
+  /* datagramIndex must always be at the start of a datagram header when the while loop check is reached */
+  while ((datagramIndex + DATAGRAM_SIZE_HEADER <= nodePacketLength) &&
+         (cancelProcessing == false)                                )
+  {
+    /* Mesh packet data is sent with little endian byte order, order must be swapped when data enters/exits the mesh packet on big endian systems */
+    if (systemIsBigEndian()) swapEndiannessRaw(&nodePacket[datagramIndex], DATAGRAM_SIZE_HEADER);
+
+    memcpy(&datagramHeader.asUINT16, &nodePacket[datagramIndex], DATAGRAM_SIZE_HEADER);
+
+    if (datagramHeader.asData.fieldID == SUBSYSTEM_ERROR_INDICATOR)
+    {
+      datagramIndex += DATAGRAM_SIZE_HEADER;
+      Error_t error = static_cast<Error_t>(nodePacket[datagramIndex]);
+      //recordError(error);
+      break;
+    }
+  
+    datagramPayloadLength = getMemberLength(nodeID,
+                                            datagramHeader.asData.fieldID,
+                                            datagramHeader.asData.memberID);
+  
+    if (datagramPayloadLength.status != ERROR_NONE)
+    {
+      recordError(ERROR_PACKET_PROCESSING);
+      break;
+    }
+
+    switch (static_cast<Access_t>(datagramHeader.asData.command))
+    {      
+      case ACCESS_NONE_NACK:
+      {
+        datagramIndex += DATAGRAM_SIZE_HEADER;
+        Error_t nodeMemoryMapError = static_cast<Error_t>(nodePacket[datagramIndex]);
+        node.recordError(nodeMemoryMapError);
+        recordError(ERROR_PACKET_PROCESSING);
+        datagramIndex += sizeof(nodeMemoryMapError);
+        break;
+      }
+
+      case ACCESS_READ_ACK:
+      {
+        /* Mesh packet data is sent with little endian byte order, order must be swapped when data enters/exits the mesh packet on big endian systems */
+        if (systemIsBigEndian()) swapEndiannessRaw(&nodePacket[datagramIndex + DATAGRAM_INDEX_PAYLOAD], datagramPayloadLength.data);
+
+        transferStatus = internalTransferRaw(ACCESS_WRITE_ACK, 
+                                             nodeID, 
+                                             datagramHeader.asData.fieldID, 
+                                             datagramHeader.asData.memberID, 
+                                             &nodePacket[datagramIndex + DATAGRAM_INDEX_PAYLOAD],
+                                             datagramPayloadLength.data);
+
+        if (transferStatus == ERROR_NONE)
+        {
+          updateCommandPattern(ACCESS_READ_ACK, nodeID, datagramHeader.asData.fieldID, datagramHeader.asData.memberID);
+        }
+        else 
+        {
+          recordError(ERROR_PACKET_PROCESSING);
+        }
+
+        datagramIndex += (DATAGRAM_SIZE_HEADER + datagramPayloadLength.data);
+        
+        break;
+      }
+
+      case ACCESS_WRITE_ACK:
+        updateCommandPattern(ACCESS_WRITE_ACK, nodeID, datagramHeader.asData.fieldID, datagramHeader.asData.memberID);
+        datagramIndex += DATAGRAM_SIZE_HEADER;
+        break;
+
+      case ACCESS_FATAL:
+        /* Fatal Error - Inappropriate access command received by node */
+      default:
+        /* Fatal Error - Inappropriate response */
+        recordError(ERROR_COMMAND_RESPONSE_INVALID);
+        cancelProcessing = true;
+        break;
+    }
+  }
+}
 
 } /* End Namespace - Atams */
 

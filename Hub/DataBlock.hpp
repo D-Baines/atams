@@ -45,7 +45,6 @@ namespace Atams {
 class   DataBlock :
 private Platform::MemoryLock
 {
-
   public:
 
   /*-- Public Constants -------------------------------------------------------------*/

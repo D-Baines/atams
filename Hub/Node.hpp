@@ -193,12 +193,17 @@ private Platform::MemoryLock
   Packet_t    _secondaryPacket;
   Packet_t   *_activePacketPtr;
   Packet_t   *_inactivePacketPtr;
+  uint8_t     _responseBuffer[MAX_MESH_PACKET_SIZE];
+  uint16_t    _responseBufferLength;
 
   /*-- PRIVATE FUNCTION DECLARATIONS --*/
 
-  void copyToActiveBuffer(uint8_t *buffer, uint16_t length);
+  void copyToResponseBuffer(uint8_t *buffer, uint16_t length);
   
   void swapAndProcessBuffers(void);
+
+  void processNodePacket(uint8_t *buffer, uint16_t length);
+
 };
 
 } /* End Namespace - Atams */

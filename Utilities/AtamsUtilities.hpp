@@ -85,6 +85,10 @@ Error_t encodeMeshPacket(      uint8_t  *txPacket,
                          const uint16_t  encodedPacketMaxLength,
                                uint16_t &encodedLength);
 
+void datagramHeaderToBuffer(const DatagramHeader_t &datagramHeader, uint8_t* buffer);
+
+void bufferToDatagramHeader(const uint8_t *buffer, DatagramHeader_t &datagramHeader);
+
 
 } /* End Namespace - Atams */
 

@@ -83,23 +83,25 @@ Atams::Error_t Bus::update(void)
       /* Do Nothing */
       break;
     case UPDATE_STATE_SEND_REQUEST_PACKETS:
-      if (Platform::BusPeripheral::transmitReady())
+      if (activeNodePtr == nullptr)
+      {
+        _activeNodeIndex      = 0U;
+        _previousResponseTime = currentTime;
+        _updateState          = UPDATE_STATE_COLLECT_RESPONSES;
+      }
+      else if (Platform::BusPeripheral::transmitReady())
       {
         encodeMeshPacket(activeNodePtr->_activePacketPtr->buffer, activeNodePtr->_activePacketPtr->length, _encodedBuffer, sizeof(_encodedBuffer), _encodedLength);
         Platform::BusPeripheral::transmit(_encodedBuffer, _encodedLength);
-        if (_activeNodeIndex < _noOfNodesOnBus - 1U)
-        {
-          _activeNodeIndex++;
-        }
-        else                                         
-        {
-          _activeNodeIndex      = 0U;
-          _previousResponseTime = currentTime;
-          _updateState          = UPDATE_STATE_COLLECT_RESPONSES;
-        }
+        _activeNodeIndex++;
       }
       break;
     case UPDATE_STATE_COLLECT_RESPONSES:
+      if (activeNodePtr == nullptr)
+      {
+        _activeNodeIndex = 0U;
+        _updateState     = UPDATE_STATE_CYCLE_COMPLETE;
+      }
       if (CircularBuffer::getPacket(_rxBuffer, 
                                     sizeof(_rxBuffer),
                                     _rxLength))
@@ -124,31 +126,17 @@ Atams::Error_t Bus::update(void)
             }
           }
         }
-        if (_activeNodeIndex < _noOfNodesOnBus - 1U)
-        {
-          _activeNodeIndex++;
-        }
-        else                                         
-        {
-          _activeNodeIndex = 0U;
-          _updateState     = UPDATE_STATE_CYCLE_COMPLETE;
-        }           
+
+        _activeNodeIndex++;   
       }
       else if (currentTime - _previousResponseTime > RESPONSE_TIMEOUT)
       { 
-        if (_activeNodeIndex < _noOfNodesOnBus - 1U)
-        {
-          _activeNodeIndex++;
-          _updateState = UPDATE_STATE_JOG_NODE;
-        }
-        else                                         
-        {
-          _activeNodeIndex = 0U;
-          _updateState     = UPDATE_STATE_CYCLE_COMPLETE;
-        }   
+        _activeNodeIndex++;
+        _updateState = UPDATE_STATE_JOG_NODE;
       }
       break;
     case UPDATE_STATE_JOG_NODE:
+    //TODO: Check for nullptr node
       _jogBuffer[MESH_INDEX_NODE_ID] = _nodePtrs[_activeNodeIndex]->_nodeID;
       if (Platform::BusPeripheral::transmitReady()) 
       {
@@ -171,10 +159,15 @@ bool Bus::updateCycleComplete(void)
 
 Atams::Error_t Bus::swapAndProcessBuffers(void)
 {
+  if (_updateState != UPDATE_STATE_CYCLE_COMPLETE) return (ERROR_UPDATE_CYCLE_IN_PROGRESS);
+  
   for (Node *nodePtr : _nodePtrs)
   {
     if (nodePtr != nullptr) nodePtr->swapAndProcessBuffers();
   }
+
+  _activeNodeIndex = 0U;
+  _updateState     = UPDATE_STATE_SEND_REQUEST_PACKETS;
 }
 
 
