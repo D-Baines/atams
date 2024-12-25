@@ -46,8 +46,6 @@ namespace Atams {
 Node::Node(Bus &bus) :
 _bus(bus)
 {
-  _activePacketPtr   = &_primaryPacket;
-  _inactivePacketPtr = &_secondaryPacket;
   _bus.addNodeToBus(*this);
 }
 
@@ -195,9 +193,11 @@ void Node::copyToResponseBuffer(uint8_t *buffer, uint16_t length)
   }
 }
 
-void Node::processNodePacket(uint8_t *buffer, uint16_t length)
+
+
+void Node::processResponseBuffer(void)
 {
-  bool                        cancelProcessing = false;
+    bool                        cancelProcessing = false;
   uint8_t                     datagramIndex    = MESH_INDEX_FIRST_DATAGRAM;
   uint8_t                     nodeID           = buffer[MESH_INDEX_NODE_ID];
   Error_t                     transferStatus   = ERROR_NONE;
@@ -284,23 +284,6 @@ void Node::processNodePacket(uint8_t *buffer, uint16_t length)
         break;
     }
   }
-}
-
-void Node::swapAndProcessBuffers(void)
-{
-  Platform::MemoryLock::acquireLock();
-  
-  /* Swap the inactive/active mesh packet pointers */
-  Packet_t* tempPacketPtr = _activePacketPtr;
-  _activePacketPtr        = _inactivePacketPtr;
-  _inactivePacketPtr      = tempPacketPtr;
-
-  /* Copy contents of the now active mesh packet into the now inactive mesh packet for processing and editing */
-  *_inactivePacketPtr = *_activePacketPtr;
-
-  processNodePacket(_responseBuffer, _responseBufferLength);
-
-  Platform::MemoryLock::releaseLock();
 }
 
 /* Warning - No OOR checks, should be completed before calling this function */

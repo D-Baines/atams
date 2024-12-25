@@ -93,7 +93,6 @@ private Platform::CommsLock
   Error_t pushHead(const uint8_t *inputBuffer,
                    const uint16_t inputLength);
 
-
   private:
 
   /*-- Private Static Constants -----------------------------------------------------*/
