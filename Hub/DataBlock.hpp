@@ -53,8 +53,8 @@ private Platform::MemoryLock
 
   struct MemberInfo_t
   {
-    DataType_t type           = TYPE_NULL;
-    Access_t   externalAccess = ACCESS_NONE;
+    DataType_t type        = TYPE_NULL;
+    Access_t   accessLevel = ACCESS_READ;
   };
 
   struct BlockDescriptor_t
@@ -77,30 +77,32 @@ private Platform::MemoryLock
   /* Copy Assignment Operator */
   DataBlock & operator=(const DataBlock &other) = delete;
 
-  Error_t initDescriptor(const BlockDescriptor_t &blockDescriptor);
+  Atams::Error_t initDescriptor(const BlockDescriptor_t &blockDescriptor);
 
   void resetDataMembers(void);
 
   void deinit(void);
 
   template <typename T>
-  Error_t write(const uint16_t memberID,
-                const T        writeData);
+  Atams::Error_t write(const uint16_t memberID,
+                       const T        writeData);
 
   template <typename T>
-  Error_t read(const uint16_t  memberID,
-                     T        &readData);
+  Atams::Error_t read(const uint16_t  memberID,
+                            T        &readData);
 
   DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t memberID);
 
-  Error_t externalTransfer(const Access_t  accessRequest,
-                           const uint16_t  memberID,
-                           uint8_t * const dataStoragePtr,
-                           const uint8_t   length);
-
+  Atams::Error_t externalTransfer(const Access_t  accessRequest,
+                                  const uint16_t  memberID,
+                                  uint8_t * const dataStoragePtr,
+                                  const uint8_t   length);
+       
   DataStatusReturn_t<bool> setRequestPattern(const uint16_t         varID,
                                              const Access_t         accessRequest,
                                              const RequestPattern_t requestPattern);
+
+  DataStatusReturn_t<bool> updateRequestPattern(const uint16_t varID, const Access_t accessRequest);
 
   private:
 
@@ -111,8 +113,7 @@ private Platform::MemoryLock
   struct DataMember_t
   {
     uint8_t          data[MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
-    RequestPattern_t readRequestPattern;
-    RequestPattern_t writeRequestPattern;
+    RequestPattern_t requestPattern[NUMBER_OF_ACCESS_LEVELS];
   };
 
   /*-- Private Variables ------------------------------------------------------------*/

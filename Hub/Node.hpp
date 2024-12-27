@@ -83,7 +83,7 @@ private Platform::MemoryLock
         for (DataBlock::MemberInfo_t &varInfo : blockDescriptor.dataMemberInfo)
         {
           varInfo.type           = TYPE_NULL;
-          varInfo.externalAccess = ACCESS_NONE;
+          varInfo.accessLevel = ACCESS_NONE;
         }
       }
     }
@@ -123,29 +123,38 @@ private Platform::MemoryLock
 
   Node & operator=(const Node &other) = delete;
 
-  Error_t init(const MemoryMap_t &memoryMap);
+  Atams::Error_t init(const MemoryMap_t &memoryMap);
      
   template <typename T>
-  Error_t write(const uint8_t blockID, const uint16_t memberID, const T writeData);
+  Atams::Error_t write(const uint8_t blockID, const uint16_t memberID, const T writeData);
   
   template <typename T>
-  Error_t read(const uint8_t blockID, const uint16_t memberID, T &readData);
+  Atams::Error_t read(const uint8_t blockID, const uint16_t memberID, T &readData);
   
   DataBlock * getBlockPtr(const uint8_t blockID);
   
-  Error_t externalTransfer(const Access_t  accessRequest,
-                           const uint8_t   blockID,
-                           const uint16_t  memberID,
-                           uint8_t * const dataStoragePtr,
-                           const uint8_t   length);
+  Atams::Error_t externalTransfer(const Access_t  accessRequest,
+                                  const uint8_t   blockID,
+                                  const uint16_t  memberID,
+                                  uint8_t * const dataStoragePtr,
+                                  const uint8_t   length);
   
   DataStatusReturn_t<uint8_t> getMemberLength(const uint8_t blockID, const uint16_t memberID);
 
-  Error_t setRequestPattern(const uint8_t          blockID,
-                            const uint16_t         varID,
-                            const Access_t         accessRequest,
-                            const RequestPattern_t requestPattern);
+  Atams::Error_t setRequestPattern(const uint8_t          blockID,
+                                   const uint16_t         varID,
+                                   const Access_t         accessRequest,
+                                   const RequestPattern_t requestPattern);
 
+  uint8_t getNodeID(void);
+
+  Atams::Error_t getEncodedRequestPacket(uint8_t  *outputBuffer,
+                                         uint16_t  outputBufferMaxLength, 
+                                         uint16_t &outputLength);
+
+  Atams::Error_t responseReceived(uint8_t *inputBuffer, uint16_t inputLength);
+
+  Atams::Error_t processResponseBuffer(void);
 
   /*-- PRIVATE -----------------------------------------------------------------------*/
 
@@ -162,41 +171,55 @@ private Platform::MemoryLock
     WriteList writeList;
   };
 
-  struct PacketChangeConfig_t
+  struct RequestChangeConfig_t
   {
     Access_t         accessRequest;
-    RequestPattern_t commandPattern;
+    RequestPattern_t requestPattern;
     uint8_t          blockID; 
-    uint16_t         memberID;
+    uint16_t         varID;
     DatagramHeader_t newDatagramHeader;
     uint8_t          newDatagramBuffer[DATAGRAM_SIZE_HEADER + MAX_TYPE_SIZE];
-    DatagramHeader_t currentDatagramHeader;
     uint8_t          newDatagramLength      = 0U;
+    DatagramHeader_t currentDatagramHeader;
     uint8_t          currentDatagramLength  = 0U;
     uint16_t         datagramStartIndex     = 0U;
   };
 
   /*-- PRIVATE VARIABLES --------------*/
 
-  uint8_t         _nodeID;
-  Atams::Bus     &_bus;
-  MemoryMap_t     _memoryMap;
-  DataBlock       _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS + 1U];
-  DataBlock      &_universalBlock                      = _dataBlocks[BLOCK_ID_UNIVERSAL];
-  Error_t         _latestError                         = ERROR_NONE;
-  uint16_t        _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
-  RequestPacket_t _requestPacket;
-  uint8_t         _responseBuffer[MAX_MESH_PACKET_SIZE];
-  uint16_t        _responseBufferLength;
+  uint8_t          _nodeID;
+  Atams::Bus      &_bus;
+  MemoryMap_t      _memoryMap;
+  DataBlock        _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS + 1U];
+  DataBlock       &_universalBlock                      = _dataBlocks[BLOCK_ID_UNIVERSAL];
+  Error_t          _latestError                         = ERROR_NONE;
+  uint16_t         _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
+  RequestPacket_t  _requestPacket;
+  uint8_t          _responseBuffer[MAX_MESH_PACKET_SIZE];
+  uint16_t         _responseLength;
 
   /*-- PRIVATE FUNCTION DECLARATIONS --*/
 
-  void copyToResponseBuffer(uint8_t *buffer, uint16_t length);
+  DataStatusReturn_t<bool> findDatagramMatchInPacket(RequestChangeConfig_t requestChangeConfig);
+
+  Atams::Error_t requestPacketShift(const uint16_t shiftIndex, const int16_t shiftLength);
+
+  Atams::Error_t packetRemoveCurrentDatagram(RequestChangeConfig_t requestChangeConfig);
+
+  Atams::Error_t packetAdjustCurrentDatagram(RequestChangeConfig_t requestChangeConfig);
+
+  Atams::Error_t packetAppendDatagramToNode(RequestChangeConfig_t requestChanegConfig);
+
+  Atams::Error_t constructDatagram(RequestChangeConfig_t &requestChangeConfig);
   
-  void processResponseBuffer(void);
+  Atams::Error_t processPacketChange(const uint8_t          blockID,
+                                     const uint16_t         varID,
+                                     const Access_t         accessRequest,
+                                     const RequestPattern_t requestPattern);
 
-  void processNodePacket(uint8_t *buffer, uint16_t length);
-
+  Atams::Error_t updateRequestPattern(const uint8_t  blockID,
+                                      const uint16_t varID,
+                                      const Access_t accessRequest);
 };
 
 } /* End Namespace - Atams */

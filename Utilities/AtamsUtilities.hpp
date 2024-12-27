@@ -73,16 +73,16 @@ uint32_t bufferToUint32(const uint8_t* buffer);
 
 void uint32ToBuffer(const uint32_t value, uint8_t* buffer);
 
-Error_t decodeMeshPacket(const uint8_t  *inputPacket,
-                         const uint16_t  inputPacketLength,
-                               uint8_t  *decodedPacket,
-                         const uint16_t  decodedPacketMaxLength,
+Error_t decodeMeshPacket(const uint8_t  *inputBuffer,
+                         const uint16_t  inputBufferLength,
+                               uint8_t  *decodedBuffer,
+                         const uint16_t  decodedBufferMaxLength,
                                uint16_t &decodedLength);
 
-Error_t encodeMeshPacket(      uint8_t  *txPacket,
-                         const uint16_t  txLength,
-                               uint8_t  *encodedPacket,
-                         const uint16_t  encodedPacketMaxLength,
+Error_t encodeMeshPacket(      uint8_t  *inputBuffer,
+                         const uint16_t  inputLength,
+                               uint8_t  *encodedBuffer,
+                         const uint16_t  encodedBufferMaxLength,
                                uint16_t &encodedLength);
 
 void datagramHeaderToBuffer(const DatagramHeader_t &datagramHeader, uint8_t* buffer);

@@ -91,7 +91,7 @@ typedef enum: uint8_t
   MESH_SIZE_SYNC     = sizeof(uint8_t),
   MESH_SIZE_CRC      = sizeof(uint32_t),
   MESH_SIZE_NODE_ID  = sizeof(uint8_t),
-  MESH_SIZE_HEADER   = MESH_SIZE_MSG_TYPE + MESH_SIZE_SYNC + MESH_SIZE_CRC,
+  MESH_SIZE_HEADER   = MESH_SIZE_MSG_TYPE + MESH_SIZE_SYNC + MESH_SIZE_CRC + MESH_SIZE_NODE_ID,
 } MeshSize_t;
 
 typedef enum: uint8_t
@@ -168,9 +168,9 @@ typedef enum: uint8_t
 
 typedef enum: uint8_t
 {
-  ACCESS_NONE  = 0U,
-  ACCESS_READ  = 1U,
-  ACCESS_WRITE = 2U,
+  ACCESS_READ  = 0U,
+  ACCESS_WRITE = 1U,
+  NUMBER_OF_ACCESS_LEVELS
 } Access_t;
 
 typedef enum: uint8_t
@@ -196,9 +196,10 @@ typedef enum: uint8_t
 
 typedef enum: uint8_t
 {
-  REQUEST_INACTIVE  = 0U,
-  REQUEST_ACTIVE    = 1U,
-  REQUEST_UNTIL_ACK = 2U,
+  REQUEST_INACTIVE           = 0U,
+  REQUEST_ACTIVE             = 1U,
+  REQUEST_UNTIL_ACK          = 2U,
+  NUMBER_OF_REQUEST_PATTERNS = 3U
 } RequestPattern_t;
 
 struct DatagramHeader_t

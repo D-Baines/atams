@@ -51,7 +51,7 @@ class WriteList
   typedef struct WriteConfig_t
   {
     uint8_t  blockID;
-    uint16_t memberID;
+    uint16_t varID;
     uint16_t meshPacketDataIndex;
     uint8_t  dataLength;
   
@@ -86,9 +86,7 @@ class WriteList
 
   void removeConfig(WriteConfig_t configToRemove);
 
-  void removeNode(uint8_t nodeID);
-
-  void updateIndexes(uint16_t referenceIndex, int8_t shiftLength);
+  void updateIndexes(uint16_t referenceIndex, int16_t shiftLength);
 
   Return_t getConfigAtIndex(uint16_t configIndex);
 

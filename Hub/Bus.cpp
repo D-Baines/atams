@@ -71,8 +71,7 @@ Atams::Error_t Bus::startUpdateCycle(void)
 {
   Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
-  if ((_updateState == UPDATE_STATE_READY         ) ||
-      (_updateState == UPDATE_STATE_CYCLE_COMPLETE) )
+  if (_updateState == UPDATE_STATE_READY)
   {
     _activeNodeIndex = 0U;
     _updateState     = UPDATE_STATE_SEND_REQUESTS;
@@ -99,19 +98,15 @@ Atams::Error_t Bus::update(void)
     case UPDATE_STATE_SEND_REQUESTS:
       if (activeNodePtr == nullptr)
       {
-        _updateState = UPDATE_STATE_REQUESTS_COMPLETE;
+        _activeNodeIndex      = 0U;
+        _previousResponseTime = currentTime;
+        _updateState          = UPDATE_STATE_COLLECT_RESPONSES;
       }
       else if (Platform::BusPeripheral::transmitReady())
       {
-        //TODO:: _request pack must be locked whiled encoding!!!
-        //       call function to get encoded request packet from node,
-        //       node can handle appropriate locks. This can be a public
-        //       function. No bus friend class required in node.
-        if (encodeMeshPacket(activeNodePtr->_requestPacket.buffer, 
-                             activeNodePtr->_requestPacket.length, 
-                             _encodedBuffer, 
-                             sizeof(_encodedBuffer), 
-                             _encodedLength) == ERROR_NONE)
+        if (activeNodePtr->getEncodedRequestPacket(_encodedBuffer, 
+                                                   sizeof(_encodedBuffer), 
+                                                   _encodedLength        ) == Atams::ERROR_NONE)
         {
           Platform::BusPeripheral::transmit(_encodedBuffer, _encodedLength);
         }
@@ -121,13 +116,6 @@ Atams::Error_t Bus::update(void)
         }
         _activeNodeIndex++;
       }
-      break;
-    case UPDATE_STATE_REQUESTS_COMPLETE:
-      if (_responseProcessingComplete)
-      {
-        _activeNodeIndex      = 0U;
-        _previousResponseTime = currentTime;
-      } 
       break;
     case UPDATE_STATE_COLLECT_RESPONSES:
       if (activeNodePtr == nullptr)
@@ -147,15 +135,26 @@ Atams::Error_t Bus::update(void)
         {
           uint8_t packetNodeID    = _decodedBuffer[MESH_INDEX_NODE_ID];
           uint8_t packetSyncCount = _decodedBuffer[MESH_INDEX_SYNC];
+          uint8_t messageType     = _decodedBuffer[MESH_INDEX_MSG_TYPE];
           if (packetSyncCount != _activeSyncCount) 
           {
             statusReturn = Atams::ERROR_SYNC_COUNT;
+          }
+          else if (messageType != MESSAGE_RESPONSE_SYNCED)
+          {
+            statusReturn = Atams::ERROR_MESSAGE_TYPE;
           }
           else
           {
             for (Node *nodePtr : _nodePtrs)
             {
-              if (nodePtr->getNodeID() == packetNodeID) nodePtr->responseReceived(_decodedBuffer, _decodedLength);
+              if (nodePtr->getNodeID() == packetNodeID) 
+              {
+                if (nodePtr->responseReceived(_decodedBuffer, _decodedLength) != Atams::ERROR_NONE)
+                {
+                  statusReturn = Atams::ERROR_RESPONSE_BUFFER_LENGTH;
+                }
+              }
             }
           }
         }
@@ -175,7 +174,7 @@ Atams::Error_t Bus::update(void)
       }
       else
       {
-        _jogBuffer[MESH_INDEX_NODE_ID] = _nodePtrs[_activeNodeIndex]->_nodeID;
+        _jogBuffer[MESH_INDEX_NODE_ID] = _nodePtrs[_activeNodeIndex]->getNodeID();
 
         if (Platform::BusPeripheral::transmitReady()) 
         {
@@ -206,10 +205,14 @@ Atams::Error_t Bus::processBuffers(void)
 
   for (Node *nodePtr : _nodePtrs)
   {
-    if (nodePtr != nullptr) nodePtr->processResponseBuffer();
+    if ((nodePtr                          != nullptr          ) &&
+        (nodePtr->processResponseBuffer() != Atams::ERROR_NONE) )
+    {
+      statusReturn = Atams::ERROR_RESPONSE_BUFFER_LENGTH; //TODO:: New error required
+    }
   }
 
-  _responseProcessingComplete = true;
+  _updateState = UPDATE_STATE_CYCLE_COMPLETE;
 
   return (Atams::ERROR_NONE);
 }

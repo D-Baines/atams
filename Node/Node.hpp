@@ -67,7 +67,7 @@ struct MemoryMap_t
       for (DataBlock::MemberInfo_t &varInfo : blockDescriptor.dataMemberInfo)
       {
         varInfo.type           = TYPE_NULL;
-        varInfo.externalAccess = ACCESS_NONE;
+        varInfo.accessLevel = ACCESS_NONE;
         varInfo.NVMStorage     = false;
       }
     }

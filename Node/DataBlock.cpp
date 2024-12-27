@@ -108,7 +108,7 @@ void DataBlock::deinit(void)
   for (MemberInfo_t &varInfo : _blockDescriptor.dataMemberInfo)
   {
     varInfo.type           = TYPE_NULL;
-    varInfo.externalAccess = ACCESS_NONE;
+    varInfo.accessLevel = ACCESS_NONE;
     varInfo.NVMStorage     = false;
   }
 }
@@ -253,7 +253,7 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
 
   if (TYPE_LENGTHS[memberInfo.type] != length)                    return (ERROR_MEMBER_LENGTH);
   if (inputPtr                == nullptr)                   return (ERROR_NULL_PTR);
-  if (accessRequest                 >  memberInfo.externalAccess) return (ERROR_ACCESS_INVALID);
+  if (accessRequest                 >  memberInfo.accessLevel) return (ERROR_ACCESS_INVALID);
 
   DataMember_t &dataMember  = _dataMembers[memberID];
   Error_t       accessError = ERROR_NONE;

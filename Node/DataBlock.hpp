@@ -57,7 +57,7 @@ class DataBlock
   struct MemberInfo_t
   {
     DataType_t type           = TYPE_NULL;
-    Access_t   externalAccess = ACCESS_NONE;
+    Access_t   accessLevel = ACCESS_NONE;
     bool       NVMStorage     = false;
   };
 

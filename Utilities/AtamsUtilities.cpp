@@ -81,13 +81,13 @@ void uint32ToBuffer(const uint32_t value, uint8_t* buffer)
   buffer[3U] = static_cast<uint8_t>((value                     ) & SINGLE_BYTE_MASK);
 }
 
-Error_t decodeMeshPacket(const uint8_t  *inputPacket,
-                         const uint16_t  inputPacketLength,
-                               uint8_t  *decodedPacket,
-                         const uint16_t  decodedPacketMaxLength,
+Error_t decodeMeshPacket(const uint8_t  *inputBuffer,
+                         const uint16_t  inputBufferLength,
+                               uint8_t  *decodedBuffer,
+                         const uint16_t  decodedBufferMaxLength,
                                uint16_t &decodedLength)
 {
-  COBS::Result_t COBSDecodeResult = COBS::decode(inputPacket, inputPacketLength, decodedPacket, decodedPacketMaxLength);
+  COBS::Result_t COBSDecodeResult = COBS::decode(inputBuffer, inputBufferLength, decodedBuffer, decodedBufferMaxLength);
 
   if (COBSDecodeResult.status != COBS::ERROR_NONE)
   {
@@ -99,11 +99,11 @@ Error_t decodeMeshPacket(const uint8_t  *inputPacket,
     return (ERROR_DECODE);
   }
 
-  uint32_t packetCRC = bufferToUint32(&decodedPacket[MESH_INDEX_CRC]);
+  uint32_t packetCRC = bufferToUint32(&decodedBuffer[MESH_INDEX_CRC]);
 
-  memset(&decodedPacket[MESH_INDEX_CRC], 0U, MESH_SIZE_CRC);
+  memset(&decodedBuffer[MESH_INDEX_CRC], 0U, MESH_SIZE_CRC);
 
-  if (packetCRC != _crcAtams.calculateCRC32(decodedPacket, COBSDecodeResult.outputLength))
+  if (packetCRC != _crcAtams.calculateCRC32(decodedBuffer, COBSDecodeResult.outputLength))
   {
     return (ERROR_DECODE);
   }
@@ -113,24 +113,24 @@ Error_t decodeMeshPacket(const uint8_t  *inputPacket,
   return (ERROR_NONE);
 }
 
-Error_t encodeMeshPacket(      uint8_t  *txPacket,
-                         const uint16_t  txLength,
-                               uint8_t  *encodedPacket,
-                         const uint16_t  encodedPacketMaxLength,
+Error_t encodeMeshPacket(      uint8_t  *inputBuffer,
+                         const uint16_t  inputLength,
+                               uint8_t  *encodedBuffer,
+                         const uint16_t  encodedBufferMaxLength,
                                uint16_t &encodedLength)
 {
-  if (txLength < MESH_SIZE_HEADER)
+  if (inputLength < MESH_SIZE_HEADER)
   {
     return (ERROR_ENCODE);
   }
 
-  memset(&txPacket[MESH_INDEX_CRC], 0U, MESH_SIZE_CRC);
+  memset(&inputBuffer[MESH_INDEX_CRC], 0U, MESH_SIZE_CRC);
 
-  uint32_t CRCResult = _crcAtams.calculateCRC32(txPacket, txLength);
+  uint32_t CRCResult = _crcAtams.calculateCRC32(inputBuffer, inputLength);
 
-  uint32ToBuffer(CRCResult, &txPacket[MESH_INDEX_CRC]);
+  uint32ToBuffer(CRCResult, &inputBuffer[MESH_INDEX_CRC]);
 
-  COBS::Result_t COBSEncodeResult = COBS::encode(txPacket, txLength, encodedPacket, encodedPacketMaxLength);
+  COBS::Result_t COBSEncodeResult = COBS::encode(inputBuffer, inputLength, encodedBuffer, encodedBufferMaxLength);
 
   if (COBSEncodeResult.status != COBS::ERROR_NONE)
   {

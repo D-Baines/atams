@@ -55,6 +55,7 @@ private Platform::BusPeripheral
 {
   /*-- Friend Declarations ----------------------------------------------------------*/
 
+  //TODO:: Can potentially remove if addNodeToBus and removeNodeFromBus become public
   friend class Node;
 
   /*-- Public -----------------------------------------------------------------------*/
@@ -78,10 +79,9 @@ private Platform::BusPeripheral
     UPDATE_STATE_INIT_REQUIRED     = 0U,
     UPDATE_STATE_READY             = 1U,
     UPDATE_STATE_SEND_REQUESTS     = 2U,
-    UPDATE_STATE_REQUESTS_COMPLETE = 3U,
-    UPDATE_STATE_COLLECT_RESPONSES = 4U,
-    UPDATE_STATE_JOG_NODE          = 5U,
-    UPDATE_STATE_CYCLE_COMPLETE    = 6U,
+    UPDATE_STATE_COLLECT_RESPONSES = 3U,
+    UPDATE_STATE_JOG_NODE          = 4U,
+    UPDATE_STATE_CYCLE_COMPLETE    = 5U,
   } UpdateState_t;
 
   /*-- Public Function Declarations -------------------------------------------------*/

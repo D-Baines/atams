@@ -103,8 +103,8 @@ void DataBlock::deinit(void)
 
   for (MemberInfo_t &varInfo : _blockDescriptor.dataMemberInfo)
   {
-    varInfo.type           = TYPE_NULL;
-    varInfo.externalAccess = ACCESS_NONE;
+    varInfo.type        = TYPE_NULL;
+    varInfo.accessLevel = ACCESS_READ;
   }
 }
 
@@ -116,15 +116,15 @@ Atams::Error_t DataBlock::write(const uint16_t  memberID,
 
   const MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[memberID];
 
-  if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()) return (ERROR_MEMBER_TYPE);
+  if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()      ) return (ERROR_MEMBER_TYPE);
+  if (ACCESS_WRITE                          > memberInfo.accessLevel) return (ERROR_ACCESS_INVALID);
 
   DataMember_t &dataMember  = _dataMembers[memberID];
   Error_t       accessError = ERROR_NONE;
 
   Platform::Lock::acquireLock();
 
-  if (dataMember.writeLock) accessError = ERROR_WRITE_LOCK;
-  else                      memcpy(&dataMember.data, &writeData, sizeof(dataMember.data));
+  memcpy(&dataMember.data, &writeData, sizeof(dataMember.data));
 
   Platform::Lock::releaseLock();
 
@@ -148,7 +148,8 @@ Atams::Error_t DataBlock::read(const uint16_t  memberID,
 
   const MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[memberID];
 
-  if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name())  return (ERROR_MEMBER_TYPE);
+  if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()      ) return (ERROR_MEMBER_TYPE);
+  if (ACCESS_READ                          >  memberInfo.accessLevel) return (ERROR_ACCESS_INVALID);
 
   DataMember_t &dataMember = _dataMembers[memberID];
 
@@ -197,9 +198,8 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
 
   const MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[memberID];
 
-  if (TYPE_LENGTHS[memberInfo.type] != length)                    return (ERROR_MEMBER_LENGTH);
-  if (inputPtr                == nullptr)                   return (ERROR_NULL_PTR);
-  if (accessRequest                 >  memberInfo.externalAccess) return (ERROR_ACCESS_INVALID);
+  if (TYPE_LENGTHS[memberInfo.type] != length ) return (ERROR_MEMBER_LENGTH);
+  if (inputPtr                      == nullptr) return (ERROR_NULL_PTR);
 
   DataMember_t &dataMember  = _dataMembers[memberID];
   Error_t       accessError = ERROR_NONE;
@@ -242,11 +242,23 @@ DataStatusReturn_t<bool> DataBlock::setRequestPattern(const uint16_t         var
     requestReturn.status = ERROR_MEMBER_ID;
     return (requestReturn);
   }
+
+  if (accessRequest > NUMBER_OF_ACCESS_LEVELS)
+  {
+    requestReturn.status = Atams::ERROR_ACCESS_INVALID;
+    return (requestReturn);
+  }
+
+  if (requestPattern >= NUMBER_OF_REQUEST_PATTERNS)
+  {
+    requestReturn.status = ERROR_REQUEST_PATTERN_INVALID;
+    return (requestReturn);
+  }
  
   DataMember_t &dataMember = _dataMembers[varID];
   MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[varID];
 
-  if (accessRequest > memberInfo.externalAccess)
+  if (accessRequest > memberInfo.accessLevel)
   {
     requestReturn.status = ERROR_ACCESS_INVALID;
     return (requestReturn);
@@ -254,32 +266,45 @@ DataStatusReturn_t<bool> DataBlock::setRequestPattern(const uint16_t         var
 
   Platform::MemoryLock::acquireLock();
 
-  switch (accessRequest)
-  {
-    case ACCESS_READ:
-      if (dataMember.readRequestPattern != requestPattern)
-      {
-        dataMember.readRequestPattern = requestPattern;
-        requestChanged                = true;
-      }
-      break;
-
-    case ACCESS_WRITE:
-      if (dataMember.writeRequestPattern != requestPattern)
-      {
-        dataMember.writeRequestPattern = requestPattern;
-        requestChanged                 = true;
-      }
-      break;
-
-    default:
-      requestReturn.status = ERROR_ACCESS_INVALID;
-      break;
-  }
+  dataMember.requestPattern[accessRequest] = requestPattern;
+  requestChanged                           = true;
 
   Platform::MemoryLock::releaseLock();
 
   return (requestReturn);
+}
+
+DataStatusReturn_t<bool> DataBlock::updateRequestPattern(const uint16_t varID, const Access_t accessRequest)
+{
+  DataStatusReturn_t<bool> updateStatus;
+  updateStatus.status = Atams::ERROR_NONE;
+  updateStatus.data   = false;
+
+  if (varID > _blockDescriptor.noOfDataMembers) 
+  {
+    updateStatus.status = Atams::ERROR_MEMBER_ID;
+    return (updateStatus);
+  }
+
+  if (accessRequest > NUMBER_OF_ACCESS_LEVELS)
+  {
+    updateStatus.status = Atams::ERROR_ACCESS_INVALID;
+    return (updateStatus);
+  }
+
+  Platform::MemoryLock::acquireLock();
+
+  DataMember_t &dataMember = _dataMembers[varID];
+
+  if (dataMember.requestPattern[accessRequest] == REQUEST_UNTIL_ACK)
+  {
+    dataMember.requestPattern[accessRequest] = REQUEST_INACTIVE;
+    updateStatus.data                        = true;
+  }
+
+  Platform::MemoryLock::releaseLock();
+
+  return (updateStatus);
 }
 
 

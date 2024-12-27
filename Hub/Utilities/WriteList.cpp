@@ -49,8 +49,8 @@ WriteList::SearchResult_t WriteList::findConfig(WriteConfig_t configToFind)
 
   for (uint16_t listIndex = 0U; listIndex < _configCount; listIndex++)
   {
-    if ((configToFind.blockID  == _configList[listIndex].blockID ) &&
-        (configToFind.memberID == _configList[listIndex].memberID) ) 
+    if ((configToFind.blockID == _configList[listIndex].blockID) &&
+        (configToFind.varID   == _configList[listIndex].varID  ) ) 
     {
       searchResult.configIndex = listIndex;
       searchResult.configFound = true;
@@ -86,7 +86,7 @@ void WriteList::removeConfig(WriteConfig_t configToRemove)
   }
 }
 
-void WriteList::updateIndexes(uint16_t referenceIndex, int8_t shiftLength)
+void WriteList::updateIndexes(uint16_t referenceIndex, int16_t shiftLength)
 {
   for (WriteConfig_t &writeConfig : _configList)
   {
