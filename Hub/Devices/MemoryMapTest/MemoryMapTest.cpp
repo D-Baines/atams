@@ -26,6 +26,9 @@
 /*************************************************************************************/
 
 #include "MemoryMapTest.hpp"
+#include "../DataBlockUniversal.hpp"
+#include "DataBlockExample1.hpp"
+#include "DataBlockExample2.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -33,21 +36,60 @@
 
 namespace Atams { namespace MapTest {
 
+static Error_t initUniversalInfo(Node &nodeToInit);
+
+static const Node::MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,    
+                                         initUniversalInfo,          
+                                         {BlockExample1::blockDescriptor,
+                                          BlockExample2::blockDescriptor });
+                                        
+const Node::MemoryMap_t &getMapReference(void)
+{
+  return (memoryMap);
+}
+
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
+static Error_t initUniversalInfo(Node &nodeToInit)
+{
+  Error_t initStatus = ERROR_NONE;
 
+  if (initStatus == ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_ATAMS_VERSION_NUMBER,
+                                                   AUTOGEN_ATAMS_VERSION_NUMBER);
 
-/*************************************************************************************/
-/* GLOBAL CONSTANTS                                                                  */
-/*************************************************************************************/
+  if (initStatus == ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_MAP_GEN_DAY,
+                                                   AUTOGEN_MAP_GEN_DAY);
 
-const Node::MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,    
-                                  initUniversalInfo,          
-                                  {BlockExample1::blockDescriptor,
-                                   BlockExample2::blockDescriptor });
+  if (initStatus == ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_MAP_GEN_MONTH,
+                                                   AUTOGEN_MAP_GEN_MONTH);
 
+  if (initStatus == ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_MAP_GEN_YEAR,
+                                                   AUTOGEN_MAP_GEN_YEAR);
+
+  if (initStatus == ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_MAP_GEN_HOUR,
+                                                   AUTOGEN_MAP_GEN_HOUR);
+
+  if (initStatus == ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_MAP_GEN_MINUTE,
+                                                   AUTOGEN_MAP_GEN_MINUTE);
+
+  if (initStatus == ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_MAP_GEN_SECOND,
+                                                   AUTOGEN_MAP_GEN_SECOND);
+
+  if (initStatus == ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                   BlockUniversal::MEMBER_ID_MAP_CHECKSUM,
+                                                   AUTOGEN_MAP_CHECKSUM);
+
+  return (initStatus); 
+}
 
 } } /* End Namespace - Atams::MapTest */
 

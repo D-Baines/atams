@@ -30,9 +30,6 @@
 
 #include <stdint.h>
 #include "../../Node.hpp"
-#include "../DataBlockUniversal.hpp"
-#include "DataBlockExample1.hpp"
-#include "DataBlockExample2.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -56,7 +53,7 @@ typedef enum: uint8_t
 /* PUBLIC EXTERN CONSTANTS                                                           */
 /*************************************************************************************/
 
-extern const Node::MemoryMap_t memoryMap;
+//extern const Node::MemoryMap_t memoryMap;
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
@@ -70,6 +67,8 @@ inline constexpr uint8_t  AUTOGEN_MAP_GEN_HOUR         = 11U;
 inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = 33U;
 inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = 20U;
 inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = 32457U;
+
+const Node::MemoryMap_t &getMapReference(void);
 
 
 } } /* End Namespace - Atams::MapTest */

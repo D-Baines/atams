@@ -65,7 +65,7 @@ private Platform::MemoryLock
 
   /*-- PUBLIC TYPEDEFS ----------------*/
 
-  typedef Error_t (*InitUniversalDataFunction_t)(Node &nodeToInit);
+  typedef Atams::Error_t (*InitUniversalDataFunction_t)(Node &nodeToInit);
 
   struct MemoryMap_t
   {

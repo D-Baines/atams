@@ -74,6 +74,12 @@ Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
     if (initStatus == ERROR_NONE) initStatus = block.initDescriptor(blockDescriptor);
   }
 
+  //if (initStatus == ERROR_NONE)
+  //{
+  //  if (_memoryMap.initUniversalData != nullptr) initStatus = _memoryMap.initUniversalData(*this);
+  //  else                                         initStatus = ERROR_NULL_PTR;
+  //}
+
   if (initStatus != ERROR_NONE)
   {
     _memoryMap.noOfDataBlocks = 0U;
@@ -173,19 +179,24 @@ Atams::Error_t Node::setRequestPattern(const uint8_t          blockID,
     return (ERROR_BLOCK_ID);
   }
 
-  Atams::Error_t           meshChangeReturn;
+  Atams::Error_t           statusReturn  = Atams::ERROR_NONE;
   DataStatusReturn_t<bool> requestReturn = _dataBlocks[blockID].setRequestPattern(varID, accessRequest, requestPattern);
 
-  if (requestReturn.data == true)
+  if ((requestReturn.status == Atams::ERROR_NONE) &&
+      (requestReturn.data   == true             ) )
   {
-
-    meshChangeReturn = processRequestPacketChange(blockID,
-                                                  varID,
-                                                  accessRequest, 
-                                                  requestPattern);
+    /* TODO:: Handle situation when process packet change fails but setRequestPattern does not */
+    statusReturn = processRequestPacketChange(blockID,
+                                              varID,
+                                              accessRequest, 
+                                              requestPattern);
+  }
+  else
+  {
+    statusReturn = requestReturn.status;
   }
   
-  return (meshChangeReturn);
+  return (statusReturn);
 }
 
 uint8_t Node::getNodeID(void)
@@ -211,6 +222,8 @@ Atams::Error_t Node::getEncodedRequestPacket(uint8_t  *outputBuffer,
                                                  outputLength);
 
   Platform::MemoryLock::releaseLock();
+
+  return (statusReturn);
 }
 
 Atams::Error_t Node::responseReceived(uint8_t *inputBuffer, uint16_t inputLength)
@@ -227,11 +240,13 @@ Atams::Error_t Node::responseReceived(uint8_t *inputBuffer, uint16_t inputLength
   {
     statusReturn = Atams::ERROR_RESPONSE_BUFFER_LENGTH; //TODO:: Review error
   }
+
+  return (statusReturn);
 }
 
 Atams::Error_t Node::processResponseBuffer(void)
 {
-  Atams:Error_t               statusReturn     = Atams::ERROR_NONE;
+  Atams::Error_t              statusReturn     = Atams::ERROR_NONE;
   bool                        cancelProcessing = false;
   uint8_t                     datagramIndex    = MESH_INDEX_FIRST_DATAGRAM;
   Error_t                     transferStatus   = ERROR_NONE;
@@ -437,7 +452,7 @@ Atams::Error_t Node::requestPacketAdjustCurrentDatagram(RequestChangeConfig_t ch
       .dataLength          = static_cast<uint8_t> (changeConfig.newDatagramLength  - DATAGRAM_SIZE_HEADER)
     };
 
-    if (_requestPacket.writeList.addConfig(writeConfigToAdd) != ERROR_NONE)
+    if (_requestPacket.writeList.addConfig(writeConfigToAdd) != WriteList::ERROR_NONE)
     {
       statusReturn = Atams::ERROR_WRITE_LIST; 
       /* TODO:: IF CANNOT ADD TO WRITE LIST, REQUEST PACKET SHOULD BE RETURNED TO ORIGINAL STATE. 
@@ -460,9 +475,6 @@ Atams::Error_t Node::requestPacketAdjustCurrentDatagram(RequestChangeConfig_t ch
 
 Atams::Error_t Node::requestPacketAppendDatagram(RequestChangeConfig_t changeConfig)
 {
-  uint16_t shiftIndex   = 0U;
-  int8_t   shiftLength  = 0;
-
   if ((_requestPacket.length + changeConfig.newDatagramLength) > MAX_NODE_PACKET_SIZE)
   {
     return (Atams::ERROR_REQUEST_BUFFER_LENGTH); /* Early Return */

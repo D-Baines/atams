@@ -31,7 +31,6 @@
 #include <stdint.h>
 #include <mutex>
 #include "../AtamsTypedefs.hpp"
-#include "../../CommsLayer/Serial.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -60,7 +59,7 @@ class BusPeripheral
 
   bool startPeripheral(void)
   {
-    
+    return (false);
   }
 
   bool transmitReady(void)

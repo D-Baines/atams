@@ -137,7 +137,7 @@ private Platform::BusPeripheral
 
   Atams::Error_t addNodeToBus(Node &node);
 
-  Atams::Error_t removeNodeFromBus(Node &node);
+  void removeNodeFromBus(Node &node);
 };
 
 

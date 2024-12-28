@@ -62,9 +62,11 @@ Atams::Error_t Bus::addNodeToBus(Node &node)
   _nodePtrs[_noOfNodesOnBus] = &node;
 
   _noOfNodesOnBus++;
+
+  return (Atams::ERROR_NONE);
 }
 
-Atams::Error_t Bus::removeNodeFromBus(Node &node)
+void Bus::removeNodeFromBus(Node &node)
 {
   uint8_t nodeFoundIndex = 0U;
   bool    nodeFound      = false;
@@ -96,6 +98,7 @@ Atams::Error_t Bus::removeNodeFromBus(Node &node)
 Bus::InitState_t Bus::updateInitProcedure(void)
 {
   /* Do Nothing */
+  return (INIT_STATE_SUCCESSFUL);
 }
 
 Atams::Error_t Bus::startUpdateCycle(void)
@@ -162,7 +165,7 @@ Atams::Error_t Bus::update(void)
                              _rxLength, 
                              _decodedBuffer, 
                              sizeof(_decodedBuffer), 
-                             _decodedLength        ) == ERROR_NONE)
+                             _decodedLength        ) == Atams::ERROR_NONE)
         {
           uint8_t packetNodeID    = _decodedBuffer[MESH_INDEX_NODE_ID];
           uint8_t packetSyncCount = _decodedBuffer[MESH_INDEX_SYNC];
@@ -217,7 +220,12 @@ Atams::Error_t Bus::update(void)
     case UPDATE_STATE_CYCLE_COMPLETE:
       /* Do Nothing */
       break;
+    default:
+      /* TODO:: Handle error correctly */
+      break;
   }
+
+  return (statusReturn);
 }
 
 bool Bus::updateCycleComplete(void)

@@ -51,11 +51,11 @@ typedef enum
   ERROR_BUFFER_CONTAINS_ZERO = 4U,
 } Error_t;
 
-typedef struct
+struct Result_t
 {
-  Error_t  status       = ERROR_NONE;
-  uint16_t outputLength = 0U;
-} Result_t;
+  COBS::Error_t status       = COBS::ERROR_NONE;
+  uint16_t      outputLength = 0U;
+};
 
 
 /*************************************************************************************/
