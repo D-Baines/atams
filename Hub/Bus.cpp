@@ -39,9 +39,9 @@ namespace Atams {
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-Bus::Bus(BusPeripheral::UserData_t userData) :
+Bus::Bus(Platform::BusPeripheral::UserData_t userData) :
 CircularBuffer(CircularBuffer::DEFAULT_EOL_CHAR),
-BusPeripheral(userData)
+Platform::BusPeripheral(userData)
 {
   for (Node *nodePtr : _nodePtrs) nodePtr = nullptr;
 }
@@ -54,17 +54,48 @@ Bus::~Bus(void)
 
 Atams::Error_t Bus::addNodeToBus(Node &node)
 {
+  if (_noOfNodesOnBus >= Platform::NUMBER_OF_NODES_PER_BUS)
+  {
+    return (Atams::ERROR_BUS_FULL);
+  }
 
+  _nodePtrs[_noOfNodesOnBus] = &node;
+
+  _noOfNodesOnBus++;
 }
 
 Atams::Error_t Bus::removeNodeFromBus(Node &node)
 {
+  uint8_t nodeFoundIndex = 0U;
+  bool    nodeFound      = false;
 
+  for (Node *nodePtr : _nodePtrs)
+  {
+    if (nodePtr == &node)
+    {
+      nodeFound = true;
+      break;
+    }
+    else
+    {
+      nodeFoundIndex++;
+    }
+  }
+
+  if (nodeFound)
+  {
+    for (uint8_t nodeIndex = nodeFoundIndex; nodeIndex < (Platform::NUMBER_OF_NODES_PER_BUS - 1U); nodeIndex++)
+    {
+      _nodePtrs[nodeIndex] = _nodePtrs[nodeIndex + 1U];
+    }
+
+    _noOfNodesOnBus--;
+  }
 }
 
 Bus::InitState_t Bus::updateInitProcedure(void)
 {
-  
+  /* Do Nothing */
 }
 
 Atams::Error_t Bus::startUpdateCycle(void)
@@ -203,6 +234,8 @@ Atams::Error_t Bus::processBuffers(void)
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS);
   }
 
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
+
   for (Node *nodePtr : _nodePtrs)
   {
     if ((nodePtr                          != nullptr          ) &&
@@ -214,7 +247,7 @@ Atams::Error_t Bus::processBuffers(void)
 
   _updateState = UPDATE_STATE_CYCLE_COMPLETE;
 
-  return (Atams::ERROR_NONE);
+  return (statusReturn);
 }
 
 

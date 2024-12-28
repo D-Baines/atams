@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
-  * @file    MemoryMapTest.hpp
+  * @file    MemoryMapTest.cpp
   *
   * @author  D. Baines
   *
-  * @brief   Auto-generated file containing typedefs, constants, and function
-  *          declarations for an Atams Memory Map with name: Test.
+  * @brief   Auto-generated file containing public function definitions
+  *          for an Atams Memory Map with name: Test.
   *
   * @version v1.0
   ******************************************************************************
@@ -21,18 +21,11 @@
   ******************************************************************************
   */
 
-/* Pragma to prevent recursive inclusion --------------------------------------------*/
-#pragma once
-
 /*************************************************************************************/
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include <stdint.h>
-#include "../../Node.hpp"
-#include "../DataBlockUniversal.hpp"
-#include "DataBlockExample1.hpp"
-#include "DataBlockExample2.hpp"
+#include "MemoryMapTest.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -41,35 +34,19 @@
 namespace Atams { namespace MapTest {
 
 /*************************************************************************************/
-/* PUBLIC TYPEDEFS                                                                   */
-/*************************************************************************************/
-             
-typedef enum: uint8_t
-{
-  BLOCK_ID_EXAMPLE1 = 1U,
-  BLOCK_ID_EXAMPLE2 = 2U,
-
-  NUMBER_OF_DATA_BLOCKS
-} DataBlockID_t;
-
-/*************************************************************************************/
-/* PUBLIC EXTERN CONSTANTS                                                           */
+/* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-extern const Node::MemoryMap_t memoryMap;
+
 
 /*************************************************************************************/
-/* PUBLIC CONSTANTS                                                                  */
+/* GLOBAL CONSTANTS                                                                  */
 /*************************************************************************************/
 
-inline constexpr float    AUTOGEN_ATAMS_VERSION_NUMBER = 0.1F;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_DAY          = 15U;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_MONTH        = 10U;
-inline constexpr uint16_t AUTOGEN_MAP_GEN_YEAR         = 2024U;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_HOUR         = 11U;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = 33U;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = 20U;
-inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = 32457U;
+const Node::MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,    
+                                  initUniversalInfo,          
+                                  {BlockExample1::blockDescriptor,
+                                   BlockExample2::blockDescriptor });
 
 
 } } /* End Namespace - Atams::MapTest */

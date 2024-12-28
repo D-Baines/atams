@@ -102,7 +102,7 @@ private Platform::MemoryLock
                                              const Access_t         accessRequest,
                                              const RequestPattern_t requestPattern);
 
-  DataStatusReturn_t<bool> updateRequestPattern(const uint16_t varID, const Access_t accessRequest);
+  DataStatusReturn_t<bool> updateRequestPattern(const uint16_t varID);
 
   private:
 
@@ -113,7 +113,8 @@ private Platform::MemoryLock
   struct DataMember_t
   {
     uint8_t          data[MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
-    RequestPattern_t requestPattern[NUMBER_OF_ACCESS_LEVELS];
+    Access_t         requestAccess;
+    RequestPattern_t requestPattern;
   };
 
   /*-- Private Variables ------------------------------------------------------------*/

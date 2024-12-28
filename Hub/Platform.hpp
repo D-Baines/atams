@@ -30,7 +30,8 @@
 
 #include <stdint.h>
 #include <mutex>
-#include "../../AtamsTypedefs.hpp"
+#include "../AtamsTypedefs.hpp"
+#include "../../CommsLayer/Serial.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -42,7 +43,7 @@ namespace Atams { namespace Platform {
 /* PUBLIC CLASSES                                                                    */
 /*************************************************************************************/
 
-class BusPeripheral
+class BusPeripheral 
 {
   public:
   

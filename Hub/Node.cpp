@@ -90,7 +90,7 @@ Atams::Error_t Node::write(const uint8_t  blockID,
 {
   if (blockID >= _memoryMap.noOfDataBlocks)
   {
-    return (ERROR_BLOCK_ID);
+    return (ERROR_BLOCK_ID); 
   }
 
   return (_dataBlocks[blockID].write(varID, writeData));
@@ -112,7 +112,7 @@ Atams::Error_t Node::read(const uint8_t   blockID,
 {
   if (blockID >= _memoryMap.noOfDataBlocks)
   {
-    return (ERROR_BLOCK_ID);
+    return (ERROR_BLOCK_ID); 
   }
 
   return (_dataBlocks[blockID].read(varID, readData));
@@ -179,10 +179,10 @@ Atams::Error_t Node::setRequestPattern(const uint8_t          blockID,
   if (requestReturn.data == true)
   {
 
-    meshChangeReturn = processPacketChange(blockID,
-                                           varID,
-                                           accessRequest, 
-                                           requestPattern);
+    meshChangeReturn = processRequestPacketChange(blockID,
+                                                  varID,
+                                                  accessRequest, 
+                                                  requestPattern);
   }
   
   return (meshChangeReturn);
@@ -231,6 +231,7 @@ Atams::Error_t Node::responseReceived(uint8_t *inputBuffer, uint16_t inputLength
 
 Atams::Error_t Node::processResponseBuffer(void)
 {
+  Atams:Error_t               statusReturn     = Atams::ERROR_NONE;
   bool                        cancelProcessing = false;
   uint8_t                     datagramIndex    = MESH_INDEX_FIRST_DATAGRAM;
   Error_t                     transferStatus   = ERROR_NONE;
@@ -242,12 +243,16 @@ Atams::Error_t Node::processResponseBuffer(void)
   {
     bufferToDatagramHeader(&_responseBuffer[datagramIndex], datagramHeader);
 
-    if (datagramHeader.blockID == BLOCK_ID_ERROR_INDICATOR ||
-        datagramHeader.blockID >= _memoryMap.noOfDataBlocks)
+    if (datagramHeader.blockID >= _memoryMap.noOfDataBlocks)
+    {
+      statusReturn = ERROR_BLOCK_ID;
+      break;
+    }
+
+    if (datagramHeader.blockID == BLOCK_ID_ERROR_INDICATOR)
     {
       datagramIndex += DATAGRAM_SIZE_HEADER;
-      Error_t error = static_cast<Error_t>(_responseBuffer[datagramIndex]);
-      //recordError(ERROR_PACKET_PROCESSING);
+      statusReturn = static_cast<Atams::Error_t>(_responseBuffer[datagramIndex]);
       break;
     }
 
@@ -257,7 +262,7 @@ Atams::Error_t Node::processResponseBuffer(void)
   
     if (datagramPayloadLength.status != ERROR_NONE)
     {
-      //recordError(ERROR_PACKET_PROCESSING);
+      statusReturn = datagramPayloadLength.status;
       break;
     }
 
@@ -266,9 +271,8 @@ Atams::Error_t Node::processResponseBuffer(void)
       case RESPONSE_NACK:
       {
         datagramIndex += DATAGRAM_SIZE_HEADER;
-        Error_t accessError = static_cast<Error_t>(_responseBuffer[datagramIndex]);
-        //recordError(ERROR_PACKET_PROCESSING);
-        datagramIndex += sizeof(accessError);
+        statusReturn   = static_cast<Atams::Error_t>(_responseBuffer[datagramIndex]);
+        datagramIndex += sizeof(Atams::Error_t);
         break;
       }
 
@@ -282,17 +286,10 @@ Atams::Error_t Node::processResponseBuffer(void)
                                                     &_responseBuffer[datagramIndex + DATAGRAM_INDEX_PAYLOAD],
                                                     datagramPayloadLength.data);
 
-        if (transferStatus == ERROR_NONE)
-        {
-          updateRequestPattern(datagramHeader.blockID, datagramHeader.varID, ACCESS_READ);
-        }
-        else 
-        {
-          //recordError(ERROR_PACKET_PROCESSING);
-        }
+        if (transferStatus == ERROR_NONE) updateRequestPattern(datagramHeader.blockID, datagramHeader.varID, ACCESS_READ);
+        else                              statusReturn = transferStatus;
 
         datagramIndex += (DATAGRAM_SIZE_HEADER + datagramPayloadLength.data);
-        
         break;
       }
 
@@ -309,6 +306,8 @@ Atams::Error_t Node::processResponseBuffer(void)
         break;
     }
   }
+
+  return (statusReturn);
 }
 
 /*************************************************************************************/
@@ -331,25 +330,26 @@ DataStatusReturn_t<bool> Node::findDatagramMatchInPacket(RequestChangeConfig_t c
 
     changeConfig.currentDatagramLength = DATAGRAM_SIZE_HEADER;
 
-    if (changeConfig.currentDatagramHeader.command == ACCESS_WRITE)
-    {
-      DataStatusReturn_t<uint8_t> payloadLengthReturn = getMemberLength(changeConfig.currentDatagramHeader.blockID, 
-                                                                        changeConfig.currentDatagramHeader.varID);
-  
-      if (payloadLengthReturn.status != ERROR_NONE)
-      {
-        searchResult.status = payloadLengthReturn.status;
-        return (searchResult);
-      }
-  
-      changeConfig.currentDatagramLength += payloadLengthReturn.data;
-    }
-
     if ((changeConfig.currentDatagramHeader.command == changeConfig.newDatagramHeader.command) &&
         (changeConfig.currentDatagramHeader.blockID == changeConfig.newDatagramHeader.blockID) &&
         (changeConfig.currentDatagramHeader.varID   == changeConfig.newDatagramHeader.varID  ) )
     {
       searchResult.data = true;
+
+      if (changeConfig.currentDatagramHeader.command == ACCESS_WRITE)
+      {
+        DataStatusReturn_t<uint8_t> payloadLengthReturn = getMemberLength(changeConfig.currentDatagramHeader.blockID, 
+                                                                          changeConfig.currentDatagramHeader.varID);
+    
+        if (payloadLengthReturn.status != ERROR_NONE)
+        {
+          searchResult.status = payloadLengthReturn.status;
+          return (searchResult);
+        }
+    
+        changeConfig.currentDatagramLength += payloadLengthReturn.data;
+      }
+
       return (searchResult);
     }
     else /* Current datagram != new datagram */
@@ -379,7 +379,7 @@ Atams::Error_t Node::requestPacketShift(const uint16_t shiftIndex, const int16_t
   return (ERROR_NONE);
 }
 
-Atams::Error_t Node::packetRemoveCurrentDatagram(RequestChangeConfig_t changeConfig)
+Atams::Error_t Node::requestPacketRemoveCurrentDatagram(RequestChangeConfig_t changeConfig)
 {
   /* Node packet still contains other datagrams - only remove datagram from Mesh packet */
   uint16_t shiftIndex  =  changeConfig.datagramStartIndex + changeConfig.currentDatagramLength;
@@ -399,13 +399,13 @@ Atams::Error_t Node::packetRemoveCurrentDatagram(RequestChangeConfig_t changeCon
       .varID   = changeConfig.currentDatagramHeader.varID, 
     };
 
-    _requestPacket.writeList.removeConfig(writeConfigToRemove);
+    _requestPacket.writeList.removeConfigIfFound(writeConfigToRemove);
   }
 
   return (statusReturn);
 }
 
-Atams::Error_t Node::packetAdjustCurrentDatagram(RequestChangeConfig_t changeConfig)
+Atams::Error_t Node::requestPacketAdjustCurrentDatagram(RequestChangeConfig_t changeConfig)
 {
   Error_t  statusReturn =  ERROR_NONE;
   uint16_t shiftIndex   = changeConfig.datagramStartIndex + changeConfig.currentDatagramLength;
@@ -415,7 +415,10 @@ Atams::Error_t Node::packetAdjustCurrentDatagram(RequestChangeConfig_t changeCon
   { 
     statusReturn = requestPacketShift(shiftIndex, shiftLength);
 
-    if (statusReturn != ERROR_NONE) return (statusReturn); /* Early Return */
+    if (statusReturn != ERROR_NONE) 
+    {
+      return (statusReturn); /* Early Return */
+    }
   }
   
   /* Copy new datagram into available space */
@@ -423,18 +426,23 @@ Atams::Error_t Node::packetAdjustCurrentDatagram(RequestChangeConfig_t changeCon
          changeConfig.newDatagramBuffer, 
          changeConfig.newDatagramLength);
 
-  if ((changeConfig.newDatagramHeader.command == ACCESS_WRITE  ) &&
-      (changeConfig.requestPattern            == REQUEST_ACTIVE) )
+  if ((changeConfig.accessRequest  == ACCESS_WRITE  ) &&
+      (changeConfig.requestPattern == REQUEST_ACTIVE) )
   {
     WriteList::WriteConfig_t writeConfigToAdd =
     {
       .blockID             = changeConfig.currentDatagramHeader.blockID,
       .varID               = changeConfig.currentDatagramHeader.varID, 
-      .meshPacketDataIndex = changeConfig.datagramStartIndex + DATAGRAM_SIZE_HEADER,
-      .dataLength          = changeConfig.newDatagramLength  - DATAGRAM_SIZE_HEADER
+      .meshPacketDataIndex = static_cast<uint16_t>(changeConfig.datagramStartIndex + DATAGRAM_SIZE_HEADER),
+      .dataLength          = static_cast<uint8_t> (changeConfig.newDatagramLength  - DATAGRAM_SIZE_HEADER)
     };
 
-    _requestPacket.writeList.addConfig(writeConfigToAdd);
+    if (_requestPacket.writeList.addConfig(writeConfigToAdd) != ERROR_NONE)
+    {
+      statusReturn = Atams::ERROR_WRITE_LIST; 
+      /* TODO:: IF CANNOT ADD TO WRITE LIST, REQUEST PACKET SHOULD BE RETURNED TO ORIGINAL STATE. 
+                THIS COULD BE GUARDED EARLY ON BY ASSERTING MAX NUMBER OF WRITE DATAGRAMS */
+    }
   }
   else
   {
@@ -444,37 +452,61 @@ Atams::Error_t Node::packetAdjustCurrentDatagram(RequestChangeConfig_t changeCon
       .varID   = changeConfig.currentDatagramHeader.varID, 
     };
 
-    _requestPacket.writeList.removeConfig(writeConfigToRemove);
+    _requestPacket.writeList.removeConfigIfFound(writeConfigToRemove);
   }
 
   return (statusReturn);
 }
 
-Atams::Error_t Node::packetAppendDatagramToNode(RequestChangeConfig_t requestChanegConfig)
+Atams::Error_t Node::requestPacketAppendDatagram(RequestChangeConfig_t changeConfig)
 {
+  uint16_t shiftIndex   = 0U;
+  int8_t   shiftLength  = 0;
 
+  if ((_requestPacket.length + changeConfig.newDatagramLength) > MAX_NODE_PACKET_SIZE)
+  {
+    return (Atams::ERROR_REQUEST_BUFFER_LENGTH); /* Early Return */
+  }
+
+  /* Copy new datagram into available space */
+  memcpy(&_requestPacket.buffer[_requestPacket.length], changeConfig.newDatagramBuffer, changeConfig.newDatagramLength);
+
+  /* Update Node packet length in Mesh packet */
+  _requestPacket.length += changeConfig.newDatagramLength;
+
+  if ((changeConfig.accessRequest  == ACCESS_WRITE  ) &&
+      (changeConfig.requestPattern == REQUEST_ACTIVE) )
+  {
+    WriteList::WriteConfig_t writeConfigToAdd =
+    {
+      .blockID             = changeConfig.currentDatagramHeader.blockID,
+      .varID               = changeConfig.currentDatagramHeader.varID, 
+      .meshPacketDataIndex = static_cast<uint16_t>(changeConfig.datagramStartIndex + DATAGRAM_SIZE_HEADER),
+      .dataLength          = static_cast<uint8_t> (changeConfig.newDatagramLength  - DATAGRAM_SIZE_HEADER)
+    };
+
+    _requestPacket.writeList.addConfig(writeConfigToAdd);
+  }
+
+  return (Atams::ERROR_NONE);
 }
 
-Atams::Error_t Node::constructDatagram(RequestChangeConfig_t &requestChangeConfig)
+Atams::Error_t Node::constructDatagram(RequestChangeConfig_t &changeConfig)
 {
-  DatagramHeader_t &datagramHeader = requestChangeConfig.newDatagramHeader;
-  uint8_t          *datagramBuffer = requestChangeConfig.newDatagramBuffer;
-  uint8_t          &datagramLength = requestChangeConfig.newDatagramLength;
-
   Error_t statusReturn = ERROR_NONE;
 
   /* Construct new datagram to be added to mesh packet */
-  datagramHeader.command  = requestChangeConfig.accessRequest;
-  datagramHeader.blockID  = requestChangeConfig.blockID;
-  datagramHeader.varID    = requestChangeConfig.varID;
+  changeConfig.newDatagramHeader.command  = changeConfig.accessRequest;
+  changeConfig.newDatagramHeader.blockID  = changeConfig.blockID;
+  changeConfig.newDatagramHeader.varID    = changeConfig.varID;
 
-  datagramHeaderToBuffer(datagramHeader, datagramBuffer);
+  datagramHeaderToBuffer(changeConfig.newDatagramHeader, changeConfig.newDatagramBuffer);
 
-  datagramLength = DATAGRAM_SIZE_HEADER;
+  changeConfig.newDatagramLength = DATAGRAM_SIZE_HEADER;
 
-  if (requestChangeConfig.accessRequest == ACCESS_WRITE)
+  if (changeConfig.accessRequest == ACCESS_WRITE)
   {
-    DataStatusReturn_t<uint8_t> datagramPayloadLength = getMemberLength(requestChangeConfig.blockID, requestChangeConfig.varID);
+    DataStatusReturn_t<uint8_t> datagramPayloadLength = getMemberLength(changeConfig.blockID, changeConfig.varID);
   
     if (datagramPayloadLength.status != ERROR_NONE)
     {
@@ -482,9 +514,9 @@ Atams::Error_t Node::constructDatagram(RequestChangeConfig_t &requestChangeConfi
     }
 
     statusReturn = externalTransfer(ACCESS_READ, 
-                                    requestChangeConfig.blockID, 
-                                    requestChangeConfig.varID, 
-                                    &datagramBuffer[DATAGRAM_INDEX_PAYLOAD], 
+                                    changeConfig.blockID, 
+                                    changeConfig.varID, 
+                                    &changeConfig.newDatagramBuffer[DATAGRAM_INDEX_PAYLOAD], 
                                     datagramPayloadLength.data);
 
     if (statusReturn != ERROR_NONE)
@@ -493,19 +525,19 @@ Atams::Error_t Node::constructDatagram(RequestChangeConfig_t &requestChangeConfi
     }
 
     /* Mesh packet data is sent with little endian byte order, order must be swapped when data enters/exits the mesh packet on big endian systems */
-    if (systemIsBigEndian()) swapEndiannessRaw(&datagramBuffer[DATAGRAM_INDEX_PAYLOAD], datagramPayloadLength.data);
+    if (systemIsBigEndian()) swapEndiannessRaw(&changeConfig.newDatagramBuffer[DATAGRAM_INDEX_PAYLOAD], datagramPayloadLength.data);
     
-    datagramLength += datagramPayloadLength.data;
+    changeConfig.newDatagramLength += datagramPayloadLength.data;
   }
 
   return (statusReturn);
 }
 
 /* Warning - No OOR checks, should be completed by calling function */
-Atams::Error_t Node::processPacketChange(const uint8_t          blockID,
-                                         const uint16_t         varID,
-                                         const Access_t         accessRequest,
-                                         const RequestPattern_t requestPattern)
+Atams::Error_t Node::processRequestPacketChange(const uint8_t          blockID,
+                                                const uint16_t         varID,
+                                                const Access_t         accessRequest,
+                                                const RequestPattern_t requestPattern)
 {
   RequestChangeConfig_t packetChangeConfig;
   Error_t               statusReturn = ERROR_NONE;
@@ -521,7 +553,7 @@ Atams::Error_t Node::processPacketChange(const uint8_t          blockID,
     return (statusReturn);
   }
 
-  /* Begin editing of inactive mesh packet */
+  /* Begin editing of request packet */
   Platform::MemoryLock::acquireLock();
 
   /* Search Node packet for a datagram matching the new datagram */
@@ -533,22 +565,22 @@ Atams::Error_t Node::processPacketChange(const uint8_t          blockID,
   }
 
   if (datagramSearchResult.data == true)
-  { /* Datagram already exists in Node packet but either needs editing or removing */
+  { /* Datagram already exists in request packet but either needs editing or removing */
 
-    if (requestPattern == REQUEST_INACTIVE)
-    { /* Datagram needs to be removed from Mesh packet */
+    if ((requestPattern == REQUEST_INACTIVE) ||
+        (accessRequest  == ACCESS_NONE     ) )
+    { /* Datagram needs to be removed from Mesh packet */ 
     
-      statusReturn = packetRemoveCurrentDatagram(packetChangeConfig);
+      statusReturn = requestPacketRemoveCurrentDatagram(packetChangeConfig);
 
       if (statusReturn != ERROR_NONE)
       {
         return (statusReturn);
       }
-
     }
-    else /* commandPattern != COMMAND_INACTIVE */
+    else /* commandPattern != COMMAND_INACTIVE && accessRequest != ACCESS_NONE */
     {
-      statusReturn = packetAdjustCurrentDatagram(packetChangeConfig);
+      statusReturn = requestPacketAdjustCurrentDatagram(packetChangeConfig);
 
       if (statusReturn != ERROR_NONE)
       {
@@ -557,8 +589,8 @@ Atams::Error_t Node::processPacketChange(const uint8_t          blockID,
     }
   }
   else 
-  { /* No matching datagram already in Node/Mesh packet */
-    statusReturn = packetAppendDatagramToNode(packetChangeConfig);
+  { /* No matching datagram already in request packet */
+    statusReturn = requestPacketAppendDatagram(packetChangeConfig);
 
     if (statusReturn != ERROR_NONE)
     {
@@ -581,7 +613,7 @@ Atams::Error_t Node::updateRequestPattern(const uint8_t  blockID,
   }
 
   Atams::Error_t           statusReturn = Atams::ERROR_NONE;
-  DataStatusReturn_t<bool> updateStatus = _dataBlocks[blockID].updateRequestPattern(varID, accessRequest);
+  DataStatusReturn_t<bool> updateStatus = _dataBlocks[blockID].updateRequestPattern(varID);
 
   if (updateStatus.status != Atams::ERROR_NONE)
   {
@@ -590,10 +622,10 @@ Atams::Error_t Node::updateRequestPattern(const uint8_t  blockID,
 
   if (updateStatus.data == true)
   {
-    statusReturn = processPacketChange(blockID,
-                                      varID,
-                                      accessRequest, 
-                                      REQUEST_INACTIVE);
+    statusReturn = processRequestPacketChange(blockID,
+                                              varID,
+                                              accessRequest, 
+                                              REQUEST_INACTIVE);
   }
 
   return (statusReturn);

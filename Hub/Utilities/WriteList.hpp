@@ -84,7 +84,7 @@ class WriteList
 
   Error_t addConfig(WriteConfig_t newWriteConfig);
 
-  void removeConfig(WriteConfig_t configToRemove);
+  void removeConfigIfFound(WriteConfig_t configToRemove);
 
   void updateIndexes(uint16_t referenceIndex, int16_t shiftLength);
 

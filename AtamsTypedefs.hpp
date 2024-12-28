@@ -134,43 +134,46 @@ typedef enum: uint8_t
 typedef enum: uint8_t
 {
   ERROR_NONE                     = 0U,
-  ERROR_BLOCK_ID                 = 4U,
-  ERROR_MEMBER_ID                = 5U,
-  ERROR_MEMBER_TYPE              = 35U,
-  ERROR_MEMBER_LENGTH            = 6U,
-  ERROR_REQUEST_BUFFER_LENGTH    = 7U,
-  ERROR_NULL_PTR                 = 10U,
-  ERROR_ACCESS_INVALID           = 11U,
-  ERROR_MEMORY                   = 12U,
-  ERROR_WRITE_LIST               = 15U,
-  ERROR_NODE_FATAL               = 16U,
-  ERROR_MEMBER_PATH_INVALID      = 17U,
-  ERROR_RESPONSE_BUFFER_LENGTH   = 18U,
-  ERROR_ABORT_FAILURE            = 19U,
-  ERROR_ENCODE                   = 20U,
-  ERROR_DECODE                   = 21U,
-  ERROR_MESSAGE_TYPE             = 22U,
-  ERROR_SYNC_COUNT               = 23U,
-  ERROR_SYNC_NODE                = 24U,
-  ERROR_COMMAND_RESPONSE_INVALID = 25U,
-  ERROR_WRITE_DATA_UPDATE        = 26U,
-  ERROR_PATTERN_AUTO_UPDATE      = 27U,
-  ERROR_PACKET_PROCESSING        = 28U,
-  ERROR_NODE_ID_LIST             = 29U,
-  ERROR_DATAGRAM_SEARCH          = 30U,
-  ERROR_ERROR_MANAGEMENT         = 31U,
-  ERROR_PLATFORM                 = 32U,
-  ERROR_LIMITS                   = 33U,
-  ERROR_WRITE_LOCK               = 34U,
+  ERROR_BLOCK_ID                 = 1U,
+  ERROR_VAR_ID                   = 2U,
+  ERROR_VAR_TYPE                 = 3U,
+  ERROR_VAR_LENGTH               = 4U,
+  ERROR_REQUEST_BUFFER_LENGTH    = 5U,
+  ERROR_NULL_PTR                 = 6U,
+  ERROR_ACCESS_INVALID           = 7U,
+  ERROR_REQUEST_PATTERN_INVALID  = 8U,
+  ERROR_MEMORY                   = 9U,
+  ERROR_WRITE_LIST               = 10U,
+  ERROR_NODE_FATAL               = 11U,
+  ERROR_MEMBER_PATH_INVALID      = 12U,
+  ERROR_RESPONSE_BUFFER_LENGTH   = 13U,
+  ERROR_ABORT_FAILURE            = 14U,
+  ERROR_ENCODE                   = 15U,
+  ERROR_DECODE                   = 16U,
+  ERROR_MESSAGE_TYPE             = 17U,
+  ERROR_SYNC_COUNT               = 18U,
+  ERROR_SYNC_NODE                = 19U,
+  ERROR_COMMAND_RESPONSE_INVALID = 20U,
+  ERROR_WRITE_DATA_UPDATE        = 21U,
+  ERROR_PATTERN_AUTO_UPDATE      = 22U,
+  ERROR_PACKET_PROCESSING        = 23U,
+  ERROR_NODE_ID_LIST             = 24U,
+  ERROR_DATAGRAM_SEARCH          = 25U,
+  ERROR_ERROR_MANAGEMENT         = 26U,
+  ERROR_PLATFORM                 = 27U,
+  ERROR_LIMITS                   = 28U,
+  ERROR_WRITE_LOCK               = 29U,
+  ERROR_BUS_FULL                 = 30U,
+  ERROR_UPDATE_CYCLE_IN_PROGRESS = 31U,
 
   NUMBER_OF_ATAMS_ERRORS
 } Error_t;
 
 typedef enum: uint8_t
 {
-  ACCESS_READ  = 0U,
-  ACCESS_WRITE = 1U,
-  NUMBER_OF_ACCESS_LEVELS
+  ACCESS_NONE  = 0U,
+  ACCESS_READ  = 1U,
+  ACCESS_WRITE = 2U,
 } Access_t;
 
 typedef enum: uint8_t
@@ -266,9 +269,6 @@ struct TXMessage_t
 };
 
 typedef void (*CommsTransmitCallback_t)(TXMessage_t message);
-
-typedef void (&MeshPacketClearCallback_t)(uint8_t nodeID);
-
 
 /*************************************************************************************/
 /* POST-TYPEDEF CONSTANTS                                                            */

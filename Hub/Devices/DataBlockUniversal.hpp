@@ -100,141 +100,117 @@ inline constexpr uint8_t  MAX_LIMIT_PREVIOUS_NODE_ID = NODE_ID_MAX;
 inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
 {
   /* .noOfDataMembers = */ BlockUniversal::NUMBER_OF_UNIVERSAL_DATA_MEMBERS,
-  /* .initDefaults    = */ nullptr, 
-  /* .initLimits      = */ nullptr, 
   /* .dataMemberInfo  = */
   {
     /* [BlockUniversal::MEMBER_ID_ATAMS_VERSION_NUMBER] = */
     {
       /* .type           = */ TYPE_FLOAT,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_UNIVERSAL_UNLOCK] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_MAP_GEN_DAY] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_MAP_GEN_MONTH] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_MAP_GEN_YEAR] = */
     {
       /* .type           = */ TYPE_UINT16,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_MAP_GEN_HOUR] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_MAP_GEN_MINUTE] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_MAP_GEN_SECOND] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_MAP_CHECKSUM] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_NODE_ID] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ true,
     },
     /* [BlockUniversal::MEMBER_ID_FIRST_NODE_ID] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ true,
     },
     /* [BlockUniversal::MEMBER_ID_LAST_NODE_ID] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ true,
     },
     /* [BlockUniversal::MEMBER_ID_PREVIOUS_NODE_ID] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ true,
     },
     /* [BlockUniversal::MEMBER_ID_WATCHDOG_TIMEOUT] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ true,
     },
     /* [BlockUniversal::MEMBER_ID_WATCHDOG_COUNTER] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_WATCHDOG_FAULT_ACTIVE] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_WATCHDOG_RESET] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_CRC_ERROR_COUNT] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_COBS_ERROR_COUNT] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_STORE_NVM] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_RESTORE_FACTORY_NVM] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::MEMBER_ID_NVM_STATUS] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
     },
   }
 };

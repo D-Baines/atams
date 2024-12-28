@@ -30,7 +30,6 @@
 #include <stdint.h>
 #include "../AtamsTypedefs.hpp"
 #include "Utilities/CircularBuffer.hpp"
-#include "Utilities/WriteList.hpp"
 #include "Platform.hpp"
 
 /*************************************************************************************/
@@ -87,7 +86,7 @@ private Platform::BusPeripheral
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Constructor */
-  Bus(BusPeripheral::UserData_t userData);
+  Bus(Platform::BusPeripheral::UserData_t userData);
 
   /* Copy Constructor */
   Bus(const Bus &other) = delete;

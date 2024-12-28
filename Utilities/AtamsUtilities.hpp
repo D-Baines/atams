@@ -59,7 +59,7 @@ inline constexpr uint8_t SINGLE_BYTE_MASK  = 0xFFU;
 
 const char* getErrorString(Error_t errorID);
 
-constexpr bool systemIsBigEndian(void)
+inline bool systemIsBigEndian(void)
 {
   uint32_t asUINT32 = 0x0001;
   uint8_t *asPtr    = reinterpret_cast<uint8_t*>(&asUINT32);

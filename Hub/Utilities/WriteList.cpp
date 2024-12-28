@@ -76,7 +76,7 @@ WriteList::Error_t WriteList::addConfig(WriteConfig_t newWriteConfig)
   return (ERROR_NONE);
 }
 
-void WriteList::removeConfig(WriteConfig_t configToRemove)
+void WriteList::removeConfigIfFound(WriteConfig_t configToRemove)
 {
   SearchResult_t searchResult = findConfig(configToRemove);
 

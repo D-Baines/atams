@@ -32,7 +32,7 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace Hub { namespace Platform {
+namespace Atams { namespace Platform {
 
 
 /*************************************************************************************/
@@ -65,7 +65,7 @@ uint64_t getMillis(void)
 }
 
 
-} } } /* End Namspace - Atams::Hub::Platform */
+} } /* End Namspace - Atams::Hub::Platform */
 
 
 /**
