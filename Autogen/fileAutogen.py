@@ -76,13 +76,17 @@ def generateConstList(block, memberNames:str, columnHeader: str, targetFile):
     postNameSpaces = postStringRequiredSpace - len(memberName)
     if (value and (value != "-")):
       print(value)
+      valueAsString = str(value)
       targetFile.write("inline constexpr " + type + " ")
       writeSpaces(preNameSpaces, targetFile)
       targetFile.write((columnHeader.replace(' ', '_').upper()) + "_" + memberName)
       writeSpaces(postNameSpaces, targetFile)
       suffix = getSuffixString(type)
-      targetFile.write(" = " + value)
-      listItemNoSignNoPoint = value.replace('.', '')
+      targetFile.write(" = " + valueAsString)
+      if (("." not in valueAsString) and 
+          (type == "float"         ) ):
+        targetFile.write(".0")
+      listItemNoSignNoPoint = valueAsString.replace('.', '')
       listItemNoSignNoPoint = listItemNoSignNoPoint.replace('-', '')
       if (listItemNoSignNoPoint.isnumeric()):
         targetFile.write(suffix)
@@ -98,8 +102,9 @@ def generateBlockDescriptor(platformNameCamel: str,
   memberIterator = 0
   targetFile.write("inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =\n{\n")
   targetFile.write("  /* .noOfDataMembers = */ Block"+blockNameCamel+"::NUMBER_OF_"+blockNameUpper+"_DATA_MEMBERS,\n")
-  targetFile.write("  /* .initDefaults    = */ nullptr, \n")
-  targetFile.write("  /* .initLimits      = */ nullptr, \n")
+  if (platformNameCamel == "Node"):
+    targetFile.write("  /* .initDefaults    = */ nullptr, \n")
+    targetFile.write("  /* .initLimits      = */ nullptr, \n")
   targetFile.write("  /* .dataMemberInfo  = */\n  {\n")
   types        = block["Data Type"]
   accessLevels = block["External Access"]
@@ -169,8 +174,6 @@ def generateBlockArray(dataBlockNamesCamel, targetFile):
 
 def generateInitUniversalMapInfo(platformNameCamel,
                                  targetFile):
-  if (platformNameCamel != "Node"):
-    return
   targetFile.write("Error_t initUniversalInfo(void)\n{\n")
   targetFile.write("  Error_t initStatus = ERROR_NONE;\n\n")
 
@@ -496,7 +499,7 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
   nodeMemMapHppPath = os.path.join(memMapNodeDir, memMapHppName)
   nodeMemMapCppPath = os.path.join(memMapNodeDir, memMapCppName)
   hubMemMapHppPath  = os.path.join(memMapHubDir,  memMapHppName)
-  #hubMemMapCppPath  = os.path.join(memMapHubDir,  memMapCppName)
+  hubMemMapCppPath  = os.path.join(memMapHubDir,  memMapCppName)
 
   memMapTemplateHpp = open(memMapTemplateHppPath, OpenMethods.READ_ONLY)
   nodeMemMapHpp     = open(nodeMemMapHppPath,     OpenMethods.WRITE_FORCE)
@@ -519,7 +522,7 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
                         hubMemMapHpp)
   hubMemMapHpp.close()
   memMapTemplateHpp.close()
-
+  
   memMapTemplateCpp = open(memMapTemplateCppPath, OpenMethods.READ_ONLY)
   nodeMemMapCpp     = open(nodeMemMapCppPath,     OpenMethods.WRITE_FORCE)
   generateMemoryMapFile("Node",
@@ -530,15 +533,16 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
                         memMapTemplateCpp,
                         nodeMemMapCpp)
   nodeMemMapCpp.close()
-  #hubMemMapCpp = open(hubMemMapCppPath, OpenMethods.WRITE_FORCE)
-  #generateMemoryMapFile("Hub",
-  #                      memMapNameCamel,
-  #                      dataBlockNamesCamel,
-  #                      dataBlockNamesUpper,
-  #                      dataBlocks,
-  #                      memMapTemplateCpp,
-  #                      hubMemMapCpp)
-  #hubMemMapCpp.close()
+  memMapTemplateCpp.seek(0)
+  hubMemMapCpp = open(hubMemMapCppPath, OpenMethods.WRITE_FORCE)
+  generateMemoryMapFile("Hub",
+                        memMapNameCamel,
+                        dataBlockNamesCamel,
+                        dataBlockNamesUpper,
+                        dataBlocks,
+                        memMapTemplateCpp,
+                        hubMemMapCpp)
+  hubMemMapCpp.close()
   memMapTemplateCpp.close()
 
   blockIterator = 0
