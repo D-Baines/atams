@@ -45,14 +45,20 @@ namespace Atams { namespace MapTest { namespace BlockExample1 {
 /*--- Member List ---*/
 typedef enum: uint16_t
 {
-  MEMBER_ID_NODE_ID             = 0U,
-  MEMBER_ID_STORE_NVM           = 1U,
-  MEMBER_ID_RESTORE_FACTORY_NVM = 2U,
-  MEMBER_ID_STORE_OTP           = 3U,
-  MEMBER_ID_WATCHDOG_TIMEOUT    = 4U,
-  MEMBER_ID_MEMORY_MAP_GEN_DATE = 5U,
-  MEMBER_ID_MEMORY_MAP_GEN_TIME = 6U,
-  MEMBER_ID_MEMORY_MAP_CHECKSUM = 7U,
+  MEMBER_ID_WRITE_UINT8  = 0U,
+  MEMBER_ID_WRITE_INT8   = 1U,
+  MEMBER_ID_READ_UINT8   = 2U,
+  MEMBER_ID_READ_INT8    = 3U,
+  MEMBER_ID_WRITE_UINT16 = 4U,
+  MEMBER_ID_WRITE_INT16  = 5U,
+  MEMBER_ID_READ_UINT16  = 6U,
+  MEMBER_ID_READ_INT16   = 7U,
+  MEMBER_ID_WRITE_UINT32 = 8U,
+  MEMBER_ID_WRITE_INT32  = 9U,
+  MEMBER_ID_READ_UINT32  = 10U,
+  MEMBER_ID_READ_INT32   = 11U,
+  MEMBER_ID_WRITE_FLOAT  = 12U,
+  MEMBER_ID_READ_FLOAT   = 13U,
 
   NUMBER_OF_EXAMPLE1_DATA_MEMBERS
 } DataMemberID_t;
@@ -62,15 +68,24 @@ typedef enum: uint16_t
 /*************************************************************************************/
 
 /*--- Defaults ---*/
-inline constexpr uint32_t DEFAULT_MEMORY_MAP_GEN_DATE = 49856UL;
-inline constexpr float    DEFAULT_MEMORY_MAP_GEN_TIME = 4.0F;
-inline constexpr int8_t   DEFAULT_MEMORY_MAP_CHECKSUM = -7;
+inline constexpr uint8_t  DEFAULT_WRITE_UINT8  = 1U;
+inline constexpr int8_t   DEFAULT_WRITE_INT8   = 2;
+inline constexpr uint8_t  DEFAULT_READ_UINT8   = 3U;
+inline constexpr int8_t   DEFAULT_READ_INT8    = 4;
+inline constexpr uint16_t DEFAULT_WRITE_UINT16 = 5U;
+inline constexpr int16_t  DEFAULT_WRITE_INT16  = 6;
+inline constexpr uint16_t DEFAULT_READ_UINT16  = 7U;
+inline constexpr int16_t  DEFAULT_READ_INT16   = 8;
+inline constexpr uint32_t DEFAULT_WRITE_UINT32 = 9UL;
+inline constexpr int32_t  DEFAULT_WRITE_INT32  = 10L;
+inline constexpr uint32_t DEFAULT_READ_UINT32  = 11UL;
+inline constexpr int32_t  DEFAULT_READ_INT32   = 12L;
+inline constexpr float    DEFAULT_WRITE_FLOAT  = 13.0F;
+inline constexpr float    DEFAULT_READ_FLOAT   = 14.0F;
 
 /*--- Minimum Limits ---*/
-inline constexpr uint8_t  MIN_LIMIT_NODE_ID = 0U;
 
 /*--- Maximum Limits ---*/
-inline constexpr uint8_t  MAX_LIMIT_NODE_ID = NODE_ID_MAX;
 
 /*--- Descriptor ---*/
 inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
@@ -80,51 +95,87 @@ inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
   /* .initLimits      = */ nullptr, 
   /* .dataMemberInfo  = */
   {
-    /* [BlockExample1::MEMBER_ID_NODE_ID] = */
+    /* [BlockExample1::MEMBER_ID_WRITE_UINT8] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_WRITE,
       /* .NVMStorage     = */ false,
     },
-    /* [BlockExample1::MEMBER_ID_STORE_NVM] = */
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false,
-    },
-    /* [BlockExample1::MEMBER_ID_RESTORE_FACTORY_NVM] = */
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false,
-    },
-    /* [BlockExample1::MEMBER_ID_STORE_OTP] = */
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false,
-    },
-    /* [BlockExample1::MEMBER_ID_WATCHDOG_TIMEOUT] = */
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false,
-    },
-    /* [BlockExample1::MEMBER_ID_MEMORY_MAP_GEN_DATE] = */
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
-    },
-    /* [BlockExample1::MEMBER_ID_MEMORY_MAP_GEN_TIME] = */
-    {
-      /* .type           = */ TYPE_FLOAT,
-      /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
-    },
-    /* [BlockExample1::MEMBER_ID_MEMORY_MAP_CHECKSUM] = */
+    /* [BlockExample1::MEMBER_ID_WRITE_INT8] = */
     {
       /* .type           = */ TYPE_INT8,
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample1::MEMBER_ID_READ_UINT8] = */
+    {
+      /* .type           = */ TYPE_UINT8,
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample1::MEMBER_ID_READ_INT8] = */
+    {
+      /* .type           = */ TYPE_INT8,
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample1::MEMBER_ID_WRITE_UINT16] = */
+    {
+      /* .type           = */ TYPE_UINT16,
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample1::MEMBER_ID_WRITE_INT16] = */
+    {
+      /* .type           = */ TYPE_INT16,
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample1::MEMBER_ID_READ_UINT16] = */
+    {
+      /* .type           = */ TYPE_UINT16,
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample1::MEMBER_ID_READ_INT16] = */
+    {
+      /* .type           = */ TYPE_INT16,
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample1::MEMBER_ID_WRITE_UINT32] = */
+    {
+      /* .type           = */ TYPE_UINT32,
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample1::MEMBER_ID_WRITE_INT32] = */
+    {
+      /* .type           = */ TYPE_INT32,
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample1::MEMBER_ID_READ_UINT32] = */
+    {
+      /* .type           = */ TYPE_UINT32,
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample1::MEMBER_ID_READ_INT32] = */
+    {
+      /* .type           = */ TYPE_INT32,
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample1::MEMBER_ID_WRITE_FLOAT] = */
+    {
+      /* .type           = */ TYPE_FLOAT,
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample1::MEMBER_ID_READ_FLOAT] = */
+    {
+      /* .type           = */ TYPE_FLOAT,
       /* .externalAccess = */ ACCESS_READ,
       /* .NVMStorage     = */ false,
     },

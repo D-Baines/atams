@@ -42,14 +42,47 @@ Error_t initDefaults(DataBlock &block)
 {
   Error_t initStatus = ERROR_NONE;
 
-  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_MEMORY_MAP_GEN_DATE,
-                                                         BlockExample1::DEFAULT_MEMORY_MAP_GEN_DATE);
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_WRITE_UINT8,
+                                                         BlockExample1::DEFAULT_WRITE_UINT8);
 
-  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_MEMORY_MAP_GEN_TIME,
-                                                         BlockExample1::DEFAULT_MEMORY_MAP_GEN_TIME);
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_WRITE_INT8,
+                                                         BlockExample1::DEFAULT_WRITE_INT8);
 
-  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_MEMORY_MAP_CHECKSUM,
-                                                         BlockExample1::DEFAULT_MEMORY_MAP_CHECKSUM);
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_READ_UINT8,
+                                                         BlockExample1::DEFAULT_READ_UINT8);
+
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_READ_INT8,
+                                                         BlockExample1::DEFAULT_READ_INT8);
+
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_WRITE_UINT16,
+                                                         BlockExample1::DEFAULT_WRITE_UINT16);
+
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_WRITE_INT16,
+                                                         BlockExample1::DEFAULT_WRITE_INT16);
+
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_READ_UINT16,
+                                                         BlockExample1::DEFAULT_READ_UINT16);
+
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_READ_INT16,
+                                                         BlockExample1::DEFAULT_READ_INT16);
+
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_WRITE_UINT32,
+                                                         BlockExample1::DEFAULT_WRITE_UINT32);
+
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_WRITE_INT32,
+                                                         BlockExample1::DEFAULT_WRITE_INT32);
+
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_READ_UINT32,
+                                                         BlockExample1::DEFAULT_READ_UINT32);
+
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_READ_INT32,
+                                                         BlockExample1::DEFAULT_READ_INT32);
+
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_WRITE_FLOAT,
+                                                         BlockExample1::DEFAULT_WRITE_FLOAT);
+
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockExample1::MEMBER_ID_READ_FLOAT,
+                                                         BlockExample1::DEFAULT_READ_FLOAT);
 
   return (initStatus); 
 }
@@ -57,10 +90,6 @@ Error_t initDefaults(DataBlock &block)
 Error_t initLimits(DataBlock &block)
 {
   Error_t initStatus = ERROR_NONE;
-
-  if (initStatus == ERROR_NONE) initStatus = block.assertLimits(BlockExample1::MEMBER_ID_NODE_ID,
-                                                                BlockExample1::MAX_LIMIT_NODE_ID,
-                                                                BlockExample1::MIN_LIMIT_NODE_ID);
 
   return (initStatus); 
 }

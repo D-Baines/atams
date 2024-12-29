@@ -46,7 +46,6 @@ namespace Atams {
 /* PRIVATE CONSTANTS                                                                 */
 /*************************************************************************************/
 
-static constexpr uint32_t CRC32_POLYNOMIAL                 = 0x04C11DB7;
 static constexpr uint8_t  ABORT_RESPONSE_SIZE              = MESH_SIZE_HEADER + sizeof(Error_t);
 static constexpr uint32_t WATCHDOG_INCREMENT_PERIOD_MILLIS = 1U;
 static constexpr uint8_t  WATCHDOG_FAULT_ACTIVE            = 1U;
@@ -568,9 +567,11 @@ Error_t initControlCore(const MemoryMap_t &memoryMap)
     if (initStatus == ERROR_NONE) initStatus = blockDescriptor.initLimits(dataBlock);
   }
 
-  if (_memoryMap.initUniversalData == nullptr) initStatus = ERROR_NULL_PTR;
-
-  if (initStatus == ERROR_NONE) initStatus = _memoryMap.initUniversalData();
+  if (initStatus == ERROR_NONE)
+  {
+    if (_memoryMap.initUniversalData != nullptr) initStatus = _memoryMap.initUniversalData();
+    else                                         initStatus = ERROR_NULL_PTR;
+  }
 
   /* NVM Init Here */
 
