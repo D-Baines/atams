@@ -118,7 +118,7 @@ inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
     },
     /* [BlockUniversal::MEMBER_ID_MAP_GEN_DAY] = */
     {
-      /* .type           = */ TYPE_UINT32,
+      /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
       /* .NVMStorage     = */ false,
     },
@@ -136,7 +136,7 @@ inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
     },
     /* [BlockUniversal::MEMBER_ID_MAP_GEN_HOUR] = */
     {
-      /* .type           = */ TYPE_UINT32,
+      /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
       /* .NVMStorage     = */ false,
     },

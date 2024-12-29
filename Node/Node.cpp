@@ -83,7 +83,7 @@ struct ChannelSyncPacket_t
 /*-- Node --*/
 
 static MemoryMap_t _memoryMap;
-static DataBlock   _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS + 1U];
+static DataBlock   _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
 static DataBlock  &_universalBlock                      = _dataBlocks[BLOCK_ID_UNIVERSAL];
 static Error_t     _latestError                         = ERROR_NONE;
 static uint16_t    _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
@@ -460,16 +460,17 @@ static Error_t sharedInit(const MemoryMap_t &memoryMap)
     return (ERROR_MEMORY);   /* Early Return */
   }
 
-  else if (sizeof(float) != TYPE_LENGTHS[TYPE_FLOAT])
+  if (sizeof(float) != TYPE_LENGTHS[TYPE_FLOAT])
   {
     return (ERROR_PLATFORM); /* Early Return */
   }
 
-  _memoryMap.noOfDataBlocks = memoryMap.noOfDataBlocks;
+  _memoryMap.noOfDataBlocks    = memoryMap.noOfDataBlocks;
+  _memoryMap.initUniversalData = memoryMap.initUniversalData;
 
   Error_t initStatus = ERROR_NONE;
 
-  for (uint8_t blockIndex = 0U; blockIndex <= Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
+  for (uint8_t blockIndex = BLOCK_ID_UNIVERSAL; blockIndex < memoryMap.noOfDataBlocks; blockIndex++)
   {
     const DataBlock::BlockDescriptor_t &blockDescriptor = memoryMap.blockDescriptors[blockIndex];
           DataBlock                    &block           = _dataBlocks[blockIndex];
@@ -552,19 +553,19 @@ Error_t initControlCore(const MemoryMap_t &memoryMap)
     for (DataBlock &dataBlock : _dataBlocks) dataBlock.resetDataMembers();
   }
 
-  for (uint8_t blockIndex = BLOCK_ID_UNIVERSAL; blockIndex <= memoryMap.noOfDataBlocks; blockIndex++)
+  for (uint8_t blockIndex = BLOCK_ID_UNIVERSAL; blockIndex < memoryMap.noOfDataBlocks; blockIndex++)
   {
     DataBlock                          &dataBlock       = _dataBlocks[blockIndex];
     const DataBlock::BlockDescriptor_t &blockDescriptor = memoryMap.blockDescriptors[blockIndex];
 
-    if ((blockDescriptor.initDefaults == nullptr) ||
-        (blockDescriptor.initLimits   == nullptr) )
-    {
-      initStatus = ERROR_NULL_PTR;
-    }
-
-    if (initStatus == ERROR_NONE) initStatus = blockDescriptor.initDefaults(dataBlock);
-    if (initStatus == ERROR_NONE) initStatus = blockDescriptor.initLimits(dataBlock);
+    //if ((blockDescriptor.initDefaults == nullptr) ||
+    //    (blockDescriptor.initLimits   == nullptr) )
+    //{
+    //  initStatus = ERROR_NULL_PTR;
+    //}
+    //
+    //if (initStatus == ERROR_NONE) initStatus = blockDescriptor.initDefaults(dataBlock);
+    //if (initStatus == ERROR_NONE) initStatus = blockDescriptor.initLimits(dataBlock);
   }
 
   if (initStatus == ERROR_NONE)

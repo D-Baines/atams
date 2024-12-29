@@ -26,9 +26,6 @@
 /*************************************************************************************/
 
 #include "MemoryMapTest.hpp"
-#include "../DataBlockUniversal.hpp"
-#include "DataBlockExample1.hpp"
-#include "DataBlockExample2.hpp"
 
 
 /*************************************************************************************/
@@ -38,10 +35,35 @@
 namespace Atams { namespace MapTest {
 
 /*************************************************************************************/
+/* PRIVATE FUNCTION DECLARATIONS                                                     */
+/*************************************************************************************/
+
+static Error_t initUniversalInfo(void);
+
+/*************************************************************************************/
+/* PRIVATE CONSTANTS                                                                 */
+/*************************************************************************************/
+
+static const MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,
+                                   initUniversalInfo,
+                                   {BlockUniversal::blockDescriptor,
+                                    BlockExample1::blockDescriptor,
+                                    BlockExample2::blockDescriptor });
+
+/*************************************************************************************/
+/* PUBLIC FUNCTION DEFINITIONS                                                       */
+/*************************************************************************************/
+
+const MemoryMap_t &getMapReference(void)
+{
+  return (memoryMap);
+}
+
+/*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-Error_t initUniversalInfo(void)
+static Error_t initUniversalInfo(void)
 {
   Error_t initStatus = ERROR_NONE;
 
@@ -79,15 +101,6 @@ Error_t initUniversalInfo(void)
 
   return (initStatus); 
 }
-
-/*************************************************************************************/
-/* GLOBAL CONSTANTS                                                                  */
-/*************************************************************************************/
-
-const MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,    
-                            initUniversalInfo,          
-                            {BlockExample1::blockDescriptor,
-                             BlockExample2::blockDescriptor });
 
 
 } } /* End Namespace - Atams::MapTest */

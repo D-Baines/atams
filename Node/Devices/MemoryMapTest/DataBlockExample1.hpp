@@ -91,7 +91,7 @@ inline constexpr float    DEFAULT_READ_FLOAT   = 14.0F;
 inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
 {
   /* .noOfDataMembers = */ BlockExample1::NUMBER_OF_EXAMPLE1_DATA_MEMBERS,
-  /* .initDefaults    = */ nullptr, 
+  /* .initDefaults    = */ nullptr,
   /* .initLimits      = */ nullptr, 
   /* .dataMemberInfo  = */
   {

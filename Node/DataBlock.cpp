@@ -72,7 +72,7 @@ Atams::Error_t DataBlock::initDescriptor(const BlockDescriptor_t &blockDescripto
   Error_t initStatus = ERROR_NONE;
 
   if ((blockDescriptor.noOfDataMembers > Platform::NODE_NUMBER_OF_DATA_MEMBERS) ||
-      (blockDescriptor.noOfDataMembers >           MAX_NUMBER_OF_DATA_BLOCKS  ) )
+      (blockDescriptor.noOfDataMembers >           MAX_NUMBER_OF_DATA_MEMBERS ) )
   {
     initStatus = ERROR_MEMORY;
   }
@@ -153,7 +153,7 @@ Atams::Error_t DataBlock::read(const uint16_t  memberID,
 
   const MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[memberID];
 
-  if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name())  return (ERROR_VAR_TYPE);
+  if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()) return (ERROR_VAR_TYPE);
 
   DataMember_t &dataMember = _dataMembers[memberID];
 
