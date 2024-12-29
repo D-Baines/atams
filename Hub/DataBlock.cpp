@@ -72,7 +72,7 @@ Atams::Error_t DataBlock::initDescriptor(const BlockDescriptor_t &blockDescripto
   Error_t initStatus = ERROR_NONE;
 
   if ((blockDescriptor.noOfDataMembers > Platform::NODE_NUMBER_OF_DATA_MEMBERS) ||
-      (blockDescriptor.noOfDataMembers >           MAX_NUMBER_OF_DATA_BLOCKS  ) )
+      (blockDescriptor.noOfDataMembers >           MAX_NUMBER_OF_DATA_MEMBERS ) )
   {
     initStatus = ERROR_MEMORY;
   }

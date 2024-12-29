@@ -43,7 +43,10 @@ Bus::Bus(Platform::BusPeripheral::UserData_t userData) :
 CircularBuffer(CircularBuffer::DEFAULT_EOL_CHAR),
 Platform::BusPeripheral(userData)
 {
-  for (Node *nodePtr : _nodePtrs) nodePtr = nullptr;
+  for (uint8_t ptrIndex = 0U; ptrIndex < Platform::NUMBER_OF_NODES_PER_BUS; ptrIndex++)
+  {
+    _nodePtrs[ptrIndex] = nullptr; 
+  }
 }
 
 
@@ -68,27 +71,24 @@ Atams::Error_t Bus::addNodeToBus(Node &node)
 
 void Bus::removeNodeFromBus(Node &node)
 {
-  uint8_t nodeFoundIndex = 0U;
-  bool    nodeFound      = false;
+  uint8_t ptrIndex  = 0U;
+  bool    nodeFound = false;
 
-  for (Node *nodePtr : _nodePtrs)
+  for (ptrIndex = 0U; ptrIndex < Platform::NUMBER_OF_NODES_PER_BUS; ptrIndex++)
   {
-    if (nodePtr == &node)
+    if (_nodePtrs[ptrIndex] == &node)
     {
       nodeFound = true;
       break;
-    }
-    else
-    {
-      nodeFoundIndex++;
     }
   }
 
   if (nodeFound)
   {
-    for (uint8_t nodeIndex = nodeFoundIndex; nodeIndex < (Platform::NUMBER_OF_NODES_PER_BUS - 1U); nodeIndex++)
+    for (; ptrIndex < (Platform::NUMBER_OF_NODES_PER_BUS - 1U); ptrIndex++)
     {
-      _nodePtrs[nodeIndex] = _nodePtrs[nodeIndex + 1U];
+      _nodePtrs[ptrIndex     ] = _nodePtrs[ptrIndex + 1U];
+      _nodePtrs[ptrIndex + 1U] = nullptr;
     }
 
     _noOfNodesOnBus--;
@@ -97,7 +97,7 @@ void Bus::removeNodeFromBus(Node &node)
 
 Bus::InitState_t Bus::updateInitProcedure(void)
 {
-  /* Do Nothing */
+  BusPeripheral::startPeripheral();
   return (INIT_STATE_SUCCESSFUL);
 }
 
@@ -157,9 +157,9 @@ Atams::Error_t Bus::update(void)
         _activeNodeIndex = 0U;
         _updateState     = UPDATE_STATE_CYCLE_COMPLETE;
       }
-      if (CircularBuffer::getPacket(_rxBuffer, 
-                                    sizeof(_rxBuffer),
-                                    _rxLength))
+      else if (CircularBuffer::getPacket(_rxBuffer, 
+                                         sizeof(_rxBuffer),
+                                         _rxLength        ) == CircularBuffer::ERROR_NONE)
       {
         if (decodeMeshPacket(_rxBuffer, 
                              _rxLength, 
@@ -192,8 +192,7 @@ Atams::Error_t Bus::update(void)
             }
           }
         }
-
-        _activeNodeIndex++;   
+        _activeNodeIndex++;
       }
       else if (currentTime - _previousResponseTime > RESPONSE_TIMEOUT)
       { 
@@ -214,6 +213,7 @@ Atams::Error_t Bus::update(void)
         {
           encodeMeshPacket(_jogBuffer, MESH_SIZE_HEADER, _encodedBuffer, sizeof(_encodedBuffer), _encodedLength);
           Platform::BusPeripheral::transmit(_encodedBuffer, _encodedLength);
+          _updateState = UPDATE_STATE_COLLECT_RESPONSES;
         }
       }
       break;
@@ -253,7 +253,7 @@ Atams::Error_t Bus::processBuffers(void)
     }
   }
 
-  _updateState = UPDATE_STATE_CYCLE_COMPLETE;
+  _updateState = UPDATE_STATE_READY;
 
   return (statusReturn);
 }

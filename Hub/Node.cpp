@@ -57,16 +57,17 @@ Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
     return (ERROR_MEMORY);   /* Early Return */
   }
 
-  else if (sizeof(float) != TYPE_LENGTHS[TYPE_FLOAT])
+  if (sizeof(float) != TYPE_LENGTHS[TYPE_FLOAT])
   {
     return (ERROR_PLATFORM); /* Early Return */
   }
 
-  _memoryMap.noOfDataBlocks = memoryMap.noOfDataBlocks;
+  _memoryMap.noOfDataBlocks    = memoryMap.noOfDataBlocks;
+  _memoryMap.initUniversalData = memoryMap.initUniversalData;
 
   Error_t initStatus = ERROR_NONE;
 
-  for (uint8_t blockIndex = 0U; blockIndex <= Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
+  for (uint8_t blockIndex = 0U; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
   {
     const DataBlock::BlockDescriptor_t &blockDescriptor = memoryMap.blockDescriptors[blockIndex];
           DataBlock                    &block           = _dataBlocks[blockIndex];
@@ -215,10 +216,13 @@ Atams::Error_t Node::getEncodedRequestPacket(uint8_t  *outputBuffer,
             but this cannot be called while the update cycle is in progress. */
   Platform::MemoryLock::acquireLock();
 
+  _requestPacket.buffer[MESH_INDEX_MSG_TYPE] = Atams::MESSAGE_REQUEST_SYNCED;
+  _requestPacket.buffer[MESH_INDEX_NODE_ID ] = _nodeID;
+
   Atams::Error_t statusReturn = encodeMeshPacket(_requestPacket.buffer, 
                                                  _requestPacket.length, 
                                                  outputBuffer, 
-                                                 sizeof(outputBuffer), 
+                                                 outputBufferMaxLength, 
                                                  outputLength);
 
   Platform::MemoryLock::releaseLock();

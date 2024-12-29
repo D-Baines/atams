@@ -30,7 +30,7 @@
 #include <stdint.h>
 #include "../AtamsTypedefs.hpp"
 #include "Utilities/CircularBuffer.hpp"
-#include "Platform.hpp"
+#include "Platform/Platform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */

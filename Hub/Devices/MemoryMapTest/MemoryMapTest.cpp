@@ -26,9 +26,6 @@
 /*************************************************************************************/
 
 #include "MemoryMapTest.hpp"
-#include "../DataBlockUniversal.hpp"
-#include "DataBlockExample1.hpp"
-#include "DataBlockExample2.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -36,12 +33,25 @@
 
 namespace Atams { namespace MapTest {
 
+/*************************************************************************************/
+/* PRIVATE FUNCTION DECLARATIONS                                                     */
+/*************************************************************************************/
+
 static Error_t initUniversalInfo(Node &nodeToInit);
+
+/*************************************************************************************/
+/* PRIVATE CONSTANTS                                                                 */
+/*************************************************************************************/
 
 static const Node::MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,    
                                          initUniversalInfo,          
-                                         {BlockExample1::blockDescriptor,
+                                         {BlockUniversal::blockDescriptor,
+                                          BlockExample1::blockDescriptor,
                                           BlockExample2::blockDescriptor });
+
+/*************************************************************************************/
+/* PUBLIC FUNCTION DEFINITIONS                                                       */
+/*************************************************************************************/
                                         
 const Node::MemoryMap_t &getMapReference(void)
 {
@@ -85,8 +95,8 @@ static Error_t initUniversalInfo(Node &nodeToInit)
                                                    AUTOGEN_MAP_GEN_SECOND);
 
   if (initStatus == ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
-                                                   BlockUniversal::MEMBER_ID_MAP_CHECKSUM,
-                                                   AUTOGEN_MAP_CHECKSUM);
+                                                              BlockUniversal::MEMBER_ID_MAP_CHECKSUM,
+                                                              AUTOGEN_MAP_CHECKSUM);
 
   return (initStatus); 
 }
