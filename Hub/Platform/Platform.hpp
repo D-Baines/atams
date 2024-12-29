@@ -58,6 +58,11 @@ private asio::serial_port
 
   bool startPeripheral(void)
   {
+    asio::serial_port::set_option(asio::serial_port::baud_rate(115200));
+    asio::serial_port::set_option(asio::serial_port::character_size(8));
+    asio::serial_port::set_option(asio::serial_port::stop_bits::one);
+    asio::serial_port::set_option(asio::serial_port::flow_control::none);
+    asio::serial_port::set_option(asio::serial_port::parity::none);
     asio::serial_port::open("/dev/cu.usbserial-AQ02Y2T5");
     return (true);
   }
