@@ -113,8 +113,6 @@ private Platform::BusPeripheral
 
   /*-- Private Constants ------------------------------------------------------------*/
 
-  static inline constexpr uint64_t RESPONSE_TIMEOUT = 5U;
-
   /*-- Private Typedefs -------------------------------------------------------------*/
 
   /*-- Private Variables ------------------------------------------------------------*/
@@ -138,6 +136,9 @@ private Platform::BusPeripheral
   Atams::Error_t addNodeToBus(Node &node);
 
   void removeNodeFromBus(Node &node);
+
+  virtual void rxCallback(      uint8_t  *rxBufferPtr,
+                          const uint16_t  rxBufferLength) final;
 };
 
 

@@ -201,15 +201,15 @@ private Platform::MemoryLock
 
   /*-- PRIVATE FUNCTION DECLARATIONS --*/
 
-  DataStatusReturn_t<bool> findDatagramMatchInPacket(RequestChangeConfig_t changeConfig);
+  DataStatusReturn_t<bool> findDatagramMatchInPacket(RequestChangeConfig_t &changeConfig);
 
   Atams::Error_t requestPacketShift(const uint16_t shiftIndex, const int16_t shiftLength);
 
-  Atams::Error_t requestPacketRemoveCurrentDatagram(RequestChangeConfig_t changeConfig);
+  Atams::Error_t requestPacketRemoveCurrentDatagram(RequestChangeConfig_t &changeConfig);
 
-  Atams::Error_t requestPacketAdjustCurrentDatagram(RequestChangeConfig_t changeConfig);
+  Atams::Error_t requestPacketAdjustCurrentDatagram(RequestChangeConfig_t &changeConfig);
 
-  Atams::Error_t requestPacketAppendDatagram(RequestChangeConfig_t changeConfig);
+  Atams::Error_t requestPacketAppendDatagram(RequestChangeConfig_t &changeConfig);
 
   Atams::Error_t constructDatagram(RequestChangeConfig_t &changeConfig);
   
@@ -221,6 +221,8 @@ private Platform::MemoryLock
   Atams::Error_t updateRequestPattern(const uint8_t  blockID,
                                       const uint16_t varID,
                                       const Access_t accessRequest);
+
+  void updateRequestPacketWriteData(void);
 };
 
 } /* End Namespace - Atams */

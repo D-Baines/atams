@@ -55,46 +55,6 @@ Bus::~Bus(void)
 
 }
 
-Atams::Error_t Bus::addNodeToBus(Node &node)
-{
-  if (_noOfNodesOnBus >= Platform::NUMBER_OF_NODES_PER_BUS)
-  {
-    return (Atams::ERROR_BUS_FULL);
-  }
-
-  _nodePtrs[_noOfNodesOnBus] = &node;
-
-  _noOfNodesOnBus++;
-
-  return (Atams::ERROR_NONE);
-}
-
-void Bus::removeNodeFromBus(Node &node)
-{
-  uint8_t ptrIndex  = 0U;
-  bool    nodeFound = false;
-
-  for (ptrIndex = 0U; ptrIndex < Platform::NUMBER_OF_NODES_PER_BUS; ptrIndex++)
-  {
-    if (_nodePtrs[ptrIndex] == &node)
-    {
-      nodeFound = true;
-      break;
-    }
-  }
-
-  if (nodeFound)
-  {
-    for (; ptrIndex < (Platform::NUMBER_OF_NODES_PER_BUS - 1U); ptrIndex++)
-    {
-      _nodePtrs[ptrIndex     ] = _nodePtrs[ptrIndex + 1U];
-      _nodePtrs[ptrIndex + 1U] = nullptr;
-    }
-
-    _noOfNodesOnBus--;
-  }
-}
-
 Bus::InitState_t Bus::updateInitProcedure(void)
 {
   BusPeripheral::startPeripheral();
@@ -123,6 +83,8 @@ Atams::Error_t Bus::update(void)
   Atams::Error_t statusReturn  = Atams::ERROR_NONE;
   Node          *activeNodePtr = _nodePtrs[_activeNodeIndex];
   uint64_t       currentTime   = Platform::getMillis();
+
+  BusPeripheral::update();
 
   switch (_updateState)
   {
@@ -182,7 +144,8 @@ Atams::Error_t Bus::update(void)
           {
             for (Node *nodePtr : _nodePtrs)
             {
-              if (nodePtr->getNodeID() == packetNodeID) 
+              if ((nodePtr              != nullptr     ) &&
+                  (nodePtr->getNodeID() == packetNodeID) ) 
               {
                 if (nodePtr->responseReceived(_decodedBuffer, _decodedLength) != Atams::ERROR_NONE)
                 {
@@ -194,7 +157,7 @@ Atams::Error_t Bus::update(void)
         }
         _activeNodeIndex++;
       }
-      else if (currentTime - _previousResponseTime > RESPONSE_TIMEOUT)
+      else if (currentTime - _previousResponseTime > Platform::BUS_RESPONSE_TIMEOUT)
       { 
         _activeNodeIndex++;
         _updateState = UPDATE_STATE_JOG_NODE;
@@ -263,6 +226,51 @@ Atams::Error_t Bus::processBuffers(void)
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
+Atams::Error_t Bus::addNodeToBus(Node &node)
+{
+  if (_noOfNodesOnBus >= Platform::NUMBER_OF_NODES_PER_BUS)
+  {
+    return (Atams::ERROR_BUS_FULL);
+  }
+
+  _nodePtrs[_noOfNodesOnBus] = &node;
+
+  _noOfNodesOnBus++;
+
+  return (Atams::ERROR_NONE);
+}
+
+void Bus::removeNodeFromBus(Node &node)
+{
+  uint8_t ptrIndex  = 0U;
+  bool    nodeFound = false;
+
+  for (ptrIndex = 0U; ptrIndex < Platform::NUMBER_OF_NODES_PER_BUS; ptrIndex++)
+  {
+    if (_nodePtrs[ptrIndex] == &node)
+    {
+      nodeFound = true;
+      break;
+    }
+  }
+
+  if (nodeFound)
+  {
+    for (; ptrIndex < (Platform::NUMBER_OF_NODES_PER_BUS - 1U); ptrIndex++)
+    {
+      _nodePtrs[ptrIndex     ] = _nodePtrs[ptrIndex + 1U];
+      _nodePtrs[ptrIndex + 1U] = nullptr;
+    }
+
+    _noOfNodesOnBus--;
+  }
+}
+
+void Bus::rxCallback(      uint8_t  *rxBufferPtr,
+                     const uint16_t  rxBufferLength)
+{
+  CircularBuffer::pushHead(rxBufferPtr, rxBufferLength);
+}
 
 
 } /* End Namespace - Atams */

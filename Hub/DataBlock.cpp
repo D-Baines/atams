@@ -223,7 +223,7 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
       break;
   }
 
-  Platform::MemoryLock::acquireLock();
+  Platform::MemoryLock::releaseLock();
 
   return (accessError);
 }

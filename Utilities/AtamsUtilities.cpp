@@ -154,7 +154,7 @@ void bufferToDatagramHeader(const uint8_t *buffer, DatagramHeader_t &datagramHea
 {
   datagramHeader.command =   (buffer[0U] & DATAGRAM_HEADER_MASK_COMMAND  ) >> DATAGRAM_HEADER_SHIFT_COMMAND;
   datagramHeader.blockID =   (buffer[0U] & DATAGRAM_HEADER_MASK_BLOCK_ID ) >> DATAGRAM_HEADER_SHIFT_BLOCK_ID;
-  datagramHeader.varID   = (((buffer[0U] & DATAGRAM_HEADER_MASK_VAR_ID_HI) << DATAGRAM_HEADER_SHIFT_VAR_ID_HI) &
+  datagramHeader.varID   = (((buffer[0U] & DATAGRAM_HEADER_MASK_VAR_ID_HI) << DATAGRAM_HEADER_SHIFT_VAR_ID_HI) |
                             ((buffer[1U] & DATAGRAM_HEADER_MASK_VAR_ID_LO) << DATAGRAM_HEADER_SHIFT_VAR_ID_LO) );
 }
 
