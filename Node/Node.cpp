@@ -165,16 +165,16 @@ static inline void processDatagramRead(ChannelResponse_t &response,
 
   if (transferStatus != ERROR_NONE)
   {
-    datagramHeader.command = ACCESS_NONE;
-    memcpy(&response.buffer[response.index], &datagramHeader, DATAGRAM_SIZE_HEADER);
+    datagramHeader.command = RESPONSE_NACK;
+    datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
     response.index += DATAGRAM_SIZE_HEADER;
     response.buffer[response.index] = transferStatus;
     response.index += sizeof(transferStatus);
   }
   else
   {
-    datagramHeader.command = ACCESS_READ;
-    memcpy(&response.buffer[response.index], &datagramHeader, DATAGRAM_SIZE_HEADER);
+    datagramHeader.command = RESPONSE_ACK_READ;
+    datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
     response.index += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + payloadLength);
   }
 }
@@ -195,18 +195,17 @@ static inline void processDatagramWrite(ChannelResponse_t &response,
 
   if (transferStatus != ERROR_NONE)
   {
-    datagramHeader.command = ACCESS_NONE;
-    memcpy(&response.buffer[response.index], &datagramHeader, DATAGRAM_SIZE_HEADER);
+    datagramHeader.command = RESPONSE_NACK;
+    datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
     response.index += DATAGRAM_SIZE_HEADER;
     response.buffer[response.index] = transferStatus;
     response.index += sizeof(transferStatus);
   }
   else
   {
-    datagramHeader.command = ACCESS_WRITE;
-    memcpy(&response.buffer[response.index], &datagramHeader, DATAGRAM_SIZE_HEADER);
+    datagramHeader.command = RESPONSE_ACK_WRITE;
+    datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
     response.index += DATAGRAM_SIZE_HEADER;
-    memcpy(&response.buffer[response.index], datagramPayload, payloadLength);
   }
 }
 
@@ -218,14 +217,13 @@ static inline void processRequestPacket(ChannelResponse_t &response,
   bool               cancelProcessing   = false;
   volatile uint8_t   datagramStartIndex = MESH_INDEX_FIRST_DATAGRAM;
 
+  response.index = MESH_SIZE_HEADER;
+
   while (datagramStartIndex + DATAGRAM_SIZE_HEADER <= meshPacketLength)
   {
     DatagramHeader_t datagramHeader;
 
-    datagramHeader.command = (meshPacket[datagramStartIndex]  & DATAGRAM_HEADER_MASK_COMMAND  ) >> DATAGRAM_HEADER_SHIFT_COMMAND;
-    datagramHeader.blockID = (meshPacket[datagramStartIndex]  & DATAGRAM_HEADER_MASK_BLOCK_ID ) >> DATAGRAM_HEADER_SHIFT_BLOCK_ID;
-    datagramHeader.varID   = ((meshPacket[datagramStartIndex] & DATAGRAM_HEADER_MASK_VAR_ID_HI) << DATAGRAM_HEADER_SHIFT_VAR_ID_HI) &
-                             (meshPacket[datagramStartIndex + 1U]);
+    bufferToDatagramHeader(&meshPacket[datagramStartIndex], datagramHeader);
 
     if ((universalBroadcast                          ) &&
         (datagramHeader.blockID != BLOCK_ID_UNIVERSAL) )
@@ -305,8 +303,8 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
   static ChannelResponse_t   commsChannelResponses[Platform::NUMBER_OF_COMMS_CHANNELS];
   static uint8_t             localNodeID     = 0U;
   static uint8_t             prevSyncNodeID  = NODE_ID_NULL;
-  static uint8_t             finalSyncNodeID = NODE_ID_NULL;
-  static uint8_t             firstSyncNodeID = NODE_ID_NULL;
+  static uint8_t             finalSyncNodeID = 0U;
+  static uint8_t             firstSyncNodeID = 0U;
 
   if (decodeMeshPacket(packetBufferPtr,
                        packetLength,
@@ -349,7 +347,10 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
             memcpy(syncPacket.buffer, decodedPacket, decodedLength);
             syncPacket.length = decodedLength;
           }
-          if (localNodeID == firstSyncNodeID) sendResponsePacket(commsChannel, response);
+          if (localNodeID == firstSyncNodeID)
+          {
+            sendResponsePacket(commsChannel, response);
+          }
         }
         else if (packetNodeID == finalSyncNodeID)
         {
@@ -373,16 +374,14 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
 
 static void processRawMeshData(void)
 {
-  static uint8_t  _meshPacketRXBuffer[MAX_MESH_PACKET_SIZE] = {0U};
-  static uint32_t _meshPacketRXLength                       = 0U;
+  static uint8_t  meshPacketRXBuffer[MAX_MESH_PACKET_SIZE] = {0U};
+  static uint16_t meshPacketRXLength                       = 0U;
 
   for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_CHANNELS; commsChannel++)
   {
-    uint16_t packetLength = 0U;
-
-    CircularBuffer::Error_t bufferStatus = _circularBuffer[commsChannel].getPacket(&_meshPacketRXBuffer[_meshPacketRXLength],
-                                                                                   sizeof(_meshPacketRXBuffer),
-                                                                                   packetLength);
+    CircularBuffer::Error_t bufferStatus = _circularBuffer[commsChannel].getPacket(meshPacketRXBuffer,
+                                                                                   sizeof(meshPacketRXBuffer),
+                                                                                   meshPacketRXLength);
 
     /* Early return if no packets ready */
     if (bufferStatus != CircularBuffer::ERROR_NONE)
@@ -399,8 +398,8 @@ static void processRawMeshData(void)
     {
       /* Process the packet that has been copied into the mesh packet buffer */
       processEncodedMeshPacket(static_cast<Platform::CommsChannel_t>(commsChannel),
-                               _meshPacketRXBuffer,
-                               packetLength);
+                               meshPacketRXBuffer,
+                               meshPacketRXLength);
     }
   }
 }

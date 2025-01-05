@@ -76,6 +76,8 @@ void update(void)
 
 Error_t transmitBuffer(CommsChannel_t commsChannel, uint8_t *buffer, uint16_t length)
 {
+  HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_SET);
+
   SerialPort::Error_t transmitResult = _meshPort.transmitBuffer(buffer, length);
 
   if (transmitResult != SerialPort::ERROR_NONE) return (ERROR_PLATFORM);
