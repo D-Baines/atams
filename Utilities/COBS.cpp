@@ -104,7 +104,7 @@ Result_t encode(const uint8_t *sourceBufferPtr,
   }
 
   /* Set zero locator value for zero end byte */
-  destBufferPtr[lastBlockIndex] = zeroSearchLength;
+  destBufferPtr[blockStartIndex] = zeroSearchLength;
   destBufferPtr[destIndex]      = 0U;
   destIndex++;
 
