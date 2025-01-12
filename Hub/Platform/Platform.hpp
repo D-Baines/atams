@@ -59,7 +59,7 @@ private asio::serial_port
   bool startPeripheral(void)
   {
     asio::serial_port::open("/dev/cu.usbserial-AQ02Y2T5");
-    asio::serial_port::set_option(asio::serial_port_base::baud_rate(115200));
+    asio::serial_port::set_option(asio::serial_port_base::baud_rate(230400));
     asio::serial_port::set_option(asio::serial_port::character_size(8));
     asio::serial_port::set_option(asio::serial_port::stop_bits(asio::serial_port::stop_bits::one));
     asio::serial_port::set_option(asio::serial_port::flow_control(asio::serial_port::flow_control::none));
@@ -101,8 +101,7 @@ private asio::serial_port
   {
     /* Do nothing - overidden by Bus */ 
   }
-                          
-
+  
 };
 
 class MemoryLock
@@ -163,7 +162,7 @@ inline constexpr uint16_t NUMBER_OF_NODES_PER_BUS     = 10U;
 inline constexpr uint16_t NODE_NUMBER_OF_DATA_MEMBERS = 200U; 
 inline constexpr uint16_t NODE_NUMBER_OF_DATA_BLOCKS  = 3U; 
 inline constexpr uint16_t COMMS_BUFFER_SIZE           = 512U;
-inline constexpr uint64_t BUS_RESPONSE_TIMEOUT        = 50U;
+inline constexpr uint64_t BUS_RESPONSE_TIMEOUT        = 100U;
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
