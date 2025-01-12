@@ -157,7 +157,7 @@ CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
   {
     uint16_t postWrapLength = inputLength - preWrapLength;
     memcpy(&_buffer[_headIndex], inputBuffer, preWrapLength);
-    memcpy(&_buffer[0U],         inputBuffer, postWrapLength);
+    memcpy(&_buffer[0U], &inputBuffer[preWrapLength], postWrapLength);
   }
 
   increaseHeadIndex(inputLength);
