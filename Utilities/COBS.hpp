@@ -47,7 +47,7 @@ typedef enum
   ERROR_NONE                 = 0U,
   ERROR_NULL_PTR             = 1U,
   ERROR_BUFFER_OVERFLOW      = 2U,
-  ERROR_NO_END_CHAR          = 3U,
+  ERROR_NO_END_OF_LINE       = 3U,
   ERROR_BUFFER_CONTAINS_ZERO = 4U,
 } Error_t;
 

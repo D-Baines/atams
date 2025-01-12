@@ -370,6 +370,12 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
         break;
     }
   }
+  else
+  {
+    static uint32_t errorCount = 0U;
+    errorCount++;
+    _universalBlock.write(BlockUniversal::MEMBER_ID_CRC_ERROR_COUNT, errorCount);
+  }
 }
 
 static void processRawMeshData(void)

@@ -54,10 +54,8 @@ Result_t encode(const uint8_t *sourceBufferPtr,
 {
 
   Result_t encodeResult;
-
-  uint8_t *destWritePtr     = destBufferPtr + 1U;
-  uint8_t *destEndPtr       = ((destBufferPtr + destBufferLength) - 1U);
-  uint8_t *zeroLocator      = destBufferPtr;
+  uint16_t destIndex        = 1U;
+  uint16_t blockStartIndex  = 0U;
   uint8_t  zeroSearchLength = 1U;
 
   /* Buffer pointer NULL checks */
@@ -68,49 +66,50 @@ Result_t encode(const uint8_t *sourceBufferPtr,
   }
 
   /* Iterate over all bytes in source buffer */
-  for (uint16_t index = 0U; index < sourceBufferLength; index++)
+  for (uint16_t srcIndex = 0U; srcIndex < sourceBufferLength; srcIndex++)
   {
     /* Check to see if the destination buffer has run out of space */
-    if (destWritePtr >= destEndPtr)
+    if (destIndex >= destBufferLength)
     {
       encodeResult.status = ERROR_BUFFER_OVERFLOW;
       return (encodeResult);
     }
 
-    uint8_t sourceByte = sourceBufferPtr[index];
+    uint8_t sourceByte = sourceBufferPtr[srcIndex];
 
     if (sourceByte == 0U)
     {
       /* Zero byte found - log location in last zero locator and update new zero locator position */
-      *zeroLocator     = zeroSearchLength;
-      zeroLocator      = destWritePtr++;
-      zeroSearchLength = 1U;
+      destBufferPtr[blockStartIndex] = zeroSearchLength;
+      blockStartIndex                = destIndex;
+      zeroSearchLength               = 1U;
+      destIndex++;
     }
-
     else
     {
       /* Copy non-zero byte from source to destination buffer */
-      *destWritePtr = sourceByte;
-      destWritePtr++;
+      destBufferPtr[destIndex] = sourceByte;
+      destIndex++;
       zeroSearchLength++;
 
       if (zeroSearchLength == MAX_UINT8_DECIMAL)
       {
         /* No zero within 255 bytes, set previous zero locator to 255 and update new zero locator position */
-        *zeroLocator     = zeroSearchLength;
-        zeroLocator      = destWritePtr++;
-        zeroSearchLength = 1U;
+        destBufferPtr[blockStartIndex] = zeroSearchLength;
+        blockStartIndex                = destIndex;
+        zeroSearchLength               = 1U;
+        destIndex++;
       }
     }
   }
 
   /* Set zero locator value for zero end byte */
-  *zeroLocator  = zeroSearchLength;
-  *destWritePtr = 0U;
-  destWritePtr++;
+  destBufferPtr[lastBlockIndex] = zeroSearchLength;
+  destBufferPtr[destIndex]      = 0U;
+  destIndex++;
 
   /* Set output length and success status */
-  encodeResult.outputLength = (destWritePtr - destBufferPtr);
+  encodeResult.outputLength = destIndex;
   encodeResult.status       = ERROR_NONE;
 
   return (encodeResult);
@@ -125,9 +124,9 @@ Result_t decode(const uint8_t *sourceBufferPtr,
 {
   Result_t decodeResult;
 
-  uint16_t sourceIndex        = 0U;
-  uint16_t destIndex          = 0U;
-  uint16_t noOfBlockElements  = 0U;
+  uint16_t srcIndex    = 0U;
+  uint16_t destIndex   = 0U;
+  uint8_t  blockLength = 0U;
 
   /* -1U implemented as destIndex can be incremented twice after check */
   uint16_t destEndCheckLength = destBufferLength - 1U;
@@ -139,16 +138,15 @@ Result_t decode(const uint8_t *sourceBufferPtr,
     return (decodeResult);
   }
 
-  while (sourceIndex < sourceBufferLength)
+  while (srcIndex < sourceBufferLength)
   {
-    /* Get number of block elements from first byte after block */
-    noOfBlockElements = (sourceBufferPtr[sourceIndex] - 1U);
-    sourceIndex++;
+    blockLength = (sourceBufferPtr[srcIndex] - 1U);
+    srcIndex++;
 
     /* Iterate over block elements */
-    for (uint16_t index = 0U; index < noOfBlockElements; index++)
+    for (uint16_t index = 0U; index < blockLength; index++)
     {
-      uint8_t sourceByte = sourceBufferPtr[sourceIndex];
+      uint8_t sourceByte = sourceBufferPtr[srcIndex];
 
       if (sourceByte == 0U)
       {
@@ -167,12 +165,12 @@ Result_t decode(const uint8_t *sourceBufferPtr,
       /* Copy non-zero locator byte into destination buffer */
       destBufferPtr[destIndex] = sourceByte;
       destIndex++;
-      sourceIndex++;
+      srcIndex++;
     }
 
-    if (sourceBufferPtr[sourceIndex] == 0U)
+    if (sourceBufferPtr[srcIndex] == 0U)
     {
-      if (sourceIndex < (sourceBufferLength - 1U))
+      if (srcIndex < (sourceBufferLength - 1U))
       {
         /* Termination character found before end of packet */
         decodeResult.status = ERROR_BUFFER_CONTAINS_ZERO;
@@ -187,7 +185,7 @@ Result_t decode(const uint8_t *sourceBufferPtr,
      * Otherwise, the end of the block length indicates a 0 byte needs to be placed
      * in the decoded buffer.
      */
-    if (noOfBlockElements < MAX_BLOCK_ELEMENTS)
+    if (blockLength < MAX_BLOCK_ELEMENTS)
     {
       destBufferPtr[destIndex] = 0U;
       destIndex++;
@@ -195,7 +193,7 @@ Result_t decode(const uint8_t *sourceBufferPtr,
   }
 
   /* Set output length and success status */
-  decodeResult.outputLength = &destBufferPtr[destIndex] - destBufferPtr;
+  decodeResult.outputLength = destIndex;
   decodeResult.status       = ERROR_NONE;
 
   return (decodeResult);

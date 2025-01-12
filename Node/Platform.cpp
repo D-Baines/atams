@@ -76,7 +76,8 @@ void update(void)
 
 Error_t transmitBuffer(CommsChannel_t commsChannel, uint8_t *buffer, uint16_t length)
 {
-  HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_SET);               // @suppress("C-Style cast instead of C++ cast")
+  HAL_GPIO_WritePin(LED_RS485_GREEN_GPIO_Port, LED_RS485_GREEN_Pin, GPIO_PIN_SET); // @suppress("C-Style cast instead of C++ cast")
 
   SerialPort::Error_t transmitResult = _meshPort.transmitBuffer(buffer, length);
 
