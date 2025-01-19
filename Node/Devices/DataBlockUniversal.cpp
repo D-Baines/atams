@@ -63,22 +63,6 @@ Error_t initLimits(DataBlock &block)
 {
   Error_t initStatus = ERROR_NONE;
 
-  if (initStatus == ERROR_NONE) initStatus = block.assertLimits(BlockUniversal::MEMBER_ID_NODE_ID,
-                                                                BlockUniversal::MAX_LIMIT_NODE_ID,
-                                                                BlockUniversal::MIN_LIMIT_NODE_ID);
-
-  if (initStatus == ERROR_NONE) initStatus = block.assertLimits(BlockUniversal::MEMBER_ID_FIRST_NODE_ID,
-                                                                BlockUniversal::MAX_LIMIT_FIRST_NODE_ID,
-                                                                BlockUniversal::MIN_LIMIT_FIRST_NODE_ID);
-
-  if (initStatus == ERROR_NONE) initStatus = block.assertLimits(BlockUniversal::MEMBER_ID_LAST_NODE_ID,
-                                                                BlockUniversal::MAX_LIMIT_LAST_NODE_ID,
-                                                                BlockUniversal::MIN_LIMIT_LAST_NODE_ID);
-
-  if (initStatus == ERROR_NONE) initStatus = block.assertLimits(BlockUniversal::MEMBER_ID_PREVIOUS_NODE_ID,
-                                                                BlockUniversal::MAX_LIMIT_PREVIOUS_NODE_ID,
-                                                                BlockUniversal::MIN_LIMIT_PREVIOUS_NODE_ID);
-
   return (initStatus); 
 }
 

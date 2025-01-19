@@ -47,17 +47,17 @@ typedef enum: uint16_t
 {
   MEMBER_ID_WRITE_UINT8  = 0U,
   MEMBER_ID_WRITE_INT8   = 1U,
-  MEMBER_ID_READ_UINT8   = 2U,
-  MEMBER_ID_READ_INT8    = 3U,
-  MEMBER_ID_WRITE_UINT16 = 4U,
-  MEMBER_ID_WRITE_INT16  = 5U,
-  MEMBER_ID_READ_UINT16  = 6U,
-  MEMBER_ID_READ_INT16   = 7U,
-  MEMBER_ID_WRITE_UINT32 = 8U,
-  MEMBER_ID_WRITE_INT32  = 9U,
-  MEMBER_ID_READ_UINT32  = 10U,
-  MEMBER_ID_READ_INT32   = 11U,
-  MEMBER_ID_WRITE_FLOAT  = 12U,
+  MEMBER_ID_WRITE_UINT16 = 2U,
+  MEMBER_ID_WRITE_INT16  = 3U,
+  MEMBER_ID_WRITE_UINT32 = 4U,
+  MEMBER_ID_WRITE_INT32  = 5U,
+  MEMBER_ID_WRITE_FLOAT  = 6U,
+  MEMBER_ID_READ_UINT8   = 7U,
+  MEMBER_ID_READ_INT8    = 8U,
+  MEMBER_ID_READ_UINT16  = 9U,
+  MEMBER_ID_READ_INT16   = 10U,
+  MEMBER_ID_READ_UINT32  = 11U,
+  MEMBER_ID_READ_INT32   = 12U,
   MEMBER_ID_READ_FLOAT   = 13U,
 
   NUMBER_OF_EXAMPLE2_DATA_MEMBERS
@@ -92,7 +92,6 @@ inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
 {
   /* .noOfDataMembers = */ BlockExample2::NUMBER_OF_EXAMPLE2_DATA_MEMBERS,
   /* .initDefaults    = */ nullptr, 
-  /* .initLimits      = */ nullptr, 
   /* .dataMemberInfo  = */
   {
     /* [BlockExample2::MEMBER_ID_WRITE_UINT8] = */
@@ -107,18 +106,6 @@ inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
       /* .externalAccess = */ ACCESS_WRITE,
       /* .NVMStorage     = */ false,
     },
-    /* [BlockExample2::MEMBER_ID_READ_UINT8] = */
-    {
-      /* .type           = */ TYPE_UINT8,
-      /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
-    },
-    /* [BlockExample2::MEMBER_ID_READ_INT8] = */
-    {
-      /* .type           = */ TYPE_INT8,
-      /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
-    },
     /* [BlockExample2::MEMBER_ID_WRITE_UINT16] = */
     {
       /* .type           = */ TYPE_UINT16,
@@ -129,18 +116,6 @@ inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
     {
       /* .type           = */ TYPE_INT16,
       /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false,
-    },
-    /* [BlockExample2::MEMBER_ID_READ_UINT16] = */
-    {
-      /* .type           = */ TYPE_UINT16,
-      /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
-    },
-    /* [BlockExample2::MEMBER_ID_READ_INT16] = */
-    {
-      /* .type           = */ TYPE_INT16,
-      /* .externalAccess = */ ACCESS_READ,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample2::MEMBER_ID_WRITE_UINT32] = */
@@ -155,6 +130,36 @@ inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
       /* .externalAccess = */ ACCESS_WRITE,
       /* .NVMStorage     = */ false,
     },
+    /* [BlockExample2::MEMBER_ID_WRITE_FLOAT] = */
+    {
+      /* .type           = */ TYPE_FLOAT,
+      /* .externalAccess = */ ACCESS_WRITE,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample2::MEMBER_ID_READ_UINT8] = */
+    {
+      /* .type           = */ TYPE_UINT8,
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample2::MEMBER_ID_READ_UINT16] = */
+    {
+      /* .type           = */ TYPE_UINT16,
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample2::MEMBER_ID_READ_INT16] = */
+    {
+      /* .type           = */ TYPE_INT16,
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockExample2::MEMBER_ID_READ_INT8] = */
+    {
+      /* .type           = */ TYPE_INT8,
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false,
+    },
     /* [BlockExample2::MEMBER_ID_READ_UINT32] = */
     {
       /* .type           = */ TYPE_UINT32,
@@ -165,12 +170,6 @@ inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
     {
       /* .type           = */ TYPE_INT32,
       /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
-    },
-    /* [BlockExample2::MEMBER_ID_WRITE_FLOAT] = */
-    {
-      /* .type           = */ TYPE_FLOAT,
-      /* .externalAccess = */ ACCESS_WRITE,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample2::MEMBER_ID_READ_FLOAT] = */

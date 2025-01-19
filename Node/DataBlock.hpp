@@ -56,9 +56,9 @@ class DataBlock
 
   struct MemberInfo_t
   {
-    DataType_t type           = TYPE_NULL;
+    DataType_t type        = TYPE_NULL;
     Access_t   accessLevel = ACCESS_NONE;
-    bool       NVMStorage     = false;
+    bool       NVMStorage  = false;
   };
 
   typedef Error_t (*InitDefaultsFunction_t)(DataBlock &blockToInit);
@@ -68,7 +68,6 @@ class DataBlock
   {
     uint16_t               noOfDataMembers = 0U;
     InitDefaultsFunction_t initDefaults    = nullptr;
-    InitLimitsFunction_t   initLimits      = nullptr;
     MemberInfo_t           dataMemberInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
   };
 
@@ -100,15 +99,7 @@ class DataBlock
   Error_t read(const uint16_t  memberID,
                      T        &readData);
 
-  template <typename T>
-  Error_t assertLimits(const uint16_t memberID,
-                       const T        limitMax,
-                       const T        limitMin);
-
   DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t memberID);
-
-  Error_t setWriteLock(const uint16_t memberID,
-                       const bool     writeLock);
 
   Error_t externalTransfer(const Access_t  accessRequest,
                            const uint16_t  memberID,
@@ -123,11 +114,7 @@ class DataBlock
 
   struct DataMember_t
   {
-    uint8_t data[MAX_TYPE_SIZE]     = {0U, 0U, 0U, 0U};
-    uint8_t limitMax[MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
-    uint8_t limitMin[MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
-    bool    limitsAsserted          = false;
-    bool    writeLock               = false;
+    uint8_t data[MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
   };
 
   /*-- Private Variables ------------------------------------------------------------*/
@@ -138,13 +125,6 @@ class DataBlock
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
-  template <typename T>
-  Error_t checkLimitsType(const DataMember_t    &dataMember,
-                          const uint8_t * const  dataStoragePtr);
-
-  Error_t checkLimits(const MemberInfo_t    &memberInfo,
-                      const DataMember_t    &dataMember,
-                      const uint8_t * const dataStoragePtr);
 };
 
 

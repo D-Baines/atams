@@ -119,11 +119,6 @@ Error_t write(const uint8_t blockID, const uint16_t memberID, const T writeData)
 template <typename T>
 Error_t read(const uint8_t blockID, const uint16_t memberID, T &readData);
 
-template <typename T>
-Error_t assertLimits(const uint8_t blockID, const uint16_t memberID, const T limitMax, const T limitMin);
-
-Error_t setWriteLock(const uint8_t blockID, const uint16_t memberID, const bool writeLock);
-
 bool watchdogFaultActive(void);
 
 DataBlock * getBlockPtr(const uint8_t blockID);

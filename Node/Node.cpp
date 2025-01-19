@@ -87,6 +87,7 @@ static DataBlock   _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
 static DataBlock  &_universalBlock                      = _dataBlocks[BLOCK_ID_UNIVERSAL];
 static Error_t     _latestError                         = ERROR_NONE;
 static uint16_t    _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
+static uint8_t     _localNodeID                         = 0U;
 
 /*-- Comms --*/
 CircularBuffer _circularBuffer[Platform::NUMBER_OF_COMMS_CHANNELS];
@@ -111,17 +112,17 @@ static void receiveCallback(const Platform::CommsChannel_t commsChannel,
   }
 }
 
-static inline void resetResponse(ChannelResponse_t &response, uint8_t localNodeID)
+static inline void resetResponse(ChannelResponse_t &response)
 {
   response.aborted                     = false;
-  response.buffer[MESH_INDEX_NODE_ID]  = localNodeID;
+  response.buffer[MESH_INDEX_NODE_ID]  = _localNodeID;
   response.buffer[MESH_INDEX_MSG_TYPE] = MESSAGE_RESPONSE_SYNCED;
   response.index                       = MESH_INDEX_FIRST_DATAGRAM;
 }
 
-static inline void abortResponse(ChannelResponse_t &response, uint8_t localNodeID, Error_t error)
+static inline void abortResponse(ChannelResponse_t &response, Error_t error)
 {
-  response.buffer[MESH_INDEX_NODE_ID]  = localNodeID;
+  response.buffer[MESH_INDEX_NODE_ID]  = _localNodeID;
   response.buffer[MESH_INDEX_MSG_TYPE] = MESSAGE_ABORTED_RESPONSE;
   response.buffer[MESH_SIZE_HEADER]    = error;
   response.index                       = MESH_SIZE_HEADER + sizeof(error);
@@ -138,7 +139,7 @@ static void sendResponsePacket(Platform::CommsChannel_t commsChannel, ChannelRes
     if ((response.buffer[MESH_INDEX_MSG_TYPE] != MESSAGE_ABORTED_RESPONSE) ||
         (response.index                       != ABORT_RESPONSE_SIZE     ) )
     {
-      //abortResponse(response, ERROR_ABORT_FAILURE);
+      abortResponse(response, ERROR_ABORT_FAILURE);
     }
   }
 
@@ -152,10 +153,10 @@ static void sendResponsePacket(Platform::CommsChannel_t commsChannel, ChannelRes
   }
 }
 
-
-static inline void processDatagramRead(ChannelResponse_t &response,
-                                       DatagramHeader_t   datagramHeader,
-                                       uint8_t            payloadLength)
+/* WARNING - No checks done on datagramHeader subsystemID or memberIndex. */
+static void processDatagramRead(ChannelResponse_t &response,
+                                DatagramHeader_t   datagramHeader,
+                                uint8_t            payloadLength)
 {
   Error_t transferStatus = externalTransfer(ACCESS_READ,
                                             datagramHeader.blockID,
@@ -165,11 +166,7 @@ static inline void processDatagramRead(ChannelResponse_t &response,
 
   if (transferStatus != ERROR_NONE)
   {
-    datagramHeader.command = RESPONSE_NACK;
-    datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
-    response.index += DATAGRAM_SIZE_HEADER;
-    response.buffer[response.index] = transferStatus;
-    response.index += sizeof(transferStatus);
+    abortResponse(response, transferStatus);
   }
   else
   {
@@ -179,13 +176,11 @@ static inline void processDatagramRead(ChannelResponse_t &response,
   }
 }
 
-/* WARNING - No checks done on datagramHeader subsystemID or memberIndex.
- *           This function should only ever be called after checks have been completed in DMIB_ProcessNodePacket
- */
-static inline void processDatagramWrite(ChannelResponse_t &response,
-                                        DatagramHeader_t   datagramHeader,
-                                        uint8_t           *datagramPayload,
-                                        uint8_t            payloadLength)
+/* WARNING - No checks done on datagramHeader subsystemID or memberIndex. */
+static void processDatagramWrite(ChannelResponse_t &response,
+                                 DatagramHeader_t   datagramHeader,
+                                 uint8_t           *datagramPayload,
+                                 uint8_t            payloadLength)
 {
   Error_t transferStatus = externalTransfer(ACCESS_WRITE,
                                             datagramHeader.blockID,
@@ -195,11 +190,7 @@ static inline void processDatagramWrite(ChannelResponse_t &response,
 
   if (transferStatus != ERROR_NONE)
   {
-    datagramHeader.command = RESPONSE_NACK;
-    datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
-    response.index += DATAGRAM_SIZE_HEADER;
-    response.buffer[response.index] = transferStatus;
-    response.index += sizeof(transferStatus);
+    abortResponse(response, transferStatus);
   }
   else
   {
@@ -228,7 +219,7 @@ static inline void processRequestPacket(ChannelResponse_t &response,
     if ((universalBroadcast                          ) &&
         (datagramHeader.blockID != BLOCK_ID_UNIVERSAL) )
     {
-      //abortResponse(response, ERROR_BLOCK_ID);
+      abortResponse(response, ERROR_BLOCK_ID);
       return; /* Early Return */
     }
 
@@ -237,7 +228,7 @@ static inline void processRequestPacket(ChannelResponse_t &response,
 
     if (varLength.status != ERROR_NONE)
     {
-      //abortResponse(response, varLength.status);
+      abortResponse(response, varLength.status);
       return; /* Early Return */
     }
 
@@ -246,7 +237,7 @@ static inline void processRequestPacket(ChannelResponse_t &response,
 
     if (datagramLength > remainingOutputLength)
     {
-      //abortResponse(response, ERROR_RESPONSE_BUFFER_LENGTH);
+      abortResponse(response, ERROR_RESPONSE_BUFFER_LENGTH);
       return; /* Early Return */
     }
 
@@ -263,7 +254,7 @@ static inline void processRequestPacket(ChannelResponse_t &response,
 
         if (datagramLength > remainingInputLength)
         {
-          //abortResponse(response, ERROR_REQUEST_BUFFER_LENGTH);
+          abortResponse(response, ERROR_REQUEST_BUFFER_LENGTH);
           return; /* Early Return */
         }
         else
@@ -275,10 +266,8 @@ static inline void processRequestPacket(ChannelResponse_t &response,
         break;
       }
 
-      case ACCESS_NONE:
-      //case ACCESS_FATAL:
       default:
-        //abortResponse(response, ERROR_ACCESS_INVALID);
+        abortResponse(response, ERROR_ACCESS_INVALID);
         return;
     }
   }
@@ -301,10 +290,11 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
   static uint16_t            decodedLength  = 0U;
   static ChannelSyncPacket_t commsChannelSyncPackets[Platform::NUMBER_OF_COMMS_CHANNELS];
   static ChannelResponse_t   commsChannelResponses[Platform::NUMBER_OF_COMMS_CHANNELS];
-  static uint8_t             localNodeID     = 0U;
   static uint8_t             prevSyncNodeID  = NODE_ID_NULL;
   static uint8_t             finalSyncNodeID = 0U;
   static uint8_t             firstSyncNodeID = 0U;
+
+  static_cast<void>(_universalBlock.read(BlockUniversal::MEMBER_ID_NODE_ID, _localNodeID));
 
   if (decodeMeshPacket(packetBufferPtr,
                        packetLength,
@@ -321,24 +311,24 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
     switch (messageType)
     {
       case MESSAGE_BROADCAST_UNIVERSAL:
-        resetResponse(response, localNodeID);
+        resetResponse(response);
         processRequestPacket(response, decodedPacket, decodedLength, true);
         sendResponsePacket(commsChannel, response);
         break;
       case MESSAGE_REQUEST:
-        if (packetNodeID == localNodeID)
+        if (packetNodeID == _localNodeID)
         {
-          resetResponse(response, localNodeID);
+          resetResponse(response);
           processRequestPacket(response, decodedPacket, decodedLength, false);
           sendResponsePacket(commsChannel, response);
         }
         break;
       case MESSAGE_REQUEST_SYNCED:
-        if (packetNodeID == localNodeID)
+        if (packetNodeID == _localNodeID)
         {
-          resetResponse(response, localNodeID);
+          resetResponse(response);
           syncPacket.syncCount = packetSyncCount;
-          if (localNodeID == finalSyncNodeID)
+          if (_localNodeID == finalSyncNodeID)
           {
             processRequestPacket(response, decodedPacket, decodedLength, false);
           }
@@ -347,7 +337,7 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
             memcpy(syncPacket.buffer, decodedPacket, decodedLength);
             syncPacket.length = decodedLength;
           }
-          if (localNodeID == firstSyncNodeID)
+          if (_localNodeID == firstSyncNodeID)
           {
             sendResponsePacket(commsChannel, response);
           }
@@ -358,12 +348,12 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
         }
         break;
       case MESSAGE_RESPONSE_SYNCED:
-        if (packetSyncCount != syncPacket.syncCount) abortResponse(response, localNodeID, ERROR_SYNC_COUNT);
+        if (packetSyncCount != syncPacket.syncCount) abortResponse(response, ERROR_SYNC_COUNT);
         if (packetNodeID    == prevSyncNodeID      ) sendResponsePacket(commsChannel, response);
         break;
       case MESSAGE_SYNC_JOG:
-        if (packetSyncCount != syncPacket.syncCount) abortResponse(response, localNodeID, ERROR_SYNC_COUNT);
-        if (packetNodeID    == localNodeID         ) sendResponsePacket(commsChannel, response);
+        if (packetSyncCount != syncPacket.syncCount) abortResponse(response, ERROR_SYNC_COUNT);
+        if (packetNodeID    == _localNodeID        ) sendResponsePacket(commsChannel, response);
         break;
       default:
         /* Do Nothing */
@@ -408,16 +398,6 @@ static void processRawMeshData(void)
                                meshPacketRXLength);
     }
   }
-}
-
-static Error_t recordError(Error_t error)
-{
-  if (error > NUMBER_OF_ATAMS_ERRORS) error = ERROR_ERROR_MANAGEMENT;
-
-  _latestError = error;
-  _errorCounts[error]++;
-
-  return (error);
 }
 
 static void updateWatchdog(void)
@@ -641,34 +621,6 @@ template Error_t read<int16_t >(const uint8_t blockID, const uint16_t varID, int
 template Error_t read<uint32_t>(const uint8_t blockID, const uint16_t varID, uint32_t &readData);
 template Error_t read<int32_t >(const uint8_t blockID, const uint16_t varID, int32_t  &readData);
 template Error_t read<float   >(const uint8_t blockID, const uint16_t varID, float    &readData);
-
-template <typename T>
-Error_t assertLimits(const uint8_t   blockID,
-                     const uint16_t  varID,
-                     const T         limitMax,
-                     const T         limitMin)
-{
-  if (blockID >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID);
-
-  return (_dataBlocks[blockID].assertLimits(varID, limitMax, limitMin));
-}
-
-template Error_t assertLimits<uint8_t >(const uint8_t blockID, const uint16_t varID, const uint8_t  limitMax, const uint8_t  limitMin);
-template Error_t assertLimits<int8_t  >(const uint8_t blockID, const uint16_t varID, const int8_t   limitMax, const int8_t   limitMin);
-template Error_t assertLimits<uint16_t>(const uint8_t blockID, const uint16_t varID, const uint16_t limitMax, const uint16_t limitMin);
-template Error_t assertLimits<int16_t >(const uint8_t blockID, const uint16_t varID, const int16_t  limitMax, const int16_t  limitMin);
-template Error_t assertLimits<uint32_t>(const uint8_t blockID, const uint16_t varID, const uint32_t limitMax, const uint32_t limitMin);
-template Error_t assertLimits<int32_t >(const uint8_t blockID, const uint16_t varID, const int32_t  limitMax, const int32_t  limitMin);
-template Error_t assertLimits<float   >(const uint8_t blockID, const uint16_t varID, const float    limitMax, const float    limitMin);
-
-Error_t setWriteLock(const uint8_t  blockID,
-                     const uint16_t varID,
-                     const bool     writeLock)
-{
-  if (blockID  >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID);
-
-  return (_dataBlocks[blockID].setWriteLock(varID, writeLock));
-}
 
 bool watchdogFaultActive(void)
 {

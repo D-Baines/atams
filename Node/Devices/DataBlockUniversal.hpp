@@ -101,7 +101,6 @@ inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
 {
   /* .noOfDataMembers = */ BlockUniversal::NUMBER_OF_UNIVERSAL_DATA_MEMBERS,
   /* .initDefaults    = */ nullptr, 
-  /* .initLimits      = */ nullptr, 
   /* .dataMemberInfo  = */
   {
     /* [BlockUniversal::MEMBER_ID_ATAMS_VERSION_NUMBER] = */
