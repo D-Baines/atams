@@ -110,7 +110,7 @@ class MemoryLock
 
   Error_t init(void)
   {
-    /* Init user lock mechanisam - not required when using std::mutex */
+    /* Init user lock mechanisam if required */
     return (ERROR_NONE);
   }
 
@@ -135,7 +135,7 @@ class CommsLock
 
   Error_t init(void)
   {
-    /* Init user lock mechanisam - not required when using std::mutex */
+    /* Init user lock mechanism if required */
     return (ERROR_NONE);
   }
 

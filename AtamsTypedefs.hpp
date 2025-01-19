@@ -164,6 +164,8 @@ typedef enum: uint8_t
   ERROR_WRITE_LOCK               = 29U,
   ERROR_BUS_FULL                 = 30U,
   ERROR_UPDATE_CYCLE_IN_PROGRESS = 31U,
+  ERROR_OLD_DATA                 = 32U,
+  ERROR_NO_RESPONSE              = 33U,
 
   NUMBER_OF_ATAMS_ERRORS
 } Error_t;

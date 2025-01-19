@@ -91,6 +91,10 @@ private Platform::MemoryLock
   Atams::Error_t read(const uint16_t  memberID,
                             T        &readData);
 
+  template <typename T>
+  Atams::Error_t readIfNew(const uint16_t  memberID,
+                                 T        &readData);
+
   DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t memberID);
 
   Atams::Error_t externalTransfer(const Access_t  accessRequest,
@@ -101,6 +105,14 @@ private Platform::MemoryLock
   DataStatusReturn_t<bool> setRequestPattern(const uint16_t         varID,
                                              const Access_t         accessRequest,
                                              const RequestPattern_t requestPattern);
+
+  Atams::Error_t getRequestPattern(const uint16_t    varID,
+                                   Access_t         &accessRequest,
+                                   RequestPattern_t &requestPattern);
+
+  DataStatusReturn_t<bool> setRequestPatternNoChecks(const uint16_t         varID,
+                                                     const Access_t         accessRequest,
+                                                     const RequestPattern_t requestPattern);
 
   DataStatusReturn_t<bool> updateRequestPattern(const uint16_t varID);
 
@@ -113,8 +125,9 @@ private Platform::MemoryLock
   struct DataMember_t
   {
     uint8_t          data[MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
-    Access_t         requestAccess;
-    RequestPattern_t requestPattern;
+    Access_t         requestAccess  = Atams::ACCESS_NONE;
+    RequestPattern_t requestPattern = Atams::REQUEST_INACTIVE;
+    bool             newDataReady   = false;
   };
 
   /*-- Private Variables ------------------------------------------------------------*/

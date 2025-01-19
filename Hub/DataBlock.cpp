@@ -170,6 +170,37 @@ template Atams::Error_t DataBlock::read<uint32_t>(const uint16_t memberID, uint3
 template Atams::Error_t DataBlock::read<int32_t >(const uint16_t memberID, int32_t  &readData);
 template Atams::Error_t DataBlock::read<float   >(const uint16_t memberID, float    &readData);
 
+template <typename T>
+Atams::Error_t DataBlock::readIfNew(const uint16_t  memberID,
+                                          T        &readData)
+{
+  if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_VAR_ID);
+
+  const MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[memberID];
+
+  if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()      ) return (ERROR_VAR_TYPE);
+  if (ACCESS_READ                          >  memberInfo.accessLevel) return (ERROR_ACCESS_INVALID);
+
+  DataMember_t &dataMember   = _dataMembers[memberID];
+  Error_t       statusReturn = ERROR_NONE;
+
+  Platform::MemoryLock::acquireLock();
+
+  if (dataMember.newDataReady) memcpy(&readData, &dataMember.data, sizeof(readData));
+  else                         statusReturn = ERROR_OLD_DATA;
+
+  Platform::MemoryLock::releaseLock();
+
+  return (statusReturn);
+}
+
+template Atams::Error_t DataBlock::readIfNew<uint8_t >(const uint16_t memberID, uint8_t  &readData);
+template Atams::Error_t DataBlock::readIfNew<int8_t  >(const uint16_t memberID, int8_t   &readData);
+template Atams::Error_t DataBlock::readIfNew<uint16_t>(const uint16_t memberID, uint16_t &readData);
+template Atams::Error_t DataBlock::readIfNew<int16_t >(const uint16_t memberID, int16_t  &readData);
+template Atams::Error_t DataBlock::readIfNew<uint32_t>(const uint16_t memberID, uint32_t &readData);
+template Atams::Error_t DataBlock::readIfNew<int32_t >(const uint16_t memberID, int32_t  &readData);
+template Atams::Error_t DataBlock::readIfNew<float   >(const uint16_t memberID, float    &readData);
 
 DataStatusReturn_t<uint8_t> DataBlock::getMemberLength(const uint16_t memberID)
 {
@@ -211,6 +242,7 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
     case ACCESS_READ:
       memcpy(inputPtr, dataMember.data, TYPE_LENGTHS[memberInfo.type]);
       if (systemIsBigEndian()) swapEndiannessRaw(inputPtr, TYPE_LENGTHS[memberInfo.type]);
+      dataMember.newDataReady = true;
       break;
 
     case ACCESS_WRITE:
@@ -257,6 +289,71 @@ DataStatusReturn_t<bool> DataBlock::setRequestPattern(const uint16_t         var
     requestReturn.status = ERROR_ACCESS_INVALID;
     return (requestReturn);
   }
+
+  Platform::MemoryLock::acquireLock();
+ 
+  if (dataMember.requestAccess != accessRequest)
+  {
+    dataMember.requestAccess = accessRequest;
+    requestChanged           = true;
+  }
+
+  if (dataMember.requestPattern != requestPattern)
+  {
+    dataMember.requestPattern = requestPattern;
+    requestChanged            = true;
+  }
+
+  Platform::MemoryLock::releaseLock();
+
+  return (requestReturn);
+}
+
+Atams::Error_t DataBlock::getRequestPattern(const uint16_t    varID,
+                                            Access_t         &accessRequest,
+                                            RequestPattern_t &requestPattern)
+{
+  if (varID >= _blockDescriptor.noOfDataMembers)
+  {
+    return (ERROR_VAR_ID);
+  }
+
+  DataMember_t &dataMember = _dataMembers[varID];
+  MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[varID];
+
+  Platform::MemoryLock::acquireLock();
+ 
+  accessRequest  = dataMember.requestAccess;
+  requestPattern = dataMember.requestPattern;
+
+  Platform::MemoryLock::releaseLock();
+
+  return (ERROR_NONE);
+}
+
+DataStatusReturn_t<bool> DataBlock::setRequestPatternNoChecks(const uint16_t         varID,
+                                                              const Access_t         accessRequest,
+                                                              const RequestPattern_t requestPattern)
+{
+  DataStatusReturn_t<bool> requestReturn;
+  bool &requestChanged = requestReturn.data;
+  requestChanged       = false;
+  requestReturn.status = ERROR_NONE;
+
+  if (varID >= _blockDescriptor.noOfDataMembers)
+  {
+    requestReturn.status = ERROR_VAR_ID;
+    return (requestReturn);
+  }
+
+  if (requestPattern >= NUMBER_OF_REQUEST_PATTERNS)
+  {
+    requestReturn.status = ERROR_REQUEST_PATTERN_INVALID;
+    return (requestReturn);
+  }
+ 
+  DataMember_t &dataMember = _dataMembers[varID];
+  MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[varID];
 
   Platform::MemoryLock::acquireLock();
  

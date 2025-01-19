@@ -136,7 +136,8 @@ Atams::Error_t Bus::update(void)
           {
             statusReturn = Atams::ERROR_SYNC_COUNT;
           }
-          else if (messageType != MESSAGE_RESPONSE_SYNCED)
+          else if (messageType != MESSAGE_RESPONSE_SYNCED ||
+                   messageType != MESSAGE_ABORTED_RESPONSE)
           {
             statusReturn = Atams::ERROR_MESSAGE_TYPE;
           }
@@ -159,6 +160,7 @@ Atams::Error_t Bus::update(void)
       }
       else if (currentTime - _previousResponseTime > Platform::BUS_RESPONSE_TIMEOUT)
       { 
+        activeNodePtr->flagNoResponse();
         _activeNodeIndex++;
         _updateState = UPDATE_STATE_JOG_NODE;
       }

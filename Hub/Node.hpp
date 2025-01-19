@@ -57,6 +57,10 @@ class Bus;
 class Node :
 private Platform::MemoryLock
 {
+  /*-- Friend Declarations ----------------------------------------------------------*/
+
+  friend class Bus;
+
   /*-- Public -----------------------------------------------------------------------*/
 
   public:
@@ -118,7 +122,7 @@ private Platform::MemoryLock
 
   /*-- PUBLIC FUNCTION DECLARATIONS ---*/
 
-  Node(Bus &bus);
+  Node(Bus &bus, uint8_t nodeID);
 
   Node(const Node &other)             = delete;
 
@@ -131,6 +135,9 @@ private Platform::MemoryLock
   
   template <typename T>
   Atams::Error_t read(const uint8_t blockID, const uint16_t memberID, T &readData);
+
+  template <typename T>
+  Atams::Error_t readIfNew(const uint8_t blockID, const uint16_t memberID, T &readData);
   
   DataBlock * getBlockPtr(const uint8_t blockID);
   
@@ -147,15 +154,19 @@ private Platform::MemoryLock
                                    const Access_t         accessRequest,
                                    const RequestPattern_t requestPattern);
 
+  Atams::Error_t getRequestPattern(const uint8_t     blockID,
+                                   const uint16_t    varID,
+                                   Access_t         &accessRequest,
+                                   RequestPattern_t &requestPattern);
+
+  Atams::Error_t setRequestPatternNoChecks(const uint8_t          blockID,
+                                           const uint16_t         varID,
+                                           const Access_t         accessRequest,
+                                           const RequestPattern_t requestPattern);
+
   uint8_t getNodeID(void);
 
-  Atams::Error_t getEncodedRequestPacket(uint8_t  *outputBuffer,
-                                         uint16_t  outputBufferMaxLength, 
-                                         uint16_t &outputLength);
-
-  Atams::Error_t responseReceived(uint8_t *inputBuffer, uint16_t inputLength);
-
-  Atams::Error_t processResponseBuffer(void);
+  Atams::Error_t getLatestError(void);
 
   /*-- PRIVATE -----------------------------------------------------------------------*/
 
@@ -200,6 +211,18 @@ private Platform::MemoryLock
   uint16_t         _responseLength;
 
   /*-- PRIVATE FUNCTION DECLARATIONS --*/
+
+  Atams::Error_t getEncodedRequestPacket(uint8_t  *outputBuffer,
+                                         uint16_t  outputBufferMaxLength, 
+                                         uint16_t &outputLength);
+
+  Atams::Error_t responseReceived(uint8_t *inputBuffer, uint16_t inputLength);
+
+  void flagNoResponse();
+
+  void processAbortedResponse(void);
+
+  Atams::Error_t processResponseBuffer(void);
 
   DataStatusReturn_t<bool> findDatagramMatchInPacket(RequestChangeConfig_t &changeConfig);
 
