@@ -142,6 +142,12 @@ inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
       /* .externalAccess = */ ACCESS_READ,
       /* .NVMStorage     = */ false,
     },
+    /* [BlockExample2::MEMBER_ID_READ_INT8] = */
+    {
+      /* .type           = */ TYPE_INT8,
+      /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false,
+    },
     /* [BlockExample2::MEMBER_ID_READ_UINT16] = */
     {
       /* .type           = */ TYPE_UINT16,
@@ -151,12 +157,6 @@ inline constexpr DataBlock::BlockDescriptor_t blockDescriptor =
     /* [BlockExample2::MEMBER_ID_READ_INT16] = */
     {
       /* .type           = */ TYPE_INT16,
-      /* .externalAccess = */ ACCESS_READ,
-      /* .NVMStorage     = */ false,
-    },
-    /* [BlockExample2::MEMBER_ID_READ_INT8] = */
-    {
-      /* .type           = */ TYPE_INT8,
       /* .externalAccess = */ ACCESS_READ,
       /* .NVMStorage     = */ false,
     },
