@@ -68,7 +68,7 @@ uint32_t CRC32::calculateCRC32(volatile const uint8_t *byteBuffer, uint16_t leng
 {
   uint32_t crc = 0U;
 
-  for (uint8_t index = 0U; index < length; index++)
+  for (uint32_t index = 0U; index < length; index++)
   {
     uint8_t pos = ((crc ^ (byteBuffer[index] << CRC32_BITSHIFT)) >> CRC32_BITSHIFT);
 

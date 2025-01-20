@@ -490,8 +490,6 @@ Atams::Error_t Node::requestPacketRemoveCurrentDatagram(RequestChangeConfig_t &c
 
   if (statusReturn != ERROR_NONE) return (statusReturn); /* Early Return */
   
-  _requestPacket.length -= changeConfig.currentDatagramLength;
-  
   if (changeConfig.currentDatagramHeader.command == ACCESS_WRITE)
   {
     WriteList::WriteConfig_t writeConfigToRemove =
@@ -659,12 +657,21 @@ Atams::Error_t Node::processRequestPacketChange(const uint8_t          blockID,
     if ((requestPattern == REQUEST_INACTIVE) ||
         (accessRequest  == ACCESS_NONE     ) )
     {
-      if (datagramSearchResult.data == true) statusReturn = requestPacketRemoveCurrentDatagram(packetChangeConfig);
+      if (datagramSearchResult.data == true) 
+      {
+        statusReturn = requestPacketRemoveCurrentDatagram(packetChangeConfig);
+      }
     }
     else /* commandPattern != COMMAND_INACTIVE && accessRequest != ACCESS_NONE */
     {
-      if (datagramSearchResult.data == true) statusReturn = requestPacketAdjustCurrentDatagram(packetChangeConfig);
-      else                                   statusReturn = requestPacketAppendDatagram(packetChangeConfig);
+      if (datagramSearchResult.data == true)
+      {
+        statusReturn = requestPacketAdjustCurrentDatagram(packetChangeConfig);
+      }
+      else                                   
+      {
+        statusReturn = requestPacketAppendDatagram(packetChangeConfig);
+      }
     }
   }
   else
