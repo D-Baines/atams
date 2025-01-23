@@ -138,9 +138,7 @@ private Platform::MemoryLock
 
   template <typename T>
   Atams::Error_t readIfNew(const uint8_t blockID, const uint16_t memberID, T &readData);
-  
-  DataBlock * getBlockPtr(const uint8_t blockID);
-  
+
   Atams::Error_t externalTransfer(const Access_t  accessRequest,
                                   const uint8_t   blockID,
                                   const uint16_t  memberID,

@@ -154,16 +154,6 @@ template Atams::Error_t Node::readIfNew<uint32_t>(const uint8_t blockID, const u
 template Atams::Error_t Node::readIfNew<int32_t >(const uint8_t blockID, const uint16_t varID, int32_t  &readData);
 template Atams::Error_t Node::readIfNew<float   >(const uint8_t blockID, const uint16_t varID, float    &readData);
 
-DataBlock * Node::getBlockPtr(const uint8_t blockID)
-{
-  if (blockID < _memoryMap.noOfDataBlocks)
-  {
-    return (&_dataBlocks[blockID]);
-  }
-
-  return (nullptr);
-}
-
 Atams::Error_t Node::externalTransfer(const Access_t  accessRequest,
                                       const uint8_t   blockID,
                                       const uint16_t  varID,
@@ -200,23 +190,39 @@ Atams::Error_t Node::setRequestPattern(const uint8_t          blockID,
   {
     return (ERROR_BLOCK_ID);
   }
+  
+  /* Lock request packet */
+  Platform::MemoryLock::acquireLock();
 
-  Atams::Error_t           statusReturn  = Atams::ERROR_NONE;
-  DataStatusReturn_t<bool> requestReturn = _dataBlocks[blockID].setRequestPattern(varID, accessRequest, requestPattern);
+  Atams::Error_t   statusReturn          = Atams::ERROR_NONE;
+  Access_t         currentRequestAccess  = ACCESS_NONE;
+  RequestPattern_t currentRequestPattern = REQUEST_INACTIVE;
+  
+  statusReturn = _dataBlocks[blockID].getRequestPattern(varID, currentRequestAccess, currentRequestPattern);
+  
+  if ((statusReturn    == Atams::ERROR_NONE      ) &&
+      ((accessRequest  != currentRequestAccess ) ||
+       (requestPattern != currentRequestPattern) ) )
+  {
+    statusReturn = _dataBlocks[blockID].setRequestPattern(varID, accessRequest, requestPattern);
 
-  if ((requestReturn.status == Atams::ERROR_NONE) &&
-      (requestReturn.data   == true             ) )
-  {
-    /* TODO:: Handle situation when process packet change fails but setRequestPattern does not */
-    statusReturn = processRequestPacketChange(blockID,
-                                              varID,
-                                              accessRequest, 
-                                              requestPattern);
+    if (statusReturn == Atams::ERROR_NONE)
+    {
+      statusReturn = processRequestPacketChange(blockID,
+                                                varID,
+                                                accessRequest, 
+                                                requestPattern);
+      
+      if (statusReturn != Atams::ERROR_NONE)
+      {
+        /* TODO:: Consider fatal exception if this returns error */
+        static_cast<void>(_dataBlocks[blockID].setRequestPattern(varID, ACCESS_NONE, REQUEST_INACTIVE));
+      }
+    }
   }
-  else
-  {
-    statusReturn = requestReturn.status;
-  }
+
+  /* Unlock request packet */
+  Platform::MemoryLock::releaseLock();
   
   return (statusReturn);
 }
@@ -243,23 +249,39 @@ Atams::Error_t Node::setRequestPatternNoChecks(const uint8_t          blockID,
   {
     return (ERROR_BLOCK_ID);
   }
+  
+  /* Lock request packet */
+  Platform::MemoryLock::acquireLock();
 
-  Atams::Error_t           statusReturn  = Atams::ERROR_NONE;
-  DataStatusReturn_t<bool> requestReturn = _dataBlocks[blockID].setRequestPattern(varID, accessRequest, requestPattern);
+  Atams::Error_t   statusReturn          = Atams::ERROR_NONE;
+  Access_t         currentRequestAccess  = ACCESS_NONE;
+  RequestPattern_t currentRequestPattern = REQUEST_INACTIVE;
+  
+  statusReturn = _dataBlocks[blockID].getRequestPattern(varID, currentRequestAccess, currentRequestPattern);
+  
+  if ((statusReturn    == Atams::ERROR_NONE      ) &&
+      ((accessRequest  != currentRequestAccess ) ||
+       (requestPattern != currentRequestPattern) ) )
+  {
+    statusReturn = _dataBlocks[blockID].setRequestPattern(varID, accessRequest, requestPattern);
 
-  if ((requestReturn.status == Atams::ERROR_NONE) &&
-      (requestReturn.data   == true             ) )
-  {
-    /* TODO:: Handle situation when process packet change fails but setRequestPattern does not */
-    statusReturn = processRequestPacketChange(blockID,
-                                              varID,
-                                              accessRequest, 
-                                              requestPattern);
+    if (statusReturn == Atams::ERROR_NONE)
+    {
+      statusReturn = processRequestPacketChange(blockID,
+                                                varID,
+                                                accessRequest, 
+                                                requestPattern);
+      
+      if (statusReturn != Atams::ERROR_NONE)
+      {
+        /* TODO:: Consider fatal exception if this returns error */
+        static_cast<void>(_dataBlocks[blockID].setRequestPattern(varID, ACCESS_NONE, REQUEST_INACTIVE));
+      }
+    }
   }
-  else
-  {
-    statusReturn = requestReturn.status;
-  }
+
+  /* Unlock request packet */
+  Platform::MemoryLock::releaseLock();
   
   return (statusReturn);
 }
@@ -526,18 +548,17 @@ Atams::Error_t Node::requestPacketAdjustCurrentDatagram(RequestChangeConfig_t &c
     statusReturn = requestPacketShift(shiftIndex, shiftLength);
   }
 
-  if ((statusReturn                != Atams::ERROR_NONE) &&
-      (changeConfig.accessRequest  == ACCESS_WRITE     ) &&
-      (changeConfig.requestPattern == REQUEST_ACTIVE   ) )
+  if (statusReturn == Atams::ERROR_NONE)
   {
-    _requestPacket.writeList.removeConfigIfFound(writeConfig);
-  }
-  else
-  {
-      /* Copy new datagram into available space */
+    /* Copy new datagram into available space */
     memcpy(&_requestPacket.buffer[changeConfig.datagramStartIndex], 
            changeConfig.newDatagramBuffer, 
            changeConfig.newDatagramLength);
+  }
+  else if ((changeConfig.accessRequest  == ACCESS_WRITE  ) &&
+           (changeConfig.requestPattern == REQUEST_ACTIVE) )
+  {
+    _requestPacket.writeList.removeConfigIfFound(writeConfig);
   }
 
   return (statusReturn);
@@ -637,9 +658,6 @@ Atams::Error_t Node::processRequestPacketChange(const uint8_t          blockID,
     return (statusReturn);
   }
 
-  /* Begin editing of request packet */
-  Platform::MemoryLock::acquireLock();
-
   /* Search Node packet for a datagram matching the new datagram */
   DataStatusReturn_t<bool> datagramSearchResult = findDatagramMatchInPacket(packetChangeConfig);
   
@@ -670,8 +688,6 @@ Atams::Error_t Node::processRequestPacketChange(const uint8_t          blockID,
     statusReturn = datagramSearchResult.status;
   }
 
-  Platform::MemoryLock::releaseLock();
-
   return (statusReturn);
 }
 
@@ -679,51 +695,68 @@ Atams::Error_t Node::updateRequestPattern(const uint8_t  blockID,
                                           const uint16_t varID,
                                           const Access_t accessRequest)
 {
-  if (blockID > _memoryMap.noOfDataBlocks)
+  if (blockID >= _memoryMap.noOfDataBlocks)
   {
     return (ERROR_BLOCK_ID);
   }
+  
+  /* Lock request packet */
+  Platform::MemoryLock::acquireLock();
 
-  Atams::Error_t           statusReturn = Atams::ERROR_NONE;
-  DataStatusReturn_t<bool> updateStatus = _dataBlocks[blockID].updateRequestPattern(varID);
-
-  if (updateStatus.status != Atams::ERROR_NONE)
+  Atams::Error_t   statusReturn          = Atams::ERROR_NONE;
+  Access_t         currentRequestAccess  = ACCESS_NONE;
+  RequestPattern_t currentRequestPattern = REQUEST_INACTIVE;
+  
+  statusReturn = _dataBlocks[blockID].getRequestPattern(varID, currentRequestAccess, currentRequestPattern);
+  
+  if ((statusReturn          == Atams::ERROR_NONE   ) &&
+      (accessRequest         == currentRequestAccess) &&
+      (currentRequestPattern == REQUEST_UNTIL_ACK   ) )
   {
-    return (updateStatus.status);
+    statusReturn = _dataBlocks[blockID].setRequestPattern(varID, ACCESS_NONE, REQUEST_INACTIVE);
+
+    if (statusReturn == Atams::ERROR_NONE)
+    {
+      statusReturn = processRequestPacketChange(blockID,
+                                                varID,
+                                                accessRequest, 
+                                                REQUEST_INACTIVE);
+      
+      if (statusReturn != Atams::ERROR_NONE)
+      {
+        /* TODO:: Consider fatal exception if this returns error */
+        static_cast<void>(_dataBlocks[blockID].setRequestPattern(varID, currentRequestAccess, currentRequestPattern));
+      }
+    }
   }
 
-  if (updateStatus.data == true)
-  {
-    statusReturn = processRequestPacketChange(blockID,
-                                              varID,
-                                              accessRequest, 
-                                              REQUEST_INACTIVE);
-  }
-
+  /* Unlock request packet */
+  Platform::MemoryLock::releaseLock();
+  
   return (statusReturn);
 }
 
 /* Mesh Packet access must be properly locked before using this function */
 void Node::updateRequestPacketWriteData(void)
 {
-  //Error_t             statusReturn = ERROR_NONE;
-  //WriteList::Return_t listReturn;
-//
-  //uint16_t writeListLength = _requestPacket.writeList.getConfigCount();
-  //
-  //for (uint16_t writeListIndex = 0U; writeListIndex < writeListLength; writeListIndex++)
-  //{
-  //  listReturn = _requestPacket.writeList.getConfigAtIndex(writeListIndex);
-  //  
-  //  if (listReturn.status == WriteList::ERROR_NONE)
-  //  {
-  //    static_cast<void>(externalTransfer(ACCESS_READ,
-  //                                       listReturn.writeConfig.blockID, 
-  //                                       listReturn.writeConfig.varID, 
-  //                                       &_requestPacket.buffer[listReturn.writeConfig.meshPacketDataIndex], 
-  //                                       listReturn.writeConfig.dataLength));
-  //  }
-  //}
+  Error_t             statusReturn = ERROR_NONE;
+  WriteList::Return_t listReturn;
+
+  uint16_t writeListLength = _requestPacket.writeList.getConfigCount();
+  
+  for (uint16_t writeListIndex = 0U; writeListIndex < writeListLength; writeListIndex++)
+  {
+    listReturn = _requestPacket.writeList.getConfigAtIndex(writeListIndex);
+    
+    if (listReturn.status == WriteList::ERROR_NONE)
+    {
+      static_cast<void>(externalTransfer(ACCESS_READ,
+                                         listReturn.writeConfig.blockID, 
+                                         listReturn.writeConfig.varID, 
+                                         &_requestPacket.buffer[listReturn.writeConfig.meshPacketDataIndex], 
+                                         listReturn.writeConfig.dataLength));
+    }
+  }
 }
 
 

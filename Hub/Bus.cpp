@@ -134,11 +134,13 @@ Atams::Error_t Bus::update(void)
           uint8_t messageType     = _decodedBuffer[MESH_INDEX_MSG_TYPE];
           if (packetSyncCount != _activeSyncCount) 
           {
+            //TODO: Record this error on node a no response
             statusReturn = Atams::ERROR_SYNC_COUNT;
           }
-          else if (messageType != MESSAGE_RESPONSE_SYNCED ||
+          else if (messageType != MESSAGE_RESPONSE_SYNCED &&
                    messageType != MESSAGE_ABORTED_RESPONSE)
           {
+            //TODO: Record this error on node a no response
             statusReturn = Atams::ERROR_MESSAGE_TYPE;
           }
           else

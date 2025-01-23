@@ -102,19 +102,17 @@ private Platform::MemoryLock
                                   uint8_t * const dataStoragePtr,
                                   const uint8_t   length);
        
-  DataStatusReturn_t<bool> setRequestPattern(const uint16_t         varID,
-                                             const Access_t         accessRequest,
-                                             const RequestPattern_t requestPattern);
+  Atams::Error_t setRequestPattern(const uint16_t         varID,
+                                   const Access_t         accessRequest,
+                                   const RequestPattern_t requestPattern);
 
   Atams::Error_t getRequestPattern(const uint16_t    varID,
                                    Access_t         &accessRequest,
                                    RequestPattern_t &requestPattern);
 
-  DataStatusReturn_t<bool> setRequestPatternNoChecks(const uint16_t         varID,
-                                                     const Access_t         accessRequest,
-                                                     const RequestPattern_t requestPattern);
-
-  DataStatusReturn_t<bool> updateRequestPattern(const uint16_t varID);
+  Atams::Error_t setRequestPatternNoChecks(const uint16_t         varID,
+                                           const Access_t         accessRequest,
+                                           const RequestPattern_t requestPattern);
 
   private:
 
