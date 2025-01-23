@@ -80,15 +80,15 @@ class WriteList
 
   WriteList(void);
 
-  SearchResult_t findConfig(WriteConfig_t configToFind);
+  SearchResult_t findConfig(const WriteConfig_t configToFind);
 
-  Error_t addConfig(WriteConfig_t newWriteConfig);
+  Error_t addConfig(const WriteConfig_t newWriteConfig);
 
-  void removeConfigIfFound(WriteConfig_t configToRemove);
+  void removeConfigIfFound(const WriteConfig_t configToRemove);
 
-  void updateIndexes(uint16_t referenceIndex, int16_t shiftLength);
+  void updateIndexes(const uint16_t referenceIndex, const int16_t shiftLength);
 
-  Return_t getConfigAtIndex(uint16_t configIndex);
+  Return_t getConfigAtIndex(const uint16_t configIndex);
 
   uint16_t getConfigCount(void);
 
@@ -106,7 +106,7 @@ class WriteList
 
   /*-- PRIVATE FUNCTION DEFINITIONS ---*/
 
-  void removeConfigAtIndex(uint16_t configIndex);
+  void removeConfigAtIndex(const uint16_t configIndex);
   
 };
 

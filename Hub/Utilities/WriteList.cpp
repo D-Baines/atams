@@ -43,7 +43,7 @@ WriteList::WriteList(void)
 
 }
 
-WriteList::SearchResult_t WriteList::findConfig(WriteConfig_t configToFind)
+WriteList::SearchResult_t WriteList::findConfig(const WriteConfig_t configToFind)
 {
   SearchResult_t searchResult;
 
@@ -63,7 +63,7 @@ WriteList::SearchResult_t WriteList::findConfig(WriteConfig_t configToFind)
   return (searchResult);
 }
 
-WriteList::Error_t WriteList::addConfig(WriteConfig_t newWriteConfig)
+WriteList::Error_t WriteList::addConfig(const WriteConfig_t newWriteConfig)
 {
   if (_configCount >= LIST_MAX_LENGTH)
   {
@@ -76,7 +76,7 @@ WriteList::Error_t WriteList::addConfig(WriteConfig_t newWriteConfig)
   return (ERROR_NONE);
 }
 
-void WriteList::removeConfigIfFound(WriteConfig_t configToRemove)
+void WriteList::removeConfigIfFound(const WriteConfig_t configToRemove)
 {
   SearchResult_t searchResult = findConfig(configToRemove);
 
@@ -86,7 +86,7 @@ void WriteList::removeConfigIfFound(WriteConfig_t configToRemove)
   }
 }
 
-void WriteList::updateIndexes(uint16_t referenceIndex, int16_t shiftLength)
+void WriteList::updateIndexes(const uint16_t referenceIndex, const int16_t shiftLength)
 {
   for (WriteConfig_t &writeConfig : _configList)
   {
@@ -97,7 +97,7 @@ void WriteList::updateIndexes(uint16_t referenceIndex, int16_t shiftLength)
   }   
 }
 
-WriteList::Return_t WriteList::getConfigAtIndex(uint16_t configIndex)
+WriteList::Return_t WriteList::getConfigAtIndex(const uint16_t configIndex)
 { 
   Return_t configReturn;
 
@@ -122,7 +122,7 @@ uint16_t WriteList::getConfigCount(void)
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-void WriteList::removeConfigAtIndex(uint16_t configIndex)
+void WriteList::removeConfigAtIndex(const uint16_t configIndex)
 {
   for (uint16_t index = configIndex; index < (_configCount - 1U); index++)
   {
