@@ -30,7 +30,7 @@
 #include <stdint.h>
 #include "../AtamsTypedefs.hpp"
 #include "Utilities/CircularBuffer.hpp"
-#include "Platform/Platform.hpp"
+#include "Platform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -54,7 +54,6 @@ private Platform::BusPeripheral
 {
   /*-- Friend Declarations ----------------------------------------------------------*/
 
-  //TODO:: Can potentially remove if addNodeToBus and removeNodeFromBus become public
   friend class Node;
 
   /*-- Public -----------------------------------------------------------------------*/
@@ -101,11 +100,13 @@ private Platform::BusPeripheral
 
   Atams::Error_t startUpdateCycle(void);
 
-  Atams::Error_t update(void);
+  void update(void);
 
   bool updateCycleComplete(void);
 
   Atams::Error_t processBuffers(void);
+
+  bool getErrorStatus(void);
 
   /*-- Private ----------------------------------------------------------------------*/
 
@@ -117,19 +118,19 @@ private Platform::BusPeripheral
 
   /*-- Private Variables ------------------------------------------------------------*/
   
-  Node         *_nodePtrs[Platform::NUMBER_OF_NODES_PER_BUS];
-  uint16_t      _activeNodeIndex      = 0U;
-  uint16_t      _noOfNodesOnBus       = 0U;
-  UpdateState_t _updateState          = UPDATE_STATE_READY;
-  uint8_t       _rxBuffer[MAX_MESH_PACKET_SIZE];
-  uint8_t       _decodedBuffer[MAX_MESH_PACKET_SIZE];
-  uint8_t       _encodedBuffer[MAX_MESH_PACKET_SIZE];
-  uint8_t       _jogBuffer[MESH_SIZE_HEADER];
-  uint16_t      _rxLength             = 0U;
-  uint16_t      _decodedLength        = 0U;
-  uint16_t      _encodedLength        = 0U;
-  uint8_t       _activeSyncCount      = 0U;
-  uint64_t      _previousResponseTime = 0U;
+  Node          *_nodePtrs[Platform::NUMBER_OF_NODES_PER_BUS];
+  uint16_t       _activeNodeIndex      = 0U;
+  uint16_t       _noOfNodesOnBus       = 0U;
+  UpdateState_t  _updateState          = UPDATE_STATE_READY;
+  uint8_t        _rxBuffer[MAX_MESH_PACKET_SIZE];
+  uint8_t        _decodedBuffer[MAX_MESH_PACKET_SIZE];
+  uint8_t        _encodedBuffer[MAX_MESH_PACKET_SIZE];
+  uint8_t        _jogBuffer[MESH_SIZE_HEADER];
+  uint16_t       _rxLength             = 0U;
+  uint16_t       _decodedLength        = 0U;
+  uint16_t       _encodedLength        = 0U;
+  uint8_t        _activeSyncCount      = 0U;
+  uint64_t       _previousResponseTime = 0U;
 
   /*-- Private Function Declarations ------------------------------------------------*/
 

@@ -73,58 +73,54 @@ private Platform::MemoryLock
 
   struct MemoryMap_t
   {
-    uint16_t                     noOfDataBlocks;
-    InitUniversalDataFunction_t  initUniversalData;
-    DataBlock::BlockDescriptor_t blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
+    uint16_t                            noOfDataBlocks;
+    InitUniversalDataFunction_t         initUniversalData;
+    const DataBlock::BlockDescriptor_t *blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
   
     MemoryMap_t(void)
     {
       noOfDataBlocks    = 0U;
       initUniversalData = nullptr;
-      for (DataBlock::BlockDescriptor_t &blockDescriptor : blockDescriptors)
+      for (const DataBlock::BlockDescriptor_t *&blockDescriptor : blockDescriptors)
       {
-        blockDescriptor.noOfDataMembers = 0U;
-  
-        for (DataBlock::MemberInfo_t &varInfo : blockDescriptor.dataMemberInfo)
-        {
-          varInfo.type        = TYPE_NULL;
-          varInfo.accessLevel = ACCESS_READ;
-        }
+        blockDescriptor = nullptr;
       }
     }
   
-    MemoryMap_t(const uint16_t                     initNoOfDataBlocks,
-                const InitUniversalDataFunction_t  universalDataInitPtr,
-                const DataBlock::BlockDescriptor_t (&initBlockDescriptors)[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
+    MemoryMap_t(const uint16_t                      initNoOfDataBlocks,
+                const InitUniversalDataFunction_t   universalDataInitFnPtr,
+                const DataBlock::BlockDescriptor_t *blockDescriptorPtrs[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
     {
       noOfDataBlocks    = initNoOfDataBlocks;
-      initUniversalData = universalDataInitPtr;
-  
-      for (uint16_t index = 0U; index < noOfDataBlocks; index++)
+      initUniversalData = universalDataInitFnPtr;
+      for (uint16_t blockIndex = 0U; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
       {
-        blockDescriptors[index] = initBlockDescriptors[index];
+        blockDescriptors[blockIndex] = blockDescriptorPtrs[blockIndex];
       }
     };
   
-    MemoryMap_t(const MemoryMap_t &other)
+    MemoryMap_t(const MemoryMap_t &other) = delete;
+  
+    MemoryMap_t& operator=(const MemoryMap_t &other)
     {
+      if (&other == this) return (*this);
+  
       noOfDataBlocks    = other.noOfDataBlocks;
       initUniversalData = other.initUniversalData;
-  
-      for (uint16_t index = 0U; index < noOfDataBlocks; index++)
+      for (uint16_t blockIndex = 0U; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
       {
-        blockDescriptors[index] = other.blockDescriptors[index];
+        blockDescriptors[blockIndex] = other.blockDescriptors[blockIndex];
       }
-    };
   
-    MemoryMap_t& operator=(const MemoryMap_t &other) = delete;
+      return (*this);
+    }
   };
 
   /*-- PUBLIC FUNCTION DECLARATIONS ---*/
 
-  Node(Bus &bus, uint8_t nodeID);
+  Node(Bus &bus, const uint8_t nodeID);
 
-  Node(const Node &other)             = delete;
+  Node(const Node &other) = delete;
 
   Node & operator=(const Node &other) = delete;
 
@@ -164,7 +160,7 @@ private Platform::MemoryLock
 
   uint8_t getNodeID(void);
 
-  Atams::Error_t getLatestError(void);
+  Atams::Error_t getBusError(void);
 
   /*-- PRIVATE -----------------------------------------------------------------------*/
 
@@ -197,12 +193,12 @@ private Platform::MemoryLock
 
   /*-- PRIVATE VARIABLES --------------*/
 
-  uint8_t          _nodeID;
   Atams::Bus      &_bus;
+  uint8_t          _nodeID;
   MemoryMap_t      _memoryMap;
   DataBlock        _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS + 1U];
   DataBlock       &_universalBlock                      = _dataBlocks[BLOCK_ID_UNIVERSAL];
-  Error_t          _latestError                         = ERROR_NONE;
+  Error_t          _busError                            = ERROR_NONE;
   uint16_t         _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
   RequestPacket_t  _requestPacket;
   uint8_t          _responseBuffer[MAX_MESH_PACKET_SIZE];
@@ -216,11 +212,13 @@ private Platform::MemoryLock
 
   Atams::Error_t responseReceived(uint8_t *inputBuffer, uint16_t inputLength);
 
-  void flagNoResponse();
+  void reportBusError(Atams::Error_t busError);
+
+  void clearBusError(void);
 
   void processAbortedResponse(void);
 
-  Atams::Error_t processResponseBuffer(void);
+  void processResponseBuffer(void);
 
   DataStatusReturn_t<bool> findDatagramMatchInPacket(RequestChangeConfig_t &changeConfig);
 

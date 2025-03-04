@@ -29,7 +29,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "Platform/Platform.hpp"
+#include "Platform.hpp"
 #include "../AtamsTypedefs.hpp"
 
 /*************************************************************************************/
@@ -57,10 +57,13 @@ private Platform::MemoryLock
     Access_t   accessLevel = ACCESS_READ;
   };
 
+  typedef Atams::Error_t (*InitDefaultsFtnPtr_t)(DataBlock &blockToInit);
+
   struct BlockDescriptor_t
   {
-    uint16_t     noOfDataMembers = 0U;
-    MemberInfo_t dataMemberInfo[MAX_NUMBER_OF_DATA_MEMBERS];
+    uint16_t               noOfDataMembers = 0U;
+    InitDefaultsFtnPtr_t   initDefaults    = nullptr;
+    MemberInfo_t           dataMemberInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
   };
 
   /*-- Public Function Declarations -------------------------------------------------*/
@@ -77,11 +80,11 @@ private Platform::MemoryLock
   /* Copy Assignment Operator */
   DataBlock & operator=(const DataBlock &other) = delete;
 
-  Atams::Error_t initDescriptor(const BlockDescriptor_t &blockDescriptor);
+  Atams::Error_t initDescriptor(const BlockDescriptor_t * const blockDescriptor);
+
+  void deinitDescriptor(void);
 
   void resetDataMembers(void);
-
-  void deinit(void);
 
   template <typename T>
   Atams::Error_t write(const uint16_t memberID,
@@ -91,6 +94,7 @@ private Platform::MemoryLock
   Atams::Error_t read(const uint16_t  memberID,
                             T        &readData);
 
+  //TODO:: Change to check new separated function
   template <typename T>
   Atams::Error_t readIfNew(const uint16_t  memberID,
                                  T        &readData);
@@ -130,8 +134,8 @@ private Platform::MemoryLock
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  BlockDescriptor_t _blockDescriptor;
-  DataMember_t      _dataMembers[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
+  const BlockDescriptor_t *_blockDescriptorPtr;
+  DataMember_t             _dataMembers[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
 };
 
 

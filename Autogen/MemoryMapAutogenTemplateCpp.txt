@@ -36,19 +36,30 @@ $$$AUTOGEN$$$DATA_BLOCK_FILE_INCLUDES$$$AUTOGEN$$$
 namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
 
 /*************************************************************************************/
+/* PRIVATE CONSTANTS                                                                 */
+/*************************************************************************************/
+
+static const $$$AUTOGEN$$$NODE_NAMESPACE$$$AUTOGEN$$$MemoryMap_t _memoryMap(NUMBER_OF_DATA_BLOCKS,    
+                                    initDefaults, 
+                                    initUniversalInfo,         
+                                    $$$AUTOGEN$$$DATA_BLOCK_ARRAY$$$AUTOGEN$$$);
+
+/*************************************************************************************/
+/* PUBLIC FUNCTION DEFINITIONS                                                       */
+/*************************************************************************************/
+                                        
+const Node::MemoryMap_t &getMapReference(void)
+{
+  return (_memoryMap);
+}
+
+/*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
 $$$AUTOGEN$$$INIT_MAP_UNIVERSAL_INFO_DEFINITION$$$AUTOGEN$$$
 
-/*************************************************************************************/
-/* GLOBAL CONSTANTS                                                                  */
-/*************************************************************************************/
-
-const MemoryMap_t memoryMap(NUMBER_OF_DATA_BLOCKS,    
-                            initUniversalInfo,          
-                            $$$AUTOGEN$$$DATA_BLOCK_ARRAY$$$AUTOGEN$$$);
-
+$$$AUTOGEN$$$INIT_DEFAULTS_DEFINITION$$$AUTOGEN$$$
 
 } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
 

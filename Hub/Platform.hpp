@@ -30,7 +30,7 @@
 
 #include <stdint.h>
 #include <mutex>
-#include "../../AtamsTypedefs.hpp"
+#include "../AtamsTypedefs.hpp"
 #include "asio.hpp"
 
 /*************************************************************************************/
@@ -40,9 +40,14 @@
 namespace Atams { namespace Platform {
 
 /*************************************************************************************/
-/* PUBLIC CLASSES                                                                    */
+/* PUBLIC DEFINES                                                                    */
 /*************************************************************************************/
 
+#define PLATFORM_HUB
+
+/*************************************************************************************/
+/* PUBLIC CLASSES                                                                    */
+/*************************************************************************************/
 
 class BusPeripheral :
 private asio::serial_port
@@ -70,6 +75,8 @@ private asio::serial_port
 
   void handler(asio::error_code ec, size_t xfr) 
   {
+    static_cast<void>(ec);
+
     if (xfr > 0)
     {
       rxCallback(_rxBuffer, xfr);
@@ -99,6 +106,8 @@ private asio::serial_port
   virtual void rxCallback(      uint8_t  *rxBufferPtr,
                           const uint16_t  rxBufferLength)
   {
+    static_cast<void>(rxBufferPtr);
+    static_cast<void>(rxBufferLength);
     /* Do nothing - overidden by Bus */ 
   }
   
@@ -160,7 +169,7 @@ class CommsLock
 
 inline constexpr uint16_t NUMBER_OF_NODES_PER_BUS     = 10U;
 inline constexpr uint16_t NODE_NUMBER_OF_DATA_MEMBERS = 200U; 
-inline constexpr uint16_t NODE_NUMBER_OF_DATA_BLOCKS  = 3U; 
+inline constexpr uint16_t NODE_NUMBER_OF_DATA_BLOCKS  = 5U; 
 inline constexpr uint16_t COMMS_BUFFER_SIZE           = 512U;
 inline constexpr uint64_t BUS_RESPONSE_TIMEOUT        = 100U;
 

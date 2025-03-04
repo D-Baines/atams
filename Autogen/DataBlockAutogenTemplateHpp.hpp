@@ -1,11 +1,12 @@
 /**
   ******************************************************************************
-  * @file    MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.hpp
+  * @file    DataBlock$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.hpp
   *
   * @author  D. Baines
   *
   * @brief   Auto-generated file containing typedefs, constants, and function
-  *          declarations for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
+  *          declarations for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Data Block with name: $$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.
+  *          The Data Block is part of an Atams Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
   *
   * @version v1.0
   ******************************************************************************
@@ -29,45 +30,36 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../../Node.hpp"
+#include "../../DataBlock.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
+namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ { namespace Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ {
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
-             
-typedef enum: uint8_t
+
+/*--- Member List ---*/
+typedef enum: uint16_t
 {
-$$$AUTOGEN$$$BLOCK_ID_LIST$$$AUTOGEN$$$
-  NUMBER_OF_DATA_BLOCKS
-} DataBlockID_t;
-
-/*************************************************************************************/
-/* PUBLIC EXTERN CONSTANTS                                                           */
-/*************************************************************************************/
-
-extern const MemoryMap_t memoryMap;
+$$$AUTOGEN$$$MEMBER_ID_LIST$$$AUTOGEN$$$
+  NUMBER_OF_$$$AUTOGEN$$$BLOCK_NAME_UPPER$$$AUTOGEN$$$_DATA_MEMBERS
+} DataMemberID_t;
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-inline constexpr float    AUTOGEN_ATAMS_VERSION_NUMBER = $$$AUTOGEN$$$VERSION_NUMBER$$$AUTOGEN$$$;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_DAY          = $$$AUTOGEN$$$GENERATION_DAY$$$AUTOGEN$$$;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_MONTH        = $$$AUTOGEN$$$GENERATION_MONTH$$$AUTOGEN$$$;
-inline constexpr uint16_t AUTOGEN_MAP_GEN_YEAR         = $$$AUTOGEN$$$GENERATION_YEAR$$$AUTOGEN$$$;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_HOUR         = $$$AUTOGEN$$$GENERATION_HOUR$$$AUTOGEN$$$;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = $$$AUTOGEN$$$GENERATION_MINUTE$$$AUTOGEN$$$;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = $$$AUTOGEN$$$GENERATION_SECOND$$$AUTOGEN$$$;
-inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = $$$AUTOGEN$$$GENERATION_CHECKSUM$$$AUTOGEN$$$;
+/*--- Defaults ---*/
+$$$AUTOGEN$$$DEFAULTS$$$AUTOGEN$$$
+/*--- Descriptor ---*/
+$$$AUTOGEN$$$BLOCK_DESCRIPTOR$$$AUTOGEN$$$
 
 
-} } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
+} } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ */
 
 /**
   * @}End of File

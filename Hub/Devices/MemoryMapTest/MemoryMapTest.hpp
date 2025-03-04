@@ -44,14 +44,14 @@ namespace Atams { namespace MapTest {
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
              
-typedef enum: uint8_t
+enum DataBlockID_t: uint8_t
 {
   BLOCK_ID_UNIVERSAL = 0U,
   BLOCK_ID_EXAMPLE1  = 1U,
   BLOCK_ID_EXAMPLE2  = 2U,
 
   NUMBER_OF_DATA_BLOCKS
-} DataBlockID_t;
+};
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
@@ -70,7 +70,15 @@ inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = 32457U;
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-const Node::MemoryMap_t &getMapReference(void);
+Atams::Error_t initUniversalInfo(Node &nodeToInit);
+
+Atams::Error_t initDefaults(Node &nodeToInit);
+
+/*************************************************************************************/
+/* CONSTANT EXTERNS                                                                  */
+/*************************************************************************************/
+
+extern const Node::MemoryMap_t memoryMap;
 
 
 } } /* End Namespace - Atams::MapTest */

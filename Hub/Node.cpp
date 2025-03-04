@@ -43,7 +43,7 @@ namespace Atams {
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-Node::Node(Bus &bus, uint8_t nodeID) :
+Node::Node(Bus &bus, const uint8_t nodeID) :
 _bus(bus),
 _nodeID(nodeID)
 {
@@ -63,17 +63,24 @@ Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
     return (ERROR_PLATFORM); /* Early Return */
   }
 
-  _memoryMap.noOfDataBlocks    = memoryMap.noOfDataBlocks;
-  _memoryMap.initUniversalData = memoryMap.initUniversalData;
-
   Error_t initStatus = ERROR_NONE;
 
   for (uint8_t blockIndex = 0U; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
   {
-    const DataBlock::BlockDescriptor_t &blockDescriptor = memoryMap.blockDescriptors[blockIndex];
-          DataBlock                    &block           = _dataBlocks[blockIndex];
+    const DataBlock::BlockDescriptor_t * const blockDescriptor = memoryMap.blockDescriptors[blockIndex];
+    DataBlock                           &block                 = _dataBlocks[blockIndex];
 
-    if (initStatus == ERROR_NONE) initStatus = block.initDescriptor(blockDescriptor);
+    if (blockDescriptor != nullptr)
+    {
+      initStatus = block.initDescriptor(blockDescriptor);
+    }
+    else
+    {
+      if (blockIndex != memoryMap.noOfDataBlocks) initStatus = Atams::ERROR_BLOCK_ID;
+      break;
+    }
+
+    if (initStatus != ERROR_NONE) break;
   }
 
   //if (initStatus == ERROR_NONE)
@@ -82,11 +89,8 @@ Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
   //  else                                         initStatus = ERROR_NULL_PTR;
   //}
 
-  if (initStatus != ERROR_NONE)
-  {
-    _memoryMap.noOfDataBlocks = 0U;
-    for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinit();
-  }
+  if (initStatus != ERROR_NONE) for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinitDescriptor();
+  else                          _memoryMap = memoryMap;
 
   return (initStatus);
 }
@@ -291,9 +295,9 @@ uint8_t Node::getNodeID(void)
   return (_nodeID);
 }
 
-Atams::Error_t Node::getLatestError(void)
+Atams::Error_t Node::getBusError(void)
 {
-  return (_latestError);
+  return (_busError);
 }
 
 /*************************************************************************************/
@@ -333,15 +337,20 @@ Atams::Error_t Node::responseReceived(uint8_t *inputBuffer, uint16_t inputLength
   }
   else
   {
-    statusReturn = Atams::ERROR_RESPONSE_BUFFER_LENGTH; //TODO:: Review error
+    statusReturn = Atams::ERROR_RESPONSE_BUFFER_LENGTH; 
   }
 
   return (statusReturn);
 }
 
-void Node::flagNoResponse(void)
+void Node::reportBusError(Atams::Error_t busError)
 {
-  _latestError = ERROR_NO_RESPONSE;
+  _busError = busError;
+}
+
+void Node::clearBusError(void)
+{
+  _busError = Atams::ERROR_NONE;
 }
 
 void Node::processAbortedResponse(void)
@@ -349,27 +358,24 @@ void Node::processAbortedResponse(void)
   if ((_responseLength != (MESH_SIZE_HEADER + sizeof(Atams::Error_t))) ||
       (_responseBuffer[MESH_SIZE_HEADER] >= NUMBER_OF_ATAMS_ERRORS   ) ) 
   {
-    _latestError = ERROR_ABORT_FAILURE;
+    reportBusError(Atams::ERROR_ABORT_FAILURE);
   }
   else
   {
-    _latestError = static_cast<Atams::Error_t>(_responseBuffer[MESH_SIZE_HEADER]);
+    reportBusError(static_cast<Atams::Error_t>(_responseBuffer[MESH_SIZE_HEADER]));
   }
 }
 
-Atams::Error_t Node::processResponseBuffer(void)
+void Node::processResponseBuffer(void)
 {
-  Atams::Error_t              statusReturn     = Atams::ERROR_NONE;
   bool                        cancelProcessing = false;
   uint8_t                     datagramIndex    = MESH_INDEX_FIRST_DATAGRAM;
-  Error_t                     transferStatus   = ERROR_NONE;
   DatagramHeader_t            datagramHeader;
   DataStatusReturn_t<uint8_t> datagramPayloadLength;
 
   if (_responseBuffer[MESH_INDEX_MSG_TYPE] == MESSAGE_ABORTED_RESPONSE)
   {
-    processAbortedResponse();
-    return (_latestError); /* Early Return */
+    return (processAbortedResponse()); /* Early Return */
   }
 
   while ((datagramIndex + DATAGRAM_SIZE_HEADER <= _responseLength) &&
@@ -379,14 +385,7 @@ Atams::Error_t Node::processResponseBuffer(void)
 
     if (datagramHeader.blockID >= _memoryMap.noOfDataBlocks)
     {
-      statusReturn = ERROR_BLOCK_ID;
-      break;
-    }
-
-    if (datagramHeader.blockID == BLOCK_ID_ERROR_INDICATOR)
-    {
-      datagramIndex += DATAGRAM_SIZE_HEADER;
-      statusReturn = static_cast<Atams::Error_t>(_responseBuffer[datagramIndex]);
+      reportBusError(Atams::ERROR_BLOCK_ID);
       break;
     }
 
@@ -396,7 +395,7 @@ Atams::Error_t Node::processResponseBuffer(void)
   
     if (datagramPayloadLength.status != ERROR_NONE)
     {
-      statusReturn = datagramPayloadLength.status;
+      reportBusError(datagramPayloadLength.status);
       break;
     }
 
@@ -404,31 +403,38 @@ Atams::Error_t Node::processResponseBuffer(void)
     {      
       case RESPONSE_ACK_READ:
       {
-        transferStatus = datablock.externalTransfer(ACCESS_WRITE,
-                                                    datagramHeader.varID,
-                                                    &_responseBuffer[datagramIndex + DATAGRAM_INDEX_PAYLOAD],
-                                                    datagramPayloadLength.data);
+        Atams::Error_t transferStatus = datablock.externalTransfer(ACCESS_WRITE,
+                                                                   datagramHeader.varID,
+                                                                   &_responseBuffer[datagramIndex + DATAGRAM_INDEX_PAYLOAD],
+                                                                   datagramPayloadLength.data);
 
-        if (transferStatus == ERROR_NONE) updateRequestPattern(datagramHeader.blockID, datagramHeader.varID, ACCESS_READ);
-        else                              statusReturn = transferStatus;
+        if (transferStatus == ERROR_NONE) 
+        {
+          //TODO:: Condsider reset of request packet if this returns error
+          transferStatus = updateRequestPattern(datagramHeader.blockID, datagramHeader.varID, ACCESS_READ);
+        }
+        else
+        {
+          reportBusError(transferStatus);
+        }
+
 
         datagramIndex += (DATAGRAM_SIZE_HEADER + datagramPayloadLength.data);
         break;
       }
 
       case RESPONSE_ACK_WRITE:
+        //TODO:: Condsider reset of request packet if this returns error
         updateRequestPattern(datagramHeader.blockID, datagramHeader.varID, ACCESS_WRITE);
         datagramIndex += DATAGRAM_SIZE_HEADER;
         break;
 
       default:
-        _latestError = ERROR_ERROR_MANAGEMENT;
+        reportBusError(Atams::ERROR_ACCESS_RESPONSE_INVALID);
         cancelProcessing = true;
         break;
     }
   }
-
-  return (statusReturn);
 }
 
 DataStatusReturn_t<bool> Node::findDatagramMatchInPacket(RequestChangeConfig_t &changeConfig)
@@ -739,7 +745,6 @@ Atams::Error_t Node::updateRequestPattern(const uint8_t  blockID,
 /* Mesh Packet access must be properly locked before using this function */
 void Node::updateRequestPacketWriteData(void)
 {
-  Error_t             statusReturn = ERROR_NONE;
   WriteList::Return_t listReturn;
 
   uint16_t writeListLength = _requestPacket.writeList.getConfigCount();
@@ -750,6 +755,7 @@ void Node::updateRequestPacketWriteData(void)
     
     if (listReturn.status == WriteList::ERROR_NONE)
     {
+      //TODO:: Evaluate error case
       static_cast<void>(externalTransfer(ACCESS_READ,
                                          listReturn.writeConfig.blockID, 
                                          listReturn.writeConfig.varID, 

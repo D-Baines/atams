@@ -44,11 +44,14 @@ def getSuffixString(typeString: str):
   return (suffixStrings[suffixIndex])
 
 def generateEnum(iteratorStartValue,
+                 minStringLength,
                  prefixString, 
                  stringList, 
                  targetFile):
   iterator = iteratorStartValue
   requiredSpace = getLongestString(stringList)
+  if (minStringLength > requiredSpace):
+    requiredSpace = minStringLength
   for string in stringList:
     noOfSpaces = requiredSpace - len(string)
     targetFile.write(prefixString + string)
@@ -104,7 +107,6 @@ def generateBlockDescriptor(platformNameCamel: str,
   targetFile.write("  /* .noOfDataMembers = */ Block"+blockNameCamel+"::NUMBER_OF_"+blockNameUpper+"_DATA_MEMBERS,\n")
   if (platformNameCamel == "Node"):
     targetFile.write("  /* .initDefaults    = */ nullptr, \n")
-    targetFile.write("  /* .initLimits      = */ nullptr, \n")
   targetFile.write("  /* .dataMemberInfo  = */\n  {\n")
   types        = block["Data Type"]
   accessLevels = block["External Access"]
@@ -145,15 +147,11 @@ def generateBlockDefinitions(platformNameCamel: str,
     targetFile.write("namespace Block" + blockNameCamel + " {\n\n")
     targetFile.write("/*--- Member List ---*/\n")
     targetFile.write("typedef enum: uint16_t\n{\n")
-    generateEnum(0, "  MEMBER_ID_", memberIDsUpper, targetFile)
+    generateEnum(0, 0, "  MEMBER_ID_", memberIDsUpper, targetFile)
     targetFile.write("  NUMBER_OF_" + blockNameUpper + "_DATA_MEMBERS\n")
     targetFile.write("} DataMemberID_t;\n\n")
     targetFile.write("/*--- Defaults ---*/\n")
     generateConstList(block, memberIDsUpper, "Default", targetFile)
-    targetFile.write("/*--- Minimum Limits ---*/\n")
-    generateConstList(block, memberIDsUpper, "Min Limit", targetFile)
-    targetFile.write("/*--- Maximum Limits ---*/\n")
-    generateConstList(block, memberIDsUpper, "Max Limit", targetFile)
     targetFile.write("/*--- Descriptor ---*/\n")
     generateBlockDescriptor(platformNameCamel, blockNameCamel, blockNameUpper, block, memberIDsUpper, targetFile)
 
@@ -165,7 +163,7 @@ def generateBlockArray(dataBlockNamesCamel, targetFile):
     targetFile.write("Block" + dataBlockNamesCamel[0] + "::blockDescriptor,\n")
     iterator += 1
   while (iterator < noOfBlocks):
-    targetFile.write("                             Block" + dataBlockNamesCamel[iterator] + "::blockDescriptor")
+    targetFile.write("                                     Block" + dataBlockNamesCamel[iterator] + "::blockDescriptor")
     if (iterator == (noOfBlocks - 1)):
       targetFile.write(" }")
     else:
@@ -174,110 +172,47 @@ def generateBlockArray(dataBlockNamesCamel, targetFile):
 
 def generateInitUniversalMapInfo(platformNameCamel,
                                  targetFile):
-  targetFile.write("Error_t initUniversalInfo(void)\n{\n")
+  targetFile.write("Error_t initUniversalInfo(Node &nodeToInit)\n{\n")
   targetFile.write("  Error_t initStatus = ERROR_NONE;\n\n")
 
-  universalMembersToSet    = ["ATAMS_VERSION_NUMBER",
-                              "MAP_GEN_DAY",    
-                              "MAP_GEN_MONTH",
-                              "MAP_GEN_YEAR",  
-                              "MAP_GEN_HOUR", 
-                              "MAP_GEN_MINUTE", 
-                              "MAP_GEN_SECOND",
-                              "MAP_CHECKSUM"]  
+  universalMembersToSet = ["ATAMS_VERSION_NUMBER",
+                           "MAP_GEN_DAY",    
+                           "MAP_GEN_MONTH",
+                           "MAP_GEN_YEAR",  
+                           "MAP_GEN_HOUR", 
+                           "MAP_GEN_MINUTE", 
+                           "MAP_GEN_SECOND",
+                           "MAP_CHECKSUM"]  
 
   for memberString in universalMembersToSet:
-    targetFile.write("  if (initStatus == ERROR_NONE) initStatus = write(BLOCK_ID_UNIVERSAL,\n")
-    targetFile.write("                                                   BlockUniversal::MEMBER_ID_"+memberString+",\n")
-    targetFile.write("                                                   AUTOGEN_"+memberString+");\n\n")
+    targetFile.write("  if (initStatus == ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,\n")
+    targetFile.write("                                                              BlockUniversal::MEMBER_ID_"+memberString+",\n")
+    targetFile.write("                                                              AUTOGEN_"+memberString+");\n\n")
 
   targetFile.write("""  return (initStatus); \n}""")
 
-def generateInitDefaultsDefinitionBlock(platformNameCamel,
-                                        blockNameCamel,
-                                        dataBlock,
-                                        targetFile):
-  targetFile.write("Error_t initDefaults(DataBlock &block)\n{\n")
-  targetFile.write("  Error_t initStatus = ERROR_NONE;\n\n")
-
-  memberIDsUpper = []
-  for memberID in dataBlock["Member ID"]:
-    memberIDsUpper.append(memberID.replace(" ", "_").upper())
-  blockNameUpper = blockNameCamel.upper()
-  defaults = dataBlock["Default"]
-  memberIterator = 0
-  for memberIDUpper in memberIDsUpper:
-    default = defaults[memberIterator]
-    if (default and (default != "-")):
-      targetFile.write("  if (initStatus == ERROR_NONE) initStatus = block.write(")
-      targetFile.write("Block"+blockNameCamel+"::MEMBER_ID_" + memberIDUpper+",\n")
-      targetFile.write("                                                         Block"+blockNameCamel+"::DEFAULT_"   + memberIDUpper+");\n\n")
-    memberIterator += 1
-
-  targetFile.write("""  return (initStatus); \n}""")
-
-def generateInitLimitsDefinitionMap(platformNameCamel,
-                                    dataBlockNamesCamel,
-                                    dataBlocks,
-                                    targetFile):
-  if (platformNameCamel != "Node"):
-    return
-  blockIterator = 0
-  targetFile.write("Error_t initLimits(void)\n{\n")
-  targetFile.write("  Error_t initStatus = BlockUniversal::initLimits();\n\n")
-
-  for block in dataBlocks:
-    memberIDsUpper = []
-    for memberID in block["Member ID"]:
-      memberIDsUpper.append(memberID.replace(" ", "_").upper())
-    blockNameCamel = dataBlockNamesCamel[blockIterator]
-    blockNameUpper = blockNameCamel.upper()
-    minLimits = block["Min Limit"]
-    maxLimits = block["Max Limit"]
-    memberIterator = 0
-    for memberIDUpper in memberIDsUpper:
-      minLimit = minLimits[memberIterator]
-      maxLimit = maxLimits[memberIterator]
-      if (minLimit and (minLimit != "-") and 
-          maxLimit and (maxLimit != "-") ):
-        targetFile.write("  if (initStatus == ERROR_NONE) initStatus = assertLimits(")
-        targetFile.write("BLOCK_ID_" +blockNameUpper+",\n")
-        targetFile.write("                                                          Block"+blockNameCamel+"::MEMBER_ID_" + memberIDUpper+",\n")
-        targetFile.write("                                                          Block"+blockNameCamel+"::MAX_LIMIT_" + memberIDUpper+",\n")
-        targetFile.write("                                                          Block"+blockNameCamel+"::MIN_LIMIT_" + memberIDUpper+");\n\n")
-      memberIterator += 1
-    blockIterator += 1
-
-  targetFile.write("""  return (initStatus); \n}""")
-  
-def generateInitLimitsDefinitionBlock(platformNameCamel,
+def generateInitDefaultsDefinitionMap(platformNameCamel,
                                       blockNameCamel,
                                       dataBlock,
                                       targetFile):
-  if (platformNameCamel != "Node"):
-    return
-  targetFile.write("Error_t initLimits(DataBlock &block)\n{\n")
+  targetFile.write("Error_t initDefaults(DataBlock &block)\n{\n")
   targetFile.write("  Error_t initStatus = ERROR_NONE;\n\n")
 
-  memberIDsUpper = []
-  for memberID in dataBlock["Member ID"]:
-    memberIDsUpper.append(memberID.replace(" ", "_").upper())
-  blockNameUpper = blockNameCamel.upper()
-  minLimits = dataBlock["Min Limit"]
-  maxLimits = dataBlock["Max Limit"]
-  memberIterator = 0
-  for memberIDUpper in memberIDsUpper:
-    minLimit = minLimits[memberIterator]
-    maxLimit = maxLimits[memberIterator]
-    if (minLimit and (minLimit != "-") and 
-        maxLimit and (maxLimit != "-") ):
-      targetFile.write("  if (initStatus == ERROR_NONE) initStatus = block.assertLimits(")
-      targetFile.write("Block"+blockNameCamel+"::MEMBER_ID_" + memberIDUpper+",\n")
-      targetFile.write("                                                                Block"+blockNameCamel+"::MAX_LIMIT_" + memberIDUpper+",\n")
-      targetFile.write("                                                                Block"+blockNameCamel+"::MIN_LIMIT_" + memberIDUpper+");\n\n")
-    memberIterator += 1
-
-  targetFile.write("""  return (initStatus); \n}\n""")
+  #memberIDsUpper = []
+  #for memberID in dataBlock["Member ID"]:
+  #  memberIDsUpper.append(memberID.replace(" ", "_").upper())
+  #blockNameUpper = blockNameCamel.upper()
+  #defaults = dataBlock["Default"]
+  #memberIterator = 0
+  #for memberIDUpper in memberIDsUpper:
+  #  default = defaults[memberIterator]
+  #  if (default and (default != "-")):
+  #    targetFile.write("  if (initStatus == ERROR_NONE) initStatus = block.write(")
+  #    targetFile.write("Block"+blockNameCamel+"::MEMBER_ID_" + memberIDUpper+",\n")
+  #    targetFile.write("                                                         Block"+blockNameCamel+"::DEFAULT_"   + memberIDUpper+");\n\n")
+  #  memberIterator += 1
+#
+  targetFile.write("""  return (initStatus); \n}""")
 
 def autogenCallMap(platformNameCamel: str,
                    autogenHint: str,
@@ -294,41 +229,32 @@ def autogenCallMap(platformNameCamel: str,
     case "FRAMEWORK_NAME":
       targetFile.write(FRAMEWORK_NAME)
     case "BLOCK_ID_LIST":
-      generateEnum(1, "  BLOCK_ID_", dataBlockNamesUpper, targetFile)
+      generateEnum(1, len("UNIVERSAL"), "  BLOCK_ID_", dataBlockNamesUpper, targetFile)
+    case "NODE_NAMESPACE":
+      if (platformNameCamel == "Hub"): targetFile.write("Node::")
+    case "INIT_DEFAULTS_DECLARATION":
+      match (platformNameCamel):
+        case "Node":
+          targetFile.write("Error_t initDefaults(void);")
+        case "Hub":
+          targetFile.write("Error_t initDefaults(Node &nodeToInit);")
+    case "INIT_DEFAULTS_DEFINITION":
+      generateInitDefaultsDefinitionMap(platformNameCamel,
+                                        dataBlockNamesCamel,
+                                        dataBlocks,
+                                        targetFile)
     case "INIT_MAP_UNIVERSAL_INFO_DEFINITION":
       generateInitUniversalMapInfo(platformNameCamel, targetFile)
-    #case "INIT_DEFAULTS_DECLARATION":
-    #  match (platformNameCamel):
-    #    case "Node":
-    #      targetFile.write("Error_t initDefaults(void);")
-    #    case "Hub":
-    #      targetFile.write("Error_t initDefaults(Node &nodeToInit);")
-    #case "INIT_LIMITS_DECLARATION":
-    #  match (platformNameCamel):
-    #    case "Node":
-    #      targetFile.write("Error_t initLimits(void);")
-    #    case "Hub":
-    #      targetFile.write("Error_t initLimits(Node &nodeToInit);")
-    #case "DATA_BLOCK_DEFINITIONS":
-    #  generateBlockDefinitions(platformNameCamel, 
-    #                           dataBlockNamesCamel,
-    #                           dataBlocks,
-    #                           targetFile)
+    case "DATA_BLOCK_DEFINITIONS":
+      generateBlockDefinitions(platformNameCamel, 
+                               dataBlockNamesCamel,
+                               dataBlocks,
+                               targetFile)
     case "DATA_BLOCK_FILE_INCLUDES":
       for blockName in dataBlockNamesCamel:
         targetFile.write('#include "DataBlock' + blockName + '.hpp"\n')
     case "DATA_BLOCK_ARRAY":
       generateBlockArray(dataBlockNamesCamel, targetFile)
-    #case "INIT_DEFAULTS_DEFINITION":
-    #  generateInitDefaultsDefinitionBlock(platformNameCamel,
-    #                                 dataBlockNamesCamel,
-    #                                 dataBlocks,
-    #                                 targetFile)
-    #case "INIT_LIMITS_DEFINITION":
-    #  generateInitLimitsDefinition(platformNameCamel,
-    #                               dataBlockNamesCamel,
-    #                               dataBlocks,
-    #                               targetFile)
     case "VERSION_NUMBER":
       targetFile.write("0.1" + "F")
     case "GENERATION_DAY":
@@ -400,38 +326,11 @@ def autogenCallBlock(platformNameCamel: str,
     case "BLOCK_NAME_UPPER":
       targetFile.write(blockNameCamel.upper())
     case "MEMBER_ID_LIST":
-      generateEnum(0, "  MEMBER_ID_", memberIDsUpper, targetFile)
+      generateEnum(0, 0, "  MEMBER_ID_", memberIDsUpper, targetFile)
     case "DEFAULTS":
       generateConstList(dataBlock, memberIDsUpper, "Default", targetFile)
-    case "MIN_LIMITS":
-      generateConstList(dataBlock, memberIDsUpper, "Min Limit", targetFile)
-    case "MAX_LIMITS":
-      generateConstList(dataBlock, memberIDsUpper, "Max Limit", targetFile)
     case "BLOCK_DESCRIPTOR":
       generateBlockDescriptor(platformNameCamel, blockNameCamel, blockNameUpper, dataBlock, memberIDsUpper, targetFile)
-    case "PUBLIC_FUNCTIONS_DECLARATION_HEADER":
-      if (platformNameCamel == "Node"):
-        targetFile.write("/*************************************************************************************/\n")
-        targetFile.write("/* PUBLIC FUNCTION DECLARATIONS                                                      */\n")
-        targetFile.write("/*************************************************************************************/\n")
-    case "INIT_DEFAULTS_DECLARATION":
-      if (platformNameCamel == "Node"):
-        targetFile.write("Error_t initDefaults(DataBlock blockToInit);\n")
-    case "INIT_LIMITS_DECLARATION":
-      if (platformNameCamel == "Node"):
-        targetFile.write("Error_t initLimits(DataBlock blockToInit);\n")
-    case "INIT_DEFAULTS_DEFINITION":
-      generateInitDefaultsDefinitionBlock(platformNameCamel,
-                                          blockNameCamel,
-                                          dataBlock,
-                                          targetFile)
-    case "INIT_LIMITS_DEFINITION":
-      generateInitLimitsDefinitionBlock(platformNameCamel,
-                                        blockNameCamel,
-                                        dataBlock,
-                                        targetFile)
-
-
 
 def generateDataBlockFile(platformNameCamel: str,
                           memMapNameCamel: str,
@@ -566,15 +465,15 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
 
     dataBlockCppName = "DataBlock" + dataBlockNamesCamel[blockIterator] + ".cpp"
     dataBlockCppNodePath = os.path.join(memMapNodeDir, dataBlockCppName)
-    dataBlockNodeCpp = open(dataBlockCppNodePath, OpenMethods.WRITE_FORCE)
-    generateDataBlockFile("Node",
-                          memMapNameCamel,
-                          dataBlockNamesCamel[blockIterator],
-                          dataBlockNamesUpper[blockIterator],
-                          dataBlock,
-                          dataBlockCppTemplate,
-                          dataBlockNodeCpp)
-    dataBlockNodeCpp.close()
+    #dataBlockNodeCpp = open(dataBlockCppNodePath, OpenMethods.WRITE_FORCE)
+    #generateDataBlockFile("Node",
+    #                      memMapNameCamel,
+    #                      dataBlockNamesCamel[blockIterator],
+    #                      dataBlockNamesUpper[blockIterator],
+    #                      dataBlock,
+    #                      dataBlockCppTemplate,
+    #                      dataBlockNodeCpp)
+    #dataBlockNodeCpp.close()
 
     dataBlockHppTemplate.seek(0)
     dataBlockCppTemplate.seek(0)
@@ -591,8 +490,8 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
                           dataBlockHubHpp)
     dataBlockHubHpp.close()
 
-    #dataBlockCppName = "DataBlock" + dataBlockNamesCamel[blockIterator] + ".cpp"
-    #dataBlockCppHubPath = os.path.join(memMapHubDir, dataBlockCppName)
+    dataBlockCppName = "DataBlock" + dataBlockNamesCamel[blockIterator] + ".cpp"
+    dataBlockCppHubPath = os.path.join(memMapHubDir, dataBlockCppName)
     #dataBlockHubCpp = open(dataBlockCppHubPath, OpenMethods.WRITE_FORCE)
     #generateDataBlockFile("Hub",
     #                      memMapNameCamel,

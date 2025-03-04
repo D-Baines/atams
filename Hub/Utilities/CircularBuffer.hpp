@@ -29,7 +29,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../Platform/Platform.hpp"
+#include "../Platform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -53,17 +53,16 @@ private Platform::CommsLock
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
-  typedef enum: uint8_t
+  enum class Error: uint8_t
   {
-    ERROR_NONE                 = 0U,
-    ERROR_FULL                 = 1U,
-    ERROR_EMPTY                = 2U,
-    ERROR_OUTPUT_BUFFER_LENGTH = 3U,
-    ERROR_NO_EOL_FOUND         = 4U,
-    ERROR_NO_EOL_BUFFER_FULL   = 5U,
-    ERROR_NULLPTR              = 6U,
-
-  } Error_t;
+    NONE                 = 0U,
+    FULL                 = 1U,
+    EMPTY                = 2U,
+    OUTPUT_BUFFER_LENGTH = 3U,
+    NO_EOL_FOUND         = 4U,
+    NO_EOL_BUFFER_FULL   = 5U,
+    NULLPTR              = 6U,
+  };
 
   /*-- Public Function Declarations -------------------------------------------------*/
 
@@ -83,15 +82,14 @@ private Platform::CommsLock
 
   /* Destructor */
   virtual ~CircularBuffer(void);
-
   void reset(void);
 
-  Error_t getPacket(      uint8_t  *targetBuffer,
-                    const uint16_t  maxOutputLength,
-                          uint16_t &outputLength);
+  CircularBuffer::Error getPacket(      uint8_t  *targetBuffer,
+                                  const uint16_t  maxOutputLength,
+                                        uint16_t &outputLength);
 
-  Error_t pushHead(const uint8_t *inputBuffer,
-                   const uint16_t inputLength);
+  CircularBuffer::Error pushHead(const uint8_t *inputBuffer,
+                                 const uint16_t inputLength);
 
   private:
 
@@ -127,7 +125,7 @@ private Platform::CommsLock
 
   inline void resetEOLIndex(void);
 
-  inline CircularBuffer::Error_t eolSearch(void);
+  inline CircularBuffer::Error eolSearch(void);
 
 };
 
