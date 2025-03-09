@@ -30,7 +30,7 @@
 #include "Node.hpp"
 #include "Bus.hpp"
 #include "../Utilities/AtamsUtilities.hpp"
-#include "Devices/DataBlockUniversal.hpp"
+#include "Maps/BlockUniversal.hpp"
 
 
 /*************************************************************************************/
@@ -55,43 +55,51 @@ Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
   if ((memoryMap.noOfDataBlocks > Platform::NODE_NUMBER_OF_DATA_BLOCKS) ||
       (memoryMap.noOfDataBlocks >           MAX_NUMBER_OF_DATA_BLOCKS ) )
   {
-    return (ERROR_MEMORY);   /* Early Return */
+    return (Atams::ERROR_MEMORY_MAP); /* Early Return */
   }
 
   if (sizeof(float) != TYPE_LENGTHS[TYPE_FLOAT])
   {
-    return (ERROR_PLATFORM); /* Early Return */
+    return (Atams::ERROR_PLATFORM);   /* Early Return */
   }
 
-  Error_t initStatus = ERROR_NONE;
+  Atams::Error_t initStatus = ERROR_NONE;
 
   for (uint8_t blockIndex = 0U; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
   {
     const DataBlock::BlockDescriptor_t * const blockDescriptor = memoryMap.blockDescriptors[blockIndex];
     DataBlock                           &block                 = _dataBlocks[blockIndex];
 
-    if (blockDescriptor != nullptr)
-    {
-      initStatus = block.initDescriptor(blockDescriptor);
-    }
-    else
-    {
-      if (blockIndex != memoryMap.noOfDataBlocks) initStatus = Atams::ERROR_BLOCK_ID;
-      break;
-    }
+    if      (blockDescriptor != nullptr)             initStatus = block.initDescriptor(blockDescriptor);
+    else if (blockIndex != memoryMap.noOfDataBlocks) initStatus = Atams::ERROR_MEMORY_MAP;
+    if      (initStatus != ERROR_NONE)               break;
+  }
+  
+  for (uint8_t blockIndex = BLOCK_ID_UNIVERSAL; blockIndex < memoryMap.noOfDataBlocks; blockIndex++)
+  {
+    DataBlock                          &dataBlock       = _dataBlocks[blockIndex];
+    const DataBlock::BlockDescriptor_t *blockDescriptor = memoryMap.blockDescriptors[blockIndex];
 
-    if (initStatus != ERROR_NONE) break;
+    if (blockDescriptor != nullptr) initStatus = blockDescriptor->initDefaults(dataBlock);
+    else                            initStatus = Atams::ERROR_NULL_PTR;
   }
 
-  //if (initStatus == ERROR_NONE)
-  //{
-  //  if (_memoryMap.initUniversalData != nullptr) initStatus = _memoryMap.initUniversalData(*this);
-  //  else                                         initStatus = ERROR_NULL_PTR;
-  //}
+  if (initStatus == ERROR_NONE)
+  {
+    if (memoryMap.initUniversalData != nullptr) initStatus = memoryMap.initUniversalData(*this);
+    else                                        initStatus = ERROR_NULL_PTR;
+  }
 
-  if (initStatus != ERROR_NONE) for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinitDescriptor();
-  else                          _memoryMap = memoryMap;
-
+  if (initStatus != ERROR_NONE) 
+  {
+    _memoryMap.noOfDataBlocks = 0U;
+    for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinitDescriptor();
+  }
+  else 
+  {
+    _memoryMap = memoryMap;
+  }
+  
   return (initStatus);
 }
 
@@ -299,6 +307,12 @@ Atams::Error_t Node::getBusError(void)
 {
   return (_busError);
 }
+
+DataBlock * Node::getBlockPtr(const uint8_t blockID)
+{
+  return ((blockID < _memoryMap.noOfDataBlocks) ? &_dataBlocks[blockID] : nullptr);
+}
+
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */

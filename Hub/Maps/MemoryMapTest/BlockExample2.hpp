@@ -1,11 +1,12 @@
 /**
   ******************************************************************************
-  * @file    DataBlockUniversal.hpp
+  * @file    BlockExample2.hpp
   *
   * @author  D. Baines
   *
   * @brief   Auto-generated file containing typedefs, constants, and function
-  *          declarations for an Atams Data Block with name: Universal.
+  *          declarations for an Atams Data Block with name: Example1.
+  *          The Data Block is part of an Atams Memory Map with name: Test.
   *
   * @version v1.0
   ******************************************************************************
@@ -29,13 +30,13 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../DataBlock.hpp"
+#include "../../DataBlock.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace BlockUniversal {
+namespace Atams { namespace MapTest { namespace BlockExample2 {
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
@@ -44,30 +45,22 @@ namespace Atams { namespace BlockUniversal {
 /*--- Member List ---*/
 enum DataMemberID_t: uint16_t
 {
-  MEMBER_ID_ATAMS_VERSION_NUMBER  = 0U,
-  MEMBER_ID_UNIVERSAL_UNLOCK      = 1U,
-  MEMBER_ID_MAP_GEN_DAY           = 2U,
-  MEMBER_ID_MAP_GEN_MONTH         = 3U,
-  MEMBER_ID_MAP_GEN_YEAR          = 4U,
-  MEMBER_ID_MAP_GEN_HOUR          = 5U,
-  MEMBER_ID_MAP_GEN_MINUTE        = 6U,
-  MEMBER_ID_MAP_GEN_SECOND        = 7U,
-  MEMBER_ID_MAP_CHECKSUM          = 8U,
-  MEMBER_ID_NODE_ID               = 9U,
-  MEMBER_ID_FIRST_NODE_ID         = 10U,
-  MEMBER_ID_LAST_NODE_ID          = 11U,
-  MEMBER_ID_PREVIOUS_NODE_ID      = 12U,
-  MEMBER_ID_WATCHDOG_TIMEOUT      = 13U,
-  MEMBER_ID_WATCHDOG_COUNTER      = 14U,
-  MEMBER_ID_WATCHDOG_FAULT_ACTIVE = 15U,
-  MEMBER_ID_WATCHDOG_RESET        = 16U,
-  MEMBER_ID_CRC_ERROR_COUNT       = 17U,
-  MEMBER_ID_COBS_ERROR_COUNT      = 18U,
-  MEMBER_ID_STORE_NVM             = 19U,
-  MEMBER_ID_RESTORE_FACTORY_NVM   = 20U,
-  MEMBER_ID_NVM_STATUS            = 21U,
+  MEMBER_ID_WRITE_UINT8  = 0U,
+  MEMBER_ID_WRITE_INT8   = 1U,
+  MEMBER_ID_READ_UINT8   = 2U,
+  MEMBER_ID_READ_INT8    = 3U,
+  MEMBER_ID_WRITE_UINT16 = 4U,
+  MEMBER_ID_WRITE_INT16  = 5U,
+  MEMBER_ID_READ_UINT16  = 6U,
+  MEMBER_ID_READ_INT16   = 7U,
+  MEMBER_ID_WRITE_UINT32 = 8U,
+  MEMBER_ID_WRITE_INT32  = 9U,
+  MEMBER_ID_READ_UINT32  = 10U,
+  MEMBER_ID_READ_INT32   = 11U,
+  MEMBER_ID_WRITE_FLOAT  = 12U,
+  MEMBER_ID_READ_FLOAT   = 13U,
 
-  NUMBER_OF_UNIVERSAL_DATA_MEMBERS
+  NUMBER_OF_DATA_MEMBERS
 };
 
 /*************************************************************************************/
@@ -75,21 +68,30 @@ enum DataMemberID_t: uint16_t
 /*************************************************************************************/
 
 /*--- Defaults ---*/
-inline constexpr uint8_t  DEFAULT_NODE_ID          = 0U;
-inline constexpr uint8_t  DEFAULT_FIRST_NODE_ID    = 0U;
-inline constexpr uint8_t  DEFAULT_LAST_NODE_ID     = 0U;
-inline constexpr uint8_t  DEFAULT_PREVIOUS_NODE_ID = 0U;
-inline constexpr uint32_t DEFAULT_WATCHDOG_TIMEOUT = 0UL;
+inline constexpr uint8_t  DEFAULT_WRITE_UINT8  = 1U;
+inline constexpr int8_t   DEFAULT_WRITE_INT8   = 2;
+inline constexpr uint8_t  DEFAULT_READ_UINT8   = 3U;
+inline constexpr int8_t   DEFAULT_READ_INT8    = 4;
+inline constexpr uint16_t DEFAULT_WRITE_UINT16 = 5U;
+inline constexpr int16_t  DEFAULT_WRITE_INT16  = 6;
+inline constexpr uint16_t DEFAULT_READ_UINT16  = 7U;
+inline constexpr int16_t  DEFAULT_READ_INT16   = 8;
+inline constexpr uint32_t DEFAULT_WRITE_UINT32 = 9UL;
+inline constexpr int32_t  DEFAULT_WRITE_INT32  = 10L;
+inline constexpr uint32_t DEFAULT_READ_UINT32  = 11UL;
+inline constexpr int32_t  DEFAULT_READ_INT32   = 12L;
+inline constexpr float    DEFAULT_WRITE_FLOAT  = 13.0F;
+inline constexpr float    DEFAULT_READ_FLOAT   = 14.0F;
 
 /*************************************************************************************/
-/* CONSTANT EXTERNS                                                                  */
+/* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
 /*--- Descriptor ---*/
 extern const DataBlock::BlockDescriptor_t blockDescriptor;
 
 
-} } /* End Namespace - Atams::BlockUniversal */
+} } } /* End Namespace - Atams::MapTest::DataBlockExample2 */
 
 /**
   * @}End of File

@@ -162,6 +162,8 @@ private Platform::MemoryLock
 
   Atams::Error_t getBusError(void);
 
+  DataBlock * getBlockPtr(const uint8_t blockID);
+
   /*-- PRIVATE -----------------------------------------------------------------------*/
 
   private:

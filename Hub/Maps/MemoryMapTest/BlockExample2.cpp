@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    DataBlockExample1.cpp
+  * @file    BlockExample2.cpp
   *
   * @author  D. Baines
   *
@@ -26,13 +26,24 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "DataBlockExample1.hpp"
+#include "BlockExample2.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace MapTest { namespace BlockExample1 {
+namespace Atams { namespace MapTest { namespace BlockExample2 {
+
+/*************************************************************************************/
+/* INIT FUNCTION DEFINITIONS                                                         */
+/*************************************************************************************/
+
+static Error_t initDefaults(DataBlock &block)
+{
+  Error_t initStatus = ERROR_NONE;
+
+  return (initStatus); 
+}
 
 /*************************************************************************************/
 /* BLOCK DESCRIPTOR                                                                  */
@@ -40,8 +51,8 @@ namespace Atams { namespace MapTest { namespace BlockExample1 {
 
 const DataBlock::BlockDescriptor_t blockDescriptor =
 {
-  /* .noOfDataMembers = */ BlockExample1::NUMBER_OF_DATA_MEMBERS,
-  /* .initDefaults    = */ nullptr,
+  /* .noOfDataMembers = */ BlockExample2::NUMBER_OF_DATA_MEMBERS,
+  /* .initDefaults    = */ initDefaults,
   /* .dataMemberInfo  = */
   {
     /* [BlockExample1::MEMBER_ID_WRITE_UINT8] = */
@@ -118,7 +129,7 @@ const DataBlock::BlockDescriptor_t blockDescriptor =
 };
 
 
-} } } /* End Namespace - Atams::MapTest::BlockExample1 */
+} } } /* End Namespace - Atams::MapTest::DataBlockExample2 */
 
 /**
   * @}End of File

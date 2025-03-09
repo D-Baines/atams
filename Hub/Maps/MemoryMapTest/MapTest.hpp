@@ -1,12 +1,11 @@
 /**
   ******************************************************************************
-  * @file    DataBlockExample2.hpp
+  * @file    MapTest.hpp
   *
   * @author  D. Baines
   *
   * @brief   Auto-generated file containing typedefs, constants, and function
-  *          declarations for an Atams Data Block with name: Example1.
-  *          The Data Block is part of an Atams Memory Map with name: Test.
+  *          declarations for an Atams Memory Map with name: Test.
   *
   * @version v1.0
   ******************************************************************************
@@ -30,68 +29,57 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../../DataBlock.hpp"
+#include "../../Node.hpp"
+#include "../BlockUniversal.hpp"
+#include "BlockExample1.hpp"
+#include "BlockExample2.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace MapTest { namespace BlockExample2 {
+namespace Atams { namespace MapTest {
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
-
-/*--- Member List ---*/
-enum DataMemberID_t: uint16_t
+             
+enum DataBlockID_t: uint8_t
 {
-  MEMBER_ID_WRITE_UINT8  = 0U,
-  MEMBER_ID_WRITE_INT8   = 1U,
-  MEMBER_ID_READ_UINT8   = 2U,
-  MEMBER_ID_READ_INT8    = 3U,
-  MEMBER_ID_WRITE_UINT16 = 4U,
-  MEMBER_ID_WRITE_INT16  = 5U,
-  MEMBER_ID_READ_UINT16  = 6U,
-  MEMBER_ID_READ_INT16   = 7U,
-  MEMBER_ID_WRITE_UINT32 = 8U,
-  MEMBER_ID_WRITE_INT32  = 9U,
-  MEMBER_ID_READ_UINT32  = 10U,
-  MEMBER_ID_READ_INT32   = 11U,
-  MEMBER_ID_WRITE_FLOAT  = 12U,
-  MEMBER_ID_READ_FLOAT   = 13U,
+  BLOCK_ID_UNIVERSAL = 0U,
+  BLOCK_ID_EXAMPLE1  = 1U,
+  BLOCK_ID_EXAMPLE2  = 2U,
 
-  NUMBER_OF_DATA_MEMBERS
+  NUMBER_OF_DATA_BLOCKS
 };
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-/*--- Defaults ---*/
-inline constexpr uint8_t  DEFAULT_WRITE_UINT8  = 1U;
-inline constexpr int8_t   DEFAULT_WRITE_INT8   = 2;
-inline constexpr uint8_t  DEFAULT_READ_UINT8   = 3U;
-inline constexpr int8_t   DEFAULT_READ_INT8    = 4;
-inline constexpr uint16_t DEFAULT_WRITE_UINT16 = 5U;
-inline constexpr int16_t  DEFAULT_WRITE_INT16  = 6;
-inline constexpr uint16_t DEFAULT_READ_UINT16  = 7U;
-inline constexpr int16_t  DEFAULT_READ_INT16   = 8;
-inline constexpr uint32_t DEFAULT_WRITE_UINT32 = 9UL;
-inline constexpr int32_t  DEFAULT_WRITE_INT32  = 10L;
-inline constexpr uint32_t DEFAULT_READ_UINT32  = 11UL;
-inline constexpr int32_t  DEFAULT_READ_INT32   = 12L;
-inline constexpr float    DEFAULT_WRITE_FLOAT  = 13.0F;
-inline constexpr float    DEFAULT_READ_FLOAT   = 14.0F;
+inline constexpr float    AUTOGEN_ATAMS_VERSION_NUMBER = 0.1F;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_DAY          = 15U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_MONTH        = 10U;
+inline constexpr uint16_t AUTOGEN_MAP_GEN_YEAR         = 2024U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_HOUR         = 11U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = 33U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = 20U;
+inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = 32457U;
 
 /*************************************************************************************/
-/* CONSTANT EXTERNS                                                                  */
+/* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-/*--- Descriptor ---*/
-extern const DataBlock::BlockDescriptor_t blockDescriptor;
+Atams::Error_t initUniversalInfo(Node &nodeToInit);
+
+/*************************************************************************************/
+/* CONST EXTERNS                                                                     */
+/*************************************************************************************/
+
+extern const Node::MemoryMap_t memoryMap;
 
 
-} } } /* End Namespace - Atams::MapTest::DataBlockExample2 */
+} } /* End Namespace - Atams::MapTest */
 
 /**
   * @}End of File

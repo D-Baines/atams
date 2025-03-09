@@ -57,13 +57,29 @@ private Platform::MemoryLock
     Access_t   accessLevel = ACCESS_READ;
   };
 
-  typedef Atams::Error_t (*InitDefaultsFtnPtr_t)(DataBlock &blockToInit);
+  typedef Atams::Error_t (&InitDefaultsFnPtr_t)(DataBlock &blockToInit);
 
   struct BlockDescriptor_t
   {
-    uint16_t               noOfDataMembers = 0U;
-    InitDefaultsFtnPtr_t   initDefaults    = nullptr;
-    MemberInfo_t           dataMemberInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
+    uint16_t            noOfDataMembers = 0U;
+    InitDefaultsFnPtr_t initDefaults;
+    MemberInfo_t        dataMemberInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
+
+    BlockDescriptor_t(const uint16_t      initNoOfDataMembers,
+                      InitDefaultsFnPtr_t defaultsInitFnPtr,
+                      const MemberInfo_t  (&initVarInfo)[Platform::NODE_NUMBER_OF_DATA_MEMBERS]) :
+    initDefaults(defaultsInitFnPtr)                  
+    {
+      noOfDataMembers = initNoOfDataMembers;
+      for (uint16_t varID = 0U; varID < Platform::NODE_NUMBER_OF_DATA_MEMBERS; varID++)
+      {
+        dataMemberInfo[varID] = initVarInfo[varID];
+      }
+    };
+
+    BlockDescriptor_t(const BlockDescriptor_t &other) = delete;
+
+    BlockDescriptor_t& operator=(const BlockDescriptor_t &other) = delete;
   };
 
   /*-- Public Function Declarations -------------------------------------------------*/
@@ -83,6 +99,8 @@ private Platform::MemoryLock
   Atams::Error_t initDescriptor(const BlockDescriptor_t * const blockDescriptor);
 
   void deinitDescriptor(void);
+
+  Atams::Error_t initDefaults(void);
 
   void resetDataMembers(void);
 
@@ -134,7 +152,8 @@ private Platform::MemoryLock
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  const BlockDescriptor_t *_blockDescriptorPtr;
+  const BlockDescriptor_t *_blockDescriptorPtr   = nullptr;
+  uint16_t                 _validNoOfDataMembers = 0U;
   DataMember_t             _dataMembers[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
 };
 

@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    DataBlockExample1.hpp
+  * @file    BlockExample1.hpp
   *
   * @author  D. Baines
   *
@@ -81,7 +81,7 @@ inline constexpr float    DEFAULT_WRITE_FLOAT  = 13.0F;
 inline constexpr float    DEFAULT_READ_FLOAT   = 14.0F;
 
 /*************************************************************************************/
-/* CONSTANT EXTERNS                                                                  */
+/* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
 /*--- Descriptor ---*/
