@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    MemoryMapTest.hpp
+  * @file    MapTest.hpp
   *
   * @author  D. Baines
   *
@@ -30,9 +30,7 @@
 
 #include <stdint.h>
 #include "../../Node.hpp"
-#include "../DataBlockUniversal.hpp"
-#include "DataBlockExample1.hpp"
-#include "DataBlockExample2.hpp"
+#include "../BlockUniversal.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -44,14 +42,14 @@ namespace Atams { namespace MapTest {
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
              
-typedef enum: uint8_t
+enum DataBlockID_t: uint8_t
 {
   BLOCK_ID_UNIVERSAL = 0U,
   BLOCK_ID_EXAMPLE1  = 1U,
   BLOCK_ID_EXAMPLE2  = 2U,
 
   NUMBER_OF_DATA_BLOCKS
-} DataBlockID_t;
+};
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
@@ -67,10 +65,17 @@ inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = 20U;
 inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = 32457U;
 
 /*************************************************************************************/
+/*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-const MemoryMap_t &getMapReference(void);
+Atams::Error_t initUniversalInfo(void);
+
+/*************************************************************************************/
+/* CONSTANT EXTERNS                                                                  */
+/*************************************************************************************/
+
+extern const MemoryMap_t memoryMap;
 
 
 } } /* End Namespace - Atams::MapTest */

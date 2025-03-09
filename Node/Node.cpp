@@ -27,13 +27,9 @@
 
 #include "string.h"
 #include "Node.hpp"
-#include "Devices/DataBlockUniversal.hpp"
 #include "../Utilities/AtamsUtilities.hpp"
+#include "Maps/BlockUniversal.hpp"
 #include "Utilities/CircularBuffer.hpp"
-#include "../Utilities/COBS.hpp"
-#include "../Utilities/CRC32.hpp"
-
-
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -41,12 +37,11 @@
 
 namespace Atams {
 
-
 /*************************************************************************************/
 /* PRIVATE CONSTANTS                                                                 */
 /*************************************************************************************/
 
-static constexpr uint8_t  ABORT_RESPONSE_SIZE              = MESH_SIZE_HEADER + sizeof(Error_t);
+static constexpr uint8_t  ABORT_RESPONSE_SIZE              = MESH_SIZE_HEADER + sizeof(Atams::Error_t);
 static constexpr uint32_t WATCHDOG_INCREMENT_PERIOD_MILLIS = 1U;
 static constexpr uint8_t  WATCHDOG_FAULT_ACTIVE            = 1U;
 static constexpr uint8_t  WATCHDOG_FAULT_INACTIVE          = 0U;
@@ -82,17 +77,15 @@ struct ChannelSyncPacket_t
 
 /*-- Node --*/
 
-static MemoryMap_t _memoryMap;
-static DataBlock   _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
-static DataBlock  &_universalBlock                      = _dataBlocks[BLOCK_ID_UNIVERSAL];
-static Error_t     _latestError                         = ERROR_NONE;
-static uint16_t    _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
-static uint8_t     _localNodeID                         = 0U;
+static MemoryMap_t    _memoryMap;
+static DataBlock      _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
+static DataBlock     &_universalBlock                      = _dataBlocks[BLOCK_ID_UNIVERSAL];
+static Atams::Error_t _latestError                         = ERROR_NONE;
+static uint16_t       _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
+static uint8_t        _localNodeID                         = 0U;
 
 /*-- Comms --*/
 CircularBuffer _circularBuffer[Platform::NUMBER_OF_COMMS_CHANNELS];
-
-static bool     _systemIsBigEndian = false;
 
 /* Core Init Synchronisation */
 static CoreInitStatus_t _controlCoreInitComplete = CORE_INIT_IN_PROGRESS;
@@ -120,7 +113,7 @@ static inline void resetResponse(ChannelResponse_t &response)
   response.index                       = MESH_INDEX_FIRST_DATAGRAM;
 }
 
-static inline void abortResponse(ChannelResponse_t &response, Error_t error)
+static inline void abortResponse(ChannelResponse_t &response, Atams::Error_t error)
 {
   response.buffer[MESH_INDEX_NODE_ID]  = _localNodeID;
   response.buffer[MESH_INDEX_MSG_TYPE] = MESSAGE_ABORTED_RESPONSE;
@@ -139,7 +132,7 @@ static void sendResponsePacket(Platform::CommsChannel_t commsChannel, ChannelRes
     if ((response.buffer[MESH_INDEX_MSG_TYPE] != MESSAGE_ABORTED_RESPONSE) ||
         (response.index                       != ABORT_RESPONSE_SIZE     ) )
     {
-      abortResponse(response, ERROR_ABORT_FAILURE);
+      abortResponse(response, Atams::ERROR_ABORT_FAILURE);
     }
   }
 
@@ -147,7 +140,7 @@ static void sendResponsePacket(Platform::CommsChannel_t commsChannel, ChannelRes
                        response.index,
                        encodedResponseBuffer,
                        sizeof(encodedResponseBuffer),
-                       encodedLength                 ) == ERROR_NONE)
+                       encodedLength                 ) == Atams::ERROR_NONE)
   {
     Platform::transmitBuffer(commsChannel, encodedResponseBuffer, encodedLength);
   }
@@ -158,13 +151,13 @@ static void processDatagramRead(ChannelResponse_t &response,
                                 DatagramHeader_t   datagramHeader,
                                 uint8_t            payloadLength)
 {
-  Error_t transferStatus = externalTransfer(ACCESS_READ,
-                                            datagramHeader.blockID,
-                                            datagramHeader.varID,
-                                            &response.buffer[response.index + DATAGRAM_SIZE_HEADER],
-                                            payloadLength);
+  Atams::Error_t transferStatus = externalTransfer(ACCESS_READ,
+                                                   datagramHeader.blockID,
+                                                   datagramHeader.varID,
+                                                   &response.buffer[response.index + DATAGRAM_SIZE_HEADER],
+                                                   payloadLength);
 
-  if (transferStatus != ERROR_NONE)
+  if (transferStatus != Atams::ERROR_NONE)
   {
     abortResponse(response, transferStatus);
   }
@@ -182,13 +175,13 @@ static void processDatagramWrite(ChannelResponse_t &response,
                                  uint8_t           *datagramPayload,
                                  uint8_t            payloadLength)
 {
-  Error_t transferStatus = externalTransfer(ACCESS_WRITE,
-                                            datagramHeader.blockID,
-                                            datagramHeader.varID,
-                                            datagramPayload,
-                                            payloadLength);
+  Atams::Error_t transferStatus = externalTransfer(ACCESS_WRITE,
+                                                   datagramHeader.blockID,
+                                                   datagramHeader.varID,
+                                                   datagramPayload,
+                                                   payloadLength);
 
-  if (transferStatus != ERROR_NONE)
+  if (transferStatus != Atams::ERROR_NONE)
   {
     abortResponse(response, transferStatus);
   }
@@ -200,10 +193,10 @@ static void processDatagramWrite(ChannelResponse_t &response,
   }
 }
 
-static inline void processRequestPacket(ChannelResponse_t &response,
-                                        uint8_t           *meshPacket,
-                                        uint16_t           meshPacketLength,
-                                        bool               universalBroadcast)
+static void processRequestPacket(ChannelResponse_t &response,
+                                 uint8_t           *meshPacket,
+                                 uint16_t           meshPacketLength,
+                                 bool               universalBroadcast)
 {
   bool               cancelProcessing   = false;
   volatile uint8_t   datagramStartIndex = MESH_INDEX_FIRST_DATAGRAM;
@@ -219,14 +212,14 @@ static inline void processRequestPacket(ChannelResponse_t &response,
     if ((universalBroadcast                          ) &&
         (datagramHeader.blockID != BLOCK_ID_UNIVERSAL) )
     {
-      abortResponse(response, ERROR_BLOCK_ID);
+      abortResponse(response, Atams::ERROR_BLOCK_ID);
       return; /* Early Return */
     }
 
     DataStatusReturn_t<uint8_t> varLength = getMemberLength(datagramHeader.blockID,
                                                             datagramHeader.varID);
 
-    if (varLength.status != ERROR_NONE)
+    if (varLength.status != Atams::ERROR_NONE)
     {
       abortResponse(response, varLength.status);
       return; /* Early Return */
@@ -237,7 +230,7 @@ static inline void processRequestPacket(ChannelResponse_t &response,
 
     if (datagramLength > remainingOutputLength)
     {
-      abortResponse(response, ERROR_RESPONSE_BUFFER_LENGTH);
+      abortResponse(response, Atams::ERROR_RESPONSE_BUFFER_LENGTH);
       return; /* Early Return */
     }
 
@@ -254,7 +247,7 @@ static inline void processRequestPacket(ChannelResponse_t &response,
 
         if (datagramLength > remainingInputLength)
         {
-          abortResponse(response, ERROR_REQUEST_BUFFER_LENGTH);
+          abortResponse(response, Atams::ERROR_REQUEST_BUFFER_LENGTH);
           return; /* Early Return */
         }
         else
@@ -267,7 +260,7 @@ static inline void processRequestPacket(ChannelResponse_t &response,
       }
 
       default:
-        abortResponse(response, ERROR_ACCESS_INVALID);
+        abortResponse(response, Atams::ERROR_ACCESS_INVALID);
         return;
     }
   }
@@ -300,7 +293,7 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
                        packetLength,
                        &decodedPacket[0U],
                        sizeof(decodedPacket),
-                       decodedLength         ) == ERROR_NONE)
+                       decodedLength         ) == Atams::ERROR_NONE)
   {
     MessageType_t        messageType     = static_cast<MessageType_t>(decodedPacket[MESH_INDEX_MSG_TYPE]);
     uint8_t              packetNodeID    = decodedPacket[MESH_INDEX_NODE_ID];
@@ -348,11 +341,11 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
         }
         break;
       case MESSAGE_RESPONSE_SYNCED:
-        if (packetSyncCount != syncPacket.syncCount) abortResponse(response, ERROR_SYNC_COUNT);
+        if (packetSyncCount != syncPacket.syncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT);
         if (packetNodeID    == prevSyncNodeID      ) sendResponsePacket(commsChannel, response);
         break;
       case MESSAGE_SYNC_JOG:
-        if (packetSyncCount != syncPacket.syncCount) abortResponse(response, ERROR_SYNC_COUNT);
+        if (packetSyncCount != syncPacket.syncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT);
         if (packetNodeID    == _localNodeID        ) sendResponsePacket(commsChannel, response);
         break;
       default:
@@ -412,9 +405,9 @@ static void updateWatchdog(void)
   {
     if (watchdogCount < MAX_UINT32) watchdogCount++;
 
-    if ((_universalBlock.read(BlockUniversal::MEMBER_ID_WATCHDOG_TIMEOUT, watchdogTimeout) != ERROR_NONE) ||
+    if ((_universalBlock.read(BlockUniversal::MEMBER_ID_WATCHDOG_TIMEOUT, watchdogTimeout) != Atams::ERROR_NONE) ||
         ((watchdogCount    > watchdogTimeout) &&
-         (watchdogTimeout != 0U             )                                                           ) )
+         (watchdogTimeout != 0U             )                                                                  ) )
     {
       _universalBlock.write(BlockUniversal::MEMBER_ID_WATCHDOG_FAULT_ACTIVE, WATCHDOG_FAULT_ACTIVE);
     }
@@ -437,30 +430,38 @@ static void updateWatchdog(void)
   }
 }
 
-static Error_t sharedInit(const MemoryMap_t &memoryMap)
+static Atams::Error_t sharedInit(const MemoryMap_t &memoryMap)
 {
   if ((memoryMap.noOfDataBlocks > Platform::NODE_NUMBER_OF_DATA_BLOCKS) ||
       (memoryMap.noOfDataBlocks >           MAX_NUMBER_OF_DATA_BLOCKS ) )
   {
-    return (ERROR_MEMORY);   /* Early Return */
+    return (Atams::ERROR_MEMORY_MAP); /* Early Return */
   }
 
   if (sizeof(float) != TYPE_LENGTHS[TYPE_FLOAT])
   {
-    return (ERROR_PLATFORM); /* Early Return */
+    return (Atams::ERROR_PLATFORM);   /* Early Return */
   }
 
-  _memoryMap.noOfDataBlocks    = memoryMap.noOfDataBlocks;
-  _memoryMap.initUniversalData = memoryMap.initUniversalData;
+  Atams::Error_t initStatus = Atams::ERROR_NONE;
 
-  Error_t initStatus = ERROR_NONE;
-
-  for (uint8_t blockIndex = BLOCK_ID_UNIVERSAL; blockIndex < memoryMap.noOfDataBlocks; blockIndex++)
+  for (uint8_t blockIndex = 0U; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
   {
-    const DataBlock::BlockDescriptor_t &blockDescriptor = memoryMap.blockDescriptors[blockIndex];
-          DataBlock                    &block           = _dataBlocks[blockIndex];
+    const DataBlock::BlockDescriptor_t * const blockDescriptor = memoryMap.blockDescriptors[blockIndex];
+    DataBlock                           &block                 = _dataBlocks[blockIndex];
 
-    if (initStatus == ERROR_NONE) initStatus = block.initDescriptor(blockDescriptor);
+    if      (blockDescriptor != nullptr)                  initStatus = block.initDescriptor(blockDescriptor);
+    else if (blockIndex      != memoryMap.noOfDataBlocks) initStatus = Atams::ERROR_MEMORY_MAP;
+    if      (initStatus      != Atams::ERROR_NONE)        break;
+  }
+
+  if (initStatus != Atams::ERROR_NONE)
+  {
+    for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinitDescriptor();
+  }
+  else
+  {
+    _memoryMap = memoryMap;
   }
 
   return (initStatus);
@@ -491,26 +492,23 @@ static void waitForControlCoreInit(void)
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-Error_t initSingleCore(const MemoryMap_t &memoryMap)
+Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap)
 {
-  /* sharedInit() will run in each of the core init functions - no negative impact */
+  Atams::Error_t initStatus = initControlCore(memoryMap);
 
-  Error_t initStatus = initControlCore(memoryMap);
-
-  if (initStatus == ERROR_NONE) initStatus = initCommsCore(memoryMap);
+  if (initStatus == Atams::ERROR_NONE) initStatus = initCommsCore(memoryMap);
 
   return (initStatus);
 }
 
-Error_t initCommsCore(const MemoryMap_t &memoryMap)
+Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
 {
   waitForControlCoreInit();
 
-  Error_t initStatus = sharedInit(memoryMap);
+  Atams::Error_t initStatus = sharedInit(memoryMap);
 
-  if (initStatus == ERROR_NONE)
+  if (initStatus == Atams::ERROR_NONE)
   {
-    _systemIsBigEndian = systemIsBigEndian();
     Platform::setReceiveCallback(receiveCallback);
 
     for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_CHANNELS; commsChannel++)
@@ -522,46 +520,34 @@ Error_t initCommsCore(const MemoryMap_t &memoryMap)
   else
   {
     _memoryMap.noOfDataBlocks = 0U;
-    for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinit();
+    for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinitDescriptor();
   }
-
 
   return (initStatus);
 }
 
-Error_t initControlCore(const MemoryMap_t &memoryMap)
+Atams::Error_t initControlCore(const MemoryMap_t &memoryMap)
 {
-  Error_t initStatus = sharedInit(memoryMap);
-
-  if (initStatus == ERROR_NONE)
-  {
-    for (DataBlock &dataBlock : _dataBlocks) dataBlock.resetDataMembers();
-  }
+  Atams::Error_t initStatus = sharedInit(memoryMap);
 
   for (uint8_t blockIndex = BLOCK_ID_UNIVERSAL; blockIndex < memoryMap.noOfDataBlocks; blockIndex++)
   {
     DataBlock                          &dataBlock       = _dataBlocks[blockIndex];
-    const DataBlock::BlockDescriptor_t &blockDescriptor = memoryMap.blockDescriptors[blockIndex];
+    const DataBlock::BlockDescriptor_t *blockDescriptor = memoryMap.blockDescriptors[blockIndex];
 
-    //if ((blockDescriptor.initDefaults == nullptr) ||
-    //    (blockDescriptor.initLimits   == nullptr) )
-    //{
-    //  initStatus = ERROR_NULL_PTR;
-    //}
-    //
-    //if (initStatus == ERROR_NONE) initStatus = blockDescriptor.initDefaults(dataBlock);
-    //if (initStatus == ERROR_NONE) initStatus = blockDescriptor.initLimits(dataBlock);
+    if (blockDescriptor != nullptr) initStatus = blockDescriptor->initDefaults(dataBlock);
+    else                            initStatus = Atams::ERROR_NULL_PTR;
   }
 
   if (initStatus == ERROR_NONE)
   {
-    if (_memoryMap.initUniversalData != nullptr) initStatus = _memoryMap.initUniversalData();
-    else                                         initStatus = ERROR_NULL_PTR;
+    if (memoryMap.initUniversalData != nullptr) initStatus = memoryMap.initUniversalData();
+    else                                        initStatus = ERROR_NULL_PTR;
   }
 
   /* NVM Init Here */
 
-  if (initStatus == ERROR_NONE)
+  if (initStatus == Atams::ERROR_NONE)
   {
     Platform::acquireMemoryLock();
     _controlCoreInitComplete = CORE_INIT_COMPLETE;
@@ -570,7 +556,7 @@ Error_t initControlCore(const MemoryMap_t &memoryMap)
   else
   {
     _memoryMap.noOfDataBlocks = 0U;
-    for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinit();
+    for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinitDescriptor();
   }
 
   return (initStatus);
@@ -586,66 +572,49 @@ void updateComms(void)
 }
 
 template <typename T>
-Error_t write(const uint8_t  blockID,
-              const uint16_t varID,
-              const T        writeData)
+Atams::Error_t write(const uint8_t  blockID,
+                     const uint16_t varID,
+                     const T        writeData)
 {
-  if (blockID >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID);
+  if (blockID >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID); /* Early Return */
 
   return (_dataBlocks[blockID].write(varID, writeData));
 }
 
-template Error_t write<uint8_t >(const uint8_t blockID, const uint16_t varID, const uint8_t  writeData);
-template Error_t write<int8_t  >(const uint8_t blockID, const uint16_t varID, const int8_t   writeData);
-template Error_t write<uint16_t>(const uint8_t blockID, const uint16_t varID, const uint16_t writeData);
-template Error_t write<int16_t >(const uint8_t blockID, const uint16_t varID, const int16_t  writeData);
-template Error_t write<uint32_t>(const uint8_t blockID, const uint16_t varID, const uint32_t writeData);
-template Error_t write<int32_t >(const uint8_t blockID, const uint16_t varID, const int32_t  writeData);
-template Error_t write<float   >(const uint8_t blockID, const uint16_t varID, const float    writeData);
+template Atams::Error_t write<uint8_t >(const uint8_t blockID, const uint16_t varID, const uint8_t  writeData);
+template Atams::Error_t write<int8_t  >(const uint8_t blockID, const uint16_t varID, const int8_t   writeData);
+template Atams::Error_t write<uint16_t>(const uint8_t blockID, const uint16_t varID, const uint16_t writeData);
+template Atams::Error_t write<int16_t >(const uint8_t blockID, const uint16_t varID, const int16_t  writeData);
+template Atams::Error_t write<uint32_t>(const uint8_t blockID, const uint16_t varID, const uint32_t writeData);
+template Atams::Error_t write<int32_t >(const uint8_t blockID, const uint16_t varID, const int32_t  writeData);
+template Atams::Error_t write<float   >(const uint8_t blockID, const uint16_t varID, const float    writeData);
 
 
 template <typename T>
-Error_t read(const uint8_t   blockID,
-             const uint16_t  varID,
-                   T        &readData)
+Atams::Error_t read(const uint8_t   blockID,
+                    const uint16_t  varID,
+                          T        &readData)
 {
-  if (blockID >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID);
+  if (blockID >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID); /* Early Return */
 
   return (_dataBlocks[blockID].read(varID, readData));
 }
 
-template Error_t read<uint8_t >(const uint8_t blockID, const uint16_t varID, uint8_t  &readData);
-template Error_t read<int8_t  >(const uint8_t blockID, const uint16_t varID, int8_t   &readData);
-template Error_t read<uint16_t>(const uint8_t blockID, const uint16_t varID, uint16_t &readData);
-template Error_t read<int16_t >(const uint8_t blockID, const uint16_t varID, int16_t  &readData);
-template Error_t read<uint32_t>(const uint8_t blockID, const uint16_t varID, uint32_t &readData);
-template Error_t read<int32_t >(const uint8_t blockID, const uint16_t varID, int32_t  &readData);
-template Error_t read<float   >(const uint8_t blockID, const uint16_t varID, float    &readData);
+template Atams::Error_t read<uint8_t >(const uint8_t blockID, const uint16_t varID, uint8_t  &readData);
+template Atams::Error_t read<int8_t  >(const uint8_t blockID, const uint16_t varID, int8_t   &readData);
+template Atams::Error_t read<uint16_t>(const uint8_t blockID, const uint16_t varID, uint16_t &readData);
+template Atams::Error_t read<int16_t >(const uint8_t blockID, const uint16_t varID, int16_t  &readData);
+template Atams::Error_t read<uint32_t>(const uint8_t blockID, const uint16_t varID, uint32_t &readData);
+template Atams::Error_t read<int32_t >(const uint8_t blockID, const uint16_t varID, int32_t  &readData);
+template Atams::Error_t read<float   >(const uint8_t blockID, const uint16_t varID, float    &readData);
 
-bool watchdogFaultActive(void)
+Atams::Error_t externalTransfer(const Access_t  accessRequest,
+                                const uint8_t   blockID,
+                                const uint16_t  varID,
+                                uint8_t * const dataStoragePtr,
+                                const uint8_t   length)
 {
-  uint8_t watchdogFaultState = WATCHDOG_FAULT_ACTIVE;
-  _universalBlock.read(BlockUniversal::MEMBER_ID_WATCHDOG_FAULT_ACTIVE, watchdogFaultState);
-  return (static_cast<bool>(watchdogFaultState));
-}
-
-DataBlock * getBlockPtr(const uint8_t blockID)
-{
-  if (blockID < _memoryMap.noOfDataBlocks)
-  {
-    return (&_dataBlocks[blockID]);
-  }
-
-  return (nullptr);
-}
-
-Error_t externalTransfer(const Access_t  accessRequest,
-                         const uint8_t   blockID,
-                         const uint16_t  varID,
-                         uint8_t * const dataStoragePtr,
-                         const uint8_t   length)
-{
-  if (blockID  >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID);
+  if (blockID  >= _memoryMap.noOfDataBlocks) return (ERROR_BLOCK_ID); /* Early Return */
 
   return (_dataBlocks[blockID].externalTransfer(accessRequest, varID, dataStoragePtr, length));
 }
@@ -657,14 +626,26 @@ DataStatusReturn_t<uint8_t> getMemberLength(const uint8_t blockID, const uint16_
   if (blockID >= _memoryMap.noOfDataBlocks)
   {
     lengthReturn.status = ERROR_BLOCK_ID;
-    return (lengthReturn);
+    return (lengthReturn); /* Early Return */
   }
 
   return (_dataBlocks[blockID].getMemberLength(varID));
 }
 
+bool watchdogFaultActive(void)
+{
+  uint8_t watchdogFaultState = WATCHDOG_FAULT_ACTIVE;
+  _universalBlock.read(BlockUniversal::MEMBER_ID_WATCHDOG_FAULT_ACTIVE, watchdogFaultState);
+  return (static_cast<bool>(watchdogFaultState));
+}
 
-} /* End Namespace - Atams::Node */
+DataBlock * getBlockPtr(const uint8_t blockID)
+{
+  return ((blockID < _memoryMap.noOfDataBlocks) ? &_dataBlocks[blockID] : nullptr);
+}
+
+
+} /* End Namespace: Atams */
 
 /**
   * @}End of File

@@ -141,7 +141,7 @@ enum Error_t: uint8_t
   ERROR_NULL_PTR                 = 7U,
   ERROR_ACCESS_INVALID           = 8U,
   ERROR_REQUEST_PATTERN_INVALID  = 9U,
-  ERROR_MEMORY                   = 10U,
+  ERROR_MEMORY_MAP               = 10U,
   ERROR_WRITE_LIST               = 11U,
   ERROR_ABORT_FAILURE            = 12U,
   ERROR_ENCODE                   = 13U,
@@ -217,8 +217,6 @@ struct DataStatusReturn_t
   T       data;
   Error_t status;
 };
-
-/*-- COMMS --------------------------------------------------------------------------*/
 
 enum CommsDirection_t: uint8_t
 {

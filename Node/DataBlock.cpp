@@ -27,7 +27,6 @@
 
 #include <cstring>
 #include <typeinfo>
-
 #include "DataBlock.hpp"
 #include "../Utilities/AtamsUtilities.hpp"
 
@@ -67,21 +66,41 @@ DataBlock::~DataBlock(void)
 
 }
 
-Atams::Error_t DataBlock::initDescriptor(const BlockDescriptor_t &blockDescriptor)
+Atams::Error_t DataBlock::initDescriptor(const BlockDescriptor_t * const blockDescriptorPtr)
 {
-  Error_t initStatus = ERROR_NONE;
+  Atams::Error_t initStatus = ERROR_NONE;
 
-  if ((blockDescriptor.noOfDataMembers > Platform::NODE_NUMBER_OF_DATA_MEMBERS) ||
-      (blockDescriptor.noOfDataMembers >           MAX_NUMBER_OF_DATA_MEMBERS ) )
+  if (blockDescriptorPtr == nullptr)
   {
-    initStatus = ERROR_MEMORY;
+    initStatus = Atams::ERROR_NULL_PTR;
+  }
+  else if ((blockDescriptorPtr->noOfDataMembers > sizeof(_blockDescriptorPtr->dataMemberInfo)) ||
+           (blockDescriptorPtr->noOfDataMembers > MAX_NUMBER_OF_DATA_MEMBERS                 ) )
+  {
+    initStatus = Atams::ERROR_NUMBER_OF_DATA_MEMBERS;
   }
   else
   {
-    _blockDescriptor = blockDescriptor;
+    _blockDescriptorPtr   = blockDescriptorPtr;
+    _validNoOfDataMembers = blockDescriptorPtr->noOfDataMembers;
   }
 
+  resetDataMembers();
+
   return (initStatus);
+}
+
+void DataBlock::deinitDescriptor(void)
+{
+  _validNoOfDataMembers = 0U;
+  _blockDescriptorPtr   = nullptr;
+  resetDataMembers();
+}
+
+Atams::Error_t DataBlock::initDefaults(void)
+{
+  if (_blockDescriptorPtr == nullptr) return (Atams::ERROR_NULL_PTR);
+  else                                return (_blockDescriptorPtr->initDefaults(*this));
 }
 
 void DataBlock::resetDataMembers(void)
@@ -97,30 +116,18 @@ void DataBlock::resetDataMembers(void)
   Platform::releaseMemoryLock();
 }
 
-void DataBlock::deinit(void)
-{
-  _blockDescriptor.noOfDataMembers = 0U;
-
-  for (MemberInfo_t &varInfo : _blockDescriptor.dataMemberInfo)
-  {
-    varInfo.type           = TYPE_NULL;
-    varInfo.accessLevel = ACCESS_NONE;
-    varInfo.NVMStorage     = false;
-  }
-}
-
 template <typename T>
 Atams::Error_t DataBlock::write(const uint16_t  memberID,
                                 const T         writeData)
 {
-  if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_VAR_ID);
+  if (memberID >= _validNoOfDataMembers) return (ERROR_VAR_ID); /* Early Return */
 
-  const MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[memberID];
+  const MemberInfo_t &memberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
 
-  if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()) return (ERROR_VAR_TYPE);
+  if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()) return (ERROR_VAR_TYPE); /* Early Return */
 
-  DataMember_t &dataMember  = _dataMembers[memberID];
-  Error_t       accessError = ERROR_NONE;
+  DataMember_t   &dataMember  = _dataMembers[memberID];
+  Atams::Error_t  accessError = ERROR_NONE;
 
   Platform::acquireMemoryLock();
 
@@ -144,11 +151,11 @@ template <typename T>
 Atams::Error_t DataBlock::read(const uint16_t  memberID,
                                      T        &readData)
 {
-  if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_VAR_ID);
+  if (memberID >= _validNoOfDataMembers) return (ERROR_VAR_ID); /* Early Return */
 
-  const MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[memberID];
+  const MemberInfo_t &memberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
 
-  if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()) return (ERROR_VAR_TYPE);
+  if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()) return (ERROR_VAR_TYPE); /* Early Return */
 
   DataMember_t &dataMember = _dataMembers[memberID];
 
@@ -158,7 +165,7 @@ Atams::Error_t DataBlock::read(const uint16_t  memberID,
 
   Platform::releaseMemoryLock();
 
-  return (ERROR_NONE);
+  return (Atams::ERROR_NONE);
 }
 
 template Atams::Error_t DataBlock::read<uint8_t >(const uint16_t memberID, uint8_t  &readData);
@@ -173,13 +180,13 @@ DataStatusReturn_t<uint8_t> DataBlock::getMemberLength(const uint16_t memberID)
 {
   DataStatusReturn_t<uint8_t> lengthReturn;
 
-  if (memberID >= _blockDescriptor.noOfDataMembers)
+  if (memberID >= _validNoOfDataMembers)
   {
-    lengthReturn.status = ERROR_VAR_ID;
-    return (lengthReturn);
+    lengthReturn.status = Atams::ERROR_VAR_ID;
+    return (lengthReturn); /* Early Return */
   }
 
-  const MemberInfo_t &dataMemberInfo = _blockDescriptor.dataMemberInfo[memberID];
+  const MemberInfo_t &dataMemberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
 
   lengthReturn.data   = TYPE_LENGTHS[dataMemberInfo.type];
   lengthReturn.status = ERROR_NONE;
@@ -192,16 +199,16 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
                                     uint8_t * const inputPtr,
                                     const uint8_t   length)
 {
-  if (memberID >= _blockDescriptor.noOfDataMembers) return (ERROR_VAR_ID);
+  if (memberID >= _validNoOfDataMembers) return (ERROR_VAR_ID); /* Early Return */
 
-  const MemberInfo_t &memberInfo = _blockDescriptor.dataMemberInfo[memberID];
+  const MemberInfo_t &memberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
 
-  if (TYPE_LENGTHS[memberInfo.type] != length)                    return (ERROR_VAR_LENGTH);
-  if (inputPtr                == nullptr)                   return (ERROR_NULL_PTR);
-  if (accessRequest                 >  memberInfo.accessLevel) return (ERROR_ACCESS_INVALID);
+  if (TYPE_LENGTHS[memberInfo.type] != length)                 return (Atams::ERROR_VAR_LENGTH);     /* Early Return */
+  if (inputPtr                      == nullptr)                return (Atams::ERROR_NULL_PTR);       /* Early Return */
+  if (accessRequest                 >  memberInfo.accessLevel) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
 
-  DataMember_t &dataMember  = _dataMembers[memberID];
-  Error_t       accessError = ERROR_NONE;
+  DataMember_t   &dataMember = _dataMembers[memberID];
+  Atams::Error_t accessError = Atams::ERROR_NONE;
 
   Platform::acquireMemoryLock();
 
@@ -218,7 +225,7 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
       break;
 
     default:
-      accessError = ERROR_ACCESS_INVALID;
+      accessError = Atams::ERROR_ACCESS_INVALID;
       break;
   }
 
@@ -226,12 +233,6 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
 
   return (accessError);
 }
-
-
-/*************************************************************************************/
-/* PRIVATE FUNCTION DEFINITIONS                                                      */
-/*************************************************************************************/
-
 
 
 } /* End Namespace - Atams */

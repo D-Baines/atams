@@ -29,7 +29,6 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-
 #include "Platform.hpp"
 #include "../AtamsTypedefs.hpp"
 
@@ -61,14 +60,29 @@ class DataBlock
     bool       NVMStorage  = false;
   };
 
-  typedef Error_t (*InitDefaultsFunction_t)(DataBlock &blockToInit);
-  typedef Error_t (*InitLimitsFunction_t  )(DataBlock &blockToInit);
+  typedef Atams::Error_t (&InitDefaultsFn_t)(DataBlock &blockToInit);
 
   struct BlockDescriptor_t
   {
-    uint16_t               noOfDataMembers = 0U;
-    InitDefaultsFunction_t initDefaults    = nullptr;
-    MemberInfo_t           dataMemberInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
+    uint16_t         noOfDataMembers = 0U;
+    InitDefaultsFn_t initDefaults;
+    MemberInfo_t     dataMemberInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
+
+    BlockDescriptor_t(const uint16_t     initNoOfDataMembers,
+                      InitDefaultsFn_t   defaultsInitFnPtr,
+                      const MemberInfo_t (&initVarInfo)[Platform::NODE_NUMBER_OF_DATA_MEMBERS]) :
+    initDefaults(defaultsInitFnPtr)
+    {
+      noOfDataMembers = initNoOfDataMembers;
+      for (uint16_t varID = 0U; varID < Platform::NODE_NUMBER_OF_DATA_MEMBERS; varID++)
+      {
+        dataMemberInfo[varID] = initVarInfo[varID];
+      }
+    };
+
+    BlockDescriptor_t(const BlockDescriptor_t &other) = delete;
+
+    BlockDescriptor_t& operator=(const BlockDescriptor_t &other) = delete;
   };
 
   /*-- Public Function Declarations -------------------------------------------------*/
@@ -85,26 +99,28 @@ class DataBlock
   /* Copy Assignment Operator */
   DataBlock & operator=(const DataBlock &other) = delete;
 
-  Error_t initDescriptor(const BlockDescriptor_t &blockDescriptor);
+  Atams::Error_t initDescriptor(const BlockDescriptor_t * const blockDescriptor);
+
+  void deinitDescriptor(void);
+
+  Atams::Error_t initDefaults(void);
 
   void resetDataMembers(void);
 
-  void deinit(void);
+  template <typename T>
+  Atams::Error_t write(const uint16_t memberID,
+                       const T        writeData);
 
   template <typename T>
-  Error_t write(const uint16_t memberID,
-                const T        writeData);
-
-  template <typename T>
-  Error_t read(const uint16_t  memberID,
-                     T        &readData);
+  Atams::Error_t read(const uint16_t  memberID,
+                            T        &readData);
 
   DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t memberID);
 
-  Error_t externalTransfer(const Access_t  accessRequest,
-                           const uint16_t  memberID,
-                           uint8_t * const dataStoragePtr,
-                           const uint8_t   length);
+  Atams::Error_t externalTransfer(const Access_t  accessRequest,
+                                  const uint16_t  memberID,
+                                  uint8_t * const dataStoragePtr,
+                                  const uint8_t   length);
 
   private:
 
@@ -119,12 +135,9 @@ class DataBlock
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  BlockDescriptor_t _blockDescriptor;
-  DataMember_t      _dataMembers[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
-
-
-  /*-- Private Function Declarations ------------------------------------------------*/
-
+  const BlockDescriptor_t *_blockDescriptorPtr   = nullptr;
+  uint16_t                 _validNoOfDataMembers = 0U;
+  DataMember_t             _dataMembers[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
 };
 
 
