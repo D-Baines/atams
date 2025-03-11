@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    MapTest.cpp
+  * @file    MemoryMapTest.cpp
   *
   * @author  D. Baines
   *
@@ -34,59 +34,62 @@
 namespace Atams { namespace MapTest {
 
 /*************************************************************************************/
-/* PRIVATE CONSTANTS                                                                 */
-/*************************************************************************************/
-
-const DataBlock::BlockDescriptor_t *blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS] = {&BlockUniversal::blockDescriptor,
-                                                                                              nullptr,
-                                                                                              nullptr};
-
-const MemoryMap_t memoryMap(static_cast<uint8_t>(NUMBER_OF_DATA_BLOCKS),
-                            initUniversalInfo,
-                            blockDescriptors);
-
-/*************************************************************************************/
 /* INIT FUNCTION DEFINITIONS                                                         */
 /*************************************************************************************/
-
+                                        
 Atams::Error_t initUniversalInfo(void)
 {
   Atams::Error_t initStatus = ERROR_NONE;
 
   if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::MEMBER_ID_ATAMS_VERSION_NUMBER,
+                                                                 BlockUniversal::VAR_ID_ATAMS_VERSION_NUMBER,
                                                                  AUTOGEN_ATAMS_VERSION_NUMBER);
 
   if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::MEMBER_ID_MAP_GEN_DAY,
+                                                                 BlockUniversal::VAR_ID_MAP_GEN_DAY,
                                                                  AUTOGEN_MAP_GEN_DAY);
 
   if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::MEMBER_ID_MAP_GEN_MONTH,
+                                                                 BlockUniversal::VAR_ID_MAP_GEN_MONTH,
                                                                  AUTOGEN_MAP_GEN_MONTH);
 
   if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::MEMBER_ID_MAP_GEN_YEAR,
+                                                                 BlockUniversal::VAR_ID_MAP_GEN_YEAR,
                                                                  AUTOGEN_MAP_GEN_YEAR);
 
   if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::MEMBER_ID_MAP_GEN_HOUR,
+                                                                 BlockUniversal::VAR_ID_MAP_GEN_HOUR,
                                                                  AUTOGEN_MAP_GEN_HOUR);
 
   if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::MEMBER_ID_MAP_GEN_MINUTE,
+                                                                 BlockUniversal::VAR_ID_MAP_GEN_MINUTE,
                                                                  AUTOGEN_MAP_GEN_MINUTE);
 
   if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::MEMBER_ID_MAP_GEN_SECOND,
+                                                                 BlockUniversal::VAR_ID_MAP_GEN_SECOND,
                                                                  AUTOGEN_MAP_GEN_SECOND);
 
   if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::MEMBER_ID_MAP_CHECKSUM,
+                                                                 BlockUniversal::VAR_ID_MAP_CHECKSUM,
                                                                  AUTOGEN_MAP_CHECKSUM);
-
+  
   return (initStatus); 
 }
+
+/*************************************************************************************/
+/* PRIVATE CONSTANTS                                                                 */
+/*************************************************************************************/
+
+static const DataBlock::BlockDescriptor_t* blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS] = 
+{
+  &BlockUniversal::blockDescriptor,
+  &BlockExample1::blockDescriptor,
+  &BlockExample2::blockDescriptor
+};
+
+extern const MemoryMap_t memoryMap(static_cast<uint8_t>(NUMBER_OF_DATA_BLOCKS),
+                                   initUniversalInfo,
+                                   blockDescriptors);
 
 
 } } /* End Namespace - Atams::MapTest */

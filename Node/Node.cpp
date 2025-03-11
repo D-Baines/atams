@@ -562,6 +562,19 @@ Atams::Error_t initControlCore(const MemoryMap_t &memoryMap)
   return (initStatus);
 }
 
+Atams::Error_t initDefaults(void)
+{
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
+
+  for (DataBlock &dataBlock : _dataBlocks)
+  {
+    if (statusReturn == Atams::ERROR_NONE) dataBlock.initDefaults();
+    else                                   break;
+  }
+
+  return (statusReturn);
+}
+
 void updateComms(void)
 {
   Platform::update();

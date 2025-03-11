@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    MapTest.hpp
+  * @file    MemoryMapTest.hpp
   *
   * @author  D. Baines
   *
@@ -31,6 +31,9 @@
 #include <stdint.h>
 #include "../../Node.hpp"
 #include "../BlockUniversal.hpp"
+#include "BlockExample1.hpp"
+#include "BlockExample2.hpp"
+
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -65,14 +68,7 @@ inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = 20U;
 inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = 32457U;
 
 /*************************************************************************************/
-/*************************************************************************************/
-/* PUBLIC FUNCTION DECLARATIONS                                                      */
-/*************************************************************************************/
-
-Atams::Error_t initUniversalInfo(void);
-
-/*************************************************************************************/
-/* CONSTANT EXTERNS                                                                  */
+/* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
 extern const MemoryMap_t memoryMap;
