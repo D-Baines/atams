@@ -4,8 +4,8 @@
   *
   * @author  D. Baines
   *
-  * @brief   Auto-generated file containing typedefs, constants, and function
-  *          declarations for an Atams Data Block with name: Example1.
+  * @brief   Auto-generated file containing function definitions for an 
+  *          Atams Data Block with name: Example1.
   *          The Data Block is part of an Atams Memory Map with name: Test.
   *
   * @version v1.0
@@ -38,89 +38,131 @@ namespace Atams { namespace MapTest { namespace BlockExample1 {
 /* INIT FUNCTION DEFINITIONS                                                         */
 /*************************************************************************************/
 
-static Error_t initDefaults(DataBlock &block)
+static Error_t initDefaults(DataBlock &blockToInit)
 {
   Error_t initStatus = ERROR_NONE;
+
+  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_UINT8,
+                                                               BlockExample1::DEFAULT_WRITE_UINT8);
+
+  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_INT8,
+                                                               BlockExample1::DEFAULT_WRITE_INT8);
+
+  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_READ_UINT8,
+                                                               BlockExample1::DEFAULT_READ_UINT8);
+
+  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_READ_INT8,
+                                                               BlockExample1::DEFAULT_READ_INT8);
+
+  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_UINT16,
+                                                               BlockExample1::DEFAULT_WRITE_UINT16);
+
+  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_INT16,
+                                                               BlockExample1::DEFAULT_WRITE_INT16);
+
+  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_READ_UINT16,
+                                                               BlockExample1::DEFAULT_READ_UINT16);
+
+  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_READ_INT16,
+                                                               BlockExample1::DEFAULT_READ_INT16);
+
+  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_UINT32,
+                                                               BlockExample1::DEFAULT_WRITE_UINT32);
+
+  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_INT32,
+                                                               BlockExample1::DEFAULT_WRITE_INT32);
+
+  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_READ_UINT32,
+                                                               BlockExample1::DEFAULT_READ_UINT32);
+
+  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_READ_INT32,
+                                                               BlockExample1::DEFAULT_READ_INT32);
+
+  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_FLOAT,
+                                                               BlockExample1::DEFAULT_WRITE_FLOAT);
+
+  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_READ_FLOAT,
+                                                               BlockExample1::DEFAULT_READ_FLOAT);
 
   return (initStatus); 
 }
 
 /*************************************************************************************/
-/* BLOCK DESCRIPTOR                                                                  */
+/* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-const DataBlock::BlockDescriptor_t blockDescriptor =
+extern const DataBlock::BlockDescriptor_t blockDescriptor =
 {
-  /* .noOfDataMembers = */ BlockExample1::NUMBER_OF_DATA_MEMBERS,
-  /* .initDefaults    = */ initDefaults,
+  /* .noOfDataMembers = */ BlockExample1::NUMBER_OF_EXAMPLE1_VARS,
+  /* .initDefaults    = */ initDefaults, 
   /* .dataMemberInfo  = */
   {
-    /* [BlockExample1::MEMBER_ID_WRITE_UINT8] = */
+    /* [BlockExample1::VAR_ID_WRITE_UINT8] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_WRITE,
     },
-    /* [BlockExample1::MEMBER_ID_WRITE_INT8] = */
+    /* [BlockExample1::VAR_ID_WRITE_INT8] = */
     {
       /* .type           = */ TYPE_INT8,
       /* .externalAccess = */ ACCESS_WRITE,
     },
-    /* [BlockExample1::MEMBER_ID_READ_UINT8] = */
+    /* [BlockExample1::VAR_ID_READ_UINT8] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockExample1::MEMBER_ID_READ_INT8] = */
+    /* [BlockExample1::VAR_ID_READ_INT8] = */
     {
       /* .type           = */ TYPE_INT8,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockExample1::MEMBER_ID_WRITE_UINT16] = */
+    /* [BlockExample1::VAR_ID_WRITE_UINT16] = */
     {
       /* .type           = */ TYPE_UINT16,
       /* .externalAccess = */ ACCESS_WRITE,
     },
-    /* [BlockExample1::MEMBER_ID_WRITE_INT16] = */
+    /* [BlockExample1::VAR_ID_WRITE_INT16] = */
     {
       /* .type           = */ TYPE_INT16,
       /* .externalAccess = */ ACCESS_WRITE,
     },
-    /* [BlockExample1::MEMBER_ID_READ_UINT16] = */
+    /* [BlockExample1::VAR_ID_READ_UINT16] = */
     {
       /* .type           = */ TYPE_UINT16,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockExample1::MEMBER_ID_READ_INT16] = */
+    /* [BlockExample1::VAR_ID_READ_INT16] = */
     {
       /* .type           = */ TYPE_INT16,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockExample1::MEMBER_ID_WRITE_UINT32] = */
+    /* [BlockExample1::VAR_ID_WRITE_UINT32] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_WRITE,
     },
-    /* [BlockExample1::MEMBER_ID_WRITE_INT32] = */
+    /* [BlockExample1::VAR_ID_WRITE_INT32] = */
     {
       /* .type           = */ TYPE_INT32,
       /* .externalAccess = */ ACCESS_WRITE,
     },
-    /* [BlockExample1::MEMBER_ID_READ_UINT32] = */
+    /* [BlockExample1::VAR_ID_READ_UINT32] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockExample1::MEMBER_ID_READ_INT32] = */
+    /* [BlockExample1::VAR_ID_READ_INT32] = */
     {
       /* .type           = */ TYPE_INT32,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockExample1::MEMBER_ID_WRITE_FLOAT] = */
+    /* [BlockExample1::VAR_ID_WRITE_FLOAT] = */
     {
       /* .type           = */ TYPE_FLOAT,
       /* .externalAccess = */ ACCESS_WRITE,
     },
-    /* [BlockExample1::MEMBER_ID_READ_FLOAT] = */
+    /* [BlockExample1::VAR_ID_READ_FLOAT] = */
     {
       /* .type           = */ TYPE_FLOAT,
       /* .externalAccess = */ ACCESS_READ,

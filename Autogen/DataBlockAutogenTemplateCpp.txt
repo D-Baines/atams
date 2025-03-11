@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    DataBlock$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.cpp
+  * @file    Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.cpp
   *
   * @author  D. Baines
   *
@@ -26,7 +26,7 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "DataBlock$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.hpp"
+#include "Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -35,10 +35,22 @@
 namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ { namespace Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ {
 
 /*************************************************************************************/
-/* PUBLIC FUNCTION DEFINITIONS                                                       */
+/* INIT FUNCTION DEFINITIONS                                                         */
 /*************************************************************************************/
 
+static Error_t initDefaults(DataBlock &blockToInit)
+{
+  Error_t initStatus = ERROR_NONE;
+
 $$$AUTOGEN$$$INIT_DEFAULTS_DEFINITION$$$AUTOGEN$$$
+  return (initStatus); 
+}
+
+/*************************************************************************************/
+/* CONST EXTERNS                                                                     */
+/*************************************************************************************/
+
+$$$AUTOGEN$$$BLOCK_DESCRIPTOR$$$AUTOGEN$$$
 
 
 } } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ */

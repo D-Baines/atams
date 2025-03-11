@@ -125,6 +125,8 @@ private Platform::MemoryLock
   Node & operator=(const Node &other) = delete;
 
   Atams::Error_t init(const MemoryMap_t &memoryMap);
+
+  Atams::Error_t initDefaults(void);
      
   template <typename T>
   Atams::Error_t write(const uint8_t blockID, const uint16_t memberID, const T writeData);

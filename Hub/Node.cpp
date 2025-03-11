@@ -103,6 +103,19 @@ Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
   return (initStatus);
 }
 
+Atams::Error_t Node::initDefaults(void)
+{
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
+
+  for (DataBlock &dataBlock : _dataBlocks)
+  {
+    if (statusReturn == Atams::ERROR_NONE) dataBlock.initDefaults();
+    else                                   break;
+  }
+
+  return (statusReturn);
+}
+
 template <typename T>
 Atams::Error_t Node::write(const uint8_t  blockID,
                            const uint16_t varID,

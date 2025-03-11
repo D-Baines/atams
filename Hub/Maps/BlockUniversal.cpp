@@ -42,19 +42,19 @@ static Error_t initDefaults(DataBlock &block)
 {
   Error_t initStatus = ERROR_NONE;
 
-  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::MEMBER_ID_NODE_ID,
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::VAR_ID_NODE_ID,
                                                          BlockUniversal::DEFAULT_NODE_ID);
 
-  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::MEMBER_ID_FIRST_NODE_ID,
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::VAR_ID_FIRST_NODE_ID,
                                                          BlockUniversal::DEFAULT_FIRST_NODE_ID);
 
-  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::MEMBER_ID_LAST_NODE_ID,
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::VAR_ID_LAST_NODE_ID,
                                                          BlockUniversal::DEFAULT_LAST_NODE_ID);
 
-  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::MEMBER_ID_PREVIOUS_NODE_ID,
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::VAR_ID_PREVIOUS_NODE_ID,
                                                          BlockUniversal::DEFAULT_PREVIOUS_NODE_ID);
 
-  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::MEMBER_ID_WATCHDOG_TIMEOUT,
+  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::VAR_ID_WATCHDOG_TIMEOUT,
                                                          BlockUniversal::DEFAULT_WATCHDOG_TIMEOUT);
 
   return (initStatus); 
@@ -66,7 +66,7 @@ static Error_t initDefaults(DataBlock &block)
 
 extern const DataBlock::BlockDescriptor_t blockDescriptor =
 {
-  /* .noOfDataMembers = */ BlockUniversal::NUMBER_OF_UNIVERSAL_DATA_MEMBERS,
+  /* .noOfDataMembers = */ BlockUniversal::NUMBER_OF_UNIVERSAL_VARS,
   /* .initDefaults    = */ initDefaults,
   /* .dataMemberInfo  = */
   {

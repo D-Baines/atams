@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    MapTest.hpp
+  * @file    MemoryMapTest.hpp
   *
   * @author  D. Baines
   *
@@ -34,6 +34,7 @@
 #include "BlockExample1.hpp"
 #include "BlockExample2.hpp"
 
+
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
@@ -65,12 +66,6 @@ inline constexpr uint8_t  AUTOGEN_MAP_GEN_HOUR         = 11U;
 inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = 33U;
 inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = 20U;
 inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = 32457U;
-
-/*************************************************************************************/
-/* PUBLIC FUNCTION DECLARATIONS                                                      */
-/*************************************************************************************/
-
-Atams::Error_t initUniversalInfo(Node &nodeToInit);
 
 /*************************************************************************************/
 /* CONST EXTERNS                                                                     */

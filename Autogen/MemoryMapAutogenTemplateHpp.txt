@@ -30,6 +30,8 @@
 
 #include <stdint.h>
 #include "../../Node.hpp"
+#include "../BlockUniversal.hpp"
+$$$AUTOGEN$$$DATA_BLOCK_FILE_INCLUDES$$$AUTOGEN$$$
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -41,12 +43,12 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
              
-typedef enum: uint8_t
+enum DataBlockID_t: uint8_t
 {
   BLOCK_ID_UNIVERSAL = 0U,
 $$$AUTOGEN$$$BLOCK_ID_LIST$$$AUTOGEN$$$
   NUMBER_OF_DATA_BLOCKS
-} DataBlockID_t;
+};
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
@@ -62,12 +64,10 @@ inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = $$$AUTOGEN$$$GENERATION
 inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = $$$AUTOGEN$$$GENERATION_CHECKSUM$$$AUTOGEN$$$;
 
 /*************************************************************************************/
-/* PUBLIC FUNCTION DECLARATIONS                                                      */
+/* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-const $$$AUTOGEN$$$NODE_NAMESPACE$$$AUTOGEN$$$MemoryMap_t &getMapReference(void);
-
-$$$AUTOGEN$$$INIT_DEFAULTS_DECLARATION$$$AUTOGEN$$$
+extern const $$$AUTOGEN$$$NODE_NAMESPACE$$$AUTOGEN$$$MemoryMap_t memoryMap;
 
 
 } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */

@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    DataBlock$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.hpp
+  * @file    Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.hpp
   *
   * @author  D. Baines
   *
@@ -42,21 +42,23 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
 
-/*--- Member List ---*/
-typedef enum: uint16_t
+enum VarID_t: uint16_t
 {
 $$$AUTOGEN$$$MEMBER_ID_LIST$$$AUTOGEN$$$
-  NUMBER_OF_$$$AUTOGEN$$$BLOCK_NAME_UPPER$$$AUTOGEN$$$_DATA_MEMBERS
-} DataMemberID_t;
+  NUMBER_OF_$$$AUTOGEN$$$BLOCK_NAME_UPPER$$$AUTOGEN$$$_VARS
+};
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-/*--- Defaults ---*/
 $$$AUTOGEN$$$DEFAULTS$$$AUTOGEN$$$
-/*--- Descriptor ---*/
-$$$AUTOGEN$$$BLOCK_DESCRIPTOR$$$AUTOGEN$$$
+
+/*************************************************************************************/
+/* CONST EXTERNS                                                                     */
+/*************************************************************************************/
+
+extern const DataBlock::BlockDescriptor_t blockDescriptor;
 
 
 } } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ */

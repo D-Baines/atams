@@ -22,6 +22,9 @@
   ******************************************************************************
   */
 
+/* Pragma to prevent recursive inclusion --------------------------------------------*/
+#pragma once
+
 /*************************************************************************************/
 /* INCLUDES                                                                          */
 /*************************************************************************************/
@@ -39,32 +42,30 @@ namespace Atams { namespace MapTest { namespace BlockExample1 {
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
 
-/*--- Member List ---*/
-enum DataMemberID_t: uint16_t
+enum VarID_t: uint16_t
 {
-  MEMBER_ID_WRITE_UINT8  = 0U,
-  MEMBER_ID_WRITE_INT8   = 1U,
-  MEMBER_ID_READ_UINT8   = 2U,
-  MEMBER_ID_READ_INT8    = 3U,
-  MEMBER_ID_WRITE_UINT16 = 4U,
-  MEMBER_ID_WRITE_INT16  = 5U,
-  MEMBER_ID_READ_UINT16  = 6U,
-  MEMBER_ID_READ_INT16   = 7U,
-  MEMBER_ID_WRITE_UINT32 = 8U,
-  MEMBER_ID_WRITE_INT32  = 9U,
-  MEMBER_ID_READ_UINT32  = 10U,
-  MEMBER_ID_READ_INT32   = 11U,
-  MEMBER_ID_WRITE_FLOAT  = 12U,
-  MEMBER_ID_READ_FLOAT   = 13U,
+  VAR_ID_WRITE_UINT8  = 0U,
+  VAR_ID_WRITE_INT8   = 1U,
+  VAR_ID_READ_UINT8   = 2U,
+  VAR_ID_READ_INT8    = 3U,
+  VAR_ID_WRITE_UINT16 = 4U,
+  VAR_ID_WRITE_INT16  = 5U,
+  VAR_ID_READ_UINT16  = 6U,
+  VAR_ID_READ_INT16   = 7U,
+  VAR_ID_WRITE_UINT32 = 8U,
+  VAR_ID_WRITE_INT32  = 9U,
+  VAR_ID_READ_UINT32  = 10U,
+  VAR_ID_READ_INT32   = 11U,
+  VAR_ID_WRITE_FLOAT  = 12U,
+  VAR_ID_READ_FLOAT   = 13U,
 
-  NUMBER_OF_DATA_MEMBERS
+  NUMBER_OF_EXAMPLE1_VARS
 };
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-/*--- Defaults ---*/
 inline constexpr uint8_t  DEFAULT_WRITE_UINT8  = 1U;
 inline constexpr int8_t   DEFAULT_WRITE_INT8   = 2;
 inline constexpr uint8_t  DEFAULT_READ_UINT8   = 3U;
@@ -80,11 +81,11 @@ inline constexpr int32_t  DEFAULT_READ_INT32   = 12L;
 inline constexpr float    DEFAULT_WRITE_FLOAT  = 13.0F;
 inline constexpr float    DEFAULT_READ_FLOAT   = 14.0F;
 
+
 /*************************************************************************************/
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-/*--- Descriptor ---*/
 extern const DataBlock::BlockDescriptor_t blockDescriptor;
 
 

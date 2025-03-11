@@ -117,8 +117,8 @@ def generateButtonPressed(memoryMapName: str, memoryMapXlsxPath:str, nodeDir: st
 
   memoryMapNameCamel = memoryMapName.lower().capitalize()
   memoryMapNameCamel = memoryMapNameCamel.replace(" ", "")
-  nodeMemoryMapDir   = os.path.join(nodeDir, 'Devices', 'MemoryMap' + memoryMapNameCamel)
-  hubMemoryMapDir    = os.path.join(hubDir,  'Devices', 'MemoryMap' + memoryMapNameCamel)
+  nodeMemoryMapDir   = os.path.join(nodeDir, 'Maps', 'MemoryMap' + memoryMapNameCamel)
+  hubMemoryMapDir    = os.path.join(hubDir,  'Maps', 'MemoryMap' + memoryMapNameCamel)
 
   if ((os.path.isdir(nodeMemoryMapDir)) or
       (os.path.isdir(hubMemoryMapDir)) ):

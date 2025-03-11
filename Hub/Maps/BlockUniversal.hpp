@@ -44,30 +44,30 @@ namespace Atams { namespace BlockUniversal {
 /*--- Member List ---*/
 enum DataMemberID_t: uint16_t
 {
-  MEMBER_ID_ATAMS_VERSION_NUMBER  = 0U,
-  MEMBER_ID_UNIVERSAL_UNLOCK      = 1U,
-  MEMBER_ID_MAP_GEN_DAY           = 2U,
-  MEMBER_ID_MAP_GEN_MONTH         = 3U,
-  MEMBER_ID_MAP_GEN_YEAR          = 4U,
-  MEMBER_ID_MAP_GEN_HOUR          = 5U,
-  MEMBER_ID_MAP_GEN_MINUTE        = 6U,
-  MEMBER_ID_MAP_GEN_SECOND        = 7U,
-  MEMBER_ID_MAP_CHECKSUM          = 8U,
-  MEMBER_ID_NODE_ID               = 9U,
-  MEMBER_ID_FIRST_NODE_ID         = 10U,
-  MEMBER_ID_LAST_NODE_ID          = 11U,
-  MEMBER_ID_PREVIOUS_NODE_ID      = 12U,
-  MEMBER_ID_WATCHDOG_TIMEOUT      = 13U,
-  MEMBER_ID_WATCHDOG_COUNTER      = 14U,
-  MEMBER_ID_WATCHDOG_FAULT_ACTIVE = 15U,
-  MEMBER_ID_WATCHDOG_RESET        = 16U,
-  MEMBER_ID_CRC_ERROR_COUNT       = 17U,
-  MEMBER_ID_COBS_ERROR_COUNT      = 18U,
-  MEMBER_ID_STORE_NVM             = 19U,
-  MEMBER_ID_RESTORE_FACTORY_NVM   = 20U,
-  MEMBER_ID_NVM_STATUS            = 21U,
+  VAR_ID_ATAMS_VERSION_NUMBER  = 0U,
+  VAR_ID_UNIVERSAL_UNLOCK      = 1U,
+  VAR_ID_MAP_GEN_DAY           = 2U,
+  VAR_ID_MAP_GEN_MONTH         = 3U,
+  VAR_ID_MAP_GEN_YEAR          = 4U,
+  VAR_ID_MAP_GEN_HOUR          = 5U,
+  VAR_ID_MAP_GEN_MINUTE        = 6U,
+  VAR_ID_MAP_GEN_SECOND        = 7U,
+  VAR_ID_MAP_CHECKSUM          = 8U,
+  VAR_ID_NODE_ID               = 9U,
+  VAR_ID_FIRST_NODE_ID         = 10U,
+  VAR_ID_LAST_NODE_ID          = 11U,
+  VAR_ID_PREVIOUS_NODE_ID      = 12U,
+  VAR_ID_WATCHDOG_TIMEOUT      = 13U,
+  VAR_ID_WATCHDOG_COUNTER      = 14U,
+  VAR_ID_WATCHDOG_FAULT_ACTIVE = 15U,
+  VAR_ID_WATCHDOG_RESET        = 16U,
+  VAR_ID_CRC_ERROR_COUNT       = 17U,
+  VAR_ID_COBS_ERROR_COUNT      = 18U,
+  VAR_ID_STORE_NVM             = 19U,
+  VAR_ID_RESTORE_FACTORY_NVM   = 20U,
+  VAR_ID_NVM_STATUS            = 21U,
 
-  NUMBER_OF_UNIVERSAL_DATA_MEMBERS
+  NUMBER_OF_UNIVERSAL_VARS
 };
 
 /*************************************************************************************/
