@@ -91,7 +91,7 @@ static Error_t initDefaults(DataBlock &blockToInit)
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-extern const DataBlock::BlockDescriptor_t blockDescriptor =
+const DataBlock::BlockDescriptor_t blockDescriptor =
 {
   /* .noOfDataMembers = */ BlockExample2::NUMBER_OF_EXAMPLE2_VARS,
   /* .initDefaults    = */ initDefaults, 

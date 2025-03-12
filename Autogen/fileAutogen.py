@@ -3,9 +3,11 @@ import sys
 import os
 import pathlib
 import pandas
-from   enum   import Enum
-from   enum   import StrEnum
-from   typing import List
+from   enum     import Enum
+from   enum     import StrEnum
+from   typing   import List
+from   datetime import datetime
+from   crc      import Calculator, Crc32
 
 FRAMEWORK_NAME = "Atams"
 
@@ -78,7 +80,6 @@ def generateConstList(block, memberNames:str, columnHeader: str, targetFile):
     preNameSpaces  = preStringRequiredSpace  - len(type)
     postNameSpaces = postStringRequiredSpace - len(memberName)
     if (value and (value != "-")):
-      print(value)
       valueAsString = str(value)
       targetFile.write("inline constexpr " + type + " ")
       writeSpaces(preNameSpaces, targetFile)
@@ -103,7 +104,7 @@ def generateBlockDescriptor(platformNameCamel: str,
                             memberNamesUpper,
                             targetFile):
   memberIterator = 0
-  targetFile.write("extern const DataBlock::BlockDescriptor_t blockDescriptor =\n{\n")
+  targetFile.write("const DataBlock::BlockDescriptor_t blockDescriptor =\n{\n")
   targetFile.write("  /* .noOfDataMembers = */ Block"+blockNameCamel+"::NUMBER_OF_"+blockNameUpper+"_VARS,\n")
   targetFile.write("  /* .initDefaults    = */ initDefaults, \n")
   targetFile.write("  /* .dataMemberInfo  = */\n  {\n")
@@ -205,14 +206,33 @@ def generateInitDefaultsDefinition(blockNameCamel, memberIDsUpper, targetFile):
     targetFile.write("                                                               Block"+blockNameCamel+"::DEFAULT_"+memberID+");\n\n")
   targetFile.seek(targetFile.tell()-1)
 
+def generateMapChecksum(dataBlocks):
+  checksumString = ""
+  calculator = Calculator(Crc32.CRC32)
+  for block in dataBlocks:
+    IDs          = block["Member ID"]
+    types        = block["Data Type"]
+    accessLevels = block["External Access"]
+    defaults     = block["Default"]
+    NVMStorages  = block["NVM Storage"]
+    varID = 0
+    for ID in IDs:
+      checksumString += str(types[varID])
+      checksumString += str(accessLevels[varID])
+      checksumString += str(defaults[varID])
+      checksumString += str(NVMStorages[varID])
+      varID     += 1
+  bytes = checksumString.encode('utf-8')
+  return (calculator.checksum(bytes))
+
 def autogenCallMap(platformNameCamel: str,
-                   
                    autogenHint: str,
                    memMapNameCamel: str,
                    dataBlockNamesCamel, 
                    dataBlockNamesUpper, 
                    dataBlocks,
-                   targetFile):
+                   targetFile,
+                   timeStamp):
   match (autogenHint):
     case "PLAT_NAME_CAMEL":
       targetFile.write(platformNameCamel)
@@ -244,19 +264,19 @@ def autogenCallMap(platformNameCamel: str,
     case "VERSION_NUMBER":
       targetFile.write("0.1" + "F")
     case "GENERATION_DAY":
-      targetFile.write("15"+"U")
+      targetFile.write(str(timeStamp.day) + "U")
     case "GENERATION_MONTH":
-      targetFile.write("10"+"U")
+      targetFile.write(str(timeStamp.month) + "U")
     case "GENERATION_YEAR":
-      targetFile.write("2024"+"U")
+      targetFile.write(str(timeStamp.year) + "U")
     case "GENERATION_HOUR":
-      targetFile.write("11"+"U")
+      targetFile.write(str(timeStamp.hour) + "U")
     case "GENERATION_MINUTE":
-      targetFile.write("33"+"U")
+      targetFile.write(str(timeStamp.minute) + "U")
     case "GENERATION_SECOND":
-      targetFile.write("20"+"U")
+      targetFile.write(str(timeStamp.second) + "U")
     case "GENERATION_CHECKSUM":
-      targetFile.write("32457"+"U")
+      targetFile.write(str(generateMapChecksum(dataBlocks)) + "U")
 
 def generateMemoryMapFile(platformNameCamel: str,
                           memMapNameCamel: str,
@@ -264,7 +284,8 @@ def generateMemoryMapFile(platformNameCamel: str,
                           dataBlockNamesUpper, 
                           dataBlocks, 
                           templateFile,
-                          targetFile):
+                          targetFile,
+                          timeStamp):
   inputFileString = templateFile.read()
   splitStrings    = inputFileString.split("$$$")
   nextStringAutogenCall = False
@@ -284,7 +305,8 @@ def generateMemoryMapFile(platformNameCamel: str,
                      dataBlockNamesCamel, 
                      dataBlockNamesUpper, 
                      dataBlocks,
-                     targetFile)
+                     targetFile,
+                     timeStamp)
       nextStringAutogenCall = False
     else:
       targetFile.write(string)
@@ -353,6 +375,8 @@ def generateDataBlockFile(platformNameCamel: str,
 
 def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory: str, hubDirectory: str):
 
+  timeStamp = datetime.now()
+
   memMapHppName = "Map" + memMapNameCamel + ".hpp"
   memMapCppName = "Map" + memMapNameCamel + ".cpp"
   dataBlocks          = []
@@ -396,7 +420,8 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
                         dataBlockNamesUpper, 
                         dataBlocks, 
                         memMapTemplateHpp, 
-                        nodeMemMapHpp)
+                        nodeMemMapHpp,
+                        timeStamp)
   nodeMemMapHpp.close()
   memMapTemplateHpp.seek(0)
   hubMemMapHpp = open(hubMemMapHppPath, OpenMethods.WRITE_FORCE)
@@ -406,7 +431,8 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
                         dataBlockNamesUpper, 
                         dataBlocks, 
                         memMapTemplateHpp, 
-                        hubMemMapHpp)
+                        hubMemMapHpp,
+                        timeStamp)
   hubMemMapHpp.close()
   memMapTemplateHpp.close()
   
@@ -418,7 +444,8 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
                         dataBlockNamesUpper,
                         dataBlocks,
                         memMapTemplateCpp,
-                        nodeMemMapCpp)
+                        nodeMemMapCpp,
+                        timeStamp)
   nodeMemMapCpp.close()
   memMapTemplateCpp.seek(0)
   hubMemMapCpp = open(hubMemMapCppPath, OpenMethods.WRITE_FORCE)
@@ -428,7 +455,8 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
                         dataBlockNamesUpper,
                         dataBlocks,
                         memMapTemplateCpp,
-                        hubMemMapCpp)
+                        hubMemMapCpp,
+                        timeStamp)
   hubMemMapCpp.close()
   memMapTemplateCpp.close()
 

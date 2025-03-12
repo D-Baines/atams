@@ -59,13 +59,13 @@ enum DataBlockID_t: uint8_t
 /*************************************************************************************/
 
 inline constexpr float    AUTOGEN_ATAMS_VERSION_NUMBER = 0.1F;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_DAY          = 15U;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_MONTH        = 10U;
-inline constexpr uint16_t AUTOGEN_MAP_GEN_YEAR         = 2024U;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_HOUR         = 11U;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = 33U;
-inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = 20U;
-inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = 32457U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_DAY          = 12U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_MONTH        = 3U;
+inline constexpr uint16_t AUTOGEN_MAP_GEN_YEAR         = 2025U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_HOUR         = 20U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_MINUTE       = 24U;
+inline constexpr uint8_t  AUTOGEN_MAP_GEN_SECOND       = 16U;
+inline constexpr uint32_t AUTOGEN_MAP_CHECKSUM         = 1061080793U;
 
 /*************************************************************************************/
 /* CONST EXTERNS                                                                     */

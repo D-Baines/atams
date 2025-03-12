@@ -87,7 +87,7 @@ static const DataBlock::BlockDescriptor_t* blockDescriptors[Platform::NODE_NUMBE
   &BlockExample2::blockDescriptor
 };
 
-extern const Node::MemoryMap_t memoryMap(static_cast<uint8_t>(NUMBER_OF_DATA_BLOCKS),
+const Node::MemoryMap_t memoryMap(static_cast<uint8_t>(NUMBER_OF_DATA_BLOCKS),
                                          initUniversalInfo,
                                          blockDescriptors);
 

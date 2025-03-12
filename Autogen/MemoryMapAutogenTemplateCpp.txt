@@ -55,7 +55,7 @@ static const DataBlock::BlockDescriptor_t* blockDescriptors[Platform::NODE_NUMBE
 $$$AUTOGEN$$$BLOCK_DESC_REFERENCES$$$AUTOGEN$$$
 };
 
-extern const $$$AUTOGEN$$$MEMORY_MAP_DEFINITION$$$AUTOGEN$$$
+const $$$AUTOGEN$$$MEMORY_MAP_DEFINITION$$$AUTOGEN$$$
 
 } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
 
