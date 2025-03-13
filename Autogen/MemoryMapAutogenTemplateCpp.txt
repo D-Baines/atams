@@ -34,26 +34,42 @@
 namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
 
 /*************************************************************************************/
-/* INIT FUNCTION DEFINITIONS                                                         */
+/* STATIC CONSTANTS                                                                  */
 /*************************************************************************************/
-                                        
-Atams::Error_t initUniversalInfo($$$AUTOGEN$$$NODE_INIT_REFERENCE$$$AUTOGEN$$$)
+
+static const MapGenInfo_t genInfo = 
 {
-  Atams::Error_t initStatus = ERROR_NONE;
-
-$$$AUTOGEN$$$INIT_MAP_UNIVERSAL_INFO_DEFINITION$$$AUTOGEN$$$  
-  return (initStatus); 
-}
-
-/*************************************************************************************/
-/* PRIVATE CONSTANTS                                                                 */
-/*************************************************************************************/
+  /* .atamsVersionNumber = */ $$$AUTOGEN$$$VERSION_NUMBER$$$AUTOGEN$$$,
+  /* .genDay             = */ $$$AUTOGEN$$$GENERATION_DAY$$$AUTOGEN$$$,
+  /* .genMonth           = */ $$$AUTOGEN$$$GENERATION_MONTH$$$AUTOGEN$$$,
+  /* .genYear            = */ $$$AUTOGEN$$$GENERATION_YEAR$$$AUTOGEN$$$,
+  /* .genHour            = */ $$$AUTOGEN$$$GENERATION_HOUR$$$AUTOGEN$$$,
+  /* .genMinute          = */ $$$AUTOGEN$$$GENERATION_MINUTE$$$AUTOGEN$$$,
+  /* .genSecond          = */ $$$AUTOGEN$$$GENERATION_SECOND$$$AUTOGEN$$$,
+  /* .genChecksum        = */ $$$AUTOGEN$$$GENERATION_CHECKSUM$$$AUTOGEN$$$
+};
 
 static const DataBlock::BlockDescriptor_t* blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS] = 
 {
   &BlockUniversal::blockDescriptor,
 $$$AUTOGEN$$$BLOCK_DESC_REFERENCES$$$AUTOGEN$$$
 };
+
+/*************************************************************************************/
+/* INIT FUNCTION DEFINITIONS                                                         */
+/*************************************************************************************/
+                                        
+Atams::Error_t initUniversalInfo($$$AUTOGEN$$$NODE_INIT_REFERENCE$$$AUTOGEN$$$)
+{
+  Atams::Error_t initStatus = Atams::ERROR_NONE;
+
+$$$AUTOGEN$$$INIT_MAP_UNIVERSAL_INFO_DEFINITION$$$AUTOGEN$$$  
+  return (initStatus); 
+}
+
+/*************************************************************************************/
+/* EXTERN CONSTANTS                                                                  */
+/*************************************************************************************/
 
 const $$$AUTOGEN$$$MEMORY_MAP_DEFINITION$$$AUTOGEN$$$
 

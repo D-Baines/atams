@@ -34,51 +34,20 @@
 namespace Atams { namespace MapTest {
 
 /*************************************************************************************/
-/* INIT FUNCTION DEFINITIONS                                                         */
+/* STATIC CONSTANTS                                                                  */
 /*************************************************************************************/
-                                        
-Atams::Error_t initUniversalInfo(Node &nodeToInit)
+
+static const MapGenInfo_t genInfo = 
 {
-  Atams::Error_t initStatus = ERROR_NONE;
-
-  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
-                                                                     BlockUniversal::VAR_ID_ATAMS_VERSION_NUMBER,
-                                                                     AUTOGEN_ATAMS_VERSION_NUMBER);
-
-  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
-                                                                     BlockUniversal::VAR_ID_MAP_GEN_DAY,
-                                                                     AUTOGEN_MAP_GEN_DAY);
-
-  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
-                                                                     BlockUniversal::VAR_ID_MAP_GEN_MONTH,
-                                                                     AUTOGEN_MAP_GEN_MONTH);
-
-  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
-                                                                     BlockUniversal::VAR_ID_MAP_GEN_YEAR,
-                                                                     AUTOGEN_MAP_GEN_YEAR);
-
-  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
-                                                                     BlockUniversal::VAR_ID_MAP_GEN_HOUR,
-                                                                     AUTOGEN_MAP_GEN_HOUR);
-
-  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
-                                                                     BlockUniversal::VAR_ID_MAP_GEN_MINUTE,
-                                                                     AUTOGEN_MAP_GEN_MINUTE);
-
-  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
-                                                                     BlockUniversal::VAR_ID_MAP_GEN_SECOND,
-                                                                     AUTOGEN_MAP_GEN_SECOND);
-
-  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
-                                                                     BlockUniversal::VAR_ID_MAP_CHECKSUM,
-                                                                     AUTOGEN_MAP_CHECKSUM);
-  
-  return (initStatus); 
-}
-
-/*************************************************************************************/
-/* PRIVATE CONSTANTS                                                                 */
-/*************************************************************************************/
+  /* .atamsVersionNumber = */ 0.1F,
+  /* .genDay             = */ 13U,
+  /* .genMonth           = */ 3U,
+  /* .genYear            = */ 2025U,
+  /* .genHour            = */ 21U,
+  /* .genMinute          = */ 2U,
+  /* .genSecond          = */ 10U,
+  /* .genChecksum        = */ 1061080793U
+};
 
 static const DataBlock::BlockDescriptor_t* blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS] = 
 {
@@ -87,9 +56,57 @@ static const DataBlock::BlockDescriptor_t* blockDescriptors[Platform::NODE_NUMBE
   &BlockExample2::blockDescriptor
 };
 
+/*************************************************************************************/
+/* INIT FUNCTION DEFINITIONS                                                         */
+/*************************************************************************************/
+                                        
+Atams::Error_t initUniversalInfo(Node &nodeToInit)
+{
+  Atams::Error_t initStatus = Atams::ERROR_NONE;
+
+  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                                     BlockUniversal::VAR_ID_ATAMS_VERSION_NUMBER,
+                                                                     genInfo.atamsVersionNumber);
+
+  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                                     BlockUniversal::VAR_ID_MAP_GEN_DAY,
+                                                                     genInfo.genDay);
+
+  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                                     BlockUniversal::VAR_ID_MAP_GEN_MONTH,
+                                                                     genInfo.genMonth);
+
+  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                                     BlockUniversal::VAR_ID_MAP_GEN_YEAR,
+                                                                     genInfo.genYear);
+
+  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                                     BlockUniversal::VAR_ID_MAP_GEN_HOUR,
+                                                                     genInfo.genHour);
+
+  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                                     BlockUniversal::VAR_ID_MAP_GEN_MINUTE,
+                                                                     genInfo.genMinute);
+
+  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                                     BlockUniversal::VAR_ID_MAP_GEN_SECOND,
+                                                                     genInfo.genSecond);
+
+  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                                     BlockUniversal::VAR_ID_MAP_CHECKSUM,
+                                                                     genInfo.genChecksum);
+  
+  return (initStatus); 
+}
+
+/*************************************************************************************/
+/* EXTERN CONSTANTS                                                                  */
+/*************************************************************************************/
+
 const Node::MemoryMap_t memoryMap(static_cast<uint8_t>(NUMBER_OF_DATA_BLOCKS),
-                                         initUniversalInfo,
-                                         blockDescriptors);
+                                  genInfo,
+                                  initUniversalInfo,
+                                  blockDescriptors);
 
 
 } } /* End Namespace - Atams::MapTest */

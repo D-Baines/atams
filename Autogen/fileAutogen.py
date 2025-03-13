@@ -175,30 +175,46 @@ def generateInitUniversalMapInfo(platformNameCamel,
                            "MAP_GEN_MINUTE", 
                            "MAP_GEN_SECOND",
                            "MAP_CHECKSUM"]  
+  
+  variableNames = ["atamsVersionNumber",
+                   "genDay",    
+                   "genMonth",
+                   "genYear",  
+                   "genHour", 
+                   "genMinute", 
+                   "genSecond",
+                   "genChecksum"]  
+
+  varIterator = 0
 
   if (platformNameCamel == "Hub"):
     for memberString in universalMembersToSet:
+      variableName = variableNames[varIterator]
       targetFile.write("  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,\n")
       targetFile.write("                                                                     BlockUniversal::VAR_ID_"+memberString+",\n")
-      targetFile.write("                                                                     AUTOGEN_"+memberString+");\n\n")
+      targetFile.write("                                                                     genInfo."+variableName+");\n\n")
+      varIterator += 1
   else:
     for memberString in universalMembersToSet:
+      variableName = variableNames[varIterator]
       targetFile.write("  if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,\n")
       targetFile.write("                                                                 BlockUniversal::VAR_ID_"+memberString+",\n")
-      targetFile.write("                                                                 AUTOGEN_"+memberString+");\n\n")
+      targetFile.write("                                                                 genInfo."+variableName+");\n\n")
+      varIterator += 1
   targetFile.seek(targetFile.tell()-1)
 
 def generateMapDefinition(platformNameCamel,
                           targetFile):
-  
   if (platformNameCamel == "Hub"):
     targetFile.write("Node::MemoryMap_t memoryMap(static_cast<uint8_t>(NUMBER_OF_DATA_BLOCKS),\n")     
-    targetFile.write("                                         initUniversalInfo,\n")
-    targetFile.write("                                         blockDescriptors);\n")
+    targetFile.write("                                  genInfo,\n")
+    targetFile.write("                                  initUniversalInfo,\n")
+    targetFile.write("                                  blockDescriptors);\n")
   else:
     targetFile.write("MemoryMap_t memoryMap(static_cast<uint8_t>(NUMBER_OF_DATA_BLOCKS),\n")     
-    targetFile.write("                                   initUniversalInfo,\n")
-    targetFile.write("                                   blockDescriptors);\n")
+    targetFile.write("                            genInfo,\n")
+    targetFile.write("                            initUniversalInfo,\n")
+    targetFile.write("                            blockDescriptors);\n")
 
 def generateInitDefaultsDefinition(blockNameCamel, memberIDsUpper, targetFile):
   for memberID in memberIDsUpper:

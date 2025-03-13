@@ -38,9 +38,9 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 /* INIT FUNCTION DEFINITIONS                                                         */
 /*************************************************************************************/
 
-static Error_t initDefaults(DataBlock &blockToInit)
+static Atams::Error_t initDefaults(DataBlock &blockToInit)
 {
-  Error_t initStatus = ERROR_NONE;
+  Atams::Error_t initStatus = Atams::ERROR_NONE;
 
 $$$AUTOGEN$$$INIT_DEFAULTS_DEFINITION$$$AUTOGEN$$$
   return (initStatus); 
