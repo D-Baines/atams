@@ -287,7 +287,7 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
   static uint8_t             finalSyncNodeID = 0U;
   static uint8_t             firstSyncNodeID = 0U;
 
-  static_cast<void>(_universalBlock.read(BlockUniversal::MEMBER_ID_NODE_ID, _localNodeID));
+  static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_NODE_ID, _localNodeID));
 
   if (decodeMeshPacket(packetBufferPtr,
                        packetLength,
@@ -357,7 +357,7 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
   {
     static uint32_t errorCount = 0U;
     errorCount++;
-    _universalBlock.write(BlockUniversal::MEMBER_ID_CRC_ERROR_COUNT, errorCount);
+    _universalBlock.write(BlockUniversal::VAR_ID_CRC_ERROR_COUNT, errorCount);
   }
 }
 
@@ -405,22 +405,22 @@ static void updateWatchdog(void)
   {
     if (watchdogCount < MAX_UINT32) watchdogCount++;
 
-    if ((_universalBlock.read(BlockUniversal::MEMBER_ID_WATCHDOG_TIMEOUT, watchdogTimeout) != Atams::ERROR_NONE) ||
+    if ((_universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_TIMEOUT, watchdogTimeout) != Atams::ERROR_NONE) ||
         ((watchdogCount    > watchdogTimeout) &&
          (watchdogTimeout != 0U             )                                                                  ) )
     {
-      _universalBlock.write(BlockUniversal::MEMBER_ID_WATCHDOG_FAULT_ACTIVE, WATCHDOG_FAULT_ACTIVE);
+      _universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, WATCHDOG_FAULT_ACTIVE);
     }
     else
     {
       uint8_t watchdogClear = WATCHDOG_FAULT_INACTIVE;
 
-      static_cast<void>(_universalBlock.read(BlockUniversal::MEMBER_ID_WATCHDOG_RESET, watchdogClear));
+      static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_RESET, watchdogClear));
 
       if ((watchdogClear     == WATCHDOG_FAULT_ACTIVE  ) &&
           (prevWatchdogClear == WATCHDOG_FAULT_INACTIVE) )
       {
-        _universalBlock.write(BlockUniversal::MEMBER_ID_WATCHDOG_FAULT_ACTIVE, WATCHDOG_FAULT_INACTIVE);
+        _universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, WATCHDOG_FAULT_INACTIVE);
       }
 
       prevWatchdogClear = watchdogClear;
@@ -488,6 +488,11 @@ static void waitForControlCoreInit(void)
   }
 }
 
+static Atams::Error_t initNVM(void)
+{
+  /* TODO:: NVM */
+}
+
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
@@ -544,8 +549,6 @@ Atams::Error_t initControlCore(const MemoryMap_t &memoryMap)
     if (memoryMap.initUniversalData != nullptr) initStatus = memoryMap.initUniversalData();
     else                                        initStatus = ERROR_NULL_PTR;
   }
-
-  /* NVM Init Here */
 
   if (initStatus == Atams::ERROR_NONE)
   {
@@ -648,7 +651,7 @@ DataStatusReturn_t<uint8_t> getMemberLength(const uint8_t blockID, const uint16_
 bool watchdogFaultActive(void)
 {
   uint8_t watchdogFaultState = WATCHDOG_FAULT_ACTIVE;
-  _universalBlock.read(BlockUniversal::MEMBER_ID_WATCHDOG_FAULT_ACTIVE, watchdogFaultState);
+  _universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, watchdogFaultState);
   return (static_cast<bool>(watchdogFaultState));
 }
 

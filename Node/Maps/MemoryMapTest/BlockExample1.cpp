@@ -38,9 +38,9 @@ namespace Atams { namespace MapTest { namespace BlockExample1 {
 /* INIT FUNCTION DEFINITIONS                                                         */
 /*************************************************************************************/
 
-static Error_t initDefaults(DataBlock &blockToInit)
+static Atams::Error_t initDefaults(DataBlock &blockToInit)
 {
-  Error_t initStatus = ERROR_NONE;
+  Atams::Error_t initStatus = Atams::ERROR_NONE;
 
   if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_UINT8,
                                                                BlockExample1::DEFAULT_WRITE_UINT8);

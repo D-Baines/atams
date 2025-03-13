@@ -119,8 +119,10 @@ class DataBlock
 
   Atams::Error_t externalTransfer(const Access_t  accessRequest,
                                   const uint16_t  memberID,
-                                  uint8_t * const dataStoragePtr,
+                                  uint8_t * const inputPtr,
                                   const uint8_t   length);
+
+  uint16_t getVariableCount(void);
 
   private:
 
@@ -135,8 +137,8 @@ class DataBlock
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  const BlockDescriptor_t *_blockDescriptorPtr   = nullptr;
-  uint16_t                 _validNoOfDataMembers = 0U;
+  const BlockDescriptor_t *_blockDescriptorPtr = nullptr;
+  uint16_t                 _validVariableCount = 0U;
   DataMember_t             _dataMembers[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
 };
 

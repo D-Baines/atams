@@ -52,25 +52,23 @@ typedef Error_t (*InitUniversalDataFunction_t)(void);
 
 struct MemoryMap_t
 {
-  uint16_t                            noOfDataBlocks;
-  InitUniversalDataFunction_t         initUniversalData;
+  uint16_t                            noOfDataBlocks    = 0U;
+  MapGenInfo_t                        genInfo;
+  InitUniversalDataFunction_t         initUniversalData = nullptr;
   const DataBlock::BlockDescriptor_t *blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
 
   MemoryMap_t(void)
   {
-    noOfDataBlocks    = 0U;
-    initUniversalData = nullptr;
-    for (const DataBlock::BlockDescriptor_t *&blockDescriptor : blockDescriptors)
-    {
-      blockDescriptor = nullptr;
-    }
+    for (const DataBlock::BlockDescriptor_t *&blockDescriptor : blockDescriptors) blockDescriptor = nullptr;
   }
 
   MemoryMap_t(const uint16_t                      initNoOfDataBlocks,
+              const MapGenInfo_t                  initGenInfo,
               const InitUniversalDataFunction_t   universalDataInitFnPtr,
               const DataBlock::BlockDescriptor_t *blockDescriptorPtrs[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
   {
     noOfDataBlocks    = initNoOfDataBlocks;
+    genInfo           = initGenInfo;
     initUniversalData = universalDataInitFnPtr;
     for (uint16_t blockIndex = 0U; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
     {
@@ -85,6 +83,7 @@ struct MemoryMap_t
     if (&other == this) return (*this);
 
     noOfDataBlocks    = other.noOfDataBlocks;
+    genInfo           = other.genInfo;
     initUniversalData = other.initUniversalData;
     for (uint16_t blockIndex = 0U; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
     {

@@ -226,8 +226,8 @@ struct DatagramHeader_t
 template <typename T>
 struct DataStatusReturn_t
 {
-  T       data;
-  Error_t status;
+  T              data;
+  Atams::Error_t status;
 };
 
 enum CommsDirection_t: uint8_t

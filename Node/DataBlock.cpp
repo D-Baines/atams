@@ -82,7 +82,7 @@ Atams::Error_t DataBlock::initDescriptor(const BlockDescriptor_t * const blockDe
   else
   {
     _blockDescriptorPtr   = blockDescriptorPtr;
-    _validNoOfDataMembers = blockDescriptorPtr->noOfDataMembers;
+    _validVariableCount = blockDescriptorPtr->noOfDataMembers;
   }
 
   resetDataMembers();
@@ -92,7 +92,7 @@ Atams::Error_t DataBlock::initDescriptor(const BlockDescriptor_t * const blockDe
 
 void DataBlock::deinitDescriptor(void)
 {
-  _validNoOfDataMembers = 0U;
+  _validVariableCount = 0U;
   _blockDescriptorPtr   = nullptr;
   resetDataMembers();
 }
@@ -120,7 +120,7 @@ template <typename T>
 Atams::Error_t DataBlock::write(const uint16_t  memberID,
                                 const T         writeData)
 {
-  if (memberID >= _validNoOfDataMembers) return (ERROR_VAR_ID); /* Early Return */
+  if (memberID >= _validVariableCount) return (ERROR_VAR_ID); /* Early Return */
 
   const MemberInfo_t &memberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
 
@@ -151,7 +151,7 @@ template <typename T>
 Atams::Error_t DataBlock::read(const uint16_t  memberID,
                                      T        &readData)
 {
-  if (memberID >= _validNoOfDataMembers) return (ERROR_VAR_ID); /* Early Return */
+  if (memberID >= _validVariableCount) return (ERROR_VAR_ID); /* Early Return */
 
   const MemberInfo_t &memberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
 
@@ -180,7 +180,7 @@ DataStatusReturn_t<uint8_t> DataBlock::getMemberLength(const uint16_t memberID)
 {
   DataStatusReturn_t<uint8_t> lengthReturn;
 
-  if (memberID >= _validNoOfDataMembers)
+  if (memberID >= _validVariableCount)
   {
     lengthReturn.status = Atams::ERROR_VAR_ID;
     return (lengthReturn); /* Early Return */
@@ -199,7 +199,7 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
                                     uint8_t * const inputPtr,
                                     const uint8_t   length)
 {
-  if (memberID >= _validNoOfDataMembers) return (ERROR_VAR_ID); /* Early Return */
+  if (memberID >= _validVariableCount) return (ERROR_VAR_ID); /* Early Return */
 
   const MemberInfo_t &memberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
 
@@ -232,6 +232,11 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
   Platform::releaseMemoryLock();
 
   return (accessError);
+}
+
+uint16_t DataBlock::getVariableCount(void)
+{
+  return (_validVariableCount);
 }
 
 
