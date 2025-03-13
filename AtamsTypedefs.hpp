@@ -204,6 +204,18 @@ enum RequestPattern_t: uint8_t
   NUMBER_OF_REQUEST_PATTERNS = 3U
 };
 
+struct MapGenInfo_t
+{
+  float    atamsVersionNumber = 0.0F;
+  uint8_t  genDay             = 0U;
+  uint8_t  genMonth           = 0U;
+  uint16_t genYear            = 0U;
+  uint8_t  genHour            = 0U;
+  uint8_t  genMinute          = 0U;
+  uint8_t  genSecond          = 0U;
+  uint32_t genChecksum        = 0U;
+};
+
 struct DatagramHeader_t
 {
   uint8_t  command;
