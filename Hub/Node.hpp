@@ -196,22 +196,24 @@ private Platform::MemoryLock
 
   /*-- PRIVATE VARIABLES --------------*/
 
-  Atams::Bus      &_bus;
-  uint8_t          _nodeID;
-  MemoryMap_t      _memoryMap;
-  DataBlock        _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS + 1U];
-  DataBlock       &_universalBlock                      = _dataBlocks[BLOCK_ID_UNIVERSAL];
-  Error_t          _busError                            = ERROR_NONE;
-  uint16_t         _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
-  RequestPacket_t  _requestPacket;
-  uint8_t          _responseBuffer[MAX_MESH_PACKET_SIZE];
-  uint16_t         _responseLength;
+  Atams::Bus        &_bus;
+  uint8_t            _nodeID;
+  MemoryMap_t        _memoryMap;
+  DataBlock          _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS + 1U];
+  DataBlock         &_universalBlock                      = _dataBlocks[BLOCK_ID_UNIVERSAL];
+  Error_t            _busError                            = ERROR_NONE;
+  uint16_t           _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
+  RequestPacket_t    _requestPacket;
+  uint8_t            _responseBuffer[MAX_MESH_PACKET_SIZE];
+  uint16_t           _responseLength   = 0U;
+  bool               _newResponseReady = false;
 
   /*-- PRIVATE FUNCTION DECLARATIONS --*/
 
-  Atams::Error_t getEncodedRequestPacket(uint8_t  *outputBuffer,
-                                         uint16_t  outputBufferMaxLength, 
-                                         uint16_t &outputLength);
+  Atams::Error_t getEncodedRequestPacket(const Atams::MessageType_t requestType,
+                                         uint8_t * const            outputBuffer,
+                                         const uint16_t             outputBufferMaxLength, 
+                                         uint16_t                  &outputLength);
 
   Atams::Error_t responseReceived(uint8_t *inputBuffer, uint16_t inputLength);
 
@@ -245,6 +247,8 @@ private Platform::MemoryLock
                                       const Access_t accessRequest);
 
   void updateRequestPacketWriteData(void);
+
+  bool validateGenInfo(void);
 };
 
 } /* End Namespace - Atams */

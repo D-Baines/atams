@@ -70,7 +70,7 @@ def overwriteAccepted(window, memoryMapName: str, memoryMapXlsxPath:str, nodeDir
 
 def overwritePopup(memoryMapName: str, memoryMapXlsxPath:str, nodeDir: str, hubDir:str):
   popup = customtkinter.CTkToplevel(app)
-  popup.focus_force()
+  popup.focus_force()f
   popup.update()
   popup.geometry('350x250')
   popup.minsize(width=450, height=320)

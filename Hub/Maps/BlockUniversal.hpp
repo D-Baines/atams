@@ -44,8 +44,8 @@ namespace Atams { namespace BlockUniversal {
 /*--- Member List ---*/
 enum DataMemberID_t: uint16_t
 {
-  VAR_ID_ATAMS_VERSION_NUMBER  = 0U,
-  VAR_ID_UNIVERSAL_UNLOCK      = 1U,
+  VAR_ID_UNIVERSAL_UNLOCK      = 0U,
+  VAR_ID_ATAMS_VERSION_NUMBER  = 1U,
   VAR_ID_MAP_GEN_DAY           = 2U,
   VAR_ID_MAP_GEN_MONTH         = 3U,
   VAR_ID_MAP_GEN_YEAR          = 4U,

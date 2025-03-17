@@ -164,6 +164,7 @@ enum Error_t: uint8_t
   ERROR_OLD_DATA                 = 30U,
   ERROR_RESPONSE_TIMEOUT         = 31U,
   ERROR_NUMBER_OF_DATA_MEMBERS   = 32U,
+  ERROR_NO_RESPONSE              = 33U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
@@ -214,6 +215,33 @@ struct MapGenInfo_t
   uint8_t  genMinute          = 0U;
   uint8_t  genSecond          = 0U;
   uint32_t genChecksum        = 0U;
+
+  bool operator==(const MapGenInfo_t &other)
+  {
+    if (atamsVersionNumber == other.atamsVersionNumber &&
+        genDay             == other.genDay             &&
+        genMonth           == other.genMonth           &&
+        genYear            == other.genYear            &&
+        genHour            == other.genHour            &&
+        genMinute          == other.genMinute          &&
+        genSecond          == other.genSecond          &&
+        genChecksum        == other.genChecksum        )
+    {
+      return (true);
+    }
+
+    return (false);
+  }
+
+  bool operator!=(const MapGenInfo_t &other)
+  {
+    if (*this == other)
+    {
+      return (false);
+    }
+
+    return (true);
+  }
 };
 
 struct DatagramHeader_t

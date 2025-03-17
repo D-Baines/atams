@@ -66,10 +66,13 @@ private Platform::BusPeripheral
 
   typedef enum: uint8_t
   {
-    INIT_STATE_INCOMPLETE  = 0U,
-    INIT_STATE_IN_PROGRESS = 1U,
-    INIT_STATE_SUCCESSFUL  = 2U,
-    INIT_STATE_FAILURE     = 3U
+    INIT_STATE_START              = 0U,
+    INIT_STATE_START_UPDATE_CYCLE = 1U,
+    INIT_STATE_BUS_UPDATE         = 2U,
+    INIT_STATE_VALIDITY_CHECKS    = 3U,
+    INIT_STATE_ID_ASSIGNMENT      = 4U,
+    INIT_STATE_SUCCESS            = 5U,
+    INIT_STATE_FAILURE            = 6U
   } InitState_t;
 
   typedef enum: uint8_t
@@ -96,7 +99,7 @@ private Platform::BusPeripheral
   /* Destructor */
   ~Bus(void);
 
-  Bus::InitState_t updateInitProcedure(void);
+  Bus::InitState_t updateInitProcedure(Atams::Error_t &statusReturn);
 
   Atams::Error_t startUpdateCycle(void);
 
@@ -104,9 +107,7 @@ private Platform::BusPeripheral
 
   bool updateCycleComplete(void);
 
-  Atams::Error_t processBuffers(void);
-
-  bool getErrorStatus(void);
+  bool processBuffers(void);
 
   /*-- Private ----------------------------------------------------------------------*/
 
@@ -121,6 +122,8 @@ private Platform::BusPeripheral
   Node          *_nodePtrs[Platform::NUMBER_OF_NODES_PER_BUS];
   uint16_t       _activeNodeIndex      = 0U;
   uint16_t       _noOfNodesOnBus       = 0U;
+  InitState_t    _busInitState         = Bus::INIT_STATE_START;
+  InitState_t    _nextInitState        = Bus::INIT_STATE_START;
   UpdateState_t  _updateState          = UPDATE_STATE_READY;
   uint8_t        _rxBuffer[MAX_MESH_PACKET_SIZE];
   uint8_t        _decodedBuffer[MAX_MESH_PACKET_SIZE];
@@ -130,7 +133,8 @@ private Platform::BusPeripheral
   uint16_t       _decodedLength        = 0U;
   uint16_t       _encodedLength        = 0U;
   uint8_t        _activeSyncCount      = 0U;
-  uint64_t       _previousResponseTime = 0U;
+  uint64_t       _prevResponseTime     = 0U;
+  uint64_t       _prevRequestTime      = 0U;
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
@@ -140,6 +144,16 @@ private Platform::BusPeripheral
 
   virtual void rxCallback(      uint8_t  *rxBufferPtr,
                           const uint16_t  rxBufferLength) final;
+
+  Atams::Error_t validateAndStoreResponsePacket(Node &node, const MessageType_t responseType);
+
+  Bus::UpdateState_t updateNoSync(void);
+
+  Atams::Error_t triggerGenInfoCollectionAllNodes(void);
+
+  Atams::Error_t checkGenInfoAllNodes(void);
+
+  Atams::Error_t assignNodeIDs(void);
 };
 
 

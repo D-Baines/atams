@@ -331,14 +331,15 @@ DataBlock * Node::getBlockPtr(const uint8_t blockID)
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-Atams::Error_t Node::getEncodedRequestPacket(uint8_t  *outputBuffer,
-                                             uint16_t  outputBufferMaxLength, 
-                                             uint16_t &outputLength)
+Atams::Error_t Node::getEncodedRequestPacket(const Atams::MessageType_t requestType,
+                                             uint8_t * const            outputBuffer,
+                                             const uint16_t             outputBufferMaxLength, 
+                                             uint16_t                  &outputLength)
 {
   Platform::MemoryLock::acquireLock();
 
   updateRequestPacketWriteData();
-  _requestPacket.buffer[MESH_INDEX_MSG_TYPE] = Atams::MESSAGE_REQUEST_SYNCED;
+  _requestPacket.buffer[MESH_INDEX_MSG_TYPE] = requestType;
   _requestPacket.buffer[MESH_INDEX_NODE_ID ] = _nodeID;
 
   Atams::Error_t statusReturn = encodeMeshPacket(_requestPacket.buffer, 
@@ -348,6 +349,8 @@ Atams::Error_t Node::getEncodedRequestPacket(uint8_t  *outputBuffer,
                                                  outputLength);
 
   Platform::MemoryLock::releaseLock();
+
+  if (statusReturn != Atams::ERROR_NONE) reportBusError(statusReturn);
 
   return (statusReturn);
 }
@@ -360,11 +363,13 @@ Atams::Error_t Node::responseReceived(uint8_t *inputBuffer, uint16_t inputLength
       (inputLength <= sizeof(_responseBuffer)) ) 
   {
     memcpy(_responseBuffer, inputBuffer, inputLength);
-    _responseLength = inputLength;
+    _responseLength   = inputLength;
+    _newResponseReady = true;
   }
   else
   {
     statusReturn = Atams::ERROR_RESPONSE_BUFFER_LENGTH; 
+    reportBusError(Atams::ERROR_REQUEST_BUFFER_LENGTH);
   }
 
   return (statusReturn);
@@ -400,9 +405,16 @@ void Node::processResponseBuffer(void)
   DatagramHeader_t            datagramHeader;
   DataStatusReturn_t<uint8_t> datagramPayloadLength;
 
+  if (!_newResponseReady)
+  {
+    reportBusError(Atams::ERROR_NO_RESPONSE);
+    return; /* Early Return */
+  }
+
   if (_responseBuffer[MESH_INDEX_MSG_TYPE] == MESSAGE_ABORTED_RESPONSE)
   {
-    return (processAbortedResponse()); /* Early Return */
+    processAbortedResponse();
+    return; /* Early Return */
   }
 
   while ((datagramIndex + DATAGRAM_SIZE_HEADER <= _responseLength) &&
@@ -437,14 +449,13 @@ void Node::processResponseBuffer(void)
 
         if (transferStatus == ERROR_NONE) 
         {
-          //TODO:: Condsider reset of request packet if this returns error
+          //TODO:: Consider reset of request packet if this returns error
           transferStatus = updateRequestPattern(datagramHeader.blockID, datagramHeader.varID, ACCESS_READ);
         }
         else
         {
           reportBusError(transferStatus);
         }
-
 
         datagramIndex += (DATAGRAM_SIZE_HEADER + datagramPayloadLength.data);
         break;
@@ -790,6 +801,30 @@ void Node::updateRequestPacketWriteData(void)
                                          listReturn.writeConfig.dataLength));
     }
   }
+}
+
+bool Node::validateGenInfo(void)
+{
+  const MapGenInfo_t nullGenInfo;
+  bool               genInfoMatch = false;
+  MapGenInfo_t       genInfo;
+  
+  static_cast<void>(read(BLOCK_ID_UNIVERSAL, BlockUniversal::VAR_ID_ATAMS_VERSION_NUMBER, genInfo.atamsVersionNumber));
+  static_cast<void>(read(BLOCK_ID_UNIVERSAL, BlockUniversal::VAR_ID_MAP_GEN_DAY,          genInfo.genDay));
+  static_cast<void>(read(BLOCK_ID_UNIVERSAL, BlockUniversal::VAR_ID_MAP_GEN_MONTH,        genInfo.genMonth));
+  static_cast<void>(read(BLOCK_ID_UNIVERSAL, BlockUniversal::VAR_ID_MAP_GEN_YEAR,         genInfo.genYear));
+  static_cast<void>(read(BLOCK_ID_UNIVERSAL, BlockUniversal::VAR_ID_MAP_GEN_HOUR,         genInfo.genHour));
+  static_cast<void>(read(BLOCK_ID_UNIVERSAL, BlockUniversal::VAR_ID_MAP_GEN_MINUTE,       genInfo.genMinute));
+  static_cast<void>(read(BLOCK_ID_UNIVERSAL, BlockUniversal::VAR_ID_MAP_GEN_SECOND,       genInfo.genSecond));
+  static_cast<void>(read(BLOCK_ID_UNIVERSAL, BlockUniversal::VAR_ID_MAP_CHECKSUM,         genInfo.genChecksum));
+
+  if ((genInfo != nullGenInfo       ) &&
+      (genInfo == _memoryMap.genInfo) )
+  {
+    genInfoMatch = true;
+  }
+
+  return (genInfoMatch);
 }
 
 
