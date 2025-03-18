@@ -77,7 +77,7 @@ uint64_t getMillis(void)
 }
 
 
-} } /* End Namspace - Atams::Hub::Platform */
+} } /* End Namespace - Atams::Platform */
 
 
 /**

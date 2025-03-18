@@ -35,32 +35,44 @@
 
 class CRC32
 {
+  /*-- Public -----------------------------------------------------------------------*/
 
   public:
 
-  /*-- Public Prototypes ------------------------------------------------------------*/
+  /*-- PUBLIC FUNCTION DECLARATIONS ---*/
 
   CRC32(uint32_t generatorPolynomial);
 
-  uint32_t calculateCRC32(volatile const uint8_t *byteBuffer, uint16_t length);
+  uint32_t calculateCRC(volatile const uint8_t *byteBuffer, uint16_t length);
 
+  void beginRollingCRC(void);
+
+  void updateRollingCRC(const uint8_t byte);
+
+  uint32_t getRollingCRC(void);
+
+  /*-- Private -----------------------------------------------------------------------*/
 
   private:
 
-  /*-- Private Constants ------------------------------------------------------------*/
+  /*-- PRIVATE CONSTANTS --------------*/
 
-  static const uint16_t DECIMAL_WIDTH_8_BIT = 256U;
+  static constexpr uint32_t CRC_RESET_VALUE     = 0xFFFFFFFFU;
+  static constexpr uint16_t DECIMAL_WIDTH_8_BIT = 256U;
+  static constexpr uint8_t  BYTE_MASK           = 0xFFU;
+  static constexpr uint32_t FINAL_XOR_VALUE     = 0xFFFFFFFFU;
+  static constexpr uint8_t  NUMBER_OF_CRC_BITS  = 32U;
+  static constexpr uint8_t  BITS_IN_A_BYTE      = 8U;
+  static constexpr uint32_t CRC32_POLYNOMIAL    = 0x04C11DB7;
 
-  static const uint32_t CRC32_BITSHIFT = 24U;
+  /*-- PRIVATE VARIABLES --------------*/
 
-  static const uint32_t WORD_MSB_HIGH = 0x80000000;
+  uint32_t _crcTable[DECIMAL_WIDTH_8_BIT];
+  uint32_t _rollingCRC = CRC_RESET_VALUE;
 
-  static const uint8_t  BITS_IN_A_BYTE = 8U;
+  /*-- PRIVATE FUNCTION DECLARATIONS --*/
 
-  /*-- Private Variables ------------------------------------------------------------*/
-
-  uint32_t _CRCTable[DECIMAL_WIDTH_8_BIT];
-
+  uint32_t reflect(const uint32_t data, const uint8_t bitCount);
 };
 
 /**

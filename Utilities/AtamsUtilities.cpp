@@ -103,7 +103,7 @@ Error_t decodeMeshPacket(const uint8_t  *inputBuffer,
 
   memset(&decodedBuffer[MESH_INDEX_CRC], 0U, MESH_SIZE_CRC);
 
-  if (packetCRC != _crcAtams.calculateCRC32(decodedBuffer, COBSDecodeResult.outputLength))
+  if (packetCRC != _crcAtams.calculateCRC(decodedBuffer, COBSDecodeResult.outputLength))
   {
     return (ERROR_DECODE);
   }
@@ -126,7 +126,7 @@ Error_t encodeMeshPacket(      uint8_t  *inputBuffer,
 
   memset(&inputBuffer[MESH_INDEX_CRC], 0U, MESH_SIZE_CRC);
 
-  uint32_t CRCResult = _crcAtams.calculateCRC32(inputBuffer, inputLength);
+  uint32_t CRCResult = _crcAtams.calculateCRC(inputBuffer, inputLength);
 
   uint32ToBuffer(CRCResult, &inputBuffer[MESH_INDEX_CRC]);
 

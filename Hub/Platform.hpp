@@ -179,7 +179,7 @@ inline constexpr uint64_t BUS_RESPONSE_TIMEOUT        = 100U;
 
 uint64_t getMillis(void);
 
-} } /* End Atams Namespace */
+} } /* End Namespace: Atams::Platform */
 
 
 /**

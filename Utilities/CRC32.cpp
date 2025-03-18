@@ -26,58 +26,77 @@
 
 #include "../../Atams/Utilities/CRC32.hpp"
 
-
-/*************************************************************************************/
-/* PRIVATE CONSTANTS                                                                 */
-/*************************************************************************************/
-
-
-
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
 CRC32::CRC32(uint32_t generatorPolynomial)
 {
-  /* iterate over all byte values 0 - 255 */
-  for (uint16_t divident = 0U; divident < DECIMAL_WIDTH_8_BIT; divident++)
+  for (uint32_t byteValue = 0U; byteValue < DECIMAL_WIDTH_8_BIT; byteValue++) 
   {
-    uint32_t currentByte = (divident << CRC32_BITSHIFT);
+    uint32_t crc = byteValue;
 
-    /* calculate the CRC-32 value for current byte */
-    for (uint8_t bit = 0U; bit < BITS_IN_A_BYTE; bit++)
+    for (uint8_t bitIndex = 0U; bitIndex < BITS_IN_A_BYTE; ++bitIndex) 
     {
-      if ((currentByte & WORD_MSB_HIGH) != 0U)
-      {
-        currentByte <<= 1U;
-        currentByte ^= generatorPolynomial;
-      }
-      else
-      {
-        currentByte <<= 1U;
-      }
+        if (crc & 1U) 
+        {
+          crc = (crc >> 1U) ^ generatorPolynomial;
+        } 
+        else 
+        {
+          crc >>= 1U;
+        }
     }
 
-    /* store CRC value in lookup table */
-    _CRCTable[divident] = currentByte;
+    _crcTable[byteValue] = crc;
   }
 }
 
-
-uint32_t CRC32::calculateCRC32(volatile const uint8_t *byteBuffer, uint16_t length)
+uint32_t CRC32::calculateCRC(volatile const uint8_t *byteBuffer, uint16_t length)
 {
-  uint32_t crc = 0U;
+  uint32_t crc = CRC32::CRC_RESET_VALUE;
 
-  for (uint32_t index = 0U; index < length; index++)
+  for (uint16_t byteIndex = 0U; byteIndex < length; byteIndex++) 
   {
-    uint8_t pos = ((crc ^ (byteBuffer[index] << CRC32_BITSHIFT)) >> CRC32_BITSHIFT);
-
-    crc = ((crc << BITS_IN_A_BYTE) ^ _CRCTable[pos]);
+    crc = (crc >> BITS_IN_A_BYTE) ^ _crcTable[(crc ^ byteBuffer[byteIndex]) & BYTE_MASK];
   }
 
-  return (crc);
+  return (reflect(crc ^ FINAL_XOR_VALUE, NUMBER_OF_CRC_BITS));
 }
 
+void CRC32::beginRollingCRC(void)
+{
+  _rollingCRC = CRC32::CRC_RESET_VALUE;
+}
+
+void CRC32::updateRollingCRC(const uint8_t byte)
+{
+  _rollingCRC = _rollingCRC = (_rollingCRC >> BITS_IN_A_BYTE) ^ _crcTable[(_rollingCRC ^ byte) & BYTE_MASK];
+}
+
+uint32_t CRC32::getRollingCRC(void)
+{
+  return (reflect(_rollingCRC ^ FINAL_XOR_VALUE, NUMBER_OF_CRC_BITS));
+}
+
+/*************************************************************************************/
+/* PRIVATE FUNCTION DEFINITIONS                                                      */
+/*************************************************************************************/
+
+uint32_t reflect(const uint32_t data, const uint8_t bitCount) 
+{
+  uint32_t reflection = 0U;
+
+  for (uint8_t bitIndex = 0U; bitIndex < bitCount; bitIndex++) 
+  {
+    if (data & (1U << bitIndex)) 
+    {
+      reflection |= (1U << ((bitCount - 1U) - bitIndex));
+    }
+  }
+
+  return (reflection);
+}
 
 /**
   * @}End of File

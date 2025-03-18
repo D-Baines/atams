@@ -165,7 +165,7 @@ private Platform::MemoryLock
 
   DataBlock * getBlockPtr(const uint8_t blockID);
 
-  /*-- PRIVATE -----------------------------------------------------------------------*/
+  /*-- Private -----------------------------------------------------------------------*/
 
   private:
 
