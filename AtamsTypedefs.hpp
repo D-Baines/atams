@@ -207,7 +207,8 @@ enum RequestPattern_t: uint8_t
 
 struct MapGenInfo_t
 {
-  float    atamsVersionNumber = 0.0F;
+  uint8_t  atamsVersionMajor  = 0U;
+  uint8_t  atamsVersionMinor  = 0U;
   uint8_t  genDay             = 0U;
   uint8_t  genMonth           = 0U;
   uint16_t genYear            = 0U;
@@ -218,14 +219,14 @@ struct MapGenInfo_t
 
   bool operator==(const MapGenInfo_t &other)
   {
-    if (atamsVersionNumber == other.atamsVersionNumber &&
-        genDay             == other.genDay             &&
-        genMonth           == other.genMonth           &&
-        genYear            == other.genYear            &&
-        genHour            == other.genHour            &&
-        genMinute          == other.genMinute          &&
-        genSecond          == other.genSecond          &&
-        genChecksum        == other.genChecksum        )
+    if ((atamsVersionMajor == other.atamsVersionMajor) &&
+        (genDay            == other.genDay           ) &&
+        (genMonth          == other.genMonth         ) &&
+        (genYear           == other.genYear          ) &&
+        (genHour           == other.genHour          ) &&
+        (genMinute         == other.genMinute        ) &&
+        (genSecond         == other.genSecond        ) &&
+        (genChecksum       == other.genChecksum      ) )
     {
       return (true);
     }
