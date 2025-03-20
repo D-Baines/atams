@@ -220,6 +220,7 @@ struct MapGenInfo_t
   bool operator==(const MapGenInfo_t &other)
   {
     if ((atamsVersionMajor == other.atamsVersionMajor) &&
+        (atamsVersionMinor == other.atamsVersionMinor) &&
         (genDay            == other.genDay           ) &&
         (genMonth          == other.genMonth         ) &&
         (genYear           == other.genYear          ) &&
