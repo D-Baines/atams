@@ -165,6 +165,9 @@ enum Error_t: uint8_t
   ERROR_RESPONSE_TIMEOUT         = 31U,
   ERROR_NUMBER_OF_DATA_MEMBERS   = 32U,
   ERROR_NO_RESPONSE              = 33U,
+  ERROR_NVM_CHECKSUM             = 34U,
+  ERROR_NVM_GEN_INFO             = 35U,
+  ERROR_NVM_LENGTH               = 36U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
@@ -203,6 +206,13 @@ enum RequestPattern_t: uint8_t
   REQUEST_ACTIVE             = 1U,
   REQUEST_UNTIL_ACK          = 2U,
   NUMBER_OF_REQUEST_PATTERNS = 3U
+};
+
+struct DatagramHeader_t
+{
+  uint8_t  command;
+  uint8_t  blockID;
+  uint16_t varID;
 };
 
 struct MapGenInfo_t
@@ -246,11 +256,10 @@ struct MapGenInfo_t
   }
 };
 
-struct DatagramHeader_t
+struct NVMHeader_t
 {
-  uint8_t  command;
-  uint8_t  blockID;
-  uint16_t varID;
+  uint32_t length;
+  uint32_t checksum;
 };
 
 template <typename T>
@@ -258,12 +267,6 @@ struct DataStatusReturn_t
 {
   T              data;
   Atams::Error_t status;
-};
-
-enum CommsDirection_t: uint8_t
-{
-  COMMS_TRANSMIT = 0U,
-  COMMS_RECEIVE  = 1U,
 };
 
 struct TXMessage_t

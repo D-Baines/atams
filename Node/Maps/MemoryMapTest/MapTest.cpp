@@ -39,14 +39,15 @@ namespace Atams { namespace MapTest {
 
 static const MapGenInfo_t genInfo = 
 {
-  /* .atamsVersionNumber = */ 0.1F,
-  /* .genDay             = */ 13U,
-  /* .genMonth           = */ 3U,
-  /* .genYear            = */ 2025U,
-  /* .genHour            = */ 21U,
-  /* .genMinute          = */ 2U,
-  /* .genSecond          = */ 10U,
-  /* .genChecksum        = */ 1061080793U
+  /* .atamsVersionMajor = */ 0U,
+  /* .atamsVersionMinor = */ 1U,
+  /* .genDay            = */ 20U,
+  /* .genMonth          = */ 3U,
+  /* .genYear           = */ 2025U,
+  /* .genHour           = */ 20U,
+  /* .genMinute         = */ 52U,
+  /* .genSecond         = */ 31U,
+  /* .genChecksum       = */ 1061080793U
 };
 
 static const DataBlock::BlockDescriptor_t* blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS] = 
@@ -65,8 +66,12 @@ Atams::Error_t initUniversalInfo(void)
   Atams::Error_t initStatus = Atams::ERROR_NONE;
 
   if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::VAR_ID_ATAMS_VERSION_NUMBER,
-                                                                 genInfo.atamsVersionNumber);
+                                                                 BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR,
+                                                                 genInfo.atamsVersionMajor);
+
+  if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
+                                                                 BlockUniversal::VAR_ID_ATAMS_VERSION_MINOR,
+                                                                 genInfo.atamsVersionMinor);
 
   if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
                                                                  BlockUniversal::VAR_ID_MAP_GEN_DAY,

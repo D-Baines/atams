@@ -122,7 +122,7 @@ class DataBlock
                                   uint8_t * const inputPtr,
                                   const uint8_t   length);
 
-  uint16_t getVariableCount(void);
+  Atams::Error_t retrieveNVMPayload(uint32_t &nvmIndex, const uint32_t nvmPayloadLength);
 
   private:
 

@@ -68,11 +68,11 @@ inline constexpr uint16_t COMMS_BUFFER_SIZE           = 512U;
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-void     setReceiveCallback(CommsReceiveCallback_t receiveCallback);
+void setReceiveCallback(CommsReceiveCallback_t receiveCallback);
 
-void     update(void);
+void update(void);
 
-Error_t  transmitBuffer(CommsChannel_t commsChannel, uint8_t *buffer, uint16_t length);
+bool transmitBuffer(CommsChannel_t commsChannel, uint8_t *buffer, uint16_t length);
 
 uint32_t getMillis(void);
 
@@ -83,6 +83,8 @@ void releaseMemoryLock(void);
 void acquireCommsBufferLock(CommsChannel_t channelToLock);
 
 void releaseCommsBufferLock(CommsChannel_t channelToLock);
+
+bool getFromNVM(uint32_t startIndex, uint32_t size, uint8_t * const outputPtr);
 
 
 } } /* End Atams::Platform Namespace */

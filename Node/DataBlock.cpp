@@ -81,7 +81,7 @@ Atams::Error_t DataBlock::initDescriptor(const BlockDescriptor_t * const blockDe
   }
   else
   {
-    _blockDescriptorPtr   = blockDescriptorPtr;
+    _blockDescriptorPtr = blockDescriptorPtr;
     _validVariableCount = blockDescriptorPtr->noOfDataMembers;
   }
 
@@ -93,7 +93,7 @@ Atams::Error_t DataBlock::initDescriptor(const BlockDescriptor_t * const blockDe
 void DataBlock::deinitDescriptor(void)
 {
   _validVariableCount = 0U;
-  _blockDescriptorPtr   = nullptr;
+  _blockDescriptorPtr = nullptr;
   resetDataMembers();
 }
 
@@ -234,11 +234,46 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
   return (accessError);
 }
 
-uint16_t DataBlock::getVariableCount(void)
-{
-  return (_validVariableCount);
-}
 
+/* Warning - no null ptr descriptor check. Guarded by _validVariableCount. */
+Atams::Error_t DataBlock::retrieveNVMPayload(uint32_t &nvmIndex, const uint32_t nvmPayloadLength)
+{
+  uint32_t cumulativeLength = nvmIndex;
+
+  for (uint32_t varID = 0U; varID < _validVariableCount; varID++)
+  {
+    MemberInfo_t &varInfo = _blockDescriptorPtr->dataMemberInfo;
+
+    if (varInfo.NVMStorage)
+    {
+      uint8_t nvmBytes[Atams::MAX_TYPE_SIZE];
+      uint8_t varLength = Atams::TYPE_LENGTHS[varInfo.type];
+
+      cumulativeLength += varLength;
+
+      if (cumulativeLength > nvmPayloadLength)
+      {
+        return (Atams::ERROR_NVM_LENGTH); /* Early Return */
+      }
+
+      if (!Platform::getFromNVM(nvmIndex, varLength, nvmBytes))
+      {
+        return (Atams::ERROR_PLATFORM);   /* Early Return */
+      }
+
+      Atams::Error_t transferStatus = externalTransfer(ACCESS_WRITE, varID, nvmBytes, varLength);
+
+      if (transferStatus != Atams::ERROR_NONE)
+      {
+        return (transferStatus);          /* Early Return */
+      }
+
+      nvmIndex += varLength;
+    }
+  }
+
+  return (Atams::ERROR_NONE);
+}
 
 } /* End Namespace - Atams */
 

@@ -74,16 +74,16 @@ void update(void)
 
 }
 
-Error_t transmitBuffer(CommsChannel_t commsChannel, uint8_t *buffer, uint16_t length)
+bool transmitBuffer(CommsChannel_t commsChannel, uint8_t *buffer, uint16_t length)
 {
   HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_SET);               // @suppress("C-Style cast instead of C++ cast")
   HAL_GPIO_WritePin(LED_RS485_GREEN_GPIO_Port, LED_RS485_GREEN_Pin, GPIO_PIN_SET); // @suppress("C-Style cast instead of C++ cast")
 
   SerialPort::Error_t transmitResult = _meshPort.transmitBuffer(buffer, length);
 
-  if (transmitResult != SerialPort::ERROR_NONE) return (ERROR_PLATFORM);
+  if (transmitResult != SerialPort::ERROR_NONE) return (false);
 
-  return (ERROR_NONE);
+  return (true);
 }
 
 uint32_t getMillis(void)
@@ -111,6 +111,11 @@ void acquireCommsBufferLock(CommsChannel_t channelToLock)
 void releaseCommsBufferLock(CommsChannel_t channelToLock)
 {
   HAL_NVIC_EnableIRQ(UART4_IRQn);
+}
+
+bool getFromNVM(uint32_t startIndex, uint32_t size, uint8_t * const outputPtr)
+{
+  return (false);
 }
 
 

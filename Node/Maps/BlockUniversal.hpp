@@ -41,31 +41,31 @@ namespace Atams { namespace BlockUniversal {
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
 
-/*--- Member List ---*/
-enum DataMemberID_t: uint16_t
+enum VarID_t: uint16_t
 {
-  VAR_ID_ATAMS_VERSION_NUMBER  = 0U,
-  VAR_ID_UNIVERSAL_UNLOCK      = 1U,
-  VAR_ID_MAP_GEN_DAY           = 2U,
-  VAR_ID_MAP_GEN_MONTH         = 3U,
-  VAR_ID_MAP_GEN_YEAR          = 4U,
-  VAR_ID_MAP_GEN_HOUR          = 5U,
-  VAR_ID_MAP_GEN_MINUTE        = 6U,
-  VAR_ID_MAP_GEN_SECOND        = 7U,
-  VAR_ID_MAP_CHECKSUM          = 8U,
-  VAR_ID_NODE_ID               = 9U,
-  VAR_ID_FIRST_NODE_ID         = 10U,
-  VAR_ID_LAST_NODE_ID          = 11U,
-  VAR_ID_PREVIOUS_NODE_ID      = 12U,
-  VAR_ID_WATCHDOG_TIMEOUT      = 13U,
-  VAR_ID_WATCHDOG_COUNTER      = 14U,
-  VAR_ID_WATCHDOG_FAULT_ACTIVE = 15U,
-  VAR_ID_WATCHDOG_RESET        = 16U,
-  VAR_ID_CRC_ERROR_COUNT       = 17U,
-  VAR_ID_COBS_ERROR_COUNT      = 18U,
-  VAR_ID_STORE_NVM             = 19U,
-  VAR_ID_RESTORE_FACTORY_NVM   = 20U,
-  VAR_ID_NVM_STATUS            = 21U,
+  VAR_ID_ATAMS_VERSION_MAJOR   = 0U,
+  VAR_ID_ATAMS_VERSION_MINOR   = 1U,
+  VAR_ID_UNIVERSAL_UNLOCK      = 2U,
+  VAR_ID_MAP_GEN_DAY           = 3U,
+  VAR_ID_MAP_GEN_MONTH         = 4U,
+  VAR_ID_MAP_GEN_YEAR          = 5U,
+  VAR_ID_MAP_GEN_HOUR          = 6U,
+  VAR_ID_MAP_GEN_MINUTE        = 7U,
+  VAR_ID_MAP_GEN_SECOND        = 8U,
+  VAR_ID_MAP_CHECKSUM          = 9U,
+  VAR_ID_NODE_ID               = 10U,
+  VAR_ID_FIRST_NODE_ID         = 11U,
+  VAR_ID_LAST_NODE_ID          = 12U,
+  VAR_ID_PREVIOUS_NODE_ID      = 13U,
+  VAR_ID_WATCHDOG_TIMEOUT      = 14U,
+  VAR_ID_WATCHDOG_COUNTER      = 15U,
+  VAR_ID_WATCHDOG_FAULT_ACTIVE = 16U,
+  VAR_ID_WATCHDOG_RESET        = 17U,
+  VAR_ID_CRC_ERROR_COUNT       = 18U,
+  VAR_ID_COBS_ERROR_COUNT      = 19U,
+  VAR_ID_STORE_NVM             = 20U,
+  VAR_ID_RESTORE_FACTORY_NVM   = 21U,
+  VAR_ID_NVM_STATUS            = 22U,
 
   NUMBER_OF_UNIVERSAL_VARS
 };
@@ -74,7 +74,6 @@ enum DataMemberID_t: uint16_t
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-/*--- Defaults ---*/
 inline constexpr uint8_t  DEFAULT_NODE_ID          = 0U;
 inline constexpr uint8_t  DEFAULT_FIRST_NODE_ID    = 0U;
 inline constexpr uint8_t  DEFAULT_LAST_NODE_ID     = 0U;
@@ -85,7 +84,6 @@ inline constexpr uint32_t DEFAULT_WATCHDOG_TIMEOUT = 0UL;
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-/*--- Descriptor ---*/
 extern const DataBlock::BlockDescriptor_t blockDescriptor;
 
 
