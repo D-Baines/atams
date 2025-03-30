@@ -61,8 +61,7 @@ typedef void (*CommsReceiveCallback_t)(const Platform::CommsChannel_t commsChann
 inline constexpr uint16_t NODE_NUMBER_OF_DATA_MEMBERS = 50U;  /* Must be <= MAX_NUMBER_OF_DATA_MEMBERS */
 inline constexpr uint16_t NODE_NUMBER_OF_DATA_BLOCKS  = 3U;   /* Must be <= MAX_NUMBER_OF_DATA_BLOCKS  */
 inline constexpr uint16_t COMMS_BUFFER_SIZE           = 512U;
-
-
+inline constexpr uint32_t NVM_STORAGE_SIZE            = 1024U;
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
@@ -84,7 +83,9 @@ void acquireCommsBufferLock(CommsChannel_t channelToLock);
 
 void releaseCommsBufferLock(CommsChannel_t channelToLock);
 
-bool getFromNVM(uint32_t startIndex, uint32_t size, uint8_t * const outputPtr);
+bool readFromNVM(uint32_t startIndex, uint32_t size, uint8_t * const outputPtr);
+
+bool writeToNVM(uint32_t startIndex, uint32_t size, const uint8_t * const inputPtr);
 
 
 } } /* End Atams::Platform Namespace */

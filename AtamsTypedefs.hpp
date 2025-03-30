@@ -64,6 +64,14 @@ inline constexpr uint32_t CRC32_POLYNOMIAL               = 0x04C11DB7;
 /* TYPEDEFS                                                                          */
 /*************************************************************************************/
 
+
+enum CoreID_t: uint8_t
+{
+  CORE_CONTROL = 0U,
+  CORE_COMMS   = 1U,
+  NUMBER_OF_CORES
+};
+
 enum SystemType_t: uint8_t
 {
   SYSTEM_UNKNOWN = 0U,
@@ -167,7 +175,8 @@ enum Error_t: uint8_t
   ERROR_NO_RESPONSE              = 33U,
   ERROR_NVM_CHECKSUM             = 34U,
   ERROR_NVM_GEN_INFO             = 35U,
-  ERROR_NVM_LENGTH               = 36U,
+  ERROR_NVM_HEADER_LENGTH        = 36U,
+  ERROR_NVM_PLATFORM_SIZE        = 37U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
@@ -215,7 +224,7 @@ struct DatagramHeader_t
   uint16_t varID;
 };
 
-struct MapGenInfo_t
+struct GenInfo_t
 {
   uint8_t  atamsVersionMajor  = 0U;
   uint8_t  atamsVersionMinor  = 0U;
@@ -227,7 +236,7 @@ struct MapGenInfo_t
   uint8_t  genSecond          = 0U;
   uint32_t genChecksum        = 0U;
 
-  bool operator==(const MapGenInfo_t &other)
+  bool operator==(const GenInfo_t &other)
   {
     if ((atamsVersionMajor == other.atamsVersionMajor) &&
         (atamsVersionMinor == other.atamsVersionMinor) &&
@@ -245,7 +254,7 @@ struct MapGenInfo_t
     return (false);
   }
 
-  bool operator!=(const MapGenInfo_t &other)
+  bool operator!=(const GenInfo_t &other)
   {
     if (*this == other)
     {

@@ -71,7 +71,7 @@ void CRC32::beginRollingCRC(void)
 
 void CRC32::updateRollingCRC(const uint8_t byte)
 {
-  _rollingCRC = _rollingCRC = (_rollingCRC >> BITS_IN_A_BYTE) ^ _crcTable[(_rollingCRC ^ byte) & BYTE_MASK];
+  _rollingCRC = (_rollingCRC >> BITS_IN_A_BYTE) ^ _crcTable[(_rollingCRC ^ byte) & BYTE_MASK];
 }
 
 uint32_t CRC32::getRollingCRC(void)
@@ -83,7 +83,7 @@ uint32_t CRC32::getRollingCRC(void)
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-uint32_t reflect(const uint32_t data, const uint8_t bitCount) 
+uint32_t CRC32::reflect(const uint32_t data, const uint8_t bitCount)
 {
   uint32_t reflection = 0U;
 

@@ -29,6 +29,7 @@
 #include <typeinfo>
 #include "DataBlock.hpp"
 #include "../Utilities/AtamsUtilities.hpp"
+#include "../Utilities/CRC32.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -52,6 +53,8 @@ static const char * PLATFORM_TYPE_NAMES[NUMBER_OF_TYPES] =
   /* [TYPE_FLOAT ] = */ typeid(float   ).name(),
 };
 
+static CRC32 _nvmCRC(CRC32_POLYNOMIAL);
+
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
@@ -66,7 +69,7 @@ DataBlock::~DataBlock(void)
 
 }
 
-Atams::Error_t DataBlock::initDescriptor(const BlockDescriptor_t * const blockDescriptorPtr)
+Atams::Error_t DataBlock::initDescriptor(const Descriptor_t * const blockDescriptorPtr)
 {
   Atams::Error_t initStatus = ERROR_NONE;
 
@@ -74,7 +77,7 @@ Atams::Error_t DataBlock::initDescriptor(const BlockDescriptor_t * const blockDe
   {
     initStatus = Atams::ERROR_NULL_PTR;
   }
-  else if ((blockDescriptorPtr->noOfDataMembers > sizeof(_blockDescriptorPtr->dataMemberInfo)) ||
+  else if ((blockDescriptorPtr->noOfDataMembers > sizeof(_blockDescriptorPtr->varInfo)) ||
            (blockDescriptorPtr->noOfDataMembers > MAX_NUMBER_OF_DATA_MEMBERS                 ) )
   {
     initStatus = Atams::ERROR_NUMBER_OF_DATA_MEMBERS;
@@ -85,7 +88,7 @@ Atams::Error_t DataBlock::initDescriptor(const BlockDescriptor_t * const blockDe
     _validVariableCount = blockDescriptorPtr->noOfDataMembers;
   }
 
-  resetDataMembers();
+  if (initStatus == Atams::ERROR_NONE) initStatus = initDefaults();
 
   return (initStatus);
 }
@@ -99,6 +102,8 @@ void DataBlock::deinitDescriptor(void)
 
 Atams::Error_t DataBlock::initDefaults(void)
 {
+  resetDataMembers();
+
   if (_blockDescriptorPtr == nullptr) return (Atams::ERROR_NULL_PTR);
   else                                return (_blockDescriptorPtr->initDefaults(*this));
 }
@@ -107,7 +112,7 @@ void DataBlock::resetDataMembers(void)
 {
   Platform::acquireMemoryLock();
 
-  for (DataMember_t &dataMember : _dataMembers)
+  for (DataMember_t &dataMember : _vars)
   {
     //TODO:: Volatile memset may be required
     memset(dataMember.data, 0U, sizeof(dataMember.data));
@@ -122,11 +127,11 @@ Atams::Error_t DataBlock::write(const uint16_t  memberID,
 {
   if (memberID >= _validVariableCount) return (ERROR_VAR_ID); /* Early Return */
 
-  const MemberInfo_t &memberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
+  const VarInfo_t &memberInfo = _blockDescriptorPtr->varInfo[memberID];
 
   if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()) return (ERROR_VAR_TYPE); /* Early Return */
 
-  DataMember_t   &dataMember  = _dataMembers[memberID];
+  DataMember_t   &dataMember  = _vars[memberID];
   Atams::Error_t  accessError = ERROR_NONE;
 
   Platform::acquireMemoryLock();
@@ -153,11 +158,11 @@ Atams::Error_t DataBlock::read(const uint16_t  memberID,
 {
   if (memberID >= _validVariableCount) return (ERROR_VAR_ID); /* Early Return */
 
-  const MemberInfo_t &memberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
+  const VarInfo_t &memberInfo = _blockDescriptorPtr->varInfo[memberID];
 
   if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()) return (ERROR_VAR_TYPE); /* Early Return */
 
-  DataMember_t &dataMember = _dataMembers[memberID];
+  DataMember_t &dataMember = _vars[memberID];
 
   Platform::acquireMemoryLock();
 
@@ -186,7 +191,7 @@ DataStatusReturn_t<uint8_t> DataBlock::getMemberLength(const uint16_t memberID)
     return (lengthReturn); /* Early Return */
   }
 
-  const MemberInfo_t &dataMemberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
+  const VarInfo_t &dataMemberInfo = _blockDescriptorPtr->varInfo[memberID];
 
   lengthReturn.data   = TYPE_LENGTHS[dataMemberInfo.type];
   lengthReturn.status = ERROR_NONE;
@@ -194,20 +199,20 @@ DataStatusReturn_t<uint8_t> DataBlock::getMemberLength(const uint16_t memberID)
   return (lengthReturn);
 }
 
-Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
-                                    const uint16_t  memberID,
-                                    uint8_t * const inputPtr,
-                                    const uint8_t   length)
+Atams::Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
+                                           const uint16_t  memberID,
+                                           uint8_t * const inputPtr,
+                                           const uint8_t   length)
 {
   if (memberID >= _validVariableCount) return (ERROR_VAR_ID); /* Early Return */
 
-  const MemberInfo_t &memberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
+  const VarInfo_t &memberInfo = _blockDescriptorPtr->varInfo[memberID];
 
   if (TYPE_LENGTHS[memberInfo.type] != length)                 return (Atams::ERROR_VAR_LENGTH);     /* Early Return */
   if (inputPtr                      == nullptr)                return (Atams::ERROR_NULL_PTR);       /* Early Return */
   if (accessRequest                 >  memberInfo.accessLevel) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
 
-  DataMember_t   &dataMember = _dataMembers[memberID];
+  DataMember_t   &dataMember = _vars[memberID];
   Atams::Error_t accessError = Atams::ERROR_NONE;
 
   Platform::acquireMemoryLock();
@@ -234,46 +239,49 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
   return (accessError);
 }
 
+/*************************************************************************************/
+/* PROTECTED FUNCTION DEFINITIONS                                                    */
+/*************************************************************************************/
 
-/* Warning - no null ptr descriptor check. Guarded by _validVariableCount. */
-Atams::Error_t DataBlock::retrieveNVMPayload(uint32_t &nvmIndex, const uint32_t nvmPayloadLength)
+Atams::Error_t DataBlock::transferFullAccess(const Access_t  accessRequest,
+                                             const uint16_t  memberID,
+                                             uint8_t * const inputPtr,
+                                             const uint8_t   length)
 {
-  uint32_t cumulativeLength = nvmIndex;
+  if (memberID >= _validVariableCount) return (ERROR_VAR_ID); /* Early Return */
 
-  for (uint32_t varID = 0U; varID < _validVariableCount; varID++)
+  const VarInfo_t &memberInfo = _blockDescriptorPtr->varInfo[memberID];
+
+  if (TYPE_LENGTHS[memberInfo.type] != length)  return (Atams::ERROR_VAR_LENGTH); /* Early Return */
+  if (inputPtr                      == nullptr) return (Atams::ERROR_NULL_PTR);   /* Early Return */
+
+  DataMember_t   &dataMember = _vars[memberID];
+  Atams::Error_t accessError = Atams::ERROR_NONE;
+
+  Platform::acquireMemoryLock();
+
+  switch (accessRequest)
   {
-    MemberInfo_t &varInfo = _blockDescriptorPtr->dataMemberInfo;
+    case ACCESS_READ:
+      memcpy(inputPtr, dataMember.data, TYPE_LENGTHS[memberInfo.type]);
+      if (systemIsBigEndian()) swapEndiannessRaw(inputPtr, TYPE_LENGTHS[memberInfo.type]);
+      break;
 
-    if (varInfo.NVMStorage)
-    {
-      uint8_t nvmBytes[Atams::MAX_TYPE_SIZE];
-      uint8_t varLength = Atams::TYPE_LENGTHS[varInfo.type];
+    case ACCESS_WRITE:
+      if (systemIsBigEndian()) swapEndiannessRaw(inputPtr, TYPE_LENGTHS[memberInfo.type]);
+      memcpy(dataMember.data, inputPtr, TYPE_LENGTHS[memberInfo.type]);
+      break;
 
-      cumulativeLength += varLength;
-
-      if (cumulativeLength > nvmPayloadLength)
-      {
-        return (Atams::ERROR_NVM_LENGTH); /* Early Return */
-      }
-
-      if (!Platform::getFromNVM(nvmIndex, varLength, nvmBytes))
-      {
-        return (Atams::ERROR_PLATFORM);   /* Early Return */
-      }
-
-      Atams::Error_t transferStatus = externalTransfer(ACCESS_WRITE, varID, nvmBytes, varLength);
-
-      if (transferStatus != Atams::ERROR_NONE)
-      {
-        return (transferStatus);          /* Early Return */
-      }
-
-      nvmIndex += varLength;
-    }
+    default:
+      accessError = Atams::ERROR_ACCESS_INVALID;
+      break;
   }
 
-  return (Atams::ERROR_NONE);
+  Platform::releaseMemoryLock();
+
+  return (accessError);
 }
+
 
 } /* End Namespace - Atams */
 

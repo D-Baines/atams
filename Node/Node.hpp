@@ -30,7 +30,7 @@
 
 #include <stdint.h>
 #include "../AtamsTypedefs.hpp"
-#include "DataBlock.hpp"
+#include "BlockOwnerInteractor.hpp"
 #include "Platform.hpp"
 
 /*************************************************************************************/
@@ -52,20 +52,20 @@ typedef Error_t (*InitUniversalDataFunction_t)(void);
 
 struct MemoryMap_t
 {
-  uint16_t                            noOfDataBlocks    = 0U;
-  MapGenInfo_t                        genInfo;
-  InitUniversalDataFunction_t         initUniversalData = nullptr;
-  const DataBlock::BlockDescriptor_t *blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
+  uint16_t                       noOfDataBlocks    = 0U;
+  GenInfo_t                      genInfo;
+  InitUniversalDataFunction_t    initUniversalData = nullptr;
+  const DataBlock::Descriptor_t *blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
 
   MemoryMap_t(void)
   {
-    for (const DataBlock::BlockDescriptor_t *&blockDescriptor : blockDescriptors) blockDescriptor = nullptr;
+    for (const DataBlock::Descriptor_t *&blockDescriptor : blockDescriptors) blockDescriptor = nullptr;
   }
 
   MemoryMap_t(const uint16_t                      initNoOfDataBlocks,
-              const MapGenInfo_t                  initGenInfo,
+              const GenInfo_t                  initGenInfo,
               const InitUniversalDataFunction_t   universalDataInitFnPtr,
-              const DataBlock::BlockDescriptor_t *blockDescriptorPtrs[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
+              const DataBlock::Descriptor_t *blockDescriptorPtrs[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
   {
     noOfDataBlocks    = initNoOfDataBlocks;
     genInfo           = initGenInfo;
@@ -106,6 +106,10 @@ Atams::Error_t initControlCore(const MemoryMap_t &memoryMap);
 
 Atams::Error_t initDefaults(void);
 
+Atams::Error_t loadFromNVM(void);
+
+Atams::Error_t saveToNVM(void);
+
 void updateComms(void);
 
 template <typename T>
@@ -126,7 +130,7 @@ bool watchdogFaultActive(void);
 
 DataBlock * getBlockPtr(const uint8_t blockID);
 
-} /* End Namespace: Atams */
+} /* End Namespace - Atams */
 
 
 /**

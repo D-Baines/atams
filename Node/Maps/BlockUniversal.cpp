@@ -34,6 +34,23 @@
 namespace Atams { namespace BlockUniversal {
 
 /*************************************************************************************/
+/* STATIC CONSTANTS                                                                  */
+/*************************************************************************************/
+
+static const GenInfo_t genInfo =
+{
+  /* .atamsVersionMajor = */ 0U,
+  /* .atamsVersionMinor = */ 1U,
+  /* .genDay            = */ 26U,
+  /* .genMonth          = */ 3U,
+  /* .genYear           = */ 2025U,
+  /* .genHour           = */ 21U,
+  /* .genMinute         = */ 53U,
+  /* .genSecond         = */ 18U,
+  /* .genChecksum       = */ 0U
+};
+
+/*************************************************************************************/
 /* INIT FUNCTION DEFINITIONS                                                         */
 /*************************************************************************************/
 
@@ -63,9 +80,10 @@ static Atams::Error_t initDefaults(DataBlock &blockToInit)
 /* BLOCK DESCRIPTOR                                                                  */
 /*************************************************************************************/
 
-const DataBlock::BlockDescriptor_t blockDescriptor =
+const DataBlock::Descriptor_t blockDescriptor =
 {
   /* .noOfDataMembers = */ BlockUniversal::NUMBER_OF_UNIVERSAL_VARS,
+  /* .genInfo         = */ genInfo,
   /* .initDefaults    = */ initDefaults,
   /* .dataMemberInfo  = */
   {

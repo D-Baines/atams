@@ -113,7 +113,12 @@ void releaseCommsBufferLock(CommsChannel_t channelToLock)
   HAL_NVIC_EnableIRQ(UART4_IRQn);
 }
 
-bool getFromNVM(uint32_t startIndex, uint32_t size, uint8_t * const outputPtr)
+bool readFromNVM(uint32_t startIndex, uint32_t size, uint8_t * const outputPtr)
+{
+  return (false);
+}
+
+bool writeToNVM(uint32_t startIndex, uint32_t size, const uint8_t * const inputPtr)
 {
   return (false);
 }

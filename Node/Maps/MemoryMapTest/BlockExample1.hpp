@@ -81,12 +81,11 @@ inline constexpr int32_t  DEFAULT_READ_INT32   = 12L;
 inline constexpr float    DEFAULT_WRITE_FLOAT  = 13.0F;
 inline constexpr float    DEFAULT_READ_FLOAT   = 14.0F;
 
-
 /*************************************************************************************/
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-extern const DataBlock::BlockDescriptor_t blockDescriptor;
+extern const DataBlock::Descriptor_t blockDescriptor;
 
 
 } } } /* End Namespace - Atams::MapTest::BlockExample1 */

@@ -79,17 +79,18 @@ struct ChannelSyncPacket_t
 /*-- Node --*/
 
 static MemoryMap_t    _memoryMap;
-static DataBlock      _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
-static DataBlock     &_universalBlock                      = _dataBlocks[BLOCK_ID_UNIVERSAL];
-static uint8_t        _localNodeID                         = 0U;
-static CRC32          _nvmCRC(CRC32_POLYNOMIAL);
+static BlockOwnerInteractor     _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
+static DataBlock     &_universalBlock = _dataBlocks[BLOCK_ID_UNIVERSAL];
+static uint8_t        _localNodeID    = 0U;
+static CRC32          _nvmCRC(Atams::CRC32_POLYNOMIAL);
 
 /*-- Comms --*/
 CircularBuffer _circularBuffer[Platform::NUMBER_OF_COMMS_CHANNELS];
 
 /* Core Init Synchronisation */
-static CoreInitStatus_t _controlCoreInitComplete = CORE_INIT_IN_PROGRESS;
-static uint32_t         _previousCoreCheckTime   = 0U;
+static CoreInitStatus_t _coreInitComplete[Atams::NUMBER_OF_CORES] = {CORE_INIT_IN_PROGRESS,
+                                                                     CORE_INIT_IN_PROGRESS}; /* THIS NEEDS TO BE IN SHARED MEMORY */
+static uint32_t         _previousCoreCheckTime = 0U;
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -447,12 +448,13 @@ static Atams::Error_t sharedInit(const MemoryMap_t &memoryMap)
 
   for (uint8_t blockIndex = 0U; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
   {
-    const DataBlock::BlockDescriptor_t * const blockDescriptor = memoryMap.blockDescriptors[blockIndex];
-    DataBlock                           &block                 = _dataBlocks[blockIndex];
+    const DataBlock::Descriptor_t * const blockDescriptor = memoryMap.blockDescriptors[blockIndex];
+    DataBlock                            &block           = _dataBlocks[blockIndex];
 
     if      (blockDescriptor != nullptr)                  initStatus = block.initDescriptor(blockDescriptor);
     else if (blockIndex      != memoryMap.noOfDataBlocks) initStatus = Atams::ERROR_MEMORY_MAP;
-    if      (initStatus      != Atams::ERROR_NONE)        break;
+
+    if (initStatus != Atams::ERROR_NONE) break;
   }
 
   if (initStatus != Atams::ERROR_NONE)
@@ -467,7 +469,7 @@ static Atams::Error_t sharedInit(const MemoryMap_t &memoryMap)
   return (initStatus);
 }
 
-static void waitForControlCoreInit(void)
+static void waitForCoreInit(CoreID_t coreID)
 {
   volatile CoreInitStatus_t coreInitStatus = CORE_INIT_IN_PROGRESS;
 
@@ -479,7 +481,7 @@ static void waitForControlCoreInit(void)
     {
       Platform::acquireMemoryLock();
 
-      coreInitStatus = _controlCoreInitComplete;
+      coreInitStatus = _coreInitComplete[coreID];
 
       Platform::releaseMemoryLock();
 
@@ -488,39 +490,49 @@ static void waitForControlCoreInit(void)
   }
 }
 
-static Atams::Error_t calculateNVMChecksum(const uint32_t nvmLength, uint32_t &checksum)
+static void signalCoreInitComplete(CoreID_t coreID)
 {
-  uint32_t nvmHeaderSize = sizeof(NVMHeader_t);
+  Platform::acquireMemoryLock();
+  _coreInitComplete[coreID] = CORE_INIT_COMPLETE;
+  Platform::releaseMemoryLock();
+}
+
+static Atams::Error_t validateNVMChecksum(const NVMHeader_t &nvmHeader)
+{
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
   _nvmCRC.beginRollingCRC();
 
-  for (uint32_t nvmIndex = nvmHeaderSize; nvmIndex < nvmLength; nvmIndex++)
+  for (uint32_t nvmIndex = sizeof(NVMHeader_t); nvmIndex < nvmHeader.length; nvmIndex++)
   {
     uint8_t nvmByte;
 
-    if (Platform::getFromNVM(nvmIndex, sizeof(nvmByte), &nvmByte) != Atams::ERROR_NONE)
+    if (Platform::readFromNVM(nvmIndex, sizeof(nvmByte), &nvmByte) != Atams::ERROR_NONE)
     {
-      return (ERROR_PLATFORM); /* Early Return */
+      return (Atams::ERROR_PLATFORM); /* Early Return */
     }
 
     _nvmCRC.updateRollingCRC(nvmByte);
   }
 
-  checksum = _nvmCRC.getRollingCRC();
+  if (nvmHeader.checksum != _nvmCRC.getRollingCRC())
+  {
+    statusReturn = Atams::ERROR_NVM_CHECKSUM;
+  }
 
-  return (Atams::ERROR_NONE);
+  return (statusReturn);
 }
 
-static Atams::Error_t validateNVMGenInfo(NVMHeader_t &nvmHeader)
+static Atams::Error_t validateNVMGenInfo(const NVMHeader_t &nvmHeader)
 {
-  MapGenInfo_t   nvmGenInfo;
+  GenInfo_t      nvmGenInfo;
   Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
-  if (nvmHeader.payloadLength < sizeof(nvmGenInfo))
+  if (nvmHeader.length < (sizeof(NVMHeader_t) + sizeof(GenInfo_t)))
   {
-    statusReturn = Atams::ERROR_NVM_GEN_INFO;
+    statusReturn = Atams::ERROR_NVM_HEADER_LENGTH;
   }
-  else if (!Platform::getFromNVM(sizeof(NVMHeader_t), sizeof(nvmGenInfo), reinterpret_cast<uint8_t*>(&nvmGenInfo)))
+  else if (!Platform::readFromNVM(sizeof(NVMHeader_t), sizeof(nvmGenInfo), reinterpret_cast<uint8_t*>(&nvmGenInfo)))
   {
     statusReturn = Atams::ERROR_PLATFORM;
   }
@@ -532,49 +544,171 @@ static Atams::Error_t validateNVMGenInfo(NVMHeader_t &nvmHeader)
   return (statusReturn);
 }
 
-static Atams::Error_t retrieveNVMPayload(const uint32_t nvmLength)
+static Atams::Error_t loadNVMSingleBlock(const NVMHeader_t             &nvmHeader,
+                                         uint32_t                      &nvmIndex,
+                                         DataBlock                     &block,
+                                         const DataBlock::Descriptor_t &descriptor)
+{
+  Atams::Error_t statusReturn     = Atams::ERROR_NONE;
+  uint32_t       cumulativeLength = nvmIndex;
+
+  for (uint16_t varID = 0U; varID < descriptor.noOfDataMembers; varID++)
+  {
+    const DataBlock::VarInfo_t &varInfo = descriptor.varInfo[varID];
+
+    if (varInfo.NVMStorage)
+    {
+      uint8_t nvmBytes[Atams::MAX_TYPE_SIZE];
+      uint8_t varLength = Atams::TYPE_LENGTHS[varInfo.type];
+
+      cumulativeLength += varLength;
+
+      if (cumulativeLength > nvmHeader.length)
+      {
+        return (Atams::ERROR_NVM_HEADER_LENGTH); /* Early Return */
+      }
+
+      if (!Platform::readFromNVM(nvmIndex, varLength, nvmBytes))
+      {
+        return (Atams::ERROR_PLATFORM);          /* Early Return */
+      }
+
+      statusReturn = block.externalTransfer(ACCESS_WRITE, varID, nvmBytes, varLength);
+
+      if (statusReturn != Atams::ERROR_NONE)
+      {
+        return (statusReturn);                   /* Early Return */
+      }
+
+      nvmIndex += varLength;
+    }
+  }
+
+  return (statusReturn);
+}
+
+static Atams::Error_t loadNVMAllBlocks(const NVMHeader_t &nvmHeader)
 {
   Atams::Error_t nvmStatus = Atams::ERROR_NONE;
-  uint32_t       nvmIndex  = sizeof(NVMHeader_t);
+  uint32_t       nvmIndex  = sizeof(NVMHeader_t) + sizeof(GenInfo_t);
+  uint32_t       blockID   = 0U;
 
   for (DataBlock &block : _dataBlocks)
   {
-    nvmStatus = block.retrieveNVMPayload(nvmIndex, nvmLength);
+    const DataBlock::Descriptor_t * const descriptor = _memoryMap.blockDescriptors[blockID];
+
+    if (descriptor != nullptr)
+    {
+      nvmStatus = loadNVMSingleBlock(nvmHeader, nvmIndex, block, *descriptor);
+    }
 
     if (nvmStatus != Atams::ERROR_NONE) break;
+
+    blockID++;
   }
 
   return (nvmStatus);
 }
 
-static Atams::Error_t initNVM(void)
+static Atams::Error_t saveNVMSingleBlock(uint32_t                      &nvmIndex,
+                                         BlockOwnerInteractor          &block,
+                                         const DataBlock::Descriptor_t &descriptor)
 {
-  NVMHeader_t    nvmHeader;
-  uint32_t       nvmIndex           = 0U;
-  uint32_t       calculatedChecksum = 0U;
-  Atams::Error_t statusReturn       = Atams::ERROR_NONE;
+  Atams::Error_t statusReturn     = Atams::ERROR_NONE;
 
-  if ((!Platform::getFromNVM(nvmIndex, sizeof(nvmHeader), reinterpret_cast<uint8_t*>(&nvmHeader)) ) ||
-      (calculateNVMChecksum(nvmHeader.length, calculatedChecksum) != Atams::ERROR_NONE            ) )
+  for (uint16_t varID = 0U; varID < descriptor.noOfDataMembers; varID++)
   {
-    return (Atams::ERROR_PLATFORM);     /* Early Return */
+    const DataBlock::VarInfo_t &varInfo = descriptor.varInfo[varID];
+
+    if (varInfo.NVMStorage)
+    {
+      uint8_t nvmBytes[Atams::MAX_TYPE_SIZE];
+      uint8_t varLength = Atams::TYPE_LENGTHS[varInfo.type];
+
+      statusReturn = block.transferFullAccess(Atams::ACCESS_READ, varID, nvmBytes, varLength);
+
+      if (statusReturn != Atams::ERROR_NONE)
+      {
+        return (statusReturn);          /* Early Return */
+      }
+
+      if (!Platform::writeToNVM(nvmIndex, varLength, nvmBytes))
+      {
+        return (Atams::ERROR_PLATFORM); /* Early Return */
+      }
+
+      nvmIndex += varLength;
+    }
   }
-
-  if (calculatedChecksum != nvmHeader.checksum)
-  {
-    return (Atams::ERROR_NVM_CHECKSUM); /* Early Return */
-  }
-
-  statusReturn = validateNVMGenInfo(nvmHeader);
-
-  if (statusReturn != Atams::ERROR_NONE)
-  {
-    return (statusReturn);              /* Early Return */
-  }
-
-  statusReturn = retrieveNVMPayload(nvmHeader.length);
 
   return (statusReturn);
+}
+
+static Atams::Error_t saveNVMAllBlocks(void)
+{
+  Atams::Error_t nvmStatus = Atams::ERROR_NONE;
+  uint32_t       nvmIndex  = sizeof(NVMHeader_t) + sizeof(GenInfo_t);
+  uint32_t       blockID   = 0U;
+
+  for (BlockOwnerInteractor &block : _dataBlocks)
+  {
+    const DataBlock::Descriptor_t * const descriptor = _memoryMap.blockDescriptors[blockID];
+
+    if (descriptor != nullptr)
+    {
+      nvmStatus = saveNVMSingleBlock(nvmIndex, block, *descriptor);
+    }
+
+    if (nvmStatus != Atams::ERROR_NONE) break;
+
+    blockID++;
+  }
+
+  return (nvmStatus);
+}
+
+static void invalidateMemoryMap(void)
+{
+  _memoryMap.noOfDataBlocks             = 0U;
+  _memoryMap.genInfo.atamsVersionMajor  = 0U;
+  _memoryMap.genInfo.atamsVersionMinor  = 0U;
+  _memoryMap.genInfo.genDay             = 0U;
+  _memoryMap.genInfo.genMonth           = 0U;
+  _memoryMap.genInfo.genYear            = 0U;
+  _memoryMap.genInfo.genHour            = 0U;
+  _memoryMap.genInfo.genMinute          = 0U;
+  _memoryMap.genInfo.genSecond          = 0U;
+  _memoryMap.genInfo.genChecksum        = 0U;
+  _memoryMap.initUniversalData          = nullptr;
+
+   for (const DataBlock::Descriptor_t *&blockDescriptor : _memoryMap.blockDescriptors)
+   {
+     blockDescriptor = nullptr;
+   }
+
+   for (DataBlock &block : _dataBlocks)
+   {
+     block.deinitDescriptor();
+   }
+}
+
+static Atams::Error_t initUniversalData(const MemoryMap_t &memoryMap)
+{
+  Atams::Error_t initStatus = Atams::ERROR_NONE;
+
+  if (memoryMap.initUniversalData != nullptr) initStatus = memoryMap.initUniversalData();
+  else                                        initStatus = Atams::ERROR_NULL_PTR;
+
+  return (initStatus);
+}
+
+static void initCommsBuffers(void)
+{
+  for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_CHANNELS; commsChannel++)
+  {
+    _circularBuffer[commsChannel].setEOLChar(EOL_BYTE);
+    _circularBuffer[commsChannel].setLockArgument(static_cast<Platform::CommsChannel_t>(commsChannel));
+  }
 }
 
 /*************************************************************************************/
@@ -592,24 +726,24 @@ Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap)
 
 Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
 {
-  waitForControlCoreInit();
+  waitForCoreInit(CORE_CONTROL);
 
   Atams::Error_t initStatus = sharedInit(memoryMap);
+
+  /* Init Universal Data */
+  if (initStatus == Atams::ERROR_NONE) initStatus = initUniversalData(memoryMap);
 
   if (initStatus == Atams::ERROR_NONE)
   {
     Platform::setReceiveCallback(receiveCallback);
 
-    for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_CHANNELS; commsChannel++)
-    {
-      _circularBuffer[commsChannel].setEOLChar(EOL_BYTE);
-      _circularBuffer[commsChannel].setLockArgument(static_cast<Platform::CommsChannel_t>(commsChannel));
-    }
+    initCommsBuffers();
+
+    signalCoreInitComplete(CORE_COMMS);
   }
   else
   {
-    _memoryMap.noOfDataBlocks = 0U;
-    for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinitDescriptor();
+    invalidateMemoryMap();
   }
 
   return (initStatus);
@@ -619,31 +753,15 @@ Atams::Error_t initControlCore(const MemoryMap_t &memoryMap)
 {
   Atams::Error_t initStatus = sharedInit(memoryMap);
 
-  for (uint8_t blockIndex = BLOCK_ID_UNIVERSAL; blockIndex < memoryMap.noOfDataBlocks; blockIndex++)
-  {
-    DataBlock                          &dataBlock       = _dataBlocks[blockIndex];
-    const DataBlock::BlockDescriptor_t *blockDescriptor = memoryMap.blockDescriptors[blockIndex];
-
-    if (blockDescriptor != nullptr) initStatus = blockDescriptor->initDefaults(dataBlock);
-    else                            initStatus = Atams::ERROR_NULL_PTR;
-  }
-
   if (initStatus == Atams::ERROR_NONE)
   {
-    if (memoryMap.initUniversalData != nullptr) initStatus = memoryMap.initUniversalData();
-    else                                        initStatus = Atams::ERROR_NULL_PTR;
-  }
+    signalCoreInitComplete(CORE_CONTROL);
 
-  if (initStatus == Atams::ERROR_NONE)
-  {
-    Platform::acquireMemoryLock();
-    _controlCoreInitComplete = CORE_INIT_COMPLETE;
-    Platform::releaseMemoryLock();
+    waitForCoreInit(CORE_COMMS);
   }
   else
   {
-    _memoryMap.noOfDataBlocks = 0U;
-    for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinitDescriptor();
+    invalidateMemoryMap();
   }
 
   return (initStatus);
@@ -660,6 +778,101 @@ Atams::Error_t initDefaults(void)
   }
 
   return (statusReturn);
+}
+
+Atams::Error_t loadFromNVM(void)
+{
+  NVMHeader_t    nvmHeader;
+  uint32_t       nvmIndex           = 0U;
+  uint32_t       calculatedChecksum = 0U;
+  Atams::Error_t statusReturn       = Atams::ERROR_NONE;
+
+  if (Platform::NVM_STORAGE_SIZE < sizeof(NVMHeader_t))
+  {
+    statusReturn = Atams::ERROR_NVM_PLATFORM_SIZE;
+  }
+  else if (!Platform::readFromNVM(nvmIndex, sizeof(nvmHeader), reinterpret_cast<uint8_t*>(&nvmHeader)))
+  {
+    statusReturn = Atams::ERROR_PLATFORM;
+  }
+  else if (Platform::NVM_STORAGE_SIZE < nvmHeader.length)
+  {
+    statusReturn = Atams::ERROR_NVM_PLATFORM_SIZE;
+  }
+
+  if (statusReturn == Atams::ERROR_NONE) statusReturn = validateNVMChecksum(nvmHeader);
+
+  if (statusReturn == Atams::ERROR_NONE) statusReturn = validateNVMGenInfo(nvmHeader);
+
+  if (statusReturn == Atams::ERROR_NONE) statusReturn = loadNVMAllBlocks(nvmHeader);
+
+  if (statusReturn != Atams::ERROR_NONE) initDefaults();
+
+  return (statusReturn);
+}
+
+Atams::Error_t saveToNVM(void)
+{
+  Atams::Error_t statusReturn     = Atams::ERROR_NONE;
+  uint32_t       requiredNVMSpace = 0U;
+
+  statusReturn = getNVMSpaceRequired(requiredNVMSpace);
+
+  if (statusReturn != Atams::ERROR_NONE)
+  {
+    return (statusReturn);
+  }
+
+  if (requiredNVMSpace > Platform::NVM_STORAGE_SIZE)
+  {
+    return (Atams::ERROR_NVM_PLATFORM_SIZE);
+  }
+
+  /* Write genInfo to NVM */
+  if (!Platform::writeToNVM(sizeof(Atams::NVMHeader_t), sizeof(Atams::GenInfo_t), reinterpret_cast<uint8_t*>(&_memoryMap.genInfo)))
+  {
+    return (Atams::ERROR_PLATFORM);
+  }
+
+  for (uint16_t varID = 0U; varID < descriptor.noOfDataMembers; varID++)
+  {
+    const DataBlock::VarInfo_t &varInfo = descriptor.varInfo[varID];
+
+    if (varInfo.NVMStorage)
+    {
+      uint8_t nvmBytes[Atams::MAX_TYPE_SIZE];
+      uint8_t varLength = Atams::TYPE_LENGTHS[varInfo.type];
+
+      cumulativeLength += varLength;
+
+      if (cumulativeLength > nvmHeader.length)
+      {
+        return (Atams::ERROR_NVM_HEADER_LENGTH); /* Early Return */
+      }
+
+      if (!Platform::readFromNVM(nvmIndex, varLength, nvmBytes))
+      {
+        return (Atams::ERROR_PLATFORM);          /* Early Return */
+      }
+
+      statusReturn = block.externalTransfer(ACCESS_WRITE, varID, nvmBytes, varLength);
+
+      if (statusReturn != Atams::ERROR_NONE)
+      {
+        return (statusReturn);                   /* Early Return */
+      }
+
+      nvmIndex += varLength;
+    }
+  }
+
+  //transferFullAccess vars into nvm after genInfo
+
+  //add bytes to rolling crc as this is done
+
+  //add to length as this is done
+
+  //write header to nvm
 }
 
 void updateComms(void)
@@ -688,7 +901,6 @@ template Atams::Error_t write<int16_t >(const uint8_t blockID, const uint16_t va
 template Atams::Error_t write<uint32_t>(const uint8_t blockID, const uint16_t varID, const uint32_t writeData);
 template Atams::Error_t write<int32_t >(const uint8_t blockID, const uint16_t varID, const int32_t  writeData);
 template Atams::Error_t write<float   >(const uint8_t blockID, const uint16_t varID, const float    writeData);
-
 
 template <typename T>
 Atams::Error_t read(const uint8_t   blockID,
@@ -745,7 +957,7 @@ DataBlock * getBlockPtr(const uint8_t blockID)
 }
 
 
-} /* End Namespace: Atams */
+} /* End Namespace - Atams */
 
 /**
   * @}End of File

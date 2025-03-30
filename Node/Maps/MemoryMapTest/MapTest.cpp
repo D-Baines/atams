@@ -37,20 +37,20 @@ namespace Atams { namespace MapTest {
 /* STATIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-static const MapGenInfo_t genInfo = 
+static const GenInfo_t genInfo = 
 {
   /* .atamsVersionMajor = */ 0U,
   /* .atamsVersionMinor = */ 1U,
-  /* .genDay            = */ 20U,
+  /* .genDay            = */ 26U,
   /* .genMonth          = */ 3U,
   /* .genYear           = */ 2025U,
-  /* .genHour           = */ 20U,
-  /* .genMinute         = */ 52U,
-  /* .genSecond         = */ 31U,
+  /* .genHour           = */ 21U,
+  /* .genMinute         = */ 53U,
+  /* .genSecond         = */ 18U,
   /* .genChecksum       = */ 1061080793U
 };
 
-static const DataBlock::BlockDescriptor_t* blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS] = 
+static const DataBlock::Descriptor_t* blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS] = 
 {
   &BlockUniversal::blockDescriptor,
   &BlockExample1::blockDescriptor,
