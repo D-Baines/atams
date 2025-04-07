@@ -59,6 +59,7 @@ inline constexpr uint32_t MAX_UINT32                     = 4294967295U;
 inline constexpr uint32_t MIN_UINT32                     = 0U;
 inline constexpr uint8_t  BITS_IN_A_BYTE                 = 8U;
 inline constexpr uint32_t CRC32_POLYNOMIAL               = 0x04C11DB7;
+inline constexpr uint32_t NVM_HEADER_IDENTIFIER          = 0xD0D0CACAU;
 
 /*************************************************************************************/
 /* TYPEDEFS                                                                          */
@@ -176,7 +177,8 @@ enum Error_t: uint8_t
   ERROR_NVM_CHECKSUM             = 34U,
   ERROR_NVM_GEN_INFO             = 35U,
   ERROR_NVM_HEADER_LENGTH        = 36U,
-  ERROR_NVM_PLATFORM_SIZE        = 37U,
+  ERROR_NVM_HEADER_VALIDITY      = 37U,
+  ERROR_NVM_PLATFORM_SIZE        = 38U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
@@ -267,8 +269,9 @@ struct GenInfo_t
 
 struct NVMHeader_t
 {
-  uint32_t length;
-  uint32_t checksum;
+  uint32_t identifier = NVM_HEADER_IDENTIFIER;
+  uint32_t length     = 0U;
+  uint32_t checksum   = 0U;
 };
 
 template <typename T>

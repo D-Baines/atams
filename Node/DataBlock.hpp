@@ -124,32 +124,21 @@ class DataBlock
 
   protected:
 
-  /*-- Protected Function Declarations ----------------------------------------------*/
+  /*-- Protected Constants ----------------------------------------------------------*/
 
-  Atams::Error_t transferFullAccess(const Access_t  accessRequest,
-                                    const uint16_t  memberID,
-                                    uint8_t * const inputPtr,
-                                    const uint8_t   length);
-
-  private:
-
-  /*-- Private Constants ------------------------------------------------------------*/
-
-  /*-- Private Typedefs -------------------------------------------------------------*/
+  /*-- Protected Typedefs -----------------------------------------------------------*/
 
   struct DataMember_t
   {
     uint8_t data[MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
   };
 
-  /*-- Private Variables ------------------------------------------------------------*/
+  /*-- Protected Variables ----------------------------------------------------------*/
 
   const Descriptor_t *_blockDescriptorPtr = nullptr;
   uint16_t            _validVariableCount = 0U;
   uint32_t            _nvmStorageOffset   = 0U;
   DataMember_t        _vars[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
-
-  /*-- Private Function Declarations -------------------------------------------------*/
 
 };
 

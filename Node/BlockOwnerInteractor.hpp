@@ -51,6 +51,12 @@ public DataBlock
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
+  enum NVMTransfer_t : uint8_t
+  {
+    TRANSFER_LOAD = 0U,
+    TRANSFER_SAVE = 1U
+  };
+
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Constructor */
@@ -65,10 +71,11 @@ public DataBlock
   /* Copy Assignment Operator */
   BlockOwnerInteractor & operator=(const BlockOwnerInteractor &other) = delete;
 
-  Atams::Error_t transferFullAccess(const Access_t  accessRequest,
-                                    const uint16_t  memberID,
-                                    uint8_t * const inputPtr,
-                                    const uint8_t   length);
+  Atams::Error_t loadFromNVM(const uint32_t maxIndex, uint32_t &nvmIndex);
+
+  Atams::Error_t saveToNVM(const uint32_t maxIndex, uint32_t &nvmIndex);
+
+  uint32_t getNVMSpaceRequirement(void);
 
   private:
 
@@ -79,6 +86,8 @@ public DataBlock
   /*-- Private Variables ------------------------------------------------------------*/
 
   /*-- Private Function Declarations -------------------------------------------------*/
+
+  Atams::Error_t NVMTransfer(const uint32_t maxIndex, uint32_t &nvmIndex, const NVMTransfer_t transferType);
 
 };
 
