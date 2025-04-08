@@ -59,7 +59,8 @@ inline constexpr uint32_t MAX_UINT32                     = 4294967295U;
 inline constexpr uint32_t MIN_UINT32                     = 0U;
 inline constexpr uint8_t  BITS_IN_A_BYTE                 = 8U;
 inline constexpr uint32_t CRC32_POLYNOMIAL               = 0x04C11DB7;
-inline constexpr uint32_t NVM_HEADER_IDENTIFIER          = 0xD0D0CACAU;
+inline constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID  = 0x00000000U;
+inline constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID    = 0xD0D0CACAU;
 
 /*************************************************************************************/
 /* TYPEDEFS                                                                          */
@@ -269,7 +270,7 @@ struct GenInfo_t
 
 struct NVMHeader_t
 {
-  uint32_t identifier = NVM_HEADER_IDENTIFIER;
+  uint32_t identifier = NVM_HEADER_IDENTIFIER_INVALID;
   uint32_t length     = 0U;
   uint32_t checksum   = 0U;
 };

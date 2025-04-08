@@ -102,10 +102,16 @@ void DataBlock::deinitDescriptor(void)
 
 Atams::Error_t DataBlock::initDefaults(void)
 {
-  resetDataMembers();
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
-  if (_blockDescriptorPtr == nullptr) return (Atams::ERROR_NULL_PTR);
-  else                                return (_blockDescriptorPtr->initDefaults(*this));
+  if (_blockDescriptorPtr != nullptr)
+  {
+    resetDataMembers();
+
+    statusReturn = _blockDescriptorPtr->initDefaults(*this);
+  }
+
+  return (statusReturn);
 }
 
 void DataBlock::resetDataMembers(void)
@@ -211,49 +217,6 @@ Atams::Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
   if (TYPE_LENGTHS[memberInfo.type] != length)                 return (Atams::ERROR_VAR_LENGTH);     /* Early Return */
   if (inputPtr                      == nullptr)                return (Atams::ERROR_NULL_PTR);       /* Early Return */
   if (accessRequest                 >  memberInfo.accessLevel) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
-
-  DataMember_t   &dataMember = _vars[memberID];
-  Atams::Error_t accessError = Atams::ERROR_NONE;
-
-  Platform::acquireMemoryLock();
-
-  switch (accessRequest)
-  {
-    case ACCESS_READ:
-      memcpy(inputPtr, dataMember.data, TYPE_LENGTHS[memberInfo.type]);
-      if (systemIsBigEndian()) swapEndiannessRaw(inputPtr, TYPE_LENGTHS[memberInfo.type]);
-      break;
-
-    case ACCESS_WRITE:
-      if (systemIsBigEndian()) swapEndiannessRaw(inputPtr, TYPE_LENGTHS[memberInfo.type]);
-      memcpy(dataMember.data, inputPtr, TYPE_LENGTHS[memberInfo.type]);
-      break;
-
-    default:
-      accessError = Atams::ERROR_ACCESS_INVALID;
-      break;
-  }
-
-  Platform::releaseMemoryLock();
-
-  return (accessError);
-}
-
-/*************************************************************************************/
-/* PROTECTED FUNCTION DEFINITIONS                                                    */
-/*************************************************************************************/
-
-Atams::Error_t DataBlock::transferFullAccess(const Access_t  accessRequest,
-                                             const uint16_t  memberID,
-                                             uint8_t * const inputPtr,
-                                             const uint8_t   length)
-{
-  if (memberID >= _validVariableCount) return (ERROR_VAR_ID); /* Early Return */
-
-  const VarInfo_t &memberInfo = _blockDescriptorPtr->varInfo[memberID];
-
-  if (TYPE_LENGTHS[memberInfo.type] != length)  return (Atams::ERROR_VAR_LENGTH); /* Early Return */
-  if (inputPtr                      == nullptr) return (Atams::ERROR_NULL_PTR);   /* Early Return */
 
   DataMember_t   &dataMember = _vars[memberID];
   Atams::Error_t accessError = Atams::ERROR_NONE;

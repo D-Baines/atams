@@ -87,12 +87,11 @@ uint32_t BlockOwnerInteractor::getNVMSpaceRequirement(void)
 
 Atams::Error_t BlockOwnerInteractor::NVMTransfer(const uint32_t maxIndex, uint32_t &nvmIndex, const NVMTransfer_t transferType)
 {
-  Atams::Error_t statusReturn = Atams::ERROR_NONE;
-  uint16_t       varID        = 0U;
+  uint16_t varID = 0U;
 
   if (_blockDescriptorPtr == nullptr)
   {
-    return (statusReturn); /* Early Return */
+    return (Atams::ERROR_NONE); /* Early Return */
   }
 
   for (const VarInfo_t &varInfo : _blockDescriptorPtr->varInfo)
@@ -130,7 +129,7 @@ Atams::Error_t BlockOwnerInteractor::NVMTransfer(const uint32_t maxIndex, uint32
     varID++;
   }
 
-  return (statusReturn);
+  return (Atams::ERROR_NONE);
 }
 
 

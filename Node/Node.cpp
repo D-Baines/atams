@@ -546,7 +546,7 @@ static Atams::Error_t validateNVMGenInfo(const NVMHeader_t &nvmHeader)
 
 static uint32_t getNVMSpaceRequirement(void)
 {
-  uint32_t requiredNVMSpace = 0U;
+  uint32_t requiredNVMSpace = sizeof(NVMHeader_t) + sizeof(GenInfo_t);
 
   for (BlockOwnerInteractor &block : _dataBlocks)
   {
@@ -575,10 +575,11 @@ static Atams::Error_t constructAndWriteNVMHeader(const uint32_t nvmSpaceUsed)
     _nvmCRC.updateRollingCRC(nvmByte);
   }
 
-  nvmHeader.length   = nvmSpaceUsed;
-  nvmHeader.checksum = _nvmCRC.getRollingCRC();
+  nvmHeader.identifier = Atams::NVM_HEADER_IDENTIFIER_VALID;
+  nvmHeader.length     = nvmSpaceUsed;
+  nvmHeader.checksum   = _nvmCRC.getRollingCRC();
 
-  if (Platform::writeToNVM(0U, sizeof(NVMHeader_t), reinterpret_cast<uint8_t *>(&nvmHeader)))
+  if (Platform::writeToNVM(0U, sizeof(NVMHeader_t), reinterpret_cast<uint8_t*>(&nvmHeader)))
   {
     statusReturn = Atams::ERROR_PLATFORM;
   }
@@ -593,9 +594,7 @@ static Atams::Error_t loadNVMAllBlocks(const NVMHeader_t &nvmHeader)
 
   for (BlockOwnerInteractor &block : _dataBlocks)
   {
-    nvmStatus = block.loadFromNVM(nvmHeader.length, nvmIndex);
-
-    if (nvmStatus != Atams::ERROR_NONE) break;
+    if (nvmStatus == Atams::ERROR_NONE) nvmStatus = block.loadFromNVM(nvmHeader.length, nvmIndex);
   }
 
   return (nvmStatus);
@@ -608,9 +607,7 @@ static Atams::Error_t saveNVMAllBlocks(const uint32_t availableNVMSpace)
 
   for (BlockOwnerInteractor &block : _dataBlocks)
   {
-    block.saveToNVM(availableNVMSpace, nvmIndex);
-
-    if (nvmStatus != Atams::ERROR_NONE) break;
+    if (nvmStatus == Atams::ERROR_NONE) nvmStatus = block.saveToNVM(availableNVMSpace, nvmIndex);
   }
 
   return (nvmStatus);
@@ -722,8 +719,7 @@ Atams::Error_t initDefaults(void)
 
   for (DataBlock &dataBlock : _dataBlocks)
   {
-    if (statusReturn == Atams::ERROR_NONE) dataBlock.initDefaults();
-    else                                   break;
+    if (statusReturn == Atams::ERROR_NONE) statusReturn = dataBlock.initDefaults();
   }
 
   return (statusReturn);
@@ -748,7 +744,7 @@ Atams::Error_t loadFromNVM(void)
   }
   else if (nvmHeader.length > Platform::NVM_STORAGE_SIZE)
   {
-    statusReturn = Atams::ERROR_NVM_PLATFORM_SIZE;
+    statusReturn = Atams::ERROR_NVM_HEADER_LENGTH;
   }
 
   if (statusReturn == Atams::ERROR_NONE) statusReturn = validateNVMChecksum(nvmHeader);
@@ -765,7 +761,7 @@ Atams::Error_t loadFromNVM(void)
 Atams::Error_t saveToNVM(void)
 {
   Atams::Error_t statusReturn = Atams::ERROR_NONE;
-  NVMHeader_t    blankNVMHeader;
+  NVMHeader_t    invalidNVMHeader;
 
   uint32_t requiredNVMSpace = getNVMSpaceRequirement();
 
@@ -774,8 +770,8 @@ Atams::Error_t saveToNVM(void)
     return (Atams::ERROR_NVM_PLATFORM_SIZE); /* Early Return */
   }
 
-  /* Write blank header to invalidate NVM */
-  if (!Platform::writeToNVM(0U, sizeof(Atams::NVMHeader_t), reinterpret_cast<uint8_t *>(&blankNVMHeader)))
+  /* Write invalid header to invalidate NVM */
+  if (!Platform::writeToNVM(0U, sizeof(Atams::NVMHeader_t), reinterpret_cast<uint8_t*>(&invalidNVMHeader)))
   {
     return (Atams::ERROR_PLATFORM);          /* Early Return */
   }
