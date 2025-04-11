@@ -91,13 +91,13 @@ uint32_t getMillis(void)
   return (HAL_GetTick());
 }
 
-void acquireMemoryLock(void)
+void acquireVarStorageLock(void)
 {
   HAL_NVIC_DisableIRQ(TIM8_UP_TIM13_IRQn);
   HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
 }
 
-void releaseMemoryLock(void)
+void releaseVarStorageLock(void)
 {
   HAL_NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
@@ -111,6 +111,16 @@ void acquireCommsBufferLock(CommsChannel_t channelToLock)
 void releaseCommsBufferLock(CommsChannel_t channelToLock)
 {
   HAL_NVIC_EnableIRQ(UART4_IRQn);
+}
+
+void waitOnCommsBufferSemaphore(uint32_t timeoutMilliseconds)
+{
+  static_cast<void>(timeoutMilliseconds);
+}
+
+void signalCommsBufferSemaphore(void)
+{
+
 }
 
 bool readFromNVM(uint32_t startIndex, uint32_t size, uint8_t * const outputPtr)

@@ -34,6 +34,15 @@
 
 namespace Atams {
 
+// _atomicByteCount is accessed by two threads:
+// - Producer thread: only increments, and reads to check buffer fullness.
+// - Consumer thread: only decrements, and reads to check buffer emptiness.
+// All modifications are done inside a lock.
+// Reads are done outside the lock, but this is safe because:
+// - Each thread only modifies in one direction (increment or decrement).
+// - Reads are used for early exit only; actual data access is locked.
+// Assumes 1-byte atomicity on target platform. `volatile` ensures no compiler caching.
+
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
@@ -63,7 +72,7 @@ void CircularBuffer::setLockArgument(const Platform::CommsChannel_t channelToLoc
 
 CircularBuffer::~CircularBuffer(void)
 {
-  /* Do Nothing - No dynamic allocation */
+  /* Do Nothing */
 }
 
 void CircularBuffer::reset(void)
@@ -73,6 +82,7 @@ void CircularBuffer::reset(void)
   _tailIndex       = 0U;
   _eolSearchIndex  = 0U;
   _atomicByteCount = 0U;
+  _newDataReady    = !CircularBuffer::NEW_DATA_READY;
   Platform::releaseCommsBufferLock(_lockArgument);
 }
 
@@ -80,21 +90,22 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
                                                   const uint16_t  maxOutputLength,
                                                         uint16_t &outputLength)
 {
-  Error_t statusReturn = ERROR_NONE;
+  Error_t statusReturn = CircularBuffer::ERROR_NONE;
 
-  /* No lock required - _atomicByteCount read must be atomic on target platform */
-  if (_atomicByteCount == 0U)
+  if (_newDataReady != CircularBuffer::NEW_DATA_READY)
   {
-    statusReturn = ERROR_EMPTY;
+    statusReturn = CircularBuffer::ERROR_NO_NEW_DATA;
     return (statusReturn);
   }
 
   Platform::acquireCommsBufferLock(_lockArgument);
 
+  _newDataReady = !CircularBuffer::NEW_DATA_READY;
+
   Error_t eolSearchResult = eolSearch();
 
   /* Early return if no EOL byte found */
-  if (eolSearchResult != ERROR_NONE)
+  if (eolSearchResult != CircularBuffer::ERROR_NONE)
   {
     Platform::releaseCommsBufferLock(_lockArgument);
     return (eolSearchResult);
@@ -105,7 +116,7 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
   if (maxOutputLength < outputLength)
   {
     resetEOLIndex();
-    statusReturn = ERROR_OUTPUT_BUFFER_LENGTH;
+    statusReturn = CircularBuffer::ERROR_OUTPUT_BUFFER_LENGTH;
   }
 
   else
@@ -128,7 +139,7 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
 
   Platform::releaseCommsBufferLock(_lockArgument);
 
-  return (ERROR_NONE);
+  return (CircularBuffer::ERROR_NONE);
 }
 
 CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
@@ -136,16 +147,15 @@ CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
 {
   if (inputBuffer == nullptr)
   {
-    return (ERROR_NULLPTR);
-  }
-
-  /* No lock required - _atomicByteCount read must be atomic on target platform */
-  if((_atomicByteCount + inputLength) >= STATIC_BUFFER_SIZE)
-  {
-    return (ERROR_FULL);
+    return (CircularBuffer::ERROR_NULLPTR);
   }
 
   Platform::acquireCommsBufferLock(_lockArgument);
+
+  if((_atomicByteCount + inputLength) >= STATIC_BUFFER_SIZE)
+  {
+    return (CircularBuffer::ERROR_FULL);
+  }
 
   uint16_t preWrapLength  = STATIC_BUFFER_SIZE - _headIndex;
 
@@ -162,9 +172,13 @@ CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
 
   increaseHeadIndex(inputLength);
 
+  _newDataReady = CircularBuffer::NEW_DATA_READY;
+
+  Platform::signalCommsBufferSemaphore();
+
   Platform::releaseCommsBufferLock(_lockArgument);
 
-  return (ERROR_NONE);
+  return (CircularBuffer::ERROR_NONE);
 }
 
 /*************************************************************************************/
@@ -207,11 +221,11 @@ inline CircularBuffer::Error_t CircularBuffer::eolSearch(void)
   {
     eolFound = (_buffer[_eolSearchIndex] == _eolChar);
     incrementEOLIndex();
-    if (eolFound) return (ERROR_NONE);
+    if (eolFound) return (CircularBuffer::ERROR_NONE);
   }
 
-  if (_atomicByteCount == STATIC_BUFFER_SIZE) return (ERROR_NO_EOL_BUFFER_FULL);
-  else                                        return (ERROR_NO_EOL_FOUND);
+  if (_atomicByteCount == STATIC_BUFFER_SIZE) return (CircularBuffer::ERROR_NO_EOL_BUFFER_FULL);
+  else                                        return (CircularBuffer::ERROR_NO_EOL_FOUND);
 }
 
 

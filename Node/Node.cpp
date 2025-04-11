@@ -42,11 +42,11 @@ namespace Atams {
 /* PRIVATE CONSTANTS                                                                 */
 /*************************************************************************************/
 
-static constexpr uint8_t  ABORT_RESPONSE_SIZE              = MESH_SIZE_HEADER + sizeof(Atams::Error_t);
-static constexpr uint32_t WATCHDOG_INCREMENT_PERIOD_MILLIS = 1U;
-static constexpr uint8_t  WATCHDOG_FAULT_ACTIVE            = 1U;
-static constexpr uint8_t  WATCHDOG_FAULT_INACTIVE          = 0U;
-static constexpr uint32_t CORE_STATUS_CHECK_PERIOD         = 10U;
+static constexpr uint8_t  ABORT_RESPONSE_SIZE          = Atams::MESH_SIZE_HEADER + sizeof(Atams::Error_t);
+static constexpr uint32_t WATCHDOG_PERIOD_MILLISECONDS = 1U;
+static constexpr uint8_t  WATCHDOG_FAULT_ACTIVE        = 1U;
+static constexpr uint8_t  WATCHDOG_FAULT_INACTIVE      = 0U;
+static constexpr uint32_t CORE_STATUS_CHECK_PERIOD     = 10U;
 
 /*************************************************************************************/
 /* PRIVATE TYPEDEFS                                                                  */
@@ -78,11 +78,11 @@ struct ChannelSyncPacket_t
 
 /*-- Node --*/
 
-static MemoryMap_t    _memoryMap;
-static BlockOwnerInteractor     _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
-static DataBlock     &_universalBlock = _dataBlocks[BLOCK_ID_UNIVERSAL];
-static uint8_t        _localNodeID    = 0U;
-static CRC32          _nvmCRC(Atams::CRC32_POLYNOMIAL);
+static MemoryMap_t          _memoryMap;
+static BlockOwnerInteractor _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
+static DataBlock            &_universalBlock = _dataBlocks[BLOCK_ID_UNIVERSAL];
+static uint8_t               _localNodeID    = 0U;
+static CRC32                 _nodeCRC(Atams::CRC32_POLYNOMIAL);
 
 /*-- Comms --*/
 CircularBuffer _circularBuffer[Platform::NUMBER_OF_COMMS_CHANNELS];
@@ -402,7 +402,7 @@ static void updateWatchdog(void)
   static uint32_t watchdogTimeout               = 0U;
   static uint8_t  prevWatchdogClear             = WATCHDOG_FAULT_INACTIVE;
 
-  if ((currentTime - previousWatchdogIncrementTime) > WATCHDOG_INCREMENT_PERIOD_MILLIS)
+  if ((currentTime - previousWatchdogIncrementTime) > WATCHDOG_PERIOD_MILLISECONDS)
   {
     if (watchdogCount < MAX_UINT32) watchdogCount++;
 
@@ -431,40 +431,102 @@ static void updateWatchdog(void)
   }
 }
 
-static Atams::Error_t sharedInit(const MemoryMap_t &memoryMap)
+static Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap)
 {
-  Atams::Error_t initStatus = Atams::ERROR_NONE;
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
-  if ((memoryMap.noOfDataBlocks > Platform::NODE_NUMBER_OF_DATA_BLOCKS) ||
-      (memoryMap.noOfDataBlocks >           MAX_NUMBER_OF_DATA_BLOCKS ) )
+  if ((memoryMap.noOfDataBlocks > sizeof(_dataBlocks)       ) ||
+      (memoryMap.noOfDataBlocks > MAX_NUMBER_OF_DATA_BLOCKS ) )
   {
     return (Atams::ERROR_MEMORY_MAP); /* Early Return */
   }
 
-  if (sizeof(float) != TYPE_LENGTHS[TYPE_FLOAT])
+  _nodeCRC.beginRollingCRC();
+
+  uint8_t blockIndex = 0U;
+
+  for (const DataBlock::Descriptor_t * const blockDescriptor : memoryMap.blockDescriptors)
   {
-    return (Atams::ERROR_PLATFORM);   /* Early Return */
+    if (blockDescriptor == nullptr)
+    {
+      if (blockIndex != memoryMap.noOfDataBlocks) statusReturn = Atams::ERROR_MEMORY_MAP;
+      break; /* Early Break */
+    }
+
+    uint16_t varIndex = 0U;
+
+    for (const DataBlock::VarInfo_t &varInfo : blockDescriptor->varInfo)
+    {
+      if ((varInfo.type        == Atams::TYPE_NULL  ) ||
+          (varInfo.accessLevel == Atams::ACCESS_NONE) )
+      {
+        if (varIndex != blockDescriptor->noOfDataMembers) statusReturn = Atams::ERROR_MEMORY_MAP;
+        break; /* Early Break */
+      }
+
+      _nodeCRC.updateRollingCRC(static_cast<uint8_t>(varInfo.type));
+      _nodeCRC.updateRollingCRC(static_cast<uint8_t>(varInfo.accessLevel));
+      _nodeCRC.updateRollingCRC(static_cast<uint8_t>(varInfo.NVMStorage));
+
+      varIndex++;
+    }
+
+    if (statusReturn != Atams::ERROR_NONE) break; /* Early Break */
+
+    blockIndex++;
   }
 
-  for (uint8_t blockIndex = 0U; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
+  if ((statusReturn                  != Atams::ERROR_NONE       ) ||
+      (memoryMap.genInfo.genChecksum != _nodeCRC.getRollingCRC()) )
   {
-    const DataBlock::Descriptor_t * const blockDescriptor = memoryMap.blockDescriptors[blockIndex];
-    DataBlock                            &block           = _dataBlocks[blockIndex];
+    statusReturn = Atams::ERROR_MEMORY_MAP;
+  }
 
-    if      (blockDescriptor != nullptr)                  initStatus = block.initDescriptor(blockDescriptor);
-    else if (blockIndex      != memoryMap.noOfDataBlocks) initStatus = Atams::ERROR_MEMORY_MAP;
+  return (statusReturn);
+}
 
-    if (initStatus != Atams::ERROR_NONE) break;
+static Atams::Error_t initBlockDescriptors(const MemoryMap_t &memoryMap)
+{
+  Atams::Error_t initStatus = Atams::ERROR_NONE;
+
+  if (memoryMap.noOfDataBlocks > sizeof(_dataBlocks))
+  {
+    return (Atams::ERROR_MEMORY_MAP); /* Early Return */
+  }
+
+  uint8_t blockIndex = 0U;
+
+  for (const DataBlock::Descriptor_t * const blockDescriptor : memoryMap.blockDescriptors)
+  {
+    DataBlock &block = _dataBlocks[blockIndex];
+
+    if (blockDescriptor != nullptr)
+    {
+      initStatus = block.initDescriptor(blockDescriptor);
+      if (initStatus != Atams::ERROR_NONE) break;
+    }
+    else
+    {
+      break;
+    }
+    blockIndex++;
   }
 
   if (initStatus != Atams::ERROR_NONE)
   {
-    for (DataBlock &dataBlock : _dataBlocks) dataBlock.deinitDescriptor();
+    for (DataBlock &block : _dataBlocks) block.deinitDescriptor();
   }
-  else
-  {
-    _memoryMap = memoryMap;
-  }
+
+  return (initStatus);
+}
+
+static Atams::Error_t sharedInit(const MemoryMap_t &memoryMap)
+{
+  Atams::Error_t initStatus = validateMemoryMap(memoryMap);
+
+  if (initStatus == Atams::ERROR_NONE) initStatus = initBlockDescriptors(memoryMap);
+
+  if (initStatus == Atams::ERROR_NONE) _memoryMap = memoryMap;
 
   return (initStatus);
 }
@@ -479,11 +541,11 @@ static void waitForCoreInit(CoreID_t coreID)
 
     if (currentTime - _previousCoreCheckTime >= CORE_STATUS_CHECK_PERIOD)
     {
-      Platform::acquireMemoryLock();
+      Platform::acquireVarStorageLock();
 
       coreInitStatus = _coreInitComplete[coreID];
 
-      Platform::releaseMemoryLock();
+      Platform::releaseVarStorageLock();
 
       _previousCoreCheckTime = currentTime;
     }
@@ -492,16 +554,16 @@ static void waitForCoreInit(CoreID_t coreID)
 
 static void signalCoreInitComplete(CoreID_t coreID)
 {
-  Platform::acquireMemoryLock();
+  Platform::acquireVarStorageLock();
   _coreInitComplete[coreID] = CORE_INIT_COMPLETE;
-  Platform::releaseMemoryLock();
+  Platform::releaseVarStorageLock();
 }
 
 static Atams::Error_t validateNVMChecksum(const NVMHeader_t &nvmHeader)
 {
   Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
-  _nvmCRC.beginRollingCRC();
+  _nodeCRC.beginRollingCRC();
 
   for (uint32_t nvmIndex = sizeof(NVMHeader_t); nvmIndex < nvmHeader.length; nvmIndex++)
   {
@@ -512,10 +574,10 @@ static Atams::Error_t validateNVMChecksum(const NVMHeader_t &nvmHeader)
       return (Atams::ERROR_PLATFORM); /* Early Return */
     }
 
-    _nvmCRC.updateRollingCRC(nvmByte);
+    _nodeCRC.updateRollingCRC(nvmByte);
   }
 
-  if (nvmHeader.checksum != _nvmCRC.getRollingCRC())
+  if (nvmHeader.checksum != _nodeCRC.getRollingCRC())
   {
     statusReturn = Atams::ERROR_NVM_CHECKSUM;
   }
@@ -561,7 +623,7 @@ static Atams::Error_t constructAndWriteNVMHeader(const uint32_t nvmSpaceUsed)
   Atams::Error_t statusReturn = Atams::ERROR_NONE;
   NVMHeader_t    nvmHeader;
 
-  _nvmCRC.beginRollingCRC();
+  _nodeCRC.beginRollingCRC();
 
   for (uint32_t nvmIndex = sizeof(NVMHeader_t); nvmIndex < nvmSpaceUsed; nvmIndex++)
   {
@@ -572,12 +634,12 @@ static Atams::Error_t constructAndWriteNVMHeader(const uint32_t nvmSpaceUsed)
       return (Atams::ERROR_PLATFORM); /* Early Return */
     }
 
-    _nvmCRC.updateRollingCRC(nvmByte);
+    _nodeCRC.updateRollingCRC(nvmByte);
   }
 
   nvmHeader.identifier = Atams::NVM_HEADER_IDENTIFIER_VALID;
   nvmHeader.length     = nvmSpaceUsed;
-  nvmHeader.checksum   = _nvmCRC.getRollingCRC();
+  nvmHeader.checksum   = _nodeCRC.getRollingCRC();
 
   if (Platform::writeToNVM(0U, sizeof(NVMHeader_t), reinterpret_cast<uint8_t*>(&nvmHeader)))
   {
@@ -676,7 +738,6 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
 
   Atams::Error_t initStatus = sharedInit(memoryMap);
 
-  /* Init Universal Data */
   if (initStatus == Atams::ERROR_NONE) initStatus = initUniversalData(memoryMap);
 
   if (initStatus == Atams::ERROR_NONE)
@@ -738,7 +799,7 @@ Atams::Error_t loadFromNVM(void)
   {
     statusReturn = Atams::ERROR_PLATFORM;
   }
-  else if (nvmHeader.identifier != Atams::NVM_HEADER_IDENTIFIER)
+  else if (nvmHeader.identifier != Atams::NVM_HEADER_IDENTIFIER_VALID)
   {
     statusReturn = Atams::ERROR_NVM_HEADER_VALIDITY;
   }
@@ -790,12 +851,17 @@ Atams::Error_t saveToNVM(void)
   return (statusReturn);
 }
 
-void updateComms(void)
+void updateCommsPolling(void)
 {
   Platform::update();
-
   updateWatchdog();
+  processRawMeshData();
+}
 
+void updateCommsBlocking(void)
+{
+  Platform::waitOnCommsBufferSemaphore(Atams::WATCHDOG_PERIOD_MILLISECONDS);
+  updateWatchdog();
   processRawMeshData();
 }
 

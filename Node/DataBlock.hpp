@@ -67,6 +67,8 @@ class DataBlock
     InitDefaultsFnPtr_t initDefaults;
     VarInfo_t           varInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
 
+    Descriptor_t(void) = delete;
+
     Descriptor_t(const uint16_t      initNoOfDataMembers,
                  const GenInfo_t     initGenInfo,
                  InitDefaultsFnPtr_t defaultsInitFnPtr,
@@ -138,7 +140,7 @@ class DataBlock
   const Descriptor_t *_blockDescriptorPtr = nullptr;
   uint16_t            _validVariableCount = 0U;
   uint32_t            _nvmStorageOffset   = 0U;
-  DataMember_t        _vars[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
+  DataMember_t        _varStorage[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
 
 };
 

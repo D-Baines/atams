@@ -57,7 +57,7 @@ class CircularBuffer
   {
     ERROR_NONE                 = 0U,
     ERROR_FULL                 = 1U,
-    ERROR_EMPTY                = 2U,
+    ERROR_NO_NEW_DATA          = 2U,
     ERROR_OUTPUT_BUFFER_LENGTH = 3U,
     ERROR_NO_EOL_FOUND         = 4U,
     ERROR_NO_EOL_BUFFER_FULL   = 5U,
@@ -102,6 +102,7 @@ class CircularBuffer
   /*-- Private Static Constants -----------------------------------------------------*/
 
   static inline constexpr uint16_t STATIC_BUFFER_SIZE = Platform::COMMS_BUFFER_SIZE;
+  static inline constexpr uint8_t  NEW_DATA_READY     = 1U;
 
   /*-- Private Constants ------------------------------------------------------------*/
 
@@ -117,6 +118,7 @@ class CircularBuffer
   volatile uint16_t _atomicByteCount = 0U;
   volatile uint16_t _eolToHead       = 0U;
   volatile uint16_t _eolToTail       = 0U;
+  volatile uint8_t  _newDataReady    = !CircularBuffer::NEW_DATA_READY; /* UINT8_T MUST BE ATOMIC ON TARGET PLATFORM */
 
   uint8_t _buffer[STATIC_BUFFER_SIZE];
 

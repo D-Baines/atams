@@ -108,13 +108,13 @@ Atams::Error_t BlockOwnerInteractor::NVMTransfer(const uint32_t maxIndex, uint32
       switch (transferType)
       {
         case TRANSFER_LOAD:
-          if (!Platform::readFromNVM(nvmIndex, varLength, _vars[varID].data))
+          if (!Platform::readFromNVM(nvmIndex, varLength, _varStorage[varID].data))
           {
             return (Atams::ERROR_PLATFORM);      /* Early Return */
           }
           break;
         case TRANSFER_SAVE:
-          if (!Platform::writeToNVM(nvmIndex, varLength, _vars[varID].data))
+          if (!Platform::writeToNVM(nvmIndex, varLength, _varStorage[varID].data))
           {
             return (Atams::ERROR_PLATFORM);      /* Early Return */
           }

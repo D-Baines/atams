@@ -42,7 +42,7 @@ namespace Atams
 /* PRIVATE VARIABLES                                                                 */
 /*************************************************************************************/
 
-static CRC32 _crcAtams(CRC32_POLYNOMIAL);
+static CRC32 _commsCRC(Atams::CRC32_POLYNOMIAL);
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
@@ -81,36 +81,36 @@ void uint32ToBuffer(const uint32_t value, uint8_t* buffer)
   buffer[3U] = static_cast<uint8_t>((value                     ) & SINGLE_BYTE_MASK);
 }
 
-Error_t decodeMeshPacket(const uint8_t  *inputBuffer,
-                         const uint16_t  inputBufferLength,
-                               uint8_t  *decodedBuffer,
-                         const uint16_t  decodedBufferMaxLength,
-                               uint16_t &decodedLength)
+Atams::Error_t decodeMeshPacket(const uint8_t  *inputBuffer,
+                                const uint16_t  inputBufferLength,
+                                      uint8_t  *decodedBuffer,
+                                const uint16_t  decodedBufferMaxLength,
+                                      uint16_t &decodedLength)
 {
   COBS::Result_t COBSDecodeResult = COBS::decode(inputBuffer, inputBufferLength, decodedBuffer, decodedBufferMaxLength);
 
   if (COBSDecodeResult.status != COBS::ERROR_NONE)
   {
-    return (ERROR_DECODE);
+    return (Atams::ERROR_DECODE);
   }
 
   if (COBSDecodeResult.outputLength < MESH_SIZE_HEADER)
   {
-    return (ERROR_DECODE);
+    return (Atams::ERROR_DECODE);
   }
 
   uint32_t packetCRC = bufferToUint32(&decodedBuffer[MESH_INDEX_CRC]);
 
   memset(&decodedBuffer[MESH_INDEX_CRC], 0U, MESH_SIZE_CRC);
 
-  if (packetCRC != _crcAtams.calculateCRC(decodedBuffer, COBSDecodeResult.outputLength))
+  if (packetCRC != _commsCRC.calculateCRC(decodedBuffer, COBSDecodeResult.outputLength))
   {
-    return (ERROR_DECODE);
+    return (Atams::ERROR_DECODE);
   }
 
   decodedLength = COBSDecodeResult.outputLength;
 
-  return (ERROR_NONE);
+  return (Atams::ERROR_NONE);
 }
 
 Error_t encodeMeshPacket(      uint8_t  *inputBuffer,
@@ -121,12 +121,12 @@ Error_t encodeMeshPacket(      uint8_t  *inputBuffer,
 {
   if (inputLength < MESH_SIZE_HEADER)
   {
-    return (ERROR_ENCODE);
+    return (Atams::ERROR_ENCODE);
   }
 
   memset(&inputBuffer[MESH_INDEX_CRC], 0U, MESH_SIZE_CRC);
 
-  uint32_t CRCResult = _crcAtams.calculateCRC(inputBuffer, inputLength);
+  uint32_t CRCResult = _commsCRC.calculateCRC(inputBuffer, inputLength);
 
   uint32ToBuffer(CRCResult, &inputBuffer[MESH_INDEX_CRC]);
 
@@ -134,12 +134,12 @@ Error_t encodeMeshPacket(      uint8_t  *inputBuffer,
 
   if (COBSEncodeResult.status != COBS::ERROR_NONE)
   {
-    return (ERROR_ENCODE);
+    return (Atams::ERROR_ENCODE);
   }
 
   encodedLength = COBSEncodeResult.outputLength;
 
-  return (ERROR_NONE);
+  return (Atams::ERROR_NONE);
 }
 
 void datagramHeaderToBuffer(const DatagramHeader_t &datagramHeader, uint8_t* buffer)

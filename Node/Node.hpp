@@ -62,10 +62,10 @@ struct MemoryMap_t
     for (const DataBlock::Descriptor_t *&blockDescriptor : blockDescriptors) blockDescriptor = nullptr;
   }
 
-  MemoryMap_t(const uint16_t                      initNoOfDataBlocks,
-              const GenInfo_t                  initGenInfo,
-              const InitUniversalDataFunction_t   universalDataInitFnPtr,
-              const DataBlock::Descriptor_t *blockDescriptorPtrs[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
+  MemoryMap_t(const uint16_t                     initNoOfDataBlocks,
+              const GenInfo_t                    initGenInfo,
+              const InitUniversalDataFunction_t  universalDataInitFnPtr,
+              const DataBlock::Descriptor_t     *blockDescriptorPtrs[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
   {
     noOfDataBlocks    = initNoOfDataBlocks;
     genInfo           = initGenInfo;
@@ -110,7 +110,9 @@ Atams::Error_t loadFromNVM(void);
 
 Atams::Error_t saveToNVM(void);
 
-void updateComms(void);
+void updateCommsPolling(void);
+
+void updateCommsBlocking(void);
 
 template <typename T>
 Atams::Error_t write(const uint8_t blockID, const uint16_t memberID, const T writeData);

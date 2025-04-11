@@ -75,13 +75,17 @@ bool transmitBuffer(CommsChannel_t commsChannel, uint8_t *buffer, uint16_t lengt
 
 uint32_t getMillis(void);
 
-void acquireMemoryLock(void);
+void acquireVarStorageLock(void);
 
-void releaseMemoryLock(void);
+void releaseVarStorageLock(void);
 
 void acquireCommsBufferLock(CommsChannel_t channelToLock);
 
 void releaseCommsBufferLock(CommsChannel_t channelToLock);
+
+void waitOnCommsBufferSemaphore(uint32_t timeoutMilliseconds);
+
+void signalCommsBufferSemaphore(void);
 
 bool readFromNVM(uint32_t startIndex, uint32_t size, uint8_t * const outputPtr);
 

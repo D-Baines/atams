@@ -28,6 +28,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+#include <limits>
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -61,6 +62,13 @@ inline constexpr uint8_t  BITS_IN_A_BYTE                 = 8U;
 inline constexpr uint32_t CRC32_POLYNOMIAL               = 0x04C11DB7;
 inline constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID  = 0x00000000U;
 inline constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID    = 0xD0D0CACAU;
+
+/*************************************************************************************/
+/* STATIC ASSERTIONS                                                                 */
+/*************************************************************************************/
+
+static_assert(sizeof(float) == Atams::MAX_TYPE_SIZE, "Platform float size incompatible with Atams");
+static_assert(std::numeric_limits<float>::is_iec559, "Platform float representation incompatible with Atams" );
 
 /*************************************************************************************/
 /* TYPEDEFS                                                                          */
@@ -180,6 +188,7 @@ enum Error_t: uint8_t
   ERROR_NVM_HEADER_LENGTH        = 36U,
   ERROR_NVM_HEADER_VALIDITY      = 37U,
   ERROR_NVM_PLATFORM_SIZE        = 38U,
+  ERROR_FATAL                    = 39U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
