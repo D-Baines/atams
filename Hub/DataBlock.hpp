@@ -62,15 +62,18 @@ private Platform::MemoryLock
   struct BlockDescriptor_t
   {
     uint16_t            noOfDataMembers = 0U;
+    GenInfo_t           genInfo;
     InitDefaultsFnPtr_t initDefaults;
     MemberInfo_t        dataMemberInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
 
     BlockDescriptor_t(const uint16_t      initNoOfDataMembers,
+                      const GenInfo_t     initGenInfo,
                       InitDefaultsFnPtr_t defaultsInitFnPtr,
                       const MemberInfo_t  (&initVarInfo)[Platform::NODE_NUMBER_OF_DATA_MEMBERS]) :
-    initDefaults(defaultsInitFnPtr)                  
+    initDefaults(defaultsInitFnPtr)
     {
       noOfDataMembers = initNoOfDataMembers;
+      genInfo         = initGenInfo;
       for (uint16_t varID = 0U; varID < Platform::NODE_NUMBER_OF_DATA_MEMBERS; varID++)
       {
         dataMemberInfo[varID] = initVarInfo[varID];
@@ -135,7 +138,7 @@ private Platform::MemoryLock
   Atams::Error_t setRequestPatternNoChecks(const uint16_t         varID,
                                            const Access_t         accessRequest,
                                            const RequestPattern_t requestPattern);
-
+                                           
   private:
 
   /*-- Private Constants ------------------------------------------------------------*/

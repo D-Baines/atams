@@ -32,6 +32,7 @@
 #include "../AtamsTypedefs.hpp"
 #include "DataBlock.hpp"
 #include "Utilities/WriteList.hpp"
+#include "../Utilities/CRC32.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -74,7 +75,7 @@ private Platform::MemoryLock
   struct MemoryMap_t
   {
     uint16_t                            noOfDataBlocks    = 0U;
-    MapGenInfo_t                        genInfo;
+    GenInfo_t                        genInfo;
     InitUniversalDataFunction_t         initUniversalData = nullptr;
     const DataBlock::BlockDescriptor_t *blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
   
@@ -84,7 +85,7 @@ private Platform::MemoryLock
     }
   
     MemoryMap_t(const uint16_t                      initNoOfDataBlocks,
-                const MapGenInfo_t                  initGenInfo,
+                const GenInfo_t                  initGenInfo,
                 const InitUniversalDataFunction_t   universalDataInitFnPtr,
                 const DataBlock::BlockDescriptor_t *blockDescriptorPtrs[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
     {
@@ -194,6 +195,8 @@ private Platform::MemoryLock
     uint16_t         datagramStartIndex     = 0U;
   };
 
+  /*-- PRIVATE OBJECTS ----------------*/
+
   /*-- PRIVATE VARIABLES --------------*/
 
   Atams::Bus        &_bus;
@@ -207,21 +210,33 @@ private Platform::MemoryLock
   uint8_t            _responseBuffer[MAX_MESH_PACKET_SIZE];
   uint16_t           _responseLength   = 0U;
   bool               _newResponseReady = false;
+  
 
   /*-- PRIVATE FUNCTION DECLARATIONS --*/
+
+  Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap);
 
   Atams::Error_t getEncodedRequestPacket(const Atams::MessageType_t requestType,
                                          uint8_t * const            outputBuffer,
                                          const uint16_t             outputBufferMaxLength, 
                                          uint16_t                  &outputLength);
 
-  Atams::Error_t responseReceived(uint8_t *inputBuffer, uint16_t inputLength);
+  void responseReceived(uint8_t *inputBuffer, uint16_t inputLength);
 
   void reportBusError(Atams::Error_t busError);
 
   void clearBusError(void);
 
   void processAbortedResponse(void);
+
+  bool processDatagramRead(DataBlock              &block,
+                           const DatagramHeader_t datagramHeader,
+                           uint16_t              &datagramStartIndex,
+                           const uint8_t          payloadLength);
+
+  bool processDatagramWrite(const DatagramHeader_t datagramHeader, uint16_t &datagramStartIndex);
+
+  bool processDatagramNack(const DatagramHeader_t datagramHeader, uint16_t &datagramStartIndex);
 
   void processResponseBuffer(void);
 

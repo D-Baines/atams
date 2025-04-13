@@ -31,19 +31,13 @@
 #include <stdint.h>
 #include <mutex>
 #include "../AtamsTypedefs.hpp"
-#include "asio.hpp"
+#include "Platform/asio-1.30.2/include/asio.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
 namespace Atams { namespace Platform {
-
-/*************************************************************************************/
-/* PUBLIC DEFINES                                                                    */
-/*************************************************************************************/
-
-#define PLATFORM_HUB
 
 /*************************************************************************************/
 /* PUBLIC CLASSES                                                                    */
@@ -59,7 +53,14 @@ private asio::serial_port
 
   };
 
+  /* Constructor */
   BusPeripheral(UserData_t userData);
+
+  /* Copy Constructor */
+  BusPeripheral(const BusPeripheral &other) = delete;
+
+  /* Copy Assignment Operator */
+  BusPeripheral & operator=(const BusPeripheral &other) = delete;
 
   bool startPeripheral(void)
   {
@@ -101,7 +102,7 @@ private asio::serial_port
 
   const UserData_t _userData;
 
-  uint8_t  _rxBuffer[MAX_MESH_PACKET_SIZE];
+  uint8_t _rxBuffer[Atams::MAX_MESH_PACKET_SIZE];
 
   virtual void rxCallback(      uint8_t  *rxBufferPtr,
                           const uint16_t  rxBufferLength)
@@ -117,10 +118,10 @@ class MemoryLock
 {
   public:
 
-  Error_t init(void)
+  Atams::Error_t init(void)
   {
     /* Init user lock mechanisam if required */
-    return (ERROR_NONE);
+    return (Atams::ERROR_NONE);
   }
 
   void acquireLock(void)
@@ -142,10 +143,10 @@ class CommsLock
 {
   public:
 
-  Error_t init(void)
+  Atams::Error_t init(void)
   {
     /* Init user lock mechanism if required */
-    return (ERROR_NONE);
+    return (Atams::ERROR_NONE);
   }
 
   void acquireLock(void)
@@ -179,8 +180,7 @@ inline constexpr uint64_t BUS_RESPONSE_TIMEOUT        = 100U;
 
 uint64_t getMillis(void);
 
-} } /* End Namespace: Atams::Platform */
-
+} } /* End Namespace - Atams::Platform */
 
 /**
   * @}End of File

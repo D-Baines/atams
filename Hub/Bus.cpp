@@ -28,6 +28,7 @@
 #include "Node.hpp"
 #include "../Utilities/AtamsUtilities.hpp"
 #include "Maps/BlockUniversal.hpp"
+#include "Platform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -56,16 +57,17 @@ Bus::~Bus(void)
 
 }
 
-Bus::InitState_t Bus::updateInitProcedure(Atams::Error_t &statusReturn)
+Bus::ProcessState_t Bus::updateInitProcess(Atams::Error_t &error)
 {
-  if (_busInitState == Bus::INIT_STATE_SUCCESS) return (_busInitState);
+  if (_initProcessState == Bus::PROCESS_STATE_COMPLETE) return (_initProcessState);
 
   switch (_busInitState)
   {
     case Bus::INIT_STATE_START:
-      if (!BusPeripheral::startPeripheral()) statusReturn = Atams::ERROR_PLATFORM;
-      else                                   statusReturn = triggerGenInfoCollectionAllNodes();
-      if (statusReturn == Atams::ERROR_NONE)
+      _initProcessState = Bus::PROCESS_STATE_IN_PROGRESS;
+      if (!BusPeripheral::startPeripheral()) error = Atams::ERROR_PLATFORM;
+      else                                   error = triggerGenInfoCollectionAllNodes();
+      if (error == Atams::ERROR_NONE)
       {
         _nextInitState = Bus::INIT_STATE_VALIDITY_CHECKS;
         _busInitState  = Bus::INIT_STATE_START_UPDATE_CYCLE;
@@ -76,21 +78,23 @@ Bus::InitState_t Bus::updateInitProcedure(Atams::Error_t &statusReturn)
       else                                         _busInitState = INIT_STATE_FAILURE;
       break;
     case Bus::INIT_STATE_BUS_UPDATE:
-      if ((updateNoSync()   == Bus::UPDATE_STATE_CYCLE_COMPLETE) &&
-          (processBuffers() == Atams::ERROR_NONE               ) )  _busInitState = _nextInitState;
-      else                                                          _busInitState = Bus::INIT_STATE_FAILURE;
+      if (updateNoSync() == Bus::UPDATE_STATE_CYCLE_COMPLETE)
+      {
+        if (processBuffers() == Atams::ERROR_NONE) _busInitState = _nextInitState;
+        else                                       _busInitState = Bus::INIT_STATE_FAILURE;
+      }
       break;
     case Bus::INIT_STATE_VALIDITY_CHECKS:
-      statusReturn = checkGenInfoAllNodes();
-      if (statusReturn == Atams::ERROR_NONE)
+      error = checkGenInfoAllNodes();
+      if (error == Atams::ERROR_NONE)
       {
         _nextInitState = Bus::INIT_STATE_ID_ASSIGNMENT;
         _busInitState  = Bus::INIT_STATE_START_UPDATE_CYCLE;
       }
       break;
     case Bus::INIT_STATE_ID_ASSIGNMENT:
-      statusReturn = assignNodeIDs();
-      if (statusReturn == Atams::ERROR_NONE)
+      error = assignNodeIDs();
+      if (error == Atams::ERROR_NONE)
       {
         _nextInitState = Bus::INIT_STATE_SUCCESS;
         _busInitState  = Bus::INIT_STATE_START_UPDATE_CYCLE;
@@ -100,21 +104,30 @@ Bus::InitState_t Bus::updateInitProcedure(Atams::Error_t &statusReturn)
       _busInitState = Bus::INIT_STATE_START;
       break;
     case Bus::INIT_STATE_SUCCESS:
+      _initProcessState = Bus::PROCESS_STATE_COMPLETE;
     default:
       /* Do Nothing */
       break;
   }
 
-  if (statusReturn != Atams::ERROR_NONE) _busInitState = Bus::INIT_STATE_FAILURE;
+  if (error != Atams::ERROR_NONE)
+  {
+    _busInitState     = Bus::INIT_STATE_FAILURE;
+    _initProcessState = Bus::PROCESS_STATE_ERROR;
+  }
 
-  return (_busInitState);
+  return (_initProcessState);
 }
 
 Atams::Error_t Bus::startUpdateCycle(void)
 {
   Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
-  if (_updateState == UPDATE_STATE_READY)
+  if (_initProcessState != Bus::PROCESS_STATE_COMPLETE)
+  {
+    statusReturn = Atams::ERROR_INIT_REQUIRED;
+  }
+  else if (_updateState == UPDATE_STATE_READY)
   {
     for (Node * nodePtr : _nodePtrs)
     {
@@ -144,6 +157,7 @@ void Bus::update(void)
   }
 
   BusPeripheral::update();
+  Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
 
   switch (_updateState)
   {
@@ -177,9 +191,9 @@ void Bus::update(void)
       }
       else if (CircularBuffer::getPacket(_rxBuffer, 
                                          sizeof(_rxBuffer),
-                                         _rxLength        ) == CircularBuffer::Error::NONE)
+                                         _rxLength        ) == CircularBuffer::ERROR_NONE)
       {
-        if (validateAndStoreResponsePacket(*activeNodePtr, Atams::MESSAGE_RESPONSE) == Atams::ERROR_NONE)
+        if (validateAndStoreResponsePacket(*activeNodePtr, Atams::MESSAGE_RESPONSE_SYNCED) != Atams::ERROR_DECODE)
         {
           _activeNodeIndex++;
         }
@@ -245,13 +259,54 @@ bool Bus::processBuffers(void)
     if (nodePtr != nullptr) 
     {
       nodePtr->processResponseBuffer();
-      if (nodePtr->getBusError()) errorFound = true;
+      if (nodePtr->getBusError() != Atams::ERROR_NONE) errorFound = true;
     }
   }
 
   _updateState = UPDATE_STATE_READY;
 
   return (errorFound);
+}
+
+
+Bus::ProcessState_t Bus::updateSetNodeIDProcess(const uint8_t nodeIDToSet, Atams::Error_t &error)
+{
+  static Bus::UpdateState_t updateState = Bus::UPDATE_STATE_READY;
+
+  static uint8_t nodeIDSetPacket[MESH_SIZE_HEADER + DATAGRAM_SIZE_HEADER + ];
+
+  switch (updateState)
+  {
+    case UPDATE_STATE_READY:
+      /* Do Nothing */
+      break;
+    case UPDATE_STATE_SEND_REQUESTS:
+
+      break;
+    case UPDATE_STATE_COLLECT_RESPONSES:
+
+      break;
+    case UPDAT
+  }
+
+  if (Platform::BusPeripheral::transmitReady())
+  {
+    outputBuffer.buffer[MESH_INDEX_MSG_TYPE] = MESSAGE_BROADCAST_UNIVERSAL;
+    _requestPacket.buffer[MESH_INDEX_NODE_ID ] = 0U;
+    
+    Atams::Error_t statusReturn = encodeMeshPacket(nodeIDSetPacket, 
+                                                   sizeof(nodeIDSetPacket), 
+                                                   _encodedBuffer, 
+                                                   sizeof(_encodedBuffer), 
+                                                   _encodedLength);
+
+    if ((statusReturn == Atams::ERROR_NONE       ) &&
+        (Platform::BusPeripheral::transmitReady()) )
+    {
+      Platform::BusPeripheral::transmit(_encodedBuffer, _encodedLength);
+      _updateState     = UPDATE_STATE_COLLECT_RESPONSES;
+    }
+  }
 }
 
 /*************************************************************************************/
@@ -276,13 +331,15 @@ void Bus::removeNodeFromBus(Node &node)
   uint8_t ptrIndex  = 0U;
   bool    nodeFound = false;
 
-  for (ptrIndex = 0U; ptrIndex < Platform::NUMBER_OF_NODES_PER_BUS; ptrIndex++)
+  for (Node * nodePtr : _nodePtrs)
   {
-    if (_nodePtrs[ptrIndex] == &node)
+    if (nodePtr == &node)
     {
       nodeFound = true;
       break;
     }
+
+    ptrIndex++;
   }
 
   if (nodeFound)
@@ -301,6 +358,7 @@ void Bus::rxCallback(      uint8_t  *rxBufferPtr,
                      const uint16_t  rxBufferLength)
 {
   CircularBuffer::pushHead(rxBufferPtr, rxBufferLength);
+  Platform::CommsSemaphore::signal(); 
 }
 
 Atams::Error_t Bus::validateAndStoreResponsePacket(Node &node, const MessageType_t responseType)
@@ -323,6 +381,11 @@ Atams::Error_t Bus::validateAndStoreResponsePacket(Node &node, const MessageType
              (messageType    != MESSAGE_ABORTED_RESPONSE) )  statusReturn = Atams::ERROR_MESSAGE_TYPE;
     else                                                     node.responseReceived(_decodedBuffer, _decodedLength);
 
+    if (statusReturn != Atams::ERROR_NONE) node.reportBusError(statusReturn);
+  }
+  else 
+  {
+    statusReturn = Atams::ERROR_DECODE;
   }
   
   return (statusReturn);
@@ -345,6 +408,7 @@ Bus::UpdateState_t Bus::updateNoSync(void)
   }
 
   BusPeripheral::update();
+  Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
 
   switch (_updateState)
   {
@@ -372,9 +436,9 @@ Bus::UpdateState_t Bus::updateNoSync(void)
     case Bus::UPDATE_STATE_COLLECT_RESPONSES:
       if (CircularBuffer::getPacket(_rxBuffer, 
                                     sizeof(_rxBuffer),
-                                    _rxLength        ) == CircularBuffer::Error::NONE)
+                                    _rxLength        ) == CircularBuffer::ERROR_NONE)
       {
-        if (validateAndStoreResponsePacket(*activeNodePtr, Atams::MESSAGE_RESPONSE) == Atams::ERROR_NONE)
+        if (validateAndStoreResponsePacket(*activeNodePtr, Atams::MESSAGE_RESPONSE) != Atams::ERROR_DECODE)
         {
           _activeNodeIndex++;
           _updateState = UPDATE_STATE_SEND_REQUESTS;
@@ -397,13 +461,13 @@ Bus::UpdateState_t Bus::updateNoSync(void)
 
 Atams::Error_t Bus::triggerGenInfoCollectionAllNodes(void)
 {
-  Atams::Error_t statusReturn =  Atams::ERROR_NONE;
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
   for (Node *nodePtr : _nodePtrs)
   {
     if (nodePtr != nullptr)
     {
-      for (uint8_t varID = BlockUniversal::VAR_ID_ATAMS_VERSION_NUMBER; varID <= BlockUniversal::VAR_ID_MAP_CHECKSUM; varID++)
+      for (uint8_t varID = BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR; varID <= BlockUniversal::VAR_ID_MAP_CHECKSUM; varID++)
       {
         statusReturn = nodePtr->setRequestPattern(BLOCK_ID_UNIVERSAL, 
                                                   varID, 

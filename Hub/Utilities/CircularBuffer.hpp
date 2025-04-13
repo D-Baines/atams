@@ -44,7 +44,6 @@ namespace Atams {
 class CircularBuffer :
 private Platform::CommsLock
 {
-
   public:
 
   /*-- Public Constants -------------------------------------------------------------*/
@@ -53,16 +52,17 @@ private Platform::CommsLock
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
-  enum class Error: uint8_t
+  typedef enum: uint8_t
   {
-    NONE                 = 0U,
-    FULL                 = 1U,
-    EMPTY                = 2U,
-    OUTPUT_BUFFER_LENGTH = 3U,
-    NO_EOL_FOUND         = 4U,
-    NO_EOL_BUFFER_FULL   = 5U,
-    NULLPTR              = 6U,
-  };
+    ERROR_NONE                 = 0U,
+    ERROR_FULL                 = 1U,
+    ERROR_NO_NEW_DATA          = 2U,
+    ERROR_OUTPUT_BUFFER_LENGTH = 3U,
+    ERROR_NO_EOL_FOUND         = 4U,
+    ERROR_NO_EOL_BUFFER_FULL   = 5U,
+    ERROR_NULLPTR              = 6U,
+
+  } Error_t;
 
   /*-- Public Function Declarations -------------------------------------------------*/
 
@@ -82,20 +82,22 @@ private Platform::CommsLock
 
   /* Destructor */
   virtual ~CircularBuffer(void);
+
   void reset(void);
 
-  CircularBuffer::Error getPacket(      uint8_t  *targetBuffer,
-                                  const uint16_t  maxOutputLength,
-                                        uint16_t &outputLength);
+  CircularBuffer::Error_t getPacket(      uint8_t  *targetBuffer,
+                                    const uint16_t  maxOutputLength,
+                                          uint16_t &outputLength);
 
-  CircularBuffer::Error pushHead(const uint8_t *inputBuffer,
-                                 const uint16_t inputLength);
+  CircularBuffer::Error_t pushHead(const uint8_t *inputBuffer,
+                                   const uint16_t inputLength);
 
   private:
 
   /*-- Private Static Constants -----------------------------------------------------*/
 
   static inline constexpr uint16_t STATIC_BUFFER_SIZE = Platform::COMMS_BUFFER_SIZE;
+  static inline constexpr uint8_t  NEW_DATA_READY     = 1U;
 
   /*-- Private Constants ------------------------------------------------------------*/
 
@@ -105,12 +107,13 @@ private Platform::CommsLock
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  uint16_t _headIndex       = 0U;
-  uint16_t _tailIndex       = 0U;
-  uint16_t _eolSearchIndex  = 0U;
-  uint16_t _atomicByteCount = 0U;
-  uint16_t _eolToHead       = 0U;
-  uint16_t _eolToTail       = 0U;
+  volatile uint16_t _headIndex       = 0U;
+  volatile uint16_t _tailIndex       = 0U;
+  volatile uint16_t _eolSearchIndex  = 0U;
+  volatile uint16_t _atomicByteCount = 0U;
+  volatile uint16_t _eolToHead       = 0U;
+  volatile uint16_t _eolToTail       = 0U;
+  volatile uint8_t  _newDataReady    = !CircularBuffer::NEW_DATA_READY; /* UINT8_T MUST BE ATOMIC ON TARGET PLATFORM */
 
   uint8_t _buffer[STATIC_BUFFER_SIZE];
   uint8_t _eolChar = DEFAULT_EOL_CHAR;
@@ -125,7 +128,7 @@ private Platform::CommsLock
 
   inline void resetEOLIndex(void);
 
-  inline CircularBuffer::Error eolSearch(void);
+  inline CircularBuffer::Error_t eolSearch(void);
 
 };
 

@@ -37,16 +37,17 @@ namespace Atams { namespace MapTest {
 /* STATIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-static const MapGenInfo_t genInfo = 
+static const GenInfo_t genInfo = 
 {
-  /* .atamsVersionNumber = */ 0.1F,
-  /* .genDay             = */ 13U,
-  /* .genMonth           = */ 3U,
-  /* .genYear            = */ 2025U,
-  /* .genHour            = */ 21U,
-  /* .genMinute          = */ 2U,
-  /* .genSecond          = */ 10U,
-  /* .genChecksum        = */ 1061080793U
+  /* .atamsVersionMajor = */ 0U,
+  /* .atamsVersionMinor = */ 1U,
+  /* .genDay            = */ 26U,
+  /* .genMonth          = */ 3U,
+  /* .genYear           = */ 2025U,
+  /* .genHour           = */ 21U,
+  /* .genMinute         = */ 53U,
+  /* .genSecond         = */ 18U,
+  /* .genChecksum       = */ 1061080793U
 };
 
 static const DataBlock::BlockDescriptor_t* blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS] = 
@@ -65,8 +66,12 @@ Atams::Error_t initUniversalInfo(Node &nodeToInit)
   Atams::Error_t initStatus = Atams::ERROR_NONE;
 
   if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
-                                                                     BlockUniversal::VAR_ID_ATAMS_VERSION_NUMBER,
-                                                                     genInfo.atamsVersionNumber);
+                                                                     BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR,
+                                                                     genInfo.atamsVersionMajor);
+
+  if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
+                                                                     BlockUniversal::VAR_ID_ATAMS_VERSION_MINOR,
+                                                                     genInfo.atamsVersionMinor);
 
   if (initStatus == Atams::ERROR_NONE) initStatus = nodeToInit.write(BLOCK_ID_UNIVERSAL,
                                                                      BlockUniversal::VAR_ID_MAP_GEN_DAY,

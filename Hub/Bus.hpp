@@ -27,6 +27,7 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
+#include <_types/_uint8_t.h>
 #include <stdint.h>
 #include "../AtamsTypedefs.hpp"
 #include "Utilities/CircularBuffer.hpp"
@@ -66,6 +67,48 @@ private Platform::BusPeripheral
 
   typedef enum: uint8_t
   {
+    PROCESS_STATE_READY       = 0U,
+    PROCESS_STATE_IN_PROGRESS = 1U,
+    PROCESS_STATE_ERROR       = 2U,
+    PROCESS_STATE_COMPLETE    = 3U
+  } ProcessState_t;
+
+  /*-- Public Function Declarations -------------------------------------------------*/
+
+  /* Constructor */
+  Bus(Platform::BusPeripheral::UserData_t userData);
+
+  /* Copy Constructor */
+  Bus(const Bus &other) = delete;
+
+  /* Copy Assignment Operator */
+  Bus & operator=(const Bus &other) = delete;
+
+  /* Destructor */
+  ~Bus(void);
+
+  Bus::ProcessState_t updateInitProcess(Atams::Error_t &error);
+
+  Atams::Error_t startUpdateCycle(void);
+
+  void update(void);
+
+  bool updateCycleComplete(void);
+
+  bool processBuffers(void);
+
+  Bus::ProcessState_t updateSetNodeIDProcess(const uint8_t nodeIDToSet, Atams::Error_t &error); 
+
+  /*-- Private ----------------------------------------------------------------------*/
+
+  private:
+
+  /*-- Private Constants ------------------------------------------------------------*/
+
+  /*-- Private Typedefs -------------------------------------------------------------*/
+
+  typedef enum: uint8_t
+  {
     INIT_STATE_START              = 0U,
     INIT_STATE_START_UPDATE_CYCLE = 1U,
     INIT_STATE_BUS_UPDATE         = 2U,
@@ -85,43 +128,20 @@ private Platform::BusPeripheral
     UPDATE_STATE_CYCLE_COMPLETE    = 5U,
   } UpdateState_t;
 
-  /*-- Public Function Declarations -------------------------------------------------*/
-
-  /* Constructor */
-  Bus(Platform::BusPeripheral::UserData_t userData);
-
-  /* Copy Constructor */
-  Bus(const Bus &other) = delete;
-
-  /* Copy Assignment Operator */
-  Bus & operator=(const Bus &other) = delete;
-
-  /* Destructor */
-  ~Bus(void);
-
-  Bus::InitState_t updateInitProcedure(Atams::Error_t &statusReturn);
-
-  Atams::Error_t startUpdateCycle(void);
-
-  void update(void);
-
-  bool updateCycleComplete(void);
-
-  bool processBuffers(void);
-
-  /*-- Private ----------------------------------------------------------------------*/
-
-  private:
-
-  /*-- Private Constants ------------------------------------------------------------*/
-
-  /*-- Private Typedefs -------------------------------------------------------------*/
+  typedef enum: uint8_t
+  {
+    SET_ID_STATE_READY             = 0U,
+    SET_ID_STATE_SEND_REQUEST      = 1U,
+    SET_ID_STATE_UPDATE_BUS        = 1U,
+    SET_ID_STATE_VALIDATE
+  } SetIDState_t;
 
   /*-- Private Variables ------------------------------------------------------------*/
   
   Node          *_nodePtrs[Platform::NUMBER_OF_NODES_PER_BUS];
   uint16_t       _activeNodeIndex      = 0U;
   uint16_t       _noOfNodesOnBus       = 0U;
+  ProcessState_t _initProcessState     = Bus::PROCESS_STATE_READY;
   InitState_t    _busInitState         = Bus::INIT_STATE_START;
   InitState_t    _nextInitState        = Bus::INIT_STATE_START;
   UpdateState_t  _updateState          = UPDATE_STATE_READY;

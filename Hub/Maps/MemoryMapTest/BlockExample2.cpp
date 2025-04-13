@@ -35,6 +35,23 @@
 namespace Atams { namespace MapTest { namespace BlockExample2 {
 
 /*************************************************************************************/
+/* STATIC CONSTANTS                                                                  */
+/*************************************************************************************/
+
+static const GenInfo_t genInfo = 
+{
+  /* .atamsVersionMajor = */ 0U,
+  /* .atamsVersionMinor = */ 1U,
+  /* .genDay            = */ 26U,
+  /* .genMonth          = */ 3U,
+  /* .genYear           = */ 2025U,
+  /* .genHour           = */ 21U,
+  /* .genMinute         = */ 53U,
+  /* .genSecond         = */ 18U,
+  /* .genChecksum       = */ 2288594768U
+};
+
+/*************************************************************************************/
 /* INIT FUNCTION DEFINITIONS                                                         */
 /*************************************************************************************/
 
@@ -42,47 +59,47 @@ static Atams::Error_t initDefaults(DataBlock &blockToInit)
 {
   Atams::Error_t initStatus = Atams::ERROR_NONE;
 
-  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_WRITE_UINT8,
-                                                               BlockExample2::DEFAULT_WRITE_UINT8);
+  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_WRITE_UINT8,
+                                                                      BlockExample2::DEFAULT_WRITE_UINT8);
 
-  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_WRITE_INT8,
-                                                               BlockExample2::DEFAULT_WRITE_INT8);
+  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_WRITE_INT8,
+                                                                      BlockExample2::DEFAULT_WRITE_INT8);
 
-  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_READ_UINT8,
-                                                               BlockExample2::DEFAULT_READ_UINT8);
+  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_READ_UINT8,
+                                                                      BlockExample2::DEFAULT_READ_UINT8);
 
-  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_READ_INT8,
-                                                               BlockExample2::DEFAULT_READ_INT8);
+  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_READ_INT8,
+                                                                      BlockExample2::DEFAULT_READ_INT8);
 
-  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_WRITE_UINT16,
-                                                               BlockExample2::DEFAULT_WRITE_UINT16);
+  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_WRITE_UINT16,
+                                                                      BlockExample2::DEFAULT_WRITE_UINT16);
 
-  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_WRITE_INT16,
-                                                               BlockExample2::DEFAULT_WRITE_INT16);
+  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_WRITE_INT16,
+                                                                      BlockExample2::DEFAULT_WRITE_INT16);
 
-  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_READ_UINT16,
-                                                               BlockExample2::DEFAULT_READ_UINT16);
+  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_READ_UINT16,
+                                                                      BlockExample2::DEFAULT_READ_UINT16);
 
-  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_READ_INT16,
-                                                               BlockExample2::DEFAULT_READ_INT16);
+  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_READ_INT16,
+                                                                      BlockExample2::DEFAULT_READ_INT16);
 
-  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_WRITE_UINT32,
-                                                               BlockExample2::DEFAULT_WRITE_UINT32);
+  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_WRITE_UINT32,
+                                                                      BlockExample2::DEFAULT_WRITE_UINT32);
 
-  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_WRITE_INT32,
-                                                               BlockExample2::DEFAULT_WRITE_INT32);
+  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_WRITE_INT32,
+                                                                      BlockExample2::DEFAULT_WRITE_INT32);
 
-  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_READ_UINT32,
-                                                               BlockExample2::DEFAULT_READ_UINT32);
+  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_READ_UINT32,
+                                                                      BlockExample2::DEFAULT_READ_UINT32);
 
-  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_READ_INT32,
-                                                               BlockExample2::DEFAULT_READ_INT32);
+  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_READ_INT32,
+                                                                      BlockExample2::DEFAULT_READ_INT32);
 
-  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_WRITE_FLOAT,
-                                                               BlockExample2::DEFAULT_WRITE_FLOAT);
+  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_WRITE_FLOAT,
+                                                                      BlockExample2::DEFAULT_WRITE_FLOAT);
 
-  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_READ_FLOAT,
-                                                               BlockExample2::DEFAULT_READ_FLOAT);
+  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample2::VAR_ID_READ_FLOAT,
+                                                                      BlockExample2::DEFAULT_READ_FLOAT);
 
   return (initStatus); 
 }
@@ -94,6 +111,7 @@ static Atams::Error_t initDefaults(DataBlock &blockToInit)
 const DataBlock::BlockDescriptor_t blockDescriptor =
 {
   /* .noOfDataMembers = */ BlockExample2::NUMBER_OF_EXAMPLE2_VARS,
+  /* .genInfo         = */ genInfo, 
   /* .initDefaults    = */ initDefaults, 
   /* .dataMemberInfo  = */
   {

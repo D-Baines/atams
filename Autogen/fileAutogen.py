@@ -106,6 +106,7 @@ def generateBlockDescriptor(platformNameCamel: str,
   memberIterator = 0
   targetFile.write("const DataBlock::BlockDescriptor_t blockDescriptor =\n{\n")
   targetFile.write("  /* .noOfDataMembers = */ Block"+blockNameCamel+"::NUMBER_OF_"+blockNameUpper+"_VARS,\n")
+  targetFile.write("  /* .genInfo         = */ genInfo, \n")
   targetFile.write("  /* .initDefaults    = */ initDefaults, \n")
   targetFile.write("  /* .dataMemberInfo  = */\n  {\n")
   types        = block["Data Type"]
@@ -167,7 +168,8 @@ def generateBlockRefArray(dataBlockNamesCamel, targetFile):
 def generateInitUniversalMapInfo(platformNameCamel,
                                  targetFile):
 
-  universalMembersToSet = ["ATAMS_VERSION_NUMBER",
+  universalMembersToSet = ["ATAMS_VERSION_MAJOR",
+                           "ATAMS_VERSION_MINOR",
                            "MAP_GEN_DAY",    
                            "MAP_GEN_MONTH",
                            "MAP_GEN_YEAR",  
@@ -176,7 +178,8 @@ def generateInitUniversalMapInfo(platformNameCamel,
                            "MAP_GEN_SECOND",
                            "MAP_CHECKSUM"]  
   
-  variableNames = ["atamsVersionNumber",
+  variableNames = ["atamsVersionMajor",
+                   "atamsVersionMinor",
                    "genDay",    
                    "genMonth",
                    "genYear",  
@@ -216,29 +219,57 @@ def generateMapDefinition(platformNameCamel,
     targetFile.write("                            initUniversalInfo,\n")
     targetFile.write("                            blockDescriptors);\n")
 
-def generateInitDefaultsDefinition(blockNameCamel, memberIDsUpper, targetFile):
+def generateInitDefaultsDefinition(blockNameCamel, block, memberIDsUpper, targetFile):
+  memberIterator      = 0
+  membersWithDefaults = []
+  defaults            = block["Default"]
+
   for memberID in memberIDsUpper:
-    targetFile.write("  if (initStatus == ERROR_NONE) initStatus = blockToInit.write(Block"+blockNameCamel+"::VAR_ID_"+memberID+",\n")
-    targetFile.write("                                                               Block"+blockNameCamel+"::DEFAULT_"+memberID+");\n\n")
+    default = defaults[memberIterator]
+    if (default and (default != "-")):
+      membersWithDefaults.append(memberID)
+    memberIterator += 1
+
+  for memberID in membersWithDefaults:
+    targetFile.write("  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(Block"+blockNameCamel+"::VAR_ID_"+memberID+",\n")
+    targetFile.write("                                                                      Block"+blockNameCamel+"::DEFAULT_"+memberID+");\n\n")
   targetFile.seek(targetFile.tell()-1)
 
+def generateBlockChecksum(block):
+  blockChecksumString = ""
+  calculator = Calculator(Crc32.CRC32)
+  IDs            = block["Member ID"]
+  types          = block["Data Type"]
+  accessLevels   = block["External Access"]
+  defaults       = block["Default"]
+  NVMStorages    = block["NVM Storage"]
+  varID = 0
+  for ID in IDs:
+    blockChecksumString += str(types[varID])
+    blockChecksumString += str(accessLevels[varID])
+    blockChecksumString += str(defaults[varID])
+    blockChecksumString += str(NVMStorages[varID])
+    varID     += 1
+  bytes = blockChecksumString.encode('utf-8')
+  return (calculator.checksum(bytes))
+
 def generateMapChecksum(dataBlocks):
-  checksumString = ""
+  mapChecksumString = ""
   calculator = Calculator(Crc32.CRC32)
   for block in dataBlocks:
-    IDs          = block["Member ID"]
-    types        = block["Data Type"]
-    accessLevels = block["External Access"]
-    defaults     = block["Default"]
-    NVMStorages  = block["NVM Storage"]
+    IDs            = block["Member ID"]
+    types          = block["Data Type"]
+    accessLevels   = block["External Access"]
+    defaults       = block["Default"]
+    NVMStorages    = block["NVM Storage"]
     varID = 0
     for ID in IDs:
-      checksumString += str(types[varID])
-      checksumString += str(accessLevels[varID])
-      checksumString += str(defaults[varID])
-      checksumString += str(NVMStorages[varID])
+      mapChecksumString += str(types[varID])
+      mapChecksumString += str(accessLevels[varID])
+      mapChecksumString += str(defaults[varID])
+      mapChecksumString += str(NVMStorages[varID])
       varID     += 1
-  bytes = checksumString.encode('utf-8')
+  bytes = mapChecksumString.encode('utf-8')
   return (calculator.checksum(bytes))
 
 def autogenCallMap(platformNameCamel: str,
@@ -277,8 +308,10 @@ def autogenCallMap(platformNameCamel: str,
       else:                            targetFile.write("void")
     case "MEMORY_MAP_DEFINITION":
       generateMapDefinition(platformNameCamel, targetFile)
-    case "VERSION_NUMBER":
-      targetFile.write("0.1" + "F")
+    case "VERSION_MAJOR":
+      targetFile.write("0U")
+    case "VERSION_MINOR":
+      targetFile.write("1U")
     case "GENERATION_DAY":
       targetFile.write(str(timeStamp.day) + "U")
     case "GENERATION_MONTH":
@@ -333,7 +366,8 @@ def autogenCallBlock(platformNameCamel: str,
                      blockNameCamel: str,
                      blockNameUpper: str,
                      dataBlock,
-                     targetFile):
+                     targetFile,
+                     timeStamp):
   memberIDsUpper = []
   for memberID in dataBlock["Member ID"]:
     memberIDsUpper.append(memberID.replace(" ", "_").upper())
@@ -354,9 +388,27 @@ def autogenCallBlock(platformNameCamel: str,
     case "DEFAULTS":
       generateConstList(dataBlock, memberIDsUpper, "Default", targetFile)
     case "INIT_DEFAULTS_DEFINITION":
-      generateInitDefaultsDefinition(blockNameCamel, memberIDsUpper, targetFile)
+      generateInitDefaultsDefinition(blockNameCamel, dataBlock, memberIDsUpper, targetFile)
     case "BLOCK_DESCRIPTOR":
       generateBlockDescriptor(platformNameCamel, blockNameCamel, blockNameUpper, dataBlock, memberIDsUpper, targetFile)
+    case "VERSION_MAJOR":
+      targetFile.write("0U")
+    case "VERSION_MINOR":
+      targetFile.write("1U")
+    case "GENERATION_DAY":
+      targetFile.write(str(timeStamp.day) + "U")
+    case "GENERATION_MONTH":
+      targetFile.write(str(timeStamp.month) + "U")
+    case "GENERATION_YEAR":
+      targetFile.write(str(timeStamp.year) + "U")
+    case "GENERATION_HOUR":
+      targetFile.write(str(timeStamp.hour) + "U")
+    case "GENERATION_MINUTE":
+      targetFile.write(str(timeStamp.minute) + "U")
+    case "GENERATION_SECOND":
+      targetFile.write(str(timeStamp.second) + "U")
+    case "GENERATION_CHECKSUM":
+      targetFile.write(str(generateBlockChecksum(dataBlock)) + "U")
 
 def generateDataBlockFile(platformNameCamel: str,
                           memMapNameCamel: str,
@@ -364,7 +416,8 @@ def generateDataBlockFile(platformNameCamel: str,
                           blockNameUpper: str,
                           dataBlock, 
                           templateFile,
-                          targetFile):
+                          targetFile,
+                          timestamp):
   inputFileString = templateFile.read()
   splitStrings    = inputFileString.split("$$$")
   nextStringAutogenCall = False
@@ -384,7 +437,8 @@ def generateDataBlockFile(platformNameCamel: str,
                        blockNameCamel,
                        blockNameUpper,
                        dataBlock,
-                       targetFile)
+                       targetFile,
+                       timestamp)
       nextStringAutogenCall = False
     else:
       targetFile.write(string)
@@ -492,7 +546,8 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
                           dataBlockNamesUpper[blockIterator],
                           dataBlock,
                           dataBlockHppTemplate,
-                          dataBlockNodeHpp)
+                          dataBlockNodeHpp,
+                          timeStamp)
     dataBlockNodeHpp.close()
 
     dataBlockCppName = "Block" + dataBlockNamesCamel[blockIterator] + ".cpp"
@@ -504,7 +559,8 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
                           dataBlockNamesUpper[blockIterator],
                           dataBlock,
                           dataBlockCppTemplate,
-                          dataBlockNodeCpp)
+                          dataBlockNodeCpp,
+                          timeStamp)
     dataBlockNodeCpp.close()
 
     dataBlockHppTemplate.seek(0)
@@ -519,7 +575,8 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
                           dataBlockNamesUpper[blockIterator],
                           dataBlock,
                           dataBlockHppTemplate,
-                          dataBlockHubHpp)
+                          dataBlockHubHpp,
+                          timeStamp)
     dataBlockHubHpp.close()
 
     dataBlockCppName = "Block" + dataBlockNamesCamel[blockIterator] + ".cpp"
@@ -531,7 +588,8 @@ def generateCppFiles(memMapNameCamel: str, memoryMapXlsxPath: str, nodeDirectory
                           dataBlockNamesUpper[blockIterator],
                           dataBlock,
                           dataBlockCppTemplate,
-                          dataBlockHubCpp)
+                          dataBlockHubCpp,
+                          timeStamp)
     dataBlockHubCpp.close()
     blockIterator += 1
 

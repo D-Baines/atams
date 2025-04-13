@@ -70,17 +70,17 @@ extern const DataBlock::BlockDescriptor_t blockDescriptor =
   /* .initDefaults    = */ initDefaults,
   /* .dataMemberInfo  = */
   {
-    /* [BlockUniversal::MEMBER_ID_ATAMS_VERSION_NUMBER] = */
+    /* [BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR] = */
     {
-      /* .type           = */ TYPE_FLOAT,
+      /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockUniversal::MEMBER_ID_UNIVERSAL_UNLOCK] = */
+    /* [BlockUniversal::VAR_ID_ATAMS_VERSION_MINOR] = */
     {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE,
+      /* .type           = */ TYPE_UINT8,
+      /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockUniversal::MEMBER_ID_MAP_GEN_DAY] = */
+    /* BlockUniversal::MEMBER_ID_MAP_GEN_DAY] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_READ,
@@ -114,6 +114,11 @@ extern const DataBlock::BlockDescriptor_t blockDescriptor =
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_READ,
+    },
+    /* [BlockUniversal::MEMBER_ID_UNIVERSAL_UNLOCK] = */
+    {
+      /* .type           = */ TYPE_UINT32,
+      /* .externalAccess = */ ACCESS_WRITE,
     },
     /* [BlockUniversal::MEMBER_ID_NODE_ID] = */
     {

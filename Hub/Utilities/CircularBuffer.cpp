@@ -45,7 +45,7 @@ CircularBuffer::CircularBuffer(void)
 
 CircularBuffer::CircularBuffer(const uint8_t endOfLineChar)
 {
-  _eolChar      = endOfLineChar;
+  _eolChar = endOfLineChar;
   for (uint8_t &byte :_buffer) byte = 0U;
 }
 
@@ -66,28 +66,28 @@ void CircularBuffer::reset(void)
   _tailIndex       = 0U;
   _eolSearchIndex  = 0U;
   _atomicByteCount = 0U;
+  _newDataReady    = !CircularBuffer::NEW_DATA_READY;
   Platform::CommsLock::releaseLock();
 }
 
-CircularBuffer::Error CircularBuffer::getPacket(      uint8_t  *targetBuffer,
-                                                const uint16_t  maxOutputLength,
-                                                      uint16_t &outputLength)
+CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
+                                                  const uint16_t  maxOutputLength,
+                                                        uint16_t &outputLength)
 {
-  CircularBuffer::Error statusReturn = Error::NONE;
+  CircularBuffer::Error_t statusReturn = CircularBuffer::ERROR_NONE;
 
-  /* No lock required - _atomicByteCount read must be atomic on target platform */
-  if (_atomicByteCount == 0U)
+  if (_newDataReady != CircularBuffer::NEW_DATA_READY)
   {
-    statusReturn = Error::EMPTY;
+    statusReturn = CircularBuffer::ERROR_NO_NEW_DATA;
     return (statusReturn);
   }
 
   Platform::CommsLock::acquireLock();
 
-  CircularBuffer::Error eolSearchResult = eolSearch();
+  CircularBuffer::Error_t eolSearchResult = eolSearch();
 
   /* Early return if no EOL byte found */
-  if (eolSearchResult != CircularBuffer::Error::NONE) 
+  if (eolSearchResult != CircularBuffer::ERROR_NONE)
   {
     Platform::CommsLock::releaseLock();
     return (eolSearchResult);
@@ -98,7 +98,7 @@ CircularBuffer::Error CircularBuffer::getPacket(      uint8_t  *targetBuffer,
   if (maxOutputLength < outputLength)
   {
     resetEOLIndex();
-    statusReturn = CircularBuffer::Error::OUTPUT_BUFFER_LENGTH;
+    statusReturn = CircularBuffer::ERROR_OUTPUT_BUFFER_LENGTH;
   }
 
   else
@@ -121,24 +121,23 @@ CircularBuffer::Error CircularBuffer::getPacket(      uint8_t  *targetBuffer,
 
   Platform::CommsLock::releaseLock();
 
-  return (CircularBuffer::Error::NONE);
+  return (CircularBuffer::ERROR_NONE);
 }
 
-CircularBuffer::Error CircularBuffer::pushHead(const uint8_t *inputBuffer,
-                                               const uint16_t inputLength)
+CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
+                                                 const uint16_t inputLength)
 {
   if (inputBuffer == nullptr)
   {
-    return (CircularBuffer::Error::NULLPTR);
-  }
-
-  /* No lock required - _atomicByteCount read must be atomic on target platform */
-  if((_atomicByteCount + inputLength) >= STATIC_BUFFER_SIZE)
-  {
-    return (CircularBuffer::Error::FULL);
+    return (CircularBuffer::ERROR_NULLPTR);
   }
 
   Platform::CommsLock::acquireLock();
+
+  if((_atomicByteCount + inputLength) >= STATIC_BUFFER_SIZE)
+  {
+    return (CircularBuffer::ERROR_FULL);
+  }
 
   uint16_t preWrapLength  = STATIC_BUFFER_SIZE - _headIndex;
 
@@ -155,9 +154,11 @@ CircularBuffer::Error CircularBuffer::pushHead(const uint8_t *inputBuffer,
 
   increaseHeadIndex(inputLength);
 
+  _newDataReady = CircularBuffer::NEW_DATA_READY;
+
   Platform::CommsLock::releaseLock();
 
-  return (CircularBuffer::Error::NONE);
+  return (CircularBuffer::ERROR_NONE);
 }
 
 /*************************************************************************************/
@@ -192,7 +193,7 @@ inline void CircularBuffer::resetEOLIndex(void)
   _eolToHead       = _atomicByteCount;
 }
 
-inline CircularBuffer::Error CircularBuffer::eolSearch(void)
+inline CircularBuffer::Error_t CircularBuffer::eolSearch(void)
 {
   bool eolFound = false;
 
@@ -200,11 +201,11 @@ inline CircularBuffer::Error CircularBuffer::eolSearch(void)
   {
     eolFound = (_buffer[_eolSearchIndex] == _eolChar);
     incrementEOLIndex();
-    if (eolFound) return (CircularBuffer::Error::NONE);
+    if (eolFound) return (CircularBuffer::ERROR_NONE);
   }
 
-  if (_atomicByteCount == STATIC_BUFFER_SIZE) return (CircularBuffer::Error::NO_EOL_BUFFER_FULL);
-  else                                        return (CircularBuffer::Error::NO_EOL_FOUND);
+  if (_atomicByteCount == STATIC_BUFFER_SIZE) return (CircularBuffer::ERROR_NO_EOL_BUFFER_FULL);
+  else                                        return (CircularBuffer::ERROR_NO_EOL_FOUND);
 }
 
 
