@@ -54,15 +54,19 @@ inline constexpr uint8_t  MAX_NUMBER_OF_DATA_BLOCKS      = 14U;
 inline constexpr uint16_t MAX_NUMBER_OF_DATA_MEMBERS     = 512U;
 inline constexpr uint8_t  MAX_TYPE_SIZE                  = 4U;
 inline constexpr uint8_t  EOL_BYTE                       = 0U;
-inline constexpr int32_t  MAX_INT32                      = 2147483647;
-inline constexpr int32_t  MIN_INT32                      = -2147483648;
+inline constexpr int32_t  MAX_INT32                      = 2147483647L;
+inline constexpr int32_t  MIN_INT32                      = -2147483648L;
 inline constexpr uint32_t MAX_UINT32                     = 4294967295U;
 inline constexpr uint32_t MIN_UINT32                     = 0U;
 inline constexpr uint8_t  BITS_IN_A_BYTE                 = 8U;
-inline constexpr uint32_t CRC32_POLYNOMIAL               = 0x04C11DB7;
+inline constexpr uint32_t CRC32_POLYNOMIAL               = 0x04C11DB7U;
 inline constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID  = 0x00000000U;
 inline constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID    = 0xD0D0CACAU;
-inline constexpr uint32_t UNIVERSAL_UNLOCK_PASSCODE      = 0x20202020U;
+inline constexpr uint32_t UNIVERSAL_UNLOCK_PASSCODE      = 0x554E4C4BU;
+inline constexpr uint32_t STORE_ALL_PASSCODE             = 0x73617665U;
+inline constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE   = 0x52455553U;
+inline constexpr uint32_t RESTORE_ALL_PASSCODE           = 0x5245414CU;
+inline constexpr uint32_t APPLY_IDENTIFIERS_PASSCODE     = 0x41504944U;
 
 /*************************************************************************************/
 /* STATIC ASSERTIONS                                                                 */
@@ -74,7 +78,6 @@ static_assert(std::numeric_limits<float>::is_iec559, "Platform float representat
 /*************************************************************************************/
 /* TYPEDEFS                                                                          */
 /*************************************************************************************/
-
 
 enum CoreID_t: uint8_t
 {

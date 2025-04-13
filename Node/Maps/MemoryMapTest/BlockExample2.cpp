@@ -35,23 +35,6 @@
 namespace Atams { namespace MapTest { namespace BlockExample2 {
 
 /*************************************************************************************/
-/* STATIC CONSTANTS                                                                  */
-/*************************************************************************************/
-
-static const GenInfo_t genInfo = 
-{
-  /* .atamsVersionMajor = */ 0U,
-  /* .atamsVersionMinor = */ 1U,
-  /* .genDay            = */ 26U,
-  /* .genMonth          = */ 3U,
-  /* .genYear           = */ 2025U,
-  /* .genHour           = */ 21U,
-  /* .genMinute         = */ 53U,
-  /* .genSecond         = */ 18U,
-  /* .genChecksum       = */ 2288594768U
-};
-
-/*************************************************************************************/
 /* INIT FUNCTION DEFINITIONS                                                         */
 /*************************************************************************************/
 
@@ -111,7 +94,6 @@ static Atams::Error_t initDefaults(DataBlock &blockToInit)
 const DataBlock::Descriptor_t blockDescriptor =
 {
   /* .noOfDataMembers = */ BlockExample2::NUMBER_OF_EXAMPLE2_VARS,
-  /* .genInfo         = */ genInfo, 
   /* .initDefaults    = */ initDefaults, 
   /* .dataMemberInfo  = */
   {

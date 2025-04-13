@@ -30,8 +30,8 @@
 
 #include <stdint.h>
 #include "../AtamsTypedefs.hpp"
-#include "BlockOwnerInteractor.hpp"
 #include "Platform.hpp"
+#include "Developer/BlockOwnerInteractor.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */

@@ -41,13 +41,13 @@ static const GenInfo_t genInfo =
 {
   /* .atamsVersionMajor = */ 0U,
   /* .atamsVersionMinor = */ 1U,
-  /* .genDay            = */ 26U,
-  /* .genMonth          = */ 3U,
+  /* .genDay            = */ 13U,
+  /* .genMonth          = */ 4U,
   /* .genYear           = */ 2025U,
-  /* .genHour           = */ 21U,
-  /* .genMinute         = */ 53U,
-  /* .genSecond         = */ 18U,
-  /* .genChecksum       = */ 1061080793U
+  /* .genHour           = */ 15U,
+  /* .genMinute         = */ 3U,
+  /* .genSecond         = */ 52U,
+  /* .genChecksum       = */ 0U
 };
 
 static const DataBlock::Descriptor_t* blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS] = 

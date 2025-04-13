@@ -39,7 +39,7 @@
 namespace Atams { namespace Platform {
 
 /*************************************************************************************/
-/* PUBLIC TYPEDEFS                                                                   */
+/* PUBLIC MACROS                                                                     */
 /*************************************************************************************/
 
 #define ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE

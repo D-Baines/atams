@@ -56,6 +56,10 @@ class DataBlock
     DataType_t type        = TYPE_NULL;
     Access_t   accessLevel = ACCESS_NONE;
     uint8_t    NVMStorage  = false;
+
+    static_assert(sizeof(type)        == 1U, "VarInfo_t member type size invalid");
+    static_assert(sizeof(accessLevel) == 1U, "VarInfo_t member type size invalid");
+    static_assert(sizeof(NVMStorage)  == 1U, "VarInfo_t member type size invalid");
   };
 
   typedef Atams::Error_t (&InitDefaultsFnPtr_t)(DataBlock &blockToInit);
@@ -63,9 +67,20 @@ class DataBlock
   struct Descriptor_t
   {
     uint16_t            noOfDataMembers = 0U;
-    GenInfo_t           genInfo;
     InitDefaultsFnPtr_t initDefaults;
     VarInfo_t           varInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
+
+    Descriptor_t(const uint16_t      initNoOfDataMembers,
+                 InitDefaultsFnPtr_t defaultsInitFnPtr,
+                 const VarInfo_t     (&initVarInfo)[Platform::NODE_NUMBER_OF_DATA_MEMBERS]) :
+    initDefaults(defaultsInitFnPtr)
+    {
+      noOfDataMembers = initNoOfDataMembers;
+      for (uint16_t varID = 0U; varID < sizeof(varInfo); varID++)
+      {
+        varInfo[varID] = initVarInfo[varID];
+      }
+    };
 
     Descriptor_t(void) = delete;
 
@@ -123,7 +138,7 @@ class DataBlock
 
   uint32_t getNVMSpaceRequirement(void);
 
-  Atams::Error_t NVMTransfer(const uint32_t maxIndex, uint32_t &nvmIndex, const NVMTransfer_t transferType);
+  Atams::Error_t nvmTransfer(const uint32_t maxIndex, uint32_t &nvmIndex, const NVMTransfer_t transferType);
 
   /*-- Protected Static Functions ---------------------------------------------------*/
 

@@ -88,7 +88,10 @@ static DataBlock            &_universalBlock = _dataBlocks[BLOCK_ID_UNIVERSAL];
 /* PRIVATE VARIABLES                                                                 */
 /*************************************************************************************/
 
-static uint8_t          _localNodeID    = 0U;
+static uint8_t _localNodeID     = 0U;
+static uint8_t _prevSyncNodeID  = NODE_ID_NULL;
+static uint8_t _finalSyncNodeID = 0U;
+static uint8_t _firstSyncNodeID = 0U;
 
 /* Core Init Synchronisation */
 ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
@@ -266,10 +269,10 @@ static void processRequestPacket(ChannelResponse_t &response,
     {
       case ACCESS_READ:
         if (datagramLength > remainingOutputLength) abortResponse(response, Atams::ERROR_RESPONSE_BUFFER_LENGTH);
-        else                                        processDatagramRead(response,
-                                                                        datagramHeader,
-                                                                        datagramStartIndex,
-                                                                        varLength.data);
+        else processDatagramRead(response,
+                                 datagramHeader,
+                                 datagramStartIndex,
+                                 varLength.data);
         break;
 
       case ACCESS_WRITE:
@@ -303,17 +306,33 @@ static void processRequestPacket(ChannelResponse_t &response,
   }
 }
 
+static void updateIdentifiersIfRequested(void)
+{
+  static uint32_t applyIdentifiers = 0U;
+
+  static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_APPLY_IDENTIFIERS, applyIdentifiers));
+
+  if (applyIdentifiers == Atams::APPLY_IDENTIFIERS_PASSCODE)
+  {
+    applyIdentifiers = 0U;
+    static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_NODE_ID,            _localNodeID));
+    static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_FIRST_NODE_ID,      _firstSyncNodeID));
+    static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_PREVIOUS_NODE_ID,   _prevSyncNodeID));
+    static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_LAST_NODE_ID,       _finalSyncNodeID));
+    static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_APPLY_IDENTIFIERS, applyIdentifiers));
+  }
+}
+
 static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
                                      uint8_t                 *packetBufferPtr,
                                      uint16_t                 packetLength)
 {
   static uint8_t             decodedPacket[MAX_MESH_PACKET_SIZE];
-  static uint16_t            decodedLength   = 0U;
+  static uint16_t            decodedLength    = 0U;
   static ChannelSyncPacket_t commsChannelSyncPackets[Platform::NUMBER_OF_COMMS_CHANNELS];
   static ChannelResponse_t   commsChannelResponses[Platform::NUMBER_OF_COMMS_CHANNELS];
-  static uint8_t             prevSyncNodeID  = NODE_ID_NULL;
-  static uint8_t             finalSyncNodeID = 0U;
-  static uint8_t             firstSyncNodeID = 0U;
+
+  updateIdentifiersIfRequested();
 
   static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_NODE_ID, _localNodeID));
 
@@ -349,7 +368,7 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
         {
           resetResponse(response);
           syncPacket.syncCount = packetSyncCount;
-          if (_localNodeID == finalSyncNodeID)
+          if (_localNodeID == _finalSyncNodeID)
           {
             processRequestPacket(response, decodedPacket, decodedLength, false);
           }
@@ -358,18 +377,18 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
             memcpy(syncPacket.buffer, decodedPacket, decodedLength);
             syncPacket.length = decodedLength;
           }
-          if (_localNodeID == firstSyncNodeID)
+          if (_localNodeID == _firstSyncNodeID)
           {
             sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
           }
         }
-        else if (packetNodeID == finalSyncNodeID)
+        else if (packetNodeID == _finalSyncNodeID)
         {
           processRequestPacket(response, syncPacket.buffer, syncPacket.length, false);
         }
         break;
       case MESSAGE_RESPONSE_SYNCED:
-        if (packetNodeID == prevSyncNodeID)
+        if (packetNodeID == _prevSyncNodeID)
         {
           if (packetSyncCount != syncPacket.syncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT);
           else                                         sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);

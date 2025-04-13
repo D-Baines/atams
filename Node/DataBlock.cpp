@@ -297,12 +297,12 @@ uint32_t DataBlock::getNVMSpaceRequirement(void)
   return (requiredSpace);
 }
 
-Atams::Error_t DataBlock::NVMTransfer(const uint32_t maxIndex, uint32_t &nvmIndex, const NVMTransfer_t transferType)
+Atams::Error_t DataBlock::nvmTransfer(const uint32_t maxIndex, uint32_t &nvmIndex, const NVMTransfer_t transferType)
 {
   uint16_t varID = 0U;
 
   if ((_blockDescriptorPtr == nullptr) ||
-      (_blockStoragePtr      == nullptr) )
+      (_blockStoragePtr    == nullptr) )
   {
     return (Atams::ERROR_NONE); /* Early Return */
   }
