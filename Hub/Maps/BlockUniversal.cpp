@@ -4,9 +4,9 @@
   *
   * @author  D. Baines
   *
-  * @brief   Auto-generated file containing typedefs, constants, and function
-  *          declarations for an Atams Data Block with name: Example1.
-  *          The Data Block is part of an Atams Memory Map with name: Test.
+  * @brief   Auto-generated file containing function definitions for an 
+  *          Atams Data Block with name: Universal.
+  *          The Data Block is part of an Atams Memory Map with name: Uni.
   *
   * @version v1.0
   ******************************************************************************
@@ -34,55 +34,27 @@
 
 namespace Atams { namespace BlockUniversal {
 
-  static const GenInfo_t genInfo = 
-{
-  /* .atamsVersionMajor = */ 0U,
-  /* .atamsVersionMinor = */ 1U,
-  /* .genDay            = */ 26U,
-  /* .genMonth          = */ 3U,
-  /* .genYear           = */ 2025U,
-  /* .genHour           = */ 21U,
-  /* .genMinute         = */ 53U,
-  /* .genSecond         = */ 18U,
-  /* .genChecksum       = */ 2288594768U
-};
-
-
 /*************************************************************************************/
 /* INIT FUNCTION DEFINITIONS                                                         */
 /*************************************************************************************/
 
-static Error_t initDefaults(DataBlock &block)
+static Atams::Error_t initDefaults(DataBlock &blockToInit)
 {
-  Error_t initStatus = ERROR_NONE;
+  Atams::Error_t initStatus = Atams::ERROR_NONE;
 
-  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::VAR_ID_NODE_ID,
-                                                         BlockUniversal::DEFAULT_NODE_ID);
-
-  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::VAR_ID_FIRST_NODE_ID,
-                                                         BlockUniversal::DEFAULT_FIRST_NODE_ID);
-
-  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::VAR_ID_LAST_NODE_ID,
-                                                         BlockUniversal::DEFAULT_LAST_NODE_ID);
-
-  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::VAR_ID_PREVIOUS_NODE_ID,
-                                                         BlockUniversal::DEFAULT_PREVIOUS_NODE_ID);
-
-  if (initStatus == ERROR_NONE) initStatus = block.write(BlockUniversal::VAR_ID_WATCHDOG_TIMEOUT,
-                                                         BlockUniversal::DEFAULT_WATCHDOG_TIMEOUT);
+  static_cast<void>(blockToInit);
 
   return (initStatus); 
 }
 
 /*************************************************************************************/
-/* BLOCK DESCRIPTOR                                                                  */
+/* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-extern const DataBlock::Descriptor_t blockDescriptor =
+const DataBlock::Descriptor_t blockDescriptor =
 {
-  /* .noOfDataMembers = */ BlockUniversal::NUMBER_OF_UNIVERSAL_VARS,
-  /* .genInfo         = */ genInfo, 
-  /* .initDefaults    = */ initDefaults,
+  /* .noOfDataMembers = */ BlockUniversal::NUMBER_OF_VARS,
+  /* .initDefaults    = */ initDefaults, 
   /* .dataMemberInfo  = */
   {
     /* [BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR] = */
@@ -95,116 +67,121 @@ extern const DataBlock::Descriptor_t blockDescriptor =
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* BlockUniversal::MEMBER_ID_MAP_GEN_DAY] = */
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_READ,
-    },
-    /* [BlockUniversal::MEMBER_ID_MAP_GEN_MONTH] = */
+    /* [BlockUniversal::VAR_ID_MAP_GEN_DAY] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockUniversal::MEMBER_ID_MAP_GEN_YEAR] = */
+    /* [BlockUniversal::VAR_ID_MAP_GEN_MONTH] = */
+    {
+      /* .type           = */ TYPE_UINT8,
+      /* .externalAccess = */ ACCESS_READ,
+    },
+    /* [BlockUniversal::VAR_ID_MAP_GEN_YEAR] = */
     {
       /* .type           = */ TYPE_UINT16,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockUniversal::MEMBER_ID_MAP_GEN_HOUR] = */
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_READ,
-    },
-    /* [BlockUniversal::MEMBER_ID_MAP_GEN_MINUTE] = */
+    /* [BlockUniversal::VAR_ID_MAP_GEN_HOUR] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockUniversal::MEMBER_ID_MAP_GEN_SECOND] = */
+    /* [BlockUniversal::VAR_ID_MAP_GEN_MINUTE] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockUniversal::MEMBER_ID_MAP_CHECKSUM] = */
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_READ,
-    },
-    /* [BlockUniversal::MEMBER_ID_UNIVERSAL_UNLOCK] = */
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE,
-    },
-    /* [BlockUniversal::MEMBER_ID_NODE_ID] = */
-    {
-      /* .type           = */ TYPE_UINT8,
-      /* .externalAccess = */ ACCESS_WRITE,
-    },
-    /* [BlockUniversal::MEMBER_ID_FIRST_NODE_ID] = */
-    {
-      /* .type           = */ TYPE_UINT8,
-      /* .externalAccess = */ ACCESS_WRITE,
-    },
-    /* [BlockUniversal::MEMBER_ID_LAST_NODE_ID] = */
-    {
-      /* .type           = */ TYPE_UINT8,
-      /* .externalAccess = */ ACCESS_WRITE,
-    },
-    /* [BlockUniversal::MEMBER_ID_PREVIOUS_NODE_ID] = */
-    {
-      /* .type           = */ TYPE_UINT8,
-      /* .externalAccess = */ ACCESS_WRITE,
-    },
-    /* [BlockUniversal::MEMBER_ID_WATCHDOG_TIMEOUT] = */
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE,
-    },
-    /* [BlockUniversal::MEMBER_ID_WATCHDOG_COUNTER] = */
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_READ,
-    },
-    /* [BlockUniversal::MEMBER_ID_WATCHDOG_FAULT_ACTIVE] = */
+    /* [BlockUniversal::VAR_ID_MAP_GEN_SECOND] = */
     {
       /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockUniversal::MEMBER_ID_WATCHDOG_RESET] = */
-    {
-      /* .type           = */ TYPE_UINT8,
-      /* .externalAccess = */ ACCESS_WRITE,
-    },
-    /* [BlockUniversal::MEMBER_ID_CRC_ERROR_COUNT] = */
+    /* [BlockUniversal::VAR_ID_MAP_CHECKSUM] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockUniversal::MEMBER_ID_COBS_ERROR_COUNT] = */
+    /* [BlockUniversal::VAR_ID_UNIVERSAL_WRITE_UNLOCK] = */
+    {
+      /* .type           = */ TYPE_UINT32,
+      /* .externalAccess = */ ACCESS_WRITE,
+    },
+    /* [BlockUniversal::VAR_ID_NODE_ID] = */
+    {
+      /* .type           = */ TYPE_UINT8,
+      /* .externalAccess = */ ACCESS_WRITE,
+    },
+    /* [BlockUniversal::VAR_ID_FIRST_NODE_ID] = */
+    {
+      /* .type           = */ TYPE_UINT8,
+      /* .externalAccess = */ ACCESS_WRITE,
+    },
+    /* [BlockUniversal::VAR_ID_LAST_NODE_ID] = */
+    {
+      /* .type           = */ TYPE_UINT8,
+      /* .externalAccess = */ ACCESS_WRITE,
+    },
+    /* [BlockUniversal::VAR_ID_PREVIOUS_NODE_ID] = */
+    {
+      /* .type           = */ TYPE_UINT8,
+      /* .externalAccess = */ ACCESS_WRITE,
+    },
+    /* [BlockUniversal::VAR_ID_STORE_ALL] = */
+    {
+      /* .type           = */ TYPE_UINT32,
+      /* .externalAccess = */ ACCESS_WRITE,
+    },
+    /* [BlockUniversal::VAR_ID_RESTORE_USER_BLOCKS] = */
+    {
+      /* .type           = */ TYPE_UINT32,
+      /* .externalAccess = */ ACCESS_WRITE,
+    },
+    /* [BlockUniversal::VAR_ID_RESTORE_ALL] = */
+    {
+      /* .type           = */ TYPE_UINT32,
+      /* .externalAccess = */ ACCESS_WRITE,
+    },
+    /* [BlockUniversal::VAR_ID_NVM_STATUS] = */
+    {
+      /* .type           = */ TYPE_UINT8,
+      /* .externalAccess = */ ACCESS_READ,
+    },
+    /* [BlockUniversal::VAR_ID_NVM_UPDATED_FLAG] = */
+    {
+      /* .type           = */ TYPE_UINT8,
+      /* .externalAccess = */ ACCESS_READ,
+    },
+    /* [BlockUniversal::VAR_ID_WATCHDOG_TIMEOUT] = */
+    {
+      /* .type           = */ TYPE_UINT32,
+      /* .externalAccess = */ ACCESS_WRITE,
+    },
+    /* [BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE] = */
+    {
+      /* .type           = */ TYPE_UINT8,
+      /* .externalAccess = */ ACCESS_READ,
+    },
+    /* [BlockUniversal::VAR_ID_WATCHDOG_RESET] = */
+    {
+      /* .type           = */ TYPE_UINT8,
+      /* .externalAccess = */ ACCESS_WRITE,
+    },
+    /* [BlockUniversal::VAR_ID_CRC_ERROR_COUNT] = */
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_READ,
     },
-    /* [BlockUniversal::MEMBER_ID_STORE_NVM] = */
+    /* [BlockUniversal::VAR_ID_COBS_ERROR_COUNT] = */
     {
       /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE,
-    },
-    /* [BlockUniversal::MEMBER_ID_RESTORE_FACTORY_NVM] = */
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE,
-    },
-    /* [BlockUniversal::MEMBER_ID_NVM_STATUS] = */
-    {
-      /* .type           = */ TYPE_UINT8,
       /* .externalAccess = */ ACCESS_READ,
     },
   }
 };
 
 
-} } /* End Namespace - Atams::DataBlockUniversal */
+} } /* End Namespace - Atams::BlockUniversal */
 
 /**
   * @}End of File

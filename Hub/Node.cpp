@@ -103,6 +103,20 @@ template Atams::Error_t Node::write<int32_t >(const uint8_t blockID, const uint1
 template Atams::Error_t Node::write<float   >(const uint8_t blockID, const uint16_t varID, const float    writeData);
 
 template <typename T>
+Atams::Error_t Node::writeWithRequestPattern(const uint8_t          blockID, 
+                                             const uint16_t         varID, 
+                                             const T                writeData,
+                                             const RequestPattern_t requestPattern)
+{
+  if (blockID >= _memoryMap.noOfDataBlocks)
+  {
+    return (ERROR_BLOCK_ID); 
+  }
+
+  return (_dataBlocks[blockID].writeWithRequestPattern(varID, writeData, requestPattern));
+}
+
+template <typename T>
 Atams::Error_t Node::read(const uint8_t   blockID,
                           const uint16_t  varID,
                                 T        &readData)
@@ -330,7 +344,6 @@ Atams::Error_t Node::validateMemoryMap(const MemoryMap_t &memoryMap)
 
       _nodeCRC.updateRollingCRC(static_cast<uint8_t>(varInfo.type));
       _nodeCRC.updateRollingCRC(static_cast<uint8_t>(varInfo.accessLevel));
-      _nodeCRC.updateRollingCRC(static_cast<uint8_t>(varInfo.NVMStorage));
 
       varIndex++;
     }

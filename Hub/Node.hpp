@@ -130,7 +130,13 @@ private Platform::MemoryLock
   Atams::Error_t initDefaults(void);
      
   template <typename T>
-  Atams::Error_t write(const uint8_t blockID, const uint16_t memberID, const T writeData);
+  Atams::Error_t write(const uint8_t blockID, const uint16_t varID, const T writeData);
+
+  template <typename T>
+  Atams::Error_t writeWithRequestPattern(const uint8_t          blockID, 
+                                         const uint16_t         varID, 
+                                         const T                writeData,
+                                         const RequestPattern_t requestPattern);
   
   template <typename T>
   Atams::Error_t read(const uint8_t blockID, const uint16_t memberID, T &readData);
@@ -162,7 +168,7 @@ private Platform::MemoryLock
 
   DataBlock * getBlockPtr(const uint8_t blockID);
 
-  #if DEVELOPER_TOOLS 
+  //#if DEVELOPER_TOOLS 
   Atams::Error_t setRequestPatternNoChecks(const uint8_t          blockID,
                                            const uint16_t         varID,
                                            const Access_t         accessRequest,

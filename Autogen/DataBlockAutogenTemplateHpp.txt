@@ -45,7 +45,7 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 enum VarID_t: uint16_t
 {
 $$$AUTOGEN$$$MEMBER_ID_LIST$$$AUTOGEN$$$
-  NUMBER_OF_$$$AUTOGEN$$$BLOCK_NAME_UPPER$$$AUTOGEN$$$_VARS
+  NUMBER_OF_VARS
 };
 
 /*************************************************************************************/
@@ -58,7 +58,7 @@ $$$AUTOGEN$$$DEFAULTS$$$AUTOGEN$$$
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-extern const DataBlock::BlockDescriptor_t blockDescriptor;
+extern const DataBlock::Descriptor_t blockDescriptor;
 
 
 } } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ */

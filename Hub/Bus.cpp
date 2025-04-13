@@ -518,9 +518,15 @@ Atams::Error_t Bus::assignNodeIDs(void)
   {
     if (nodePtr != nullptr)
     {
-      if (!errorStatus) errorStatus = nodePtr->write(Atams::BLOCK_ID_UNIVERSAL, BlockUniversal::VAR_ID_FIRST_NODE_ID,    firstNodeID);
-      if (!errorStatus) errorStatus = nodePtr->write(Atams::BLOCK_ID_UNIVERSAL, BlockUniversal::VAR_ID_LAST_NODE_ID,     lastNodeID);
-      if (!errorStatus) errorStatus = nodePtr->write(Atams::BLOCK_ID_UNIVERSAL, BlockUniversal::VAR_ID_PREVIOUS_NODE_ID, previousNodeID);
+      if (!errorStatus) errorStatus = nodePtr->write(Atams::BLOCK_ID_UNIVERSAL, 
+                                                     BlockUniversal::VAR_ID_FIRST_NODE_ID,    
+                                                     firstNodeID);
+      if (!errorStatus) errorStatus = nodePtr->write(Atams::BLOCK_ID_UNIVERSAL, 
+                                                     BlockUniversal::VAR_ID_LAST_NODE_ID,    
+                                                     lastNodeID);
+      if (!errorStatus) errorStatus = nodePtr->write(Atams::BLOCK_ID_UNIVERSAL, 
+                                                     BlockUniversal::VAR_ID_PREVIOUS_NODE_ID, 
+                                                     previousNodeID);
       previousNodeID = nodePtr->getNodeID();
     }
   }

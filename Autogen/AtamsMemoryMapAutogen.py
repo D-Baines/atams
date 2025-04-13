@@ -1,12 +1,12 @@
 import customtkinter
 import pandas
 import os
-from   tkinter     import filedialog
-from   CTkToolTip  import *
-from   PIL         import Image
-from   enum        import Enum
-from   enum        import StrEnum
-from   fileAutogen import generateCppFiles
+from   tkinter          import filedialog
+from   CTkToolTip       import *
+from   PIL              import Image
+from   enum             import Enum
+from   enum             import StrEnum
+from   AtamsFileAutogen import generateCppFiles
 
 FRAMEWORK_NAME = "Atams"
 

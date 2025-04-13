@@ -3,11 +3,11 @@ import sys
 import os
 import pathlib
 import pandas
-from   enum     import Enum
-from   enum     import StrEnum
-from   typing   import List
-from   datetime import datetime
-from   crc      import Calculator, Crc32
+from   enum       import Enum
+from   enum       import StrEnum
+from   typing     import List
+from   datetime   import datetime
+from   AtamsCRC32 import *
 
 FRAMEWORK_NAME = "Atams"
 
@@ -104,23 +104,20 @@ def generateBlockDescriptor(platformNameCamel: str,
                             memberNamesUpper,
                             targetFile):
   memberIterator = 0
-  targetFile.write("const DataBlock::BlockDescriptor_t blockDescriptor =\n{\n")
-  targetFile.write("  /* .noOfDataMembers = */ Block"+blockNameCamel+"::NUMBER_OF_"+blockNameUpper+"_VARS,\n")
-  targetFile.write("  /* .genInfo         = */ genInfo, \n")
+  targetFile.write("const DataBlock::Descriptor_t blockDescriptor =\n{\n")
+  targetFile.write("  /* .noOfDataMembers = */ Block"+blockNameCamel+"::NUMBER_OF_VARS,\n")
   targetFile.write("  /* .initDefaults    = */ initDefaults, \n")
   targetFile.write("  /* .dataMemberInfo  = */\n  {\n")
   types        = block["Data Type"]
   accessLevels = block["External Access"]
-  NVMStorages  = block["NVM Storage"]
+  nvmStorages  = block["NVM Storage"]
   
   for memberName in memberNamesUpper:
-    access     = accessLevels[memberIterator]
-    NVMStorage = NVMStorages[memberIterator]
+    access        = accessLevels[memberIterator]
+    nvmStorage    = nvmStorages[memberIterator]
+    nvmStorageStr = "false"
+    if (nvmStorage): nvmStorageStr = "true"
     accessString = ""
-    if (NVMStorage.upper() == "YES"):
-      NVMStorage = "true"
-    else:
-      NVMStorage = "false"
     if (access == "RW"): accessString = "WRITE"
     else:                accessString = "READ"
     typeUpper = types[memberIterator].replace("_t", "").upper()
@@ -128,7 +125,7 @@ def generateBlockDescriptor(platformNameCamel: str,
     targetFile.write("      /* .type           = */ TYPE_"+typeUpper+",\n")
     targetFile.write("      /* .externalAccess = */ ACCESS_"+accessString+",\n")
     if (platformNameCamel == "Node"):
-      targetFile.write("      /* .NVMStorage     = */ "+NVMStorage+",\n")
+      targetFile.write("      /* .NVMStorage     = */ "+nvmStorageStr+",\n")
     targetFile.write("    },\n")
     memberIterator += 1
   targetFile.write("  }\n};")
@@ -235,42 +232,25 @@ def generateInitDefaultsDefinition(blockNameCamel, block, memberIDsUpper, target
     targetFile.write("                                                                      Block"+blockNameCamel+"::DEFAULT_"+memberID+");\n\n")
   targetFile.seek(targetFile.tell()-1)
 
-def generateBlockChecksum(block):
-  blockChecksumString = ""
-  calculator = Calculator(Crc32.CRC32)
-  IDs            = block["Member ID"]
-  types          = block["Data Type"]
-  accessLevels   = block["External Access"]
-  defaults       = block["Default"]
-  NVMStorages    = block["NVM Storage"]
-  varID = 0
-  for ID in IDs:
-    blockChecksumString += str(types[varID])
-    blockChecksumString += str(accessLevels[varID])
-    blockChecksumString += str(defaults[varID])
-    blockChecksumString += str(NVMStorages[varID])
-    varID     += 1
-  bytes = blockChecksumString.encode('utf-8')
-  return (calculator.checksum(bytes))
-
-def generateMapChecksum(dataBlocks):
-  mapChecksumString = ""
-  calculator = Calculator(Crc32.CRC32)
-  for block in dataBlocks:
-    IDs            = block["Member ID"]
-    types          = block["Data Type"]
-    accessLevels   = block["External Access"]
-    defaults       = block["Default"]
-    NVMStorages    = block["NVM Storage"]
-    varID = 0
-    for ID in IDs:
-      mapChecksumString += str(types[varID])
-      mapChecksumString += str(accessLevels[varID])
-      mapChecksumString += str(defaults[varID])
-      mapChecksumString += str(NVMStorages[varID])
-      varID     += 1
-  bytes = mapChecksumString.encode('utf-8')
-  return (calculator.checksum(bytes))
+def generateMapChecksum(platformNameCamel : str, dataBlocks):
+  return (0)
+  #mapChecksumString = ""
+  #calculator = Calculator(Crc32.CRC32)
+  #for block in dataBlocks:
+  #  IDs            = block["Member ID"]
+  #  types          = block["Data Type"]
+  #  accessLevels   = block["External Access"]
+  #  defaults       = block["Default"]
+  #  NVMStorages    = block["NVM Storage"]
+  #  varID = 0
+  #  for ID in IDs:
+  #    mapChecksumString += str(types[varID])
+  #    mapChecksumString += str(accessLevels[varID])
+  #    mapChecksumString += str(defaults[varID])
+  #    mapChecksumString += str(NVMStorages[varID])
+  #    varID     += 1
+  #bytes = mapChecksumString.encode('utf-8')
+  #return (calculator.checksum(bytes))
 
 def autogenCallMap(platformNameCamel: str,
                    autogenHint: str,
@@ -325,7 +305,7 @@ def autogenCallMap(platformNameCamel: str,
     case "GENERATION_SECOND":
       targetFile.write(str(timeStamp.second) + "U")
     case "GENERATION_CHECKSUM":
-      targetFile.write(str(generateMapChecksum(dataBlocks)) + "U")
+      targetFile.write(str(generateMapChecksum(platformNameCamel, dataBlocks)) + "U")
 
 def generateMemoryMapFile(platformNameCamel: str,
                           memMapNameCamel: str,
@@ -391,24 +371,6 @@ def autogenCallBlock(platformNameCamel: str,
       generateInitDefaultsDefinition(blockNameCamel, dataBlock, memberIDsUpper, targetFile)
     case "BLOCK_DESCRIPTOR":
       generateBlockDescriptor(platformNameCamel, blockNameCamel, blockNameUpper, dataBlock, memberIDsUpper, targetFile)
-    case "VERSION_MAJOR":
-      targetFile.write("0U")
-    case "VERSION_MINOR":
-      targetFile.write("1U")
-    case "GENERATION_DAY":
-      targetFile.write(str(timeStamp.day) + "U")
-    case "GENERATION_MONTH":
-      targetFile.write(str(timeStamp.month) + "U")
-    case "GENERATION_YEAR":
-      targetFile.write(str(timeStamp.year) + "U")
-    case "GENERATION_HOUR":
-      targetFile.write(str(timeStamp.hour) + "U")
-    case "GENERATION_MINUTE":
-      targetFile.write(str(timeStamp.minute) + "U")
-    case "GENERATION_SECOND":
-      targetFile.write(str(timeStamp.second) + "U")
-    case "GENERATION_CHECKSUM":
-      targetFile.write(str(generateBlockChecksum(dataBlock)) + "U")
 
 def generateDataBlockFile(platformNameCamel: str,
                           memMapNameCamel: str,
