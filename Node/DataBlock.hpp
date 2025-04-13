@@ -55,7 +55,7 @@ class DataBlock
   {
     DataType_t type        = TYPE_NULL;
     Access_t   accessLevel = ACCESS_NONE;
-    bool       NVMStorage  = false;
+    uint8_t    NVMStorage  = false;
   };
 
   typedef Atams::Error_t (&InitDefaultsFnPtr_t)(DataBlock &blockToInit);

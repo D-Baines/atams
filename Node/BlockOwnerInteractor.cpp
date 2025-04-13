@@ -70,7 +70,7 @@ uint32_t BlockOwnerInteractor::getNVMSpaceRequirement(void)
   return (DataBlock::getNVMSpaceRequirement());
 }
 
-Atams::Error_t BlockOwnerInteractor::initDescriptor(const Descriptor_t * const blockDescriptor)
+Atams::Error_t BlockOwnerInteractor::initDescriptor(const DataBlock::Descriptor_t * const blockDescriptor)
 {
   return (DataBlock::initDescriptor(blockDescriptor));
 }

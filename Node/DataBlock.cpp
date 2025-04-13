@@ -89,7 +89,6 @@ Atams::Error_t DataBlock::initDefaults(void)
   if (_blockDescriptorPtr != nullptr)
   {
     resetDataMembers();
-
     statusReturn = _blockDescriptorPtr->initDefaults(*this);
   }
 

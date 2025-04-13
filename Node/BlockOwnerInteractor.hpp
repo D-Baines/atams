@@ -71,7 +71,7 @@ public DataBlock
 
   uint32_t getNVMSpaceRequirement(void);
 
-  Atams::Error_t initDescriptor(const Descriptor_t * const blockDescriptor);
+  Atams::Error_t initDescriptor(const DataBlock::Descriptor_t * const blockDescriptor);
 
   void deinitDescriptor(void);
 

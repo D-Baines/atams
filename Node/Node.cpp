@@ -711,17 +711,9 @@ static Atams::Error_t saveNVMAllBlocks(const uint32_t availableNVMSpace)
 
 static void invalidateMemoryMap(void)
 {
-  _memoryMap.noOfDataBlocks            = 0U;
-  _memoryMap.genInfo.atamsVersionMajor = 0U;
-  _memoryMap.genInfo.atamsVersionMinor = 0U;
-  _memoryMap.genInfo.genDay            = 0U;
-  _memoryMap.genInfo.genMonth          = 0U;
-  _memoryMap.genInfo.genYear           = 0U;
-  _memoryMap.genInfo.genHour           = 0U;
-  _memoryMap.genInfo.genMinute         = 0U;
-  _memoryMap.genInfo.genSecond         = 0U;
-  _memoryMap.genInfo.genChecksum       = 0U;
-  _memoryMap.initUniversalData         = nullptr;
+  _memoryMap.noOfDataBlocks    = 0U;
+  _memoryMap.initUniversalData = nullptr;
+  _memoryMap.genInfo.invalidate();
 
    for (const DataBlock::Descriptor_t *&blockDescriptor : _memoryMap.blockDescriptors)
    {
