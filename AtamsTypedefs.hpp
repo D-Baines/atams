@@ -192,6 +192,7 @@ enum Error_t: uint8_t
   ERROR_NVM_HEADER_VALIDITY      = 39U,
   ERROR_NVM_PLATFORM_SIZE        = 40U,
   ERROR_UNIVERSAL_BLOCK_LOCKED   = 41U,
+  ERROR_INVALID_NACK             = 42U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
@@ -265,7 +266,6 @@ struct GenInfo_t
     {
       return (true);
     }
-
     return (false);
   }
 
@@ -277,6 +277,19 @@ struct GenInfo_t
     }
 
     return (true);
+  }
+
+  void invalidate(void)
+  {
+    atamsVersionMajor = 0U;
+    atamsVersionMinor = 0U;
+    genDay            = 0U;
+    genMonth          = 0U;
+    genYear           = 0U;
+    genHour           = 0U;
+    genMinute         = 0U;
+    genSecond         = 0U;
+    genChecksum       = 0U;
   }
 };
 

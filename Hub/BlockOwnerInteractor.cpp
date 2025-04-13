@@ -1,10 +1,11 @@
 /**
   ******************************************************************************
-  * @file    COBS.hpp
+  * @file    BlockOwnerInteractor.cpp
   *
   * @author  D. Baines
   *
   * @brief
+  *
   *
   * @version v1.0
   ******************************************************************************
@@ -20,60 +21,54 @@
   ******************************************************************************
   */
 
-/* Pragma to prevent recursive inclusion --------------------------------------------*/
-#pragma once
-
 /*************************************************************************************/
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include <stdint.h>
+#include <cstring>
+#include "BlockOwnerInteractor.hpp"
+#include "../Utilities/AtamsUtilities.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace COBS {
+namespace Atams {
 
 /*************************************************************************************/
-/* PUBLIC TYPEDEFS                                                                   */
+/* PRIVATE STATIC CONSTANTS                                                          */
 /*************************************************************************************/
 
-typedef enum
+
+
+/*************************************************************************************/
+/* PUBLIC FUNCTION DEFINITIONS                                                       */
+/*************************************************************************************/
+
+BlockOwnerInteractor::BlockOwnerInteractor(void)
 {
-  ERROR_NONE                 = 0U,
-  ERROR_NULL_PTR             = 1U,
-  ERROR_BUFFER_OVERFLOW      = 2U,
-  ERROR_NO_END_OF_LINE       = 3U,
-  ERROR_BUFFER_CONTAINS_ZERO = 4U,
-} Error_t;
+  /* Do Nothing */
+}
 
-struct Result_t
+BlockOwnerInteractor::~BlockOwnerInteractor(void)
 {
-  COBS::Error_t status       = COBS::ERROR_NONE;
-  uint16_t      outputLength = 0U;
-};
+  /* Do Nothing */
+}
+
+Atams::Error_t BlockOwnerInteractor::initDescriptor(const DataBlock::Descriptor_t * const blockDescriptor)
+{
+  return (DataBlock::initDescriptor(blockDescriptor));
+}
+
+void BlockOwnerInteractor::deinitDescriptor(void)
+{
+  DataBlock::deinitDescriptor();
+}
 
 
-/*************************************************************************************/
-/* PUBLIC FUNCTION DECLARATIONS                                                      */
-/*************************************************************************************/
+} /* End Namespace - Atams */
 
-Result_t encode(const uint8_t *sourceBufferPtr,
-                const uint16_t sourceBufferLength,
-                      uint8_t *destBufferPtr,
-                const uint16_t destBufferLength);
-
-
-Result_t decode(const uint8_t *sourceBufferPtr,
-                const uint16_t sourceBufferLength,
-                      uint8_t *destBufferPtr,
-                const uint16_t destBufferLength);
-
-} } /* End Namespace - Atams::COBS */
 
 /**
   * @}End of File
   */
-
-

@@ -86,7 +86,7 @@ inline constexpr float    DEFAULT_READ_FLOAT   = 14.0F;
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-extern const DataBlock::BlockDescriptor_t blockDescriptor;
+extern const DataBlock::Descriptor_t blockDescriptor;
 
 
 } } } /* End Namespace - Atams::MapTest::BlockExample2 */

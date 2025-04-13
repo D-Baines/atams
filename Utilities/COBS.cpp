@@ -26,14 +26,11 @@
 
 #include "../../Atams/Utilities/COBS.hpp"
 
-
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace COBS
-{
-
+namespace Atams { namespace COBS {
 
 /*************************************************************************************/
 /* PRIVATE CONSTANTS                                                                 */
@@ -41,7 +38,6 @@ namespace COBS
 
 constexpr uint8_t MAX_BLOCK_ELEMENTS = 254U;
 constexpr uint8_t MAX_UINT8_DECIMAL  = 255U;
-
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
@@ -200,7 +196,7 @@ Result_t decode(const uint8_t *sourceBufferPtr,
 }
 
 
-} /* End Namespace - COBS */
+} } /* End Namespace - Atams::COBS */
 
 /**
   * @}End of File

@@ -50,7 +50,7 @@ static const GenInfo_t genInfo =
   /* .genChecksum       = */ 1061080793U
 };
 
-static const DataBlock::BlockDescriptor_t* blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS] = 
+static const DataBlock::Descriptor_t* blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS] = 
 {
   &BlockUniversal::blockDescriptor,
   &BlockExample1::blockDescriptor,

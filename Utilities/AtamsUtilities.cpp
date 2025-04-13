@@ -50,6 +50,7 @@ static CRC32 _commsCRC(Atams::CRC32_POLYNOMIAL);
 
 const char* getErrorString(Error_t errorID)
 {
+  static_cast<void>(errorID);
   //return (AtamsErrorStrings[errorID]);
 
   return (nullptr);

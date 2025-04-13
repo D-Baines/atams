@@ -34,6 +34,12 @@
 #include "Platform/asio-1.30.2/include/asio.hpp"
 
 /*************************************************************************************/
+/* PUBLIC MACROS                                                                     */
+/*************************************************************************************/
+
+#define DEVELOPER_TOOLS 0
+
+/*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
@@ -118,10 +124,10 @@ class MemoryLock
 {
   public:
 
-  Atams::Error_t init(void)
+  bool init(void)
   {
     /* Init user lock mechanisam if required */
-    return (Atams::ERROR_NONE);
+    return (true);
   }
 
   void acquireLock(void)
@@ -143,10 +149,10 @@ class CommsLock
 {
   public:
 
-  Atams::Error_t init(void)
+  bool init(void)
   {
     /* Init user lock mechanism if required */
-    return (Atams::ERROR_NONE);
+    return (true);
   }
 
   void acquireLock(void)
@@ -170,7 +176,7 @@ class CommsLock
 
 inline constexpr uint16_t NUMBER_OF_NODES_PER_BUS     = 10U;
 inline constexpr uint16_t NODE_NUMBER_OF_DATA_MEMBERS = 200U; 
-inline constexpr uint16_t NODE_NUMBER_OF_DATA_BLOCKS  = 5U; 
+inline constexpr uint16_t NODE_NUMBER_OF_DATA_BLOCKS  = 3U; 
 inline constexpr uint16_t COMMS_BUFFER_SIZE           = 512U;
 inline constexpr uint64_t BUS_RESPONSE_TIMEOUT        = 100U;
 

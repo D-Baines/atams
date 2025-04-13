@@ -51,38 +51,27 @@ private Platform::MemoryLock
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
-  struct MemberInfo_t
+  struct VarInfo_t
   {
     DataType_t type        = TYPE_NULL;
-    Access_t   accessLevel = ACCESS_READ;
+    Access_t   accessLevel = ACCESS_NONE;
+    uint8_t    NVMStorage  = false;
   };
 
   typedef Atams::Error_t (&InitDefaultsFnPtr_t)(DataBlock &blockToInit);
 
-  struct BlockDescriptor_t
+  struct Descriptor_t
   {
     uint16_t            noOfDataMembers = 0U;
     GenInfo_t           genInfo;
     InitDefaultsFnPtr_t initDefaults;
-    MemberInfo_t        dataMemberInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
+    VarInfo_t           varInfo[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
 
-    BlockDescriptor_t(const uint16_t      initNoOfDataMembers,
-                      const GenInfo_t     initGenInfo,
-                      InitDefaultsFnPtr_t defaultsInitFnPtr,
-                      const MemberInfo_t  (&initVarInfo)[Platform::NODE_NUMBER_OF_DATA_MEMBERS]) :
-    initDefaults(defaultsInitFnPtr)
-    {
-      noOfDataMembers = initNoOfDataMembers;
-      genInfo         = initGenInfo;
-      for (uint16_t varID = 0U; varID < Platform::NODE_NUMBER_OF_DATA_MEMBERS; varID++)
-      {
-        dataMemberInfo[varID] = initVarInfo[varID];
-      }
-    };
+    Descriptor_t(void) = delete;
 
-    BlockDescriptor_t(const BlockDescriptor_t &other) = delete;
+    Descriptor_t(const Descriptor_t &other) = delete;
 
-    BlockDescriptor_t& operator=(const BlockDescriptor_t &other) = delete;
+    Descriptor_t& operator=(const Descriptor_t &other) = delete;
   };
 
   /*-- Public Function Declarations -------------------------------------------------*/
@@ -98,10 +87,6 @@ private Platform::MemoryLock
 
   /* Copy Assignment Operator */
   DataBlock & operator=(const DataBlock &other) = delete;
-
-  Atams::Error_t initDescriptor(const BlockDescriptor_t * const blockDescriptor);
-
-  void deinitDescriptor(void);
 
   Atams::Error_t initDefaults(void);
 
@@ -138,6 +123,15 @@ private Platform::MemoryLock
   Atams::Error_t setRequestPatternNoChecks(const uint16_t         varID,
                                            const Access_t         accessRequest,
                                            const RequestPattern_t requestPattern);
+
+
+  protected:
+
+  /*-- Protected Functions ----------------------------------------------------------*/
+
+  Atams::Error_t initDescriptor(const Descriptor_t * const blockDescriptor);
+
+  void deinitDescriptor(void);
                                            
   private:
 
@@ -148,16 +142,16 @@ private Platform::MemoryLock
   struct DataMember_t
   {
     uint8_t          data[MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
-    Access_t         requestAccess  = Atams::ACCESS_NONE;
-    RequestPattern_t requestPattern = Atams::REQUEST_INACTIVE;
-    bool             newDataReady   = false;
+    Access_t         requestAccess       = Atams::ACCESS_NONE;
+    RequestPattern_t requestPattern      = Atams::REQUEST_INACTIVE;
+    bool             newDataReady        = false;
   };
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  const BlockDescriptor_t *_blockDescriptorPtr   = nullptr;
-  uint16_t                 _validNoOfDataMembers = 0U;
-  DataMember_t             _dataMembers[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
+  const Descriptor_t *_blockDescriptorPtr   = nullptr;
+  uint16_t            _validNoOfDataMembers = 0U;
+  DataMember_t        _dataMembers[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
 };
 
 

@@ -86,7 +86,7 @@ inline constexpr uint32_t DEFAULT_WATCHDOG_TIMEOUT = 0UL;
 /*************************************************************************************/
 
 /*--- Descriptor ---*/
-extern const DataBlock::BlockDescriptor_t blockDescriptor;
+extern const DataBlock::Descriptor_t blockDescriptor;
 
 
 } } /* End Namespace - Atams::BlockUniversal */

@@ -30,6 +30,7 @@
 
 #include <stdint.h>
 #include "../AtamsTypedefs.hpp"
+#include "BlockOwnerInteractor.hpp"
 #include "DataBlock.hpp"
 #include "Utilities/WriteList.hpp"
 #include "../Utilities/CRC32.hpp"
@@ -74,20 +75,20 @@ private Platform::MemoryLock
 
   struct MemoryMap_t
   {
-    uint16_t                            noOfDataBlocks    = 0U;
-    GenInfo_t                        genInfo;
-    InitUniversalDataFunction_t         initUniversalData = nullptr;
-    const DataBlock::BlockDescriptor_t *blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
+    uint16_t                       noOfDataBlocks    = 0U;
+    GenInfo_t                      genInfo;
+    InitUniversalDataFunction_t    initUniversalData = nullptr;
+    const DataBlock::Descriptor_t *blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
   
     MemoryMap_t(void)
     {
-      for (const DataBlock::BlockDescriptor_t *&blockDescriptor : blockDescriptors) blockDescriptor = nullptr;
+      for (const DataBlock::Descriptor_t *&blockDescriptor : blockDescriptors) blockDescriptor = nullptr;
     }
   
     MemoryMap_t(const uint16_t                      initNoOfDataBlocks,
-                const GenInfo_t                  initGenInfo,
+                const GenInfo_t                     initGenInfo,
                 const InitUniversalDataFunction_t   universalDataInitFnPtr,
-                const DataBlock::BlockDescriptor_t *blockDescriptorPtrs[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
+                const DataBlock::Descriptor_t      *blockDescriptorPtrs[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
     {
       noOfDataBlocks    = initNoOfDataBlocks;
       genInfo           = initGenInfo;
@@ -155,16 +156,18 @@ private Platform::MemoryLock
                                    Access_t         &accessRequest,
                                    RequestPattern_t &requestPattern);
 
-  Atams::Error_t setRequestPatternNoChecks(const uint8_t          blockID,
-                                           const uint16_t         varID,
-                                           const Access_t         accessRequest,
-                                           const RequestPattern_t requestPattern);
-
   uint8_t getNodeID(void);
 
   Atams::Error_t getBusError(void);
 
   DataBlock * getBlockPtr(const uint8_t blockID);
+
+  #if DEVELOPER_TOOLS 
+  Atams::Error_t setRequestPatternNoChecks(const uint8_t          blockID,
+                                           const uint16_t         varID,
+                                           const Access_t         accessRequest,
+                                           const RequestPattern_t requestPattern);
+  #endif
 
   /*-- Private -----------------------------------------------------------------------*/
 
@@ -197,12 +200,14 @@ private Platform::MemoryLock
 
   /*-- PRIVATE OBJECTS ----------------*/
 
+  Atams::CRC32         _nodeCRC{Atams::CRC32_POLYNOMIAL};
+  BlockOwnerInteractor _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
+
   /*-- PRIVATE VARIABLES --------------*/
 
   Atams::Bus        &_bus;
   uint8_t            _nodeID;
   MemoryMap_t        _memoryMap;
-  DataBlock          _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS + 1U];
   DataBlock         &_universalBlock                      = _dataBlocks[BLOCK_ID_UNIVERSAL];
   Error_t            _busError                            = ERROR_NONE;
   uint16_t           _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
@@ -215,6 +220,12 @@ private Platform::MemoryLock
   /*-- PRIVATE FUNCTION DECLARATIONS --*/
 
   Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap);
+
+  Atams::Error_t initBlockDescriptors(const MemoryMap_t &memoryMap);
+
+  Atams::Error_t initUniversalData(const MemoryMap_t &memoryMap);
+
+  void invalidateMemoryMap(void);
 
   Atams::Error_t getEncodedRequestPacket(const Atams::MessageType_t requestType,
                                          uint8_t * const            outputBuffer,

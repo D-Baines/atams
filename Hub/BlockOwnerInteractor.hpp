@@ -1,10 +1,11 @@
 /**
   ******************************************************************************
-  * @file    CRC32.hpp
+  * @file    BlockOwner.hpp
   *
   * @author  D. Baines
   *
   * @brief
+  *
   *
   * @version v1.0
   ******************************************************************************
@@ -28,6 +29,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+#include "DataBlock.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -36,51 +38,52 @@
 namespace Atams {
 
 /*************************************************************************************/
-/* PROTOTYPES/CLASS DEFINITIONS                                                      */
+/* CLASS DEFINITIONS                                                                 */
 /*************************************************************************************/
 
-class CRC32
+class BlockOwnerInteractor :
+public DataBlock
 {
-  /*-- Public -----------------------------------------------------------------------*/
 
   public:
 
-  /*-- PUBLIC FUNCTION DECLARATIONS ---*/
+  /*-- Public Constants -------------------------------------------------------------*/
 
-  CRC32(uint32_t generatorPolynomial);
+  /*-- Public Typedefs --------------------------------------------------------------*/
 
-  uint32_t calculateCRC(volatile const uint8_t *byteBuffer, uint16_t length);
+  /*-- Public Function Declarations -------------------------------------------------*/
 
-  void beginRollingCRC(void);
+  /* Constructor */
+  BlockOwnerInteractor(void);
 
-  void updateRollingCRC(const uint8_t byte);
+  /* Destructor */
+  ~BlockOwnerInteractor(void);
 
-  uint32_t getRollingCRC(void);
+  /* Copy Constructor */
+  BlockOwnerInteractor(const BlockOwnerInteractor &other) = delete;
 
-  /*-- Private -----------------------------------------------------------------------*/
+  /* Copy Assignment Operator */
+  BlockOwnerInteractor & operator=(const BlockOwnerInteractor &other) = delete;
+
+  Atams::Error_t initDescriptor(const DataBlock::Descriptor_t * const blockDescriptor);
+
+  void deinitDescriptor(void);
 
   private:
 
-  /*-- PRIVATE CONSTANTS --------------*/
+  /*-- Private Constants ------------------------------------------------------------*/
 
-  static constexpr uint32_t CRC_RESET_VALUE          = 0xFFFFFFFFU;
-  static constexpr uint16_t DECIMAL_WIDTH_8_BIT      = 256U;
-  static constexpr uint8_t  BYTE_MASK                = 0xFFU;
-  static constexpr uint32_t FINAL_XOR_VALUE          = 0xFFFFFFFFU;
-  static constexpr uint8_t  NUMBER_OF_CRC_BITS       = 32U;
-  static constexpr uint8_t  BITS_IN_A_BYTE           = 8U;
+  /*-- Private Typedefs -------------------------------------------------------------*/
 
-  /*-- PRIVATE VARIABLES --------------*/
+  /*-- Private Variables ------------------------------------------------------------*/
 
-  uint32_t _crcTable[DECIMAL_WIDTH_8_BIT];
-  uint32_t _rollingCRC = CRC_RESET_VALUE;
+  /*-- Private Function Declarations -------------------------------------------------*/
 
-  /*-- PRIVATE FUNCTION DECLARATIONS --*/
-
-  uint32_t reflect(const uint32_t data, const uint8_t bitCount);
 };
 
+
 } /* End Namespace - Atams */
+
 
 /**
   * @}End of File

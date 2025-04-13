@@ -157,7 +157,7 @@ void Bus::update(void)
   }
 
   BusPeripheral::update();
-  Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
+  //Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
 
   switch (_updateState)
   {
@@ -271,42 +271,42 @@ bool Bus::processBuffers(void)
 
 Bus::ProcessState_t Bus::updateSetNodeIDProcess(const uint8_t nodeIDToSet, Atams::Error_t &error)
 {
-  static Bus::UpdateState_t updateState = Bus::UPDATE_STATE_READY;
-
-  static uint8_t nodeIDSetPacket[MESH_SIZE_HEADER + DATAGRAM_SIZE_HEADER + ];
-
-  switch (updateState)
-  {
-    case UPDATE_STATE_READY:
-      /* Do Nothing */
-      break;
-    case UPDATE_STATE_SEND_REQUESTS:
-
-      break;
-    case UPDATE_STATE_COLLECT_RESPONSES:
-
-      break;
-    case UPDAT
-  }
-
-  if (Platform::BusPeripheral::transmitReady())
-  {
-    outputBuffer.buffer[MESH_INDEX_MSG_TYPE] = MESSAGE_BROADCAST_UNIVERSAL;
-    _requestPacket.buffer[MESH_INDEX_NODE_ID ] = 0U;
-    
-    Atams::Error_t statusReturn = encodeMeshPacket(nodeIDSetPacket, 
-                                                   sizeof(nodeIDSetPacket), 
-                                                   _encodedBuffer, 
-                                                   sizeof(_encodedBuffer), 
-                                                   _encodedLength);
-
-    if ((statusReturn == Atams::ERROR_NONE       ) &&
-        (Platform::BusPeripheral::transmitReady()) )
-    {
-      Platform::BusPeripheral::transmit(_encodedBuffer, _encodedLength);
-      _updateState     = UPDATE_STATE_COLLECT_RESPONSES;
-    }
-  }
+  //static Bus::UpdateState_t updateState = Bus::UPDATE_STATE_READY;
+//
+  ////static uint8_t nodeIDSetPacket[MESH_SIZE_HEADER + DATAGRAM_SIZE_HEADER + ];
+//
+  //switch (updateState)
+  //{
+  //  case UPDATE_STATE_READY:
+  //    /* Do Nothing */
+  //    break;
+  //  case UPDATE_STATE_SEND_REQUESTS:
+//
+  //    break;
+  //  case UPDATE_STATE_COLLECT_RESPONSES:
+//
+  //    break;
+  //  //case UPDAT
+  //}
+//
+  //if (Platform::BusPeripheral::transmitReady())
+  //{
+  //  outputBuffer.buffer[MESH_INDEX_MSG_TYPE] = MESSAGE_BROADCAST_UNIVERSAL;
+  //  _requestPacket.buffer[MESH_INDEX_NODE_ID ] = 0U;
+  //  
+  //  Atams::Error_t statusReturn = encodeMeshPacket(nodeIDSetPacket, 
+  //                                                 sizeof(nodeIDSetPacket), 
+  //                                                 _encodedBuffer, 
+  //                                                 sizeof(_encodedBuffer), 
+  //                                                 _encodedLength);
+//
+  //  if ((statusReturn == Atams::ERROR_NONE       ) &&
+  //      (Platform::BusPeripheral::transmitReady()) )
+  //  {
+  //    Platform::BusPeripheral::transmit(_encodedBuffer, _encodedLength);
+  //    _updateState     = UPDATE_STATE_COLLECT_RESPONSES;
+  //  }
+  //}
 }
 
 /*************************************************************************************/
@@ -358,7 +358,7 @@ void Bus::rxCallback(      uint8_t  *rxBufferPtr,
                      const uint16_t  rxBufferLength)
 {
   CircularBuffer::pushHead(rxBufferPtr, rxBufferLength);
-  Platform::CommsSemaphore::signal(); 
+  //Platform::CommsSemaphore::signal(); 
 }
 
 Atams::Error_t Bus::validateAndStoreResponsePacket(Node &node, const MessageType_t responseType)
@@ -408,7 +408,7 @@ Bus::UpdateState_t Bus::updateNoSync(void)
   }
 
   BusPeripheral::update();
-  Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
+  //Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
 
   switch (_updateState)
   {
@@ -427,10 +427,7 @@ Bus::UpdateState_t Bus::updateNoSync(void)
           _prevRequestTime = currentTime;
           _updateState     = UPDATE_STATE_COLLECT_RESPONSES;
         }
-        else
-        {
-          _activeNodeIndex++;
-        }
+        else _activeNodeIndex++;
       }
       break;
     case Bus::UPDATE_STATE_COLLECT_RESPONSES:
@@ -456,7 +453,9 @@ Bus::UpdateState_t Bus::updateNoSync(void)
     default:
       /* TODO:: Handle error correctly */
       break;
-  }
+  } 
+
+  return (_updateState);
 }
 
 Atams::Error_t Bus::triggerGenInfoCollectionAllNodes(void)

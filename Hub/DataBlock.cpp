@@ -67,41 +67,17 @@ DataBlock::~DataBlock(void)
 
 }
 
-Atams::Error_t DataBlock::initDescriptor(const BlockDescriptor_t * const blockDescriptorPtr)
-{
-  Atams::Error_t initStatus = ERROR_NONE;
-
-  if (blockDescriptorPtr == nullptr)
-  {
-    initStatus = Atams::ERROR_NULL_PTR;
-  }
-  else if ((blockDescriptorPtr->noOfDataMembers > sizeof(_blockDescriptorPtr->dataMemberInfo)) ||
-           (blockDescriptorPtr->noOfDataMembers > MAX_NUMBER_OF_DATA_MEMBERS                 ) )
-  {
-    initStatus = Atams::ERROR_NUMBER_OF_DATA_MEMBERS;
-  }
-  else
-  {
-    _blockDescriptorPtr   = blockDescriptorPtr;
-    _validNoOfDataMembers = blockDescriptorPtr->noOfDataMembers;
-  }
-
-  resetDataMembers();
-
-  return (initStatus);
-}
-
-void DataBlock::deinitDescriptor(void)
-{
-  _validNoOfDataMembers = 0U;
-  _blockDescriptorPtr   = nullptr;
-  resetDataMembers();
-}
-
 Atams::Error_t DataBlock::initDefaults(void)
 {
-  if (_blockDescriptorPtr == nullptr) return (Atams::ERROR_NULL_PTR);
-  else                                return (_blockDescriptorPtr->initDefaults(*this));
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
+
+  if (_blockDescriptorPtr != nullptr)
+  {
+    resetDataMembers();
+    statusReturn = _blockDescriptorPtr->initDefaults(*this);
+  }
+
+  return (statusReturn);
 }
 
 void DataBlock::resetDataMembers(void)
@@ -123,7 +99,7 @@ Atams::Error_t DataBlock::write(const uint16_t  memberID,
 {
   if (memberID >= _validNoOfDataMembers) return (ERROR_VAR_ID); /* Early Return */
 
-  const MemberInfo_t &memberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
+  const VarInfo_t &memberInfo = _blockDescriptorPtr->varInfo[memberID];
 
   if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()      ) return (ERROR_VAR_TYPE);
   if (ACCESS_WRITE                          > memberInfo.accessLevel) return (ERROR_ACCESS_INVALID);
@@ -155,7 +131,7 @@ Atams::Error_t DataBlock::read(const uint16_t  memberID,
 {
   if (memberID >= _validNoOfDataMembers) return (ERROR_VAR_ID); /* Early Return */
 
-  const MemberInfo_t &memberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
+  const VarInfo_t &memberInfo = _blockDescriptorPtr->varInfo[memberID];
 
   if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()      ) return (ERROR_VAR_TYPE);
   if (ACCESS_READ                          >  memberInfo.accessLevel) return (ERROR_ACCESS_INVALID);
@@ -185,7 +161,7 @@ Atams::Error_t DataBlock::readIfNew(const uint16_t  memberID,
 {
   if (memberID >= _validNoOfDataMembers) return (ERROR_VAR_ID); /* Early Return */
 
-  const MemberInfo_t &memberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
+  const VarInfo_t &memberInfo = _blockDescriptorPtr->varInfo[memberID];
 
   if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()      ) return (ERROR_VAR_TYPE);
   if (ACCESS_READ                          >  memberInfo.accessLevel) return (ERROR_ACCESS_INVALID);
@@ -221,7 +197,7 @@ DataStatusReturn_t<uint8_t> DataBlock::getMemberLength(const uint16_t memberID)
     return (lengthReturn); /* Early Return */
   }
 
-  const MemberInfo_t &dataMemberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
+  const VarInfo_t &dataMemberInfo = _blockDescriptorPtr->varInfo[memberID];
 
   lengthReturn.data   = TYPE_LENGTHS[dataMemberInfo.type];
   lengthReturn.status = ERROR_NONE;
@@ -236,7 +212,7 @@ Error_t DataBlock::externalTransfer(const Access_t  accessRequest,
 {
   if (memberID >= _validNoOfDataMembers) return (ERROR_VAR_ID); /* Early Return */
 
-  const MemberInfo_t &memberInfo = _blockDescriptorPtr->dataMemberInfo[memberID];
+  const VarInfo_t &memberInfo = _blockDescriptorPtr->varInfo[memberID];
 
   if (TYPE_LENGTHS[memberInfo.type] != length ) return (Atams::ERROR_VAR_LENGTH);
   if (inputPtr                      == nullptr) return (Atams::ERROR_NULL_PTR);
@@ -277,7 +253,7 @@ Atams::Error_t DataBlock::setRequestPattern(const uint16_t         varID,
   if (requestPattern >= NUMBER_OF_REQUEST_PATTERNS) return (ERROR_REQUEST_PATTERN_INVALID); /* Early Return */
  
         DataMember_t &dataMember = _dataMembers[varID];
-  const MemberInfo_t &memberInfo = _blockDescriptorPtr->dataMemberInfo[varID];
+  const VarInfo_t &memberInfo = _blockDescriptorPtr->varInfo[varID];
 
   if (accessRequest > memberInfo.accessLevel)
   {
@@ -329,6 +305,42 @@ Atams::Error_t DataBlock::setRequestPatternNoChecks(const uint16_t         varID
   Platform::MemoryLock::releaseLock();
 
   return (Atams::ERROR_NONE);
+}
+
+/*************************************************************************************/
+/* PROTECTED FUNCTION DEFINITIONS                                                    */
+/*************************************************************************************/
+
+Atams::Error_t DataBlock::initDescriptor(const Descriptor_t * const blockDescriptorPtr)
+{
+  Atams::Error_t initStatus = ERROR_NONE;
+
+  if (blockDescriptorPtr == nullptr)
+  {
+    initStatus = Atams::ERROR_NULL_PTR;
+  }
+  else if ((blockDescriptorPtr->noOfDataMembers > Platform::NODE_NUMBER_OF_DATA_MEMBERS) ||
+           (blockDescriptorPtr->noOfDataMembers > MAX_NUMBER_OF_DATA_MEMBERS           ) )
+  {
+    initStatus = Atams::ERROR_NUMBER_OF_DATA_MEMBERS;
+  }
+  else
+  {
+    _blockDescriptorPtr   = blockDescriptorPtr;
+    _validNoOfDataMembers = blockDescriptorPtr->noOfDataMembers;
+    initStatus = initDefaults();
+  }
+  
+  if (initStatus != Atams::ERROR_NONE) deinitDescriptor();
+
+  return (initStatus);
+}
+
+void DataBlock::deinitDescriptor(void)
+{
+  _validNoOfDataMembers = 0U;
+  _blockDescriptorPtr   = nullptr;
+  resetDataMembers();
 }
 
 

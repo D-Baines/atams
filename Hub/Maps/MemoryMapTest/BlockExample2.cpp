@@ -108,7 +108,7 @@ static Atams::Error_t initDefaults(DataBlock &blockToInit)
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-const DataBlock::BlockDescriptor_t blockDescriptor =
+const DataBlock::Descriptor_t blockDescriptor =
 {
   /* .noOfDataMembers = */ BlockExample2::NUMBER_OF_EXAMPLE2_VARS,
   /* .genInfo         = */ genInfo, 
