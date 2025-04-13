@@ -38,6 +38,20 @@
 
 namespace Atams { namespace Platform {
 
+/*************************************************************************************/
+/* PUBLIC TYPEDEFS                                                                   */
+/*************************************************************************************/
+
+#define ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
+
+/*************************************************************************************/
+/* PUBLIC CONSTANTS                                                                  */
+/*************************************************************************************/
+
+inline constexpr uint16_t NODE_NUMBER_OF_DATA_MEMBERS = 50U;  /* Must be <= MAX_NUMBER_OF_DATA_MEMBERS */
+inline constexpr uint16_t NODE_NUMBER_OF_DATA_BLOCKS  = 3U;   /* Must be <= MAX_NUMBER_OF_DATA_BLOCKS  */
+inline constexpr uint16_t COMMS_BUFFER_SIZE           = 512U;
+inline constexpr uint32_t NVM_STORAGE_SIZE            = 1024U;
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
@@ -53,15 +67,6 @@ typedef enum: uint8_t
 typedef void (*CommsReceiveCallback_t)(const Platform::CommsChannel_t commsChannel,
                                              uint8_t                 *rxBufferPtr,
                                        const uint16_t                 rxBufferLength);
-
-/*************************************************************************************/
-/* PUBLIC CONSTANTS                                                                  */
-/*************************************************************************************/
-
-inline constexpr uint16_t NODE_NUMBER_OF_DATA_MEMBERS = 50U;  /* Must be <= MAX_NUMBER_OF_DATA_MEMBERS */
-inline constexpr uint16_t NODE_NUMBER_OF_DATA_BLOCKS  = 3U;   /* Must be <= MAX_NUMBER_OF_DATA_BLOCKS  */
-inline constexpr uint16_t COMMS_BUFFER_SIZE           = 512U;
-inline constexpr uint32_t NVM_STORAGE_SIZE            = 1024U;
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */

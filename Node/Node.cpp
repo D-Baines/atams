@@ -73,23 +73,28 @@ struct ChannelSyncPacket_t
 };
 
 /*************************************************************************************/
-/* PRIVATE VARIABLES                                                                 */
+/* PRIVATE CLASS OBJECTS                                                             */
 /*************************************************************************************/
 
 /*-- Node --*/
 
-static MemoryMap_t          _memoryMap;
-static BlockOwnerInteractor _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
-static DataBlock            &_universalBlock = _dataBlocks[BLOCK_ID_UNIVERSAL];
-static uint8_t               _localNodeID    = 0U;
+static MemoryMap_t           _memoryMap;
+static BlockOwnerInteractor  _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
 static CRC32                 _nodeCRC(Atams::CRC32_POLYNOMIAL);
+static CircularBuffer        _circularBuffer[Platform::NUMBER_OF_COMMS_CHANNELS];
+static DataBlock            &_universalBlock = _dataBlocks[BLOCK_ID_UNIVERSAL];
 
-/*-- Comms --*/
-CircularBuffer _circularBuffer[Platform::NUMBER_OF_COMMS_CHANNELS];
+/*************************************************************************************/
+/* PRIVATE VARIABLES                                                                 */
+/*************************************************************************************/
+
+static uint8_t          _localNodeID    = 0U;
 
 /* Core Init Synchronisation */
+ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 static CoreInitStatus_t _coreInitComplete[Atams::NUMBER_OF_CORES] = {CORE_INIT_IN_PROGRESS,
-                                                                     CORE_INIT_IN_PROGRESS}; /* THIS NEEDS TO BE IN SHARED MEMORY */
+                                                                     CORE_INIT_IN_PROGRESS};
+
 static uint32_t         _previousCoreCheckTime = 0U;
 
 /*************************************************************************************/
@@ -103,6 +108,7 @@ static void receiveCallback(const Platform::CommsChannel_t commsChannel,
   if (commsChannel < Platform::NUMBER_OF_COMMS_CHANNELS)
   {
     _circularBuffer[commsChannel].pushHead(rxBufferPtr, rxBufferLength);
+    Platform::signalCommsBufferSemaphore();
   }
 }
 
@@ -110,7 +116,7 @@ static inline void resetResponse(ChannelResponse_t &response)
 {
   response.aborted                     = false;
   response.buffer[MESH_INDEX_NODE_ID]  = _localNodeID;
-  response.buffer[MESH_INDEX_MSG_TYPE] = MESSAGE_RESPONSE_SYNCED;
+  response.buffer[MESH_INDEX_MSG_TYPE] = Atams::MESSAGE_UNKNOWN;
   response.index                       = MESH_INDEX_FIRST_DATAGRAM;
 }
 
@@ -123,7 +129,9 @@ static inline void abortResponse(ChannelResponse_t &response, Atams::Error_t err
   response.aborted                     = true;
 }
 
-static void sendResponsePacket(Platform::CommsChannel_t commsChannel, ChannelResponse_t &response)
+static void sendResponsePacket(Platform::CommsChannel_t commsChannel,
+                               ChannelResponse_t       &response,
+                               Atams::MessageType_t     messageType)
 {
   static uint8_t  encodedResponseBuffer[MAX_MESH_PACKET_SIZE] = {0U};
   static uint16_t encodedLength                               = 0U;
@@ -135,6 +143,10 @@ static void sendResponsePacket(Platform::CommsChannel_t commsChannel, ChannelRes
     {
       abortResponse(response, Atams::ERROR_ABORT_FAILURE);
     }
+  }
+  else
+  {
+    response.buffer[MESH_INDEX_MSG_TYPE] = messageType;
   }
 
   if (encodeMeshPacket(response.buffer,
@@ -150,7 +162,8 @@ static void sendResponsePacket(Platform::CommsChannel_t commsChannel, ChannelRes
 /* WARNING - No checks done on datagramHeader subsystemID or memberIndex. */
 static void processDatagramRead(ChannelResponse_t &response,
                                 DatagramHeader_t   datagramHeader,
-                                uint8_t            payloadLength)
+                                uint16_t          &requestPacketDatagramIndex,
+                                const uint8_t      payloadLength)
 {
   Atams::Error_t transferStatus = externalTransfer(ACCESS_READ,
                                                    datagramHeader.blockID,
@@ -167,14 +180,16 @@ static void processDatagramRead(ChannelResponse_t &response,
     datagramHeader.command = RESPONSE_ACK_READ;
     datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
     response.index += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + payloadLength);
+    requestPacketDatagramIndex += DATAGRAM_SIZE_HEADER;
   }
 }
 
 /* WARNING - No checks done on datagramHeader subsystemID or memberIndex. */
 static void processDatagramWrite(ChannelResponse_t &response,
                                  DatagramHeader_t   datagramHeader,
-                                 uint8_t           *datagramPayload,
-                                 uint8_t            payloadLength)
+                                 uint16_t          &requestPacketDatagramIndex,
+                                 uint8_t * const    datagramPayload,
+                                 const uint8_t      payloadLength)
 {
   Atams::Error_t transferStatus = externalTransfer(ACCESS_WRITE,
                                                    datagramHeader.blockID,
@@ -182,29 +197,46 @@ static void processDatagramWrite(ChannelResponse_t &response,
                                                    datagramPayload,
                                                    payloadLength);
 
-  if (transferStatus != Atams::ERROR_NONE)
+  switch (transferStatus)
   {
-    abortResponse(response, transferStatus);
-  }
-  else
-  {
-    datagramHeader.command = RESPONSE_ACK_WRITE;
-    datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
-    response.index += DATAGRAM_SIZE_HEADER;
-  }
+    case Atams::ERROR_NONE:
+      datagramHeader.command = RESPONSE_ACK_WRITE;
+      datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
+      response.index += DATAGRAM_SIZE_HEADER;
+      requestPacketDatagramIndex += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + payloadLength);
+      break;
+    case Atams::ERROR_UNIVERSAL_BLOCK_LOCKED:
+      datagramHeader.command = RESPONSE_NACK;
+      datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
+      response.index += DATAGRAM_SIZE_HEADER;
+      requestPacketDatagramIndex += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + payloadLength);
+      break;
+    default:
+      abortResponse(response, transferStatus);
+      break;
+  };
+}
+
+static void resetWatchdogCount(void)
+{
+  //_watchdogCount = 0U;
+
+  //Node::write(UniversalMemoryMap::BLOCK_ID_UNIVERSAL,
+  //                    UniversalMemoryMap::MEMBER_ID_WATCHDOG_COUNT,
+  //                    0U);
 }
 
 static void processRequestPacket(ChannelResponse_t &response,
-                                 uint8_t           *meshPacket,
-                                 uint16_t           meshPacketLength,
+                                 uint8_t * const    meshPacket,
+                                 const uint16_t     meshPacketLength,
                                  bool               universalBroadcast)
 {
-  bool               cancelProcessing   = false;
-  volatile uint8_t   datagramStartIndex = MESH_INDEX_FIRST_DATAGRAM;
+  uint16_t datagramStartIndex = MESH_INDEX_FIRST_DATAGRAM;
 
   response.index = MESH_SIZE_HEADER;
 
-  while (datagramStartIndex + DATAGRAM_SIZE_HEADER <= meshPacketLength)
+  while ((datagramStartIndex + DATAGRAM_SIZE_HEADER <= meshPacketLength) &&
+         (response.aborted                          == false           ) )
   {
     DatagramHeader_t datagramHeader;
 
@@ -214,7 +246,7 @@ static void processRequestPacket(ChannelResponse_t &response,
         (datagramHeader.blockID != BLOCK_ID_UNIVERSAL) )
     {
       abortResponse(response, Atams::ERROR_BLOCK_ID);
-      return; /* Early Return */
+      break;
     }
 
     DataStatusReturn_t<uint8_t> varLength = getMemberLength(datagramHeader.blockID,
@@ -223,40 +255,32 @@ static void processRequestPacket(ChannelResponse_t &response,
     if (varLength.status != Atams::ERROR_NONE)
     {
       abortResponse(response, varLength.status);
-      return; /* Early Return */
+      break;
     }
 
-    uint16_t datagramLength        = DATAGRAM_SIZE_HEADER + varLength.data;
-    uint16_t remainingOutputLength = sizeof(response.buffer) - response.index;
-
-    if (datagramLength > remainingOutputLength)
-    {
-      abortResponse(response, Atams::ERROR_RESPONSE_BUFFER_LENGTH);
-      return; /* Early Return */
-    }
+    const uint16_t datagramLength        = DATAGRAM_SIZE_HEADER + varLength.data;
+    const uint16_t remainingOutputLength = sizeof(response.buffer) - response.index;
+    const uint16_t remainingInputLength  = meshPacketLength - datagramStartIndex;
 
     switch (static_cast<Access_t>(datagramHeader.command))
     {
       case ACCESS_READ:
-        processDatagramRead(response, datagramHeader, varLength.data);
-        datagramStartIndex += DATAGRAM_SIZE_HEADER;
+        if (datagramLength > remainingOutputLength) abortResponse(response, Atams::ERROR_RESPONSE_BUFFER_LENGTH);
+        else                                        processDatagramRead(response,
+                                                                        datagramHeader,
+                                                                        datagramStartIndex,
+                                                                        varLength.data);
         break;
 
       case ACCESS_WRITE:
       {
-        uint16_t remainingInputLength = meshPacketLength - datagramStartIndex;
-
-        if (datagramLength > remainingInputLength)
-        {
-          abortResponse(response, Atams::ERROR_REQUEST_BUFFER_LENGTH);
-          return; /* Early Return */
-        }
-        else
-        {
-          processDatagramWrite(response, datagramHeader, &meshPacket[datagramStartIndex + DATAGRAM_INDEX_PAYLOAD], varLength.data);
-          datagramStartIndex += static_cast<uint8_t>(DATAGRAM_SIZE_HEADER + varLength.data);
-        }
-
+        if      (datagramLength       > remainingInputLength)  abortResponse(response, Atams::ERROR_REQUEST_BUFFER_LENGTH);
+        else if (DATAGRAM_SIZE_HEADER > remainingOutputLength) abortResponse(response, Atams::ERROR_RESPONSE_BUFFER_LENGTH);
+        else processDatagramWrite(response,
+                                  datagramHeader,
+                                  datagramStartIndex,
+                                  &meshPacket[datagramStartIndex + DATAGRAM_INDEX_PAYLOAD],
+                                  varLength.data);
         break;
       }
 
@@ -266,13 +290,16 @@ static void processRequestPacket(ChannelResponse_t &response,
     }
   }
 
-  if (cancelProcessing == false)
+  if (response.aborted == false)
   {
-    //_watchdogCount = 0U;
-
-    //Node::write(UniversalMemoryMap::BLOCK_ID_UNIVERSAL,
-    //                    UniversalMemoryMap::MEMBER_ID_WATCHDOG_COUNT,
-    //                    0U);
+    if (datagramStartIndex != meshPacketLength)
+    {
+      abortResponse(response, Atams::ERROR_REQUEST_BUFFER_LENGTH);
+    }
+    else
+    {
+      resetWatchdogCount();
+    }
   }
 }
 
@@ -281,7 +308,7 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
                                      uint16_t                 packetLength)
 {
   static uint8_t             decodedPacket[MAX_MESH_PACKET_SIZE];
-  static uint16_t            decodedLength  = 0U;
+  static uint16_t            decodedLength   = 0U;
   static ChannelSyncPacket_t commsChannelSyncPackets[Platform::NUMBER_OF_COMMS_CHANNELS];
   static ChannelResponse_t   commsChannelResponses[Platform::NUMBER_OF_COMMS_CHANNELS];
   static uint8_t             prevSyncNodeID  = NODE_ID_NULL;
@@ -307,14 +334,14 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
       case MESSAGE_BROADCAST_UNIVERSAL:
         resetResponse(response);
         processRequestPacket(response, decodedPacket, decodedLength, true);
-        sendResponsePacket(commsChannel, response);
+        sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE);
         break;
       case MESSAGE_REQUEST:
         if (packetNodeID == _localNodeID)
         {
           resetResponse(response);
           processRequestPacket(response, decodedPacket, decodedLength, false);
-          sendResponsePacket(commsChannel, response);
+          sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE);
         }
         break;
       case MESSAGE_REQUEST_SYNCED:
@@ -333,7 +360,7 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
           }
           if (_localNodeID == firstSyncNodeID)
           {
-            sendResponsePacket(commsChannel, response);
+            sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
           }
         }
         else if (packetNodeID == finalSyncNodeID)
@@ -342,12 +369,18 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
         }
         break;
       case MESSAGE_RESPONSE_SYNCED:
-        if (packetSyncCount != syncPacket.syncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT);
-        if (packetNodeID    == prevSyncNodeID      ) sendResponsePacket(commsChannel, response);
+        if (packetNodeID == prevSyncNodeID)
+        {
+          if (packetSyncCount != syncPacket.syncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT);
+          else                                         sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
+        }
         break;
       case MESSAGE_SYNC_JOG:
-        if (packetSyncCount != syncPacket.syncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT);
-        if (packetNodeID    == _localNodeID        ) sendResponsePacket(commsChannel, response);
+        if (packetNodeID == _localNodeID)
+        {
+          if (packetSyncCount != syncPacket.syncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT);
+          else                                         sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
+        }
         break;
       default:
         /* Do Nothing */
@@ -498,23 +531,24 @@ static Atams::Error_t initBlockDescriptors(const MemoryMap_t &memoryMap)
 
   for (const DataBlock::Descriptor_t * const blockDescriptor : memoryMap.blockDescriptors)
   {
-    DataBlock &block = _dataBlocks[blockIndex];
+    BlockOwnerInteractor &block = _dataBlocks[blockIndex];
 
-    if (blockDescriptor != nullptr)
+    if (blockDescriptor == nullptr)
     {
-      initStatus = block.initDescriptor(blockDescriptor);
-      if (initStatus != Atams::ERROR_NONE) break;
+      break;
     }
     else
     {
-      break;
+      initStatus = block.initDescriptor(blockDescriptor);
+      if (initStatus != Atams::ERROR_NONE) break;
     }
     blockIndex++;
   }
 
   if (initStatus != Atams::ERROR_NONE)
   {
-    for (DataBlock &block : _dataBlocks) block.deinitDescriptor();
+    for (BlockOwnerInteractor &block : _dataBlocks) block.deinitDescriptor();
+    BlockOwnerInteractor::resetStorageBlockIndex();
   }
 
   return (initStatus);
@@ -694,10 +728,12 @@ static void invalidateMemoryMap(void)
      blockDescriptor = nullptr;
    }
 
-   for (DataBlock &block : _dataBlocks)
+   for (BlockOwnerInteractor &block : _dataBlocks)
    {
      block.deinitDescriptor();
    }
+
+   BlockOwnerInteractor::resetStorageBlockIndex();
 }
 
 static Atams::Error_t initUniversalData(const MemoryMap_t &memoryMap)
@@ -717,6 +753,22 @@ static void initCommsBuffers(void)
     _circularBuffer[commsChannel].setEOLChar(EOL_BYTE);
     _circularBuffer[commsChannel].setLockArgument(static_cast<Platform::CommsChannel_t>(commsChannel));
   }
+}
+
+static bool universalAccessLocked(uint16_t varID)
+{
+  bool     accessLocked   = true;
+  uint32_t unlockPasscode = 0U;
+
+  static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_UNIVERSAL_UNLOCK, unlockPasscode));
+
+  if ((varID          == BlockUniversal::VAR_ID_UNIVERSAL_UNLOCK) ||
+      (unlockPasscode == Atams::UNIVERSAL_UNLOCK_PASSCODE       ) )
+  {
+    accessLocked = false;
+  }
+
+  return (accessLocked);
 }
 
 /*************************************************************************************/
@@ -875,6 +927,12 @@ Atams::Error_t write(const uint8_t  blockID,
     return (Atams::ERROR_BLOCK_ID); /* Early Return */
   }
 
+  if ((blockID == Atams::BLOCK_ID_UNIVERSAL) &&
+      (universalAccessLocked(varID)        ) )
+  {
+      return (Atams::ERROR_UNIVERSAL_BLOCK_LOCKED);
+  }
+
   return (_dataBlocks[blockID].write(varID, writeData));
 }
 
@@ -913,9 +971,16 @@ Atams::Error_t externalTransfer(const Access_t  accessRequest,
                                 uint8_t * const dataStoragePtr,
                                 const uint8_t   length)
 {
-  if (blockID  >= _memoryMap.noOfDataBlocks)
+  if (blockID >= _memoryMap.noOfDataBlocks)
   {
     return (Atams::ERROR_BLOCK_ID); /* Early Return */
+  }
+
+  if ((blockID       == Atams::BLOCK_ID_UNIVERSAL) &&
+      (accessRequest == Atams::ACCESS_WRITE      ) &&
+      (universalAccessLocked(varID)              ) )
+  {
+      return (Atams::ERROR_UNIVERSAL_BLOCK_LOCKED);
   }
 
   return (_dataBlocks[blockID].externalTransfer(accessRequest, varID, dataStoragePtr, length));

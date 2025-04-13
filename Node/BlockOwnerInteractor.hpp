@@ -51,12 +51,6 @@ public DataBlock
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
-  enum NVMTransfer_t : uint8_t
-  {
-    TRANSFER_LOAD = 0U,
-    TRANSFER_SAVE = 1U
-  };
-
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Constructor */
@@ -77,6 +71,12 @@ public DataBlock
 
   uint32_t getNVMSpaceRequirement(void);
 
+  Atams::Error_t initDescriptor(const Descriptor_t * const blockDescriptor);
+
+  void deinitDescriptor(void);
+
+  static void resetStorageBlockIndex(void);
+
   private:
 
   /*-- Private Constants ------------------------------------------------------------*/
@@ -86,8 +86,6 @@ public DataBlock
   /*-- Private Variables ------------------------------------------------------------*/
 
   /*-- Private Function Declarations -------------------------------------------------*/
-
-  Atams::Error_t NVMTransfer(const uint32_t maxIndex, uint32_t &nvmIndex, const NVMTransfer_t transferType);
 
 };
 

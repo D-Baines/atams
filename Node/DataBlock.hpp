@@ -69,21 +69,6 @@ class DataBlock
 
     Descriptor_t(void) = delete;
 
-    Descriptor_t(const uint16_t      initNoOfDataMembers,
-                 const GenInfo_t     initGenInfo,
-                 InitDefaultsFnPtr_t defaultsInitFnPtr,
-                 const VarInfo_t     (&initVarInfo)[Platform::NODE_NUMBER_OF_DATA_MEMBERS]) :
-    initDefaults(defaultsInitFnPtr)
-    {
-      noOfDataMembers = initNoOfDataMembers;
-      genInfo         = initGenInfo;
-
-      for (uint16_t varID = 0U; varID < Platform::NODE_NUMBER_OF_DATA_MEMBERS; varID++)
-      {
-        varInfo[varID] = initVarInfo[varID];
-      }
-    };
-
     Descriptor_t(const Descriptor_t &other) = delete;
 
     Descriptor_t& operator=(const Descriptor_t &other) = delete;
@@ -102,10 +87,6 @@ class DataBlock
 
   /* Copy Assignment Operator */
   DataBlock & operator=(const DataBlock &other) = delete;
-
-  Atams::Error_t initDescriptor(const Descriptor_t * const blockDescriptor);
-
-  void deinitDescriptor(void);
 
   Atams::Error_t initDefaults(void);
 
@@ -126,21 +107,53 @@ class DataBlock
 
   protected:
 
-  /*-- Protected Constants ----------------------------------------------------------*/
-
   /*-- Protected Typedefs -----------------------------------------------------------*/
+
+  enum NVMTransfer_t : uint8_t
+  {
+    TRANSFER_LOAD = 0U,
+    TRANSFER_SAVE = 1U
+  };
+
+  /*-- Protected Functions ----------------------------------------------------------*/
+
+  Atams::Error_t initDescriptor(const Descriptor_t * const blockDescriptor);
+
+  void deinitDescriptor(void);
+
+  uint32_t getNVMSpaceRequirement(void);
+
+  Atams::Error_t NVMTransfer(const uint32_t maxIndex, uint32_t &nvmIndex, const NVMTransfer_t transferType);
+
+  /*-- Protected Static Functions ---------------------------------------------------*/
+
+  static void resetStorageBlockIndex(void);
+
+  private:
+
+  /*-- Private Typedefs -------------------------------------------------------------*/
 
   struct DataMember_t
   {
     uint8_t data[MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
   };
 
-  /*-- Protected Variables ----------------------------------------------------------*/
+  struct VarStorageBlock_t
+  {
+    DataMember_t varStorage[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
+  };
+
+  /*-- Private Variables ------------------------------------------------------------*/
 
   const Descriptor_t *_blockDescriptorPtr = nullptr;
+  VarStorageBlock_t  *_blockStoragePtr    = nullptr;
   uint16_t            _validVariableCount = 0U;
-  uint32_t            _nvmStorageOffset   = 0U;
-  DataMember_t        _varStorage[Platform::NODE_NUMBER_OF_DATA_MEMBERS];
+
+  /*-- Private Static Variables -----------------------------------------------------*/
+
+  static VarStorageBlock_t s_varStorageShared[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
+
+  static uint32_t s_varStorageBlockIndex;
 
 };
 

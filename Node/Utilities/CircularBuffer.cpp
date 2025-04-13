@@ -90,7 +90,7 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
                                                   const uint16_t  maxOutputLength,
                                                         uint16_t &outputLength)
 {
-  Error_t statusReturn = CircularBuffer::ERROR_NONE;
+  CircularBuffer::Error_t statusReturn = CircularBuffer::ERROR_NONE;
 
   if (_newDataReady != CircularBuffer::NEW_DATA_READY)
   {
@@ -102,7 +102,7 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
 
   _newDataReady = !CircularBuffer::NEW_DATA_READY;
 
-  Error_t eolSearchResult = eolSearch();
+  CircularBuffer::Error_t eolSearchResult = eolSearch();
 
   /* Early return if no EOL byte found */
   if (eolSearchResult != CircularBuffer::ERROR_NONE)
@@ -173,8 +173,6 @@ CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
   increaseHeadIndex(inputLength);
 
   _newDataReady = CircularBuffer::NEW_DATA_READY;
-
-  Platform::signalCommsBufferSemaphore();
 
   Platform::releaseCommsBufferLock(_lockArgument);
 

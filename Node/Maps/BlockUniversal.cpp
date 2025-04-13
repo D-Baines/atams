@@ -99,12 +99,6 @@ const DataBlock::Descriptor_t blockDescriptor =
       /* .externalAccess = */ ACCESS_READ,
       /* .NVMStorage     = */ false,
     },
-    /* [BlockUniversal::VAR_ID_UNIVERSAL_UNLOCK] = */
-    {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE,
-      /* .NVMStorage     = */ false,
-    },
     /* [BlockUniversal::VAR_ID_MAP_GEN_DAY] = */
     {
       /* .type           = */ TYPE_UINT32,
@@ -145,6 +139,12 @@ const DataBlock::Descriptor_t blockDescriptor =
     {
       /* .type           = */ TYPE_UINT32,
       /* .externalAccess = */ ACCESS_READ,
+      /* .NVMStorage     = */ false,
+    },
+    /* [BlockUniversal::VAR_ID_UNIVERSAL_UNLOCK] = */
+    {
+      /* .type           = */ TYPE_UINT32,
+      /* .externalAccess = */ ACCESS_WRITE,
       /* .NVMStorage     = */ false,
     },
     /* [BlockUniversal::VAR_ID_NODE_ID] = */

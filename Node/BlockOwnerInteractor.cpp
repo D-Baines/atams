@@ -67,69 +67,22 @@ Atams::Error_t BlockOwnerInteractor::saveToNVM(const uint32_t maxIndex, uint32_t
 
 uint32_t BlockOwnerInteractor::getNVMSpaceRequirement(void)
 {
-  uint32_t requiredSpace = 0U;
-
-  if (_blockDescriptorPtr != nullptr)
-  {
-    for (const VarInfo_t &varInfo : _blockDescriptorPtr->varInfo)
-    {
-      if (varInfo.NVMStorage) requiredSpace += Atams::TYPE_LENGTHS[varInfo.type];
-    }
-  }
-
-  return (requiredSpace);
+  return (DataBlock::getNVMSpaceRequirement());
 }
 
-
-/*************************************************************************************/
-/* PRIVATE FUNCTION DEFINITIONS                                                      */
-/*************************************************************************************/
-
-Atams::Error_t BlockOwnerInteractor::NVMTransfer(const uint32_t maxIndex, uint32_t &nvmIndex, const NVMTransfer_t transferType)
+Atams::Error_t BlockOwnerInteractor::initDescriptor(const Descriptor_t * const blockDescriptor)
 {
-  uint16_t varID = 0U;
+  return (DataBlock::initDescriptor(blockDescriptor));
+}
 
-  if (_blockDescriptorPtr == nullptr)
-  {
-    return (Atams::ERROR_NONE); /* Early Return */
-  }
+void BlockOwnerInteractor::deinitDescriptor(void)
+{
+  DataBlock::deinitDescriptor();
+}
 
-  for (const VarInfo_t &varInfo : _blockDescriptorPtr->varInfo)
-  {
-    if (varInfo.NVMStorage)
-    {
-      uint8_t varLength = Atams::TYPE_LENGTHS[varInfo.type];
-
-      if ((nvmIndex + varLength) > maxIndex)
-      {
-        return (Atams::ERROR_NVM_HEADER_LENGTH); /* Early Return */
-      }
-
-      switch (transferType)
-      {
-        case TRANSFER_LOAD:
-          if (!Platform::readFromNVM(nvmIndex, varLength, _varStorage[varID].data))
-          {
-            return (Atams::ERROR_PLATFORM);      /* Early Return */
-          }
-          break;
-        case TRANSFER_SAVE:
-          if (!Platform::writeToNVM(nvmIndex, varLength, _varStorage[varID].data))
-          {
-            return (Atams::ERROR_PLATFORM);      /* Early Return */
-          }
-          break;
-        default:
-          return (Atams::ERROR_FATAL);           /* Early Return */
-      }
-
-      nvmIndex += varLength;
-    }
-
-    varID++;
-  }
-
-  return (Atams::ERROR_NONE);
+void BlockOwnerInteractor::resetStorageBlockIndex(void)
+{
+  DataBlock::resetStorageBlockIndex();
 }
 
 
