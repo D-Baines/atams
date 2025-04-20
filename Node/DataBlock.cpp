@@ -82,7 +82,7 @@ DataBlock::~DataBlock(void)
 
 }
 
-Atams::Error_t DataBlock::initDefaults(void)
+Atams::Error_t DataBlock::restoreDefaults(void)
 {
   Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
@@ -123,10 +123,9 @@ Atams::Error_t DataBlock::write(const uint16_t  memberID,
 
   const VarInfo_t &memberInfo = _blockDescriptorPtr->varInfo[memberID];
 
-  if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()) return (ERROR_VAR_TYPE); /* Early Return */
+  if (PLATFORM_TYPE_NAMES[memberInfo.type] != typeid(T).name()) return (Atams::ERROR_VAR_TYPE); /* Early Return */
 
-  DataMember_t   &dataMember  = _blockStoragePtr->varStorage[memberID];
-  Atams::Error_t  accessError = ERROR_NONE;
+  DataMember_t &dataMember = _blockStoragePtr->varStorage[memberID];
 
   Platform::acquireVarStorageLock();
 
@@ -134,7 +133,7 @@ Atams::Error_t DataBlock::write(const uint16_t  memberID,
 
   Platform::releaseVarStorageLock();
 
-  return (accessError);
+  return (Atams::ERROR_NONE);
 }
 
 template Atams::Error_t DataBlock::write<uint8_t >(const uint16_t memberID, const uint8_t  writeData);
@@ -258,7 +257,7 @@ Atams::Error_t DataBlock::initDescriptor(const Descriptor_t * const blockDescrip
   {
     _blockDescriptorPtr = blockDescriptorPtr;
     _validVariableCount = blockDescriptorPtr->noOfDataMembers;
-    initStatus = initDefaults();
+    initStatus = restoreDefaults();
   }
 
   if (initStatus == Atams::ERROR_NONE)

@@ -40,51 +40,51 @@ namespace Atams { namespace MapTest { namespace BlockExample1 {
 
 static Atams::Error_t initDefaults(DataBlock &blockToInit)
 {
-  Atams::Error_t initStatus = Atams::ERROR_NONE;
+  Atams::Error_t error = Atams::ERROR_NONE;
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_UINT8,
-                                                                      BlockExample1::DEFAULT_WRITE_UINT8);
+  if (!error) error = blockToInit.write(BlockExample1::VAR_ID_WRITE_UINT8,
+                                        BlockExample1::DEFAULT_WRITE_UINT8);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_INT8,
-                                                                      BlockExample1::DEFAULT_WRITE_INT8);
+  if (!error) error = blockToInit.write(BlockExample1::VAR_ID_WRITE_INT8,
+                                        BlockExample1::DEFAULT_WRITE_INT8);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_READ_UINT8,
-                                                                      BlockExample1::DEFAULT_READ_UINT8);
+  if (!error) error = blockToInit.write(BlockExample1::VAR_ID_READ_UINT8,
+                                        BlockExample1::DEFAULT_READ_UINT8);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_READ_INT8,
-                                                                      BlockExample1::DEFAULT_READ_INT8);
+  if (!error) error = blockToInit.write(BlockExample1::VAR_ID_READ_INT8,
+                                        BlockExample1::DEFAULT_READ_INT8);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_UINT16,
-                                                                      BlockExample1::DEFAULT_WRITE_UINT16);
+  if (!error) error = blockToInit.write(BlockExample1::VAR_ID_WRITE_UINT16,
+                                        BlockExample1::DEFAULT_WRITE_UINT16);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_INT16,
-                                                                      BlockExample1::DEFAULT_WRITE_INT16);
+  if (!error) error = blockToInit.write(BlockExample1::VAR_ID_WRITE_INT16,
+                                        BlockExample1::DEFAULT_WRITE_INT16);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_READ_UINT16,
-                                                                      BlockExample1::DEFAULT_READ_UINT16);
+  if (!error) error = blockToInit.write(BlockExample1::VAR_ID_READ_UINT16,
+                                        BlockExample1::DEFAULT_READ_UINT16);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_READ_INT16,
-                                                                      BlockExample1::DEFAULT_READ_INT16);
+  if (!error) error = blockToInit.write(BlockExample1::VAR_ID_READ_INT16,
+                                        BlockExample1::DEFAULT_READ_INT16);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_UINT32,
-                                                                      BlockExample1::DEFAULT_WRITE_UINT32);
+  if (!error) error = blockToInit.write(BlockExample1::VAR_ID_WRITE_UINT32,
+                                        BlockExample1::DEFAULT_WRITE_UINT32);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_INT32,
-                                                                      BlockExample1::DEFAULT_WRITE_INT32);
+  if (!error) error = blockToInit.write(BlockExample1::VAR_ID_WRITE_INT32,
+                                        BlockExample1::DEFAULT_WRITE_INT32);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_READ_UINT32,
-                                                                      BlockExample1::DEFAULT_READ_UINT32);
+  if (!error) error = blockToInit.write(BlockExample1::VAR_ID_READ_UINT32,
+                                        BlockExample1::DEFAULT_READ_UINT32);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_READ_INT32,
-                                                                      BlockExample1::DEFAULT_READ_INT32);
+  if (!error) error = blockToInit.write(BlockExample1::VAR_ID_READ_INT32,
+                                        BlockExample1::DEFAULT_READ_INT32);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_WRITE_FLOAT,
-                                                                      BlockExample1::DEFAULT_WRITE_FLOAT);
+  if (!error) error = blockToInit.write(BlockExample1::VAR_ID_WRITE_FLOAT,
+                                        BlockExample1::DEFAULT_WRITE_FLOAT);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = blockToInit.write(BlockExample1::VAR_ID_READ_FLOAT,
-                                                                      BlockExample1::DEFAULT_READ_FLOAT);
+  if (!error) error = blockToInit.write(BlockExample1::VAR_ID_READ_FLOAT,
+                                        BlockExample1::DEFAULT_READ_FLOAT);
 
-  return (initStatus); 
+  return (error); 
 }
 
 /*************************************************************************************/
@@ -93,92 +93,92 @@ static Atams::Error_t initDefaults(DataBlock &blockToInit)
 
 const DataBlock::Descriptor_t blockDescriptor =
 {
-  /* .noOfDataMembers = */ BlockExample1::NUMBER_OF_EXAMPLE1_VARS,
+  /* .noOfDataMembers = */ BlockExample1::NUMBER_OF_VARS,
   /* .initDefaults    = */ initDefaults, 
   /* .dataMemberInfo  = */
   {
     /* [BlockExample1::VAR_ID_WRITE_UINT8] = */
     {
-      /* .type           = */ TYPE_UINT8,
-      /* .externalAccess = */ ACCESS_WRITE,
+      /* .type           = */ Atams::TYPE_UINT8,
+      /* .externalAccess = */ Atams::ACCESS_WRITE,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::VAR_ID_WRITE_INT8] = */
     {
-      /* .type           = */ TYPE_INT8,
-      /* .externalAccess = */ ACCESS_WRITE,
+      /* .type           = */ Atams::TYPE_INT8,
+      /* .externalAccess = */ Atams::ACCESS_WRITE,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::VAR_ID_READ_UINT8] = */
     {
-      /* .type           = */ TYPE_UINT8,
-      /* .externalAccess = */ ACCESS_READ,
+      /* .type           = */ Atams::TYPE_UINT8,
+      /* .externalAccess = */ Atams::ACCESS_READ,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::VAR_ID_READ_INT8] = */
     {
-      /* .type           = */ TYPE_INT8,
-      /* .externalAccess = */ ACCESS_READ,
+      /* .type           = */ Atams::TYPE_INT8,
+      /* .externalAccess = */ Atams::ACCESS_READ,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::VAR_ID_WRITE_UINT16] = */
     {
-      /* .type           = */ TYPE_UINT16,
-      /* .externalAccess = */ ACCESS_WRITE,
+      /* .type           = */ Atams::TYPE_UINT16,
+      /* .externalAccess = */ Atams::ACCESS_WRITE,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::VAR_ID_WRITE_INT16] = */
     {
-      /* .type           = */ TYPE_INT16,
-      /* .externalAccess = */ ACCESS_WRITE,
+      /* .type           = */ Atams::TYPE_INT16,
+      /* .externalAccess = */ Atams::ACCESS_WRITE,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::VAR_ID_READ_UINT16] = */
     {
-      /* .type           = */ TYPE_UINT16,
-      /* .externalAccess = */ ACCESS_READ,
+      /* .type           = */ Atams::TYPE_UINT16,
+      /* .externalAccess = */ Atams::ACCESS_READ,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::VAR_ID_READ_INT16] = */
     {
-      /* .type           = */ TYPE_INT16,
-      /* .externalAccess = */ ACCESS_READ,
+      /* .type           = */ Atams::TYPE_INT16,
+      /* .externalAccess = */ Atams::ACCESS_READ,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::VAR_ID_WRITE_UINT32] = */
     {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_WRITE,
+      /* .type           = */ Atams::TYPE_UINT32,
+      /* .externalAccess = */ Atams::ACCESS_WRITE,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::VAR_ID_WRITE_INT32] = */
     {
-      /* .type           = */ TYPE_INT32,
-      /* .externalAccess = */ ACCESS_WRITE,
+      /* .type           = */ Atams::TYPE_INT32,
+      /* .externalAccess = */ Atams::ACCESS_WRITE,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::VAR_ID_READ_UINT32] = */
     {
-      /* .type           = */ TYPE_UINT32,
-      /* .externalAccess = */ ACCESS_READ,
+      /* .type           = */ Atams::TYPE_UINT32,
+      /* .externalAccess = */ Atams::ACCESS_READ,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::VAR_ID_READ_INT32] = */
     {
-      /* .type           = */ TYPE_INT32,
-      /* .externalAccess = */ ACCESS_READ,
+      /* .type           = */ Atams::TYPE_INT32,
+      /* .externalAccess = */ Atams::ACCESS_READ,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::VAR_ID_WRITE_FLOAT] = */
     {
-      /* .type           = */ TYPE_FLOAT,
-      /* .externalAccess = */ ACCESS_WRITE,
+      /* .type           = */ Atams::TYPE_FLOAT,
+      /* .externalAccess = */ Atams::ACCESS_WRITE,
       /* .NVMStorage     = */ false,
     },
     /* [BlockExample1::VAR_ID_READ_FLOAT] = */
     {
-      /* .type           = */ TYPE_FLOAT,
-      /* .externalAccess = */ ACCESS_READ,
+      /* .type           = */ Atams::TYPE_FLOAT,
+      /* .externalAccess = */ Atams::ACCESS_READ,
       /* .NVMStorage     = */ false,
     },
   }

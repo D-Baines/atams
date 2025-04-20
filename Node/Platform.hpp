@@ -96,6 +96,14 @@ bool readFromNVM(uint32_t startIndex, uint32_t size, uint8_t * const outputPtr);
 
 bool writeToNVM(uint32_t startIndex, uint32_t size, const uint8_t * const inputPtr);
 
+bool enterConfigurationState(void);
+
+void exitConfigurationState(void);
+
+void setBitrate(uint8_t bitrateOption);
+
+void resetNode(void);
+
 
 } } /* End Atams::Platform Namespace */
 

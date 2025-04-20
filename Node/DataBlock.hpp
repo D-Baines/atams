@@ -53,7 +53,7 @@ class DataBlock
 
   struct VarInfo_t
   {
-    DataType_t type        = TYPE_NULL;
+    VarType_t type        = TYPE_NULL;
     Access_t   accessLevel = ACCESS_NONE;
     uint8_t    NVMStorage  = false;
 
@@ -82,10 +82,8 @@ class DataBlock
       }
     };
 
-    Descriptor_t(void) = delete;
-
-    Descriptor_t(const Descriptor_t &other) = delete;
-
+    Descriptor_t(void)                                 = delete;
+    Descriptor_t(const Descriptor_t &other)            = delete;
     Descriptor_t& operator=(const Descriptor_t &other) = delete;
   };
 
@@ -103,7 +101,7 @@ class DataBlock
   /* Copy Assignment Operator */
   DataBlock & operator=(const DataBlock &other) = delete;
 
-  Atams::Error_t initDefaults(void);
+  Atams::Error_t restoreDefaults(void);
 
   void resetDataMembers(void);
 

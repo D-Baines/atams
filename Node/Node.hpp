@@ -104,7 +104,9 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap);
 
 Atams::Error_t initControlCore(const MemoryMap_t &memoryMap);
 
-Atams::Error_t initDefaults(void);
+Atams::Error_t restoreDefaults(void);
+
+Atams::Error_t restoreDefaultsUserBlocks(void);
 
 Atams::Error_t loadFromNVM(void);
 
@@ -128,7 +130,7 @@ Atams::Error_t externalTransfer(const Access_t  accessRequest,
 
 DataStatusReturn_t<uint8_t> getMemberLength(const uint8_t blockID, const uint16_t memberID);
 
-bool watchdogFaultActive(void);
+bool getWatchdogFault(void);
 
 DataBlock * getBlockPtr(const uint8_t blockID);
 

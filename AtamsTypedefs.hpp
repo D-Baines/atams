@@ -45,6 +45,7 @@ inline constexpr uint8_t  NODE_ID_MAX                    = 254U;
 inline constexpr uint8_t  NODE_ID_NULL                   = 255U;
 inline constexpr uint8_t  MAX_NUMBER_OF_NODE_IDS         = 255U;
 inline constexpr uint8_t  BLOCK_ID_UNIVERSAL             = 0U;
+inline constexpr uint8_t  FIRST_USER_BLOCK_ID            = 1U;
 inline constexpr uint8_t  USER_DATA_BLOCK_ID_START       = 1U;
 inline constexpr uint16_t MAX_MESH_PACKET_DATAGRAM_COUNT = 256U;
 inline constexpr uint16_t MAX_MESH_PACKET_SIZE           = 256U;
@@ -62,11 +63,14 @@ inline constexpr uint8_t  BITS_IN_A_BYTE                 = 8U;
 inline constexpr uint32_t CRC32_POLYNOMIAL               = 0x04C11DB7U;
 inline constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID  = 0x00000000U;
 inline constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID    = 0xD0D0CACAU;
-inline constexpr uint32_t UNIVERSAL_UNLOCK_PASSCODE      = 0x554E4C4BU;
+inline constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS   = 0x0000000FU;
+inline constexpr uint32_t CONFIGURATION_PASSKEY_APPLY    = 0x0000000FU;
+inline constexpr uint32_t CONFIGURATION_PASSKEY_CANCEL   = 0x00000000U;
 inline constexpr uint32_t STORE_ALL_PASSCODE             = 0x73617665U;
 inline constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE   = 0x52455553U;
 inline constexpr uint32_t RESTORE_ALL_PASSCODE           = 0x5245414CU;
-inline constexpr uint32_t APPLY_IDENTIFIERS_PASSCODE     = 0x41504944U;
+inline constexpr uint32_t RESET_NODE_PASSCODE            = 0x0000B33FU;
+inline constexpr uint32_t WATCHDOG_RESET_PASSCODE        = 0x72737477U;
 
 /*************************************************************************************/
 /* STATIC ASSERTIONS                                                                 */
@@ -194,8 +198,7 @@ enum Error_t: uint8_t
   ERROR_NVM_HEADER_LENGTH        = 38U,
   ERROR_NVM_HEADER_VALIDITY      = 39U,
   ERROR_NVM_PLATFORM_SIZE        = 40U,
-  ERROR_UNIVERSAL_BLOCK_LOCKED   = 41U,
-  ERROR_INVALID_NACK             = 42U,
+  ERROR_INVALID_NACK             = 41U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
@@ -207,6 +210,19 @@ enum Access_t: uint8_t
   ACCESS_WRITE = 2U,
 };
 
+enum AtamsBool_t: uint8_t
+{
+  ATAMS_FALSE = 0U,
+  ATAMS_TRUE  = 1U
+};
+
+enum ConfigurationStatus_t
+{
+  CONFIGURATION_STATUS_INACTIVE = 0U,
+  CONFIGURATION_STATUS_ACTIVE   = 1U,
+  CONFIGURATION_STATUS_DENIED   = 2U,
+};
+
 enum AccessResponse_t: uint8_t
 {
   RESPONSE_NACK      = 0U,
@@ -215,7 +231,7 @@ enum AccessResponse_t: uint8_t
   RESPONSE_FATAL     = 3U
 };
 
-enum DataType_t: uint8_t
+enum VarType_t: uint8_t
 {
   TYPE_NULL   = 0U,
   TYPE_UINT8  = 1U,
@@ -231,7 +247,7 @@ enum DataType_t: uint8_t
 enum RequestPattern_t: uint8_t
 {
   REQUEST_INACTIVE           = 0U,
-  REQUEST_ACTIVE             = 1U,
+  REQUEST_STREAM             = 1U,
   REQUEST_UNTIL_ACK          = 2U,
   NUMBER_OF_REQUEST_PATTERNS = 3U
 };

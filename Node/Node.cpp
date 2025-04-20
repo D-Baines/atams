@@ -42,21 +42,30 @@ namespace Atams {
 /* PRIVATE CONSTANTS                                                                 */
 /*************************************************************************************/
 
-static constexpr uint8_t  ABORT_RESPONSE_SIZE          = Atams::MESH_SIZE_HEADER + sizeof(Atams::Error_t);
-static constexpr uint32_t WATCHDOG_PERIOD_MILLISECONDS = 1U;
-static constexpr uint8_t  WATCHDOG_FAULT_ACTIVE        = 1U;
-static constexpr uint8_t  WATCHDOG_FAULT_INACTIVE      = 0U;
-static constexpr uint32_t CORE_STATUS_CHECK_PERIOD     = 10U;
+static constexpr uint8_t  ABORT_RESPONSE_SIZE      = Atams::MESH_SIZE_HEADER + sizeof(Atams::Error_t);
+static constexpr uint32_t WATCHDOG_UPDATE_PERIOD   = 1U;
+static constexpr uint8_t  WATCHDOG_FAULT_ACTIVE    = 1U;
+static constexpr uint8_t  WATCHDOG_FAULT_INACTIVE  = 0U;
+static constexpr uint32_t CORE_STATUS_CHECK_PERIOD = 10U;
 
 /*************************************************************************************/
 /* PRIVATE TYPEDEFS                                                                  */
 /*************************************************************************************/
 
-typedef enum: uint8_t
+enum CoreInitStatus_t: uint8_t
 {
   CORE_INIT_IN_PROGRESS = 0U,
   CORE_INIT_COMPLETE    = 1U
-} CoreInitStatus_t;
+};
+
+enum StoragePasscodeID_t: uint8_t
+{
+  PASSCODE_ID_STORE_ALL           = 0U,
+  PASSCODE_ID_RESTORE_USER_BLOCKS = 1U,
+  PASSCODE_ID_RESTORE_ALL         = 2U,
+  PASSCODE_ID_RESET_NODE          = 3U,
+  NUMBER_OF_PASSCODES
+};
 
 struct ChannelResponse_t
 {
@@ -70,6 +79,21 @@ struct ChannelSyncPacket_t
   uint8_t  buffer[MAX_MESH_PACKET_SIZE];
   uint16_t length    = 0U;
   uint8_t  syncCount = 0U;
+};
+
+typedef void (&PasscodeProcessFunction_t)(void);
+
+struct PasscodeChecker_t
+{
+  const BlockUniversal::VarID_t   universalVarID;
+  const uint32_t                  requiredPasscode;
+  uint32_t                        passcode;
+  uint32_t                        prevPasscode;
+  const PasscodeProcessFunction_t processFunction;
+
+  PasscodeChecker_t(void)                                      = delete;
+  PasscodeChecker_t(const PasscodeChecker_t &other)            = delete;
+  PasscodeChecker_t& operator=(const PasscodeChecker_t &other) = delete;
 };
 
 /*************************************************************************************/
@@ -88,17 +112,65 @@ static DataBlock            &_universalBlock = _dataBlocks[BLOCK_ID_UNIVERSAL];
 /* PRIVATE VARIABLES                                                                 */
 /*************************************************************************************/
 
-static uint8_t _localNodeID     = 0U;
-static uint8_t _prevSyncNodeID  = NODE_ID_NULL;
-static uint8_t _finalSyncNodeID = 0U;
-static uint8_t _firstSyncNodeID = 0U;
+static uint8_t     _localNodeID           = 0U;
+static uint8_t     _prevSyncNodeID        = Atams::NODE_ID_NULL;
+static uint8_t     _finalSyncNodeID       = 0U;
+static uint8_t     _firstSyncNodeID       = 0U;
+static uint8_t     _bitrateOption         = 0U;
+static uint32_t    _watchdogPeriod        = 0U;
+static bool        _universalVarChanged   = 0U;
+static uint32_t    s_watchdogCount        = 0U;
+static bool        s_firstMessageReceived = false;
+
+static Atams::ConfigurationStatus_t s_configurationState  = Atams::CONFIGURATION_STATUS_INACTIVE;
+static bool                         s_bufferResetRequired = false;
 
 /* Core Init Synchronisation */
 ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 static CoreInitStatus_t _coreInitComplete[Atams::NUMBER_OF_CORES] = {CORE_INIT_IN_PROGRESS,
                                                                      CORE_INIT_IN_PROGRESS};
 
-static uint32_t         _previousCoreCheckTime = 0U;
+/* Storage Passcode Function Declarations */
+static void restoreDefaultsNoReturn(void);
+static void restoreDefaultsUserBlocksNoReturn(void);
+static void saveToNVMNoReturn(void);
+
+static PasscodeChecker_t _configPasscodeCheckers[Atams::NUMBER_OF_PASSCODES] =
+{
+  /* [PASSCODE_ID_STORE_ALL] = */
+  {
+    /* .universalVarID   = */ BlockUniversal::VAR_ID_STORE_ALL,
+    /* .requiredPasscode = */ Atams::STORE_ALL_PASSCODE,
+    /* .passcode         = */ 0U,
+    /* .prevPasscode     = */ 0U,
+    /* .processFunction  = */ saveToNVMNoReturn
+  },
+  /* [PASSCODE_ID_RESTORE_USER_BLOCKS] = */
+  {
+    /* .universalVarID   = */ BlockUniversal::VAR_ID_RESTORE_USER_BLOCKS,
+    /* .requiredPasscode = */ Atams::RESTORE_USER_BLOCKS_PASSCODE,
+    /* .passcode         = */ 0U,
+    /* .prevPasscode     = */ 0U,
+    /* .processFunction  = */ restoreDefaultsUserBlocksNoReturn
+  },
+  /* [PASSCODE_ID_RESTORE_ALL] = */
+  {
+    /* .universalVarID   = */ BlockUniversal::VAR_ID_RESTORE_ALL,
+    /* .requiredPasscode = */ Atams::RESTORE_ALL_PASSCODE,
+    /* .passcode         = */ 0U,
+    /* .prevPasscode     = */ 0U,
+    /* .processFunction  = */ restoreDefaultsNoReturn
+  },
+  /* [PASSCODE_ID_RESET_NODE] = */
+  {
+    /* .universalVarID   = */ BlockUniversal::VAR_ID_RESTORE_ALL,
+    /* .requiredPasscode = */ Atams::RESET_NODE_PASSCODE,
+    /* .passcode         = */ 0U,
+    /* .prevPasscode     = */ 0U,
+    /* .processFunction  = */ Platform::resetNode
+  },
+};
+
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -187,6 +259,143 @@ static void processDatagramRead(ChannelResponse_t &response,
   }
 }
 
+static void checkConfigurationStateEntry(Atams::ConfigurationStatus_t &configurationState)
+{
+  static uint32_t prevConfigStatePasskey = 0U;
+  uint32_t        configStatePasskey     = 0U;
+
+  if (configurationState == Atams::CONFIGURATION_STATUS_ACTIVE)
+  {
+    return; /* Early Return */
+  }
+
+  static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_CONFIGURATION_PASSKEY, configStatePasskey));
+
+  if ((configStatePasskey     == Atams::CONFIGURATION_PASSKEY_ACCESS) &&
+      (prevConfigStatePasskey != Atams::CONFIGURATION_PASSKEY_ACCESS) )
+  {
+    if (Platform::enterConfigurationState() == true)
+    {
+      configurationState = Atams::CONFIGURATION_STATUS_ACTIVE;
+    }
+    else
+    {
+      configurationState = Atams::CONFIGURATION_STATUS_DENIED;
+    }
+  }
+
+}
+
+static void applyUniversalConfiguration(void)
+{
+  static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_NODE_ID,          _localNodeID));
+  static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_FIRST_NODE_ID,    _firstSyncNodeID));
+  static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_PREVIOUS_NODE_ID, _prevSyncNodeID));
+  static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_LAST_NODE_ID,     _finalSyncNodeID));
+  static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_BITRATE,          _bitrateOption));
+  static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_PERIOD,  _watchdogPeriod));
+  Platform::setBitrate(_bitrateOption);
+}
+
+static void cancelConfigurationValueChange(void)
+{
+  static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_NODE_ID,          _localNodeID));
+  static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_FIRST_NODE_ID,    _firstSyncNodeID));
+  static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_PREVIOUS_NODE_ID, _prevSyncNodeID));
+  static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_LAST_NODE_ID,     _finalSyncNodeID));
+  static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_BITRATE,          _bitrateOption));
+  static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_PERIOD,  _watchdogPeriod));
+}
+
+static void checkConfigurationStateExit(Atams::ConfigurationStatus_t &configurationState)
+{
+  uint32_t configStatePasskey = 0U;
+
+  if (configurationState != Atams::CONFIGURATION_STATUS_ACTIVE)
+  {
+    return; /* Early Return */
+  }
+
+  static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_CONFIGURATION_PASSKEY, configStatePasskey));
+
+  if (configStatePasskey == Atams::CONFIGURATION_PASSKEY_APPLY)
+  {
+    applyUniversalConfiguration();
+    Platform::exitConfigurationState();
+    configurationState = Atams::CONFIGURATION_STATUS_INACTIVE;
+  }
+  else if (configStatePasskey != Atams::CONFIGURATION_PASSKEY_CANCEL)
+  {
+    cancelConfigurationValueChange();
+    Platform::exitConfigurationState();
+    configurationState = Atams::CONFIGURATION_STATUS_INACTIVE;
+  }
+}
+
+static void checkConfigurationPasscodes(void)
+{
+  for (PasscodeChecker_t &checker : _configPasscodeCheckers)
+  {
+    static_cast<void>(_universalBlock.read(checker.universalVarID, checker.passcode));
+
+    if ((checker.passcode     == checker.requiredPasscode) &&
+        (checker.prevPasscode != checker.requiredPasscode) )
+    {
+      checker.processFunction();
+    }
+
+    checker.prevPasscode = checker.passcode;
+  }
+}
+
+static void updateConfigurationState(void)
+{
+  if (_universalVarChanged == false)
+  {
+    return; /* Early Return */
+  }
+
+  _universalVarChanged = false;
+
+  switch (s_configurationState)
+  {
+    case CONFIGURATION_STATUS_INACTIVE:
+    case CONFIGURATION_STATUS_DENIED:
+      checkConfigurationStateEntry(s_configurationState);
+      break;
+
+    case CONFIGURATION_STATUS_ACTIVE:
+      checkConfigurationPasscodes();
+      checkConfigurationStateExit(s_configurationState);
+      break;
+
+    default:
+      /* Do Nothing */
+      break;
+  }
+
+  _universalBlock.write(BlockUniversal::VAR_ID_CONFIGURATION_STATUS, s_configurationState);
+}
+
+static bool accessAllowedWithoutConfig(const uint16_t varID)
+{
+  return ((varID == BlockUniversal::VAR_ID_CONFIGURATION_PASSKEY) ||
+          (varID == BlockUniversal::VAR_ID_WATCHDOG_RESET       ) );
+}
+
+static bool checkUniversalAccess(const uint16_t varID)
+{
+  bool accessPermitted = false;
+
+  if ((accessAllowedWithoutConfig(varID)                         ) ||
+      (s_configurationState == Atams::CONFIGURATION_STATUS_ACTIVE) )
+  {
+    accessPermitted = true;
+  }
+
+  return (accessPermitted);
+}
+
 /* WARNING - No checks done on datagramHeader subsystemID or memberIndex. */
 static void processDatagramWrite(ChannelResponse_t &response,
                                  DatagramHeader_t   datagramHeader,
@@ -194,39 +403,47 @@ static void processDatagramWrite(ChannelResponse_t &response,
                                  uint8_t * const    datagramPayload,
                                  const uint8_t      payloadLength)
 {
-  Atams::Error_t transferStatus = externalTransfer(ACCESS_WRITE,
-                                                   datagramHeader.blockID,
-                                                   datagramHeader.varID,
-                                                   datagramPayload,
-                                                   payloadLength);
+  bool transferAllowed = true;
 
-  switch (transferStatus)
+  if (datagramHeader.blockID == Atams::BLOCK_ID_UNIVERSAL)
   {
-    case Atams::ERROR_NONE:
-      datagramHeader.command = RESPONSE_ACK_WRITE;
-      datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
-      response.index += DATAGRAM_SIZE_HEADER;
+    transferAllowed = checkUniversalAccess(datagramHeader.varID);
+  }
+
+  if (transferAllowed)
+  {
+    Atams::Error_t transferStatus = externalTransfer(ACCESS_WRITE,
+                                                     datagramHeader.blockID,
+                                                     datagramHeader.varID,
+                                                     datagramPayload,
+                                                     payloadLength);
+
+    if (transferStatus == Atams::ERROR_NONE)
+    {
+      datagramHeader.command      = RESPONSE_ACK_WRITE;
+      response.index             += DATAGRAM_SIZE_HEADER;
       requestPacketDatagramIndex += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + payloadLength);
-      break;
-    case Atams::ERROR_UNIVERSAL_BLOCK_LOCKED:
-      datagramHeader.command = RESPONSE_NACK;
       datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
-      response.index += DATAGRAM_SIZE_HEADER;
-      requestPacketDatagramIndex += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + payloadLength);
-      break;
-    default:
+      if (datagramHeader.blockID == Atams::BLOCK_ID_UNIVERSAL) _universalVarChanged = true;
+    }
+    else
+    {
       abortResponse(response, transferStatus);
-      break;
-  };
+    }
+  }
+  else
+  {
+    datagramHeader.command      = Atams::RESPONSE_NACK;
+    response.index             += Atams::DATAGRAM_SIZE_HEADER;
+    requestPacketDatagramIndex += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + payloadLength);
+    datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
+  }
 }
 
 static void resetWatchdogCount(void)
 {
-  //_watchdogCount = 0U;
-
-  //Node::write(UniversalMemoryMap::BLOCK_ID_UNIVERSAL,
-  //                    UniversalMemoryMap::MEMBER_ID_WATCHDOG_COUNT,
-  //                    0U);
+  s_firstMessageReceived = true;
+  s_watchdogCount        = 0U;
 }
 
 static void processRequestPacket(ChannelResponse_t &response,
@@ -306,23 +523,6 @@ static void processRequestPacket(ChannelResponse_t &response,
   }
 }
 
-static void updateIdentifiersIfRequested(void)
-{
-  static uint32_t applyIdentifiers = 0U;
-
-  static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_APPLY_IDENTIFIERS, applyIdentifiers));
-
-  if (applyIdentifiers == Atams::APPLY_IDENTIFIERS_PASSCODE)
-  {
-    applyIdentifiers = 0U;
-    static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_NODE_ID,            _localNodeID));
-    static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_FIRST_NODE_ID,      _firstSyncNodeID));
-    static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_PREVIOUS_NODE_ID,   _prevSyncNodeID));
-    static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_LAST_NODE_ID,       _finalSyncNodeID));
-    static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_APPLY_IDENTIFIERS, applyIdentifiers));
-  }
-}
-
 static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
                                      uint8_t                 *packetBufferPtr,
                                      uint16_t                 packetLength)
@@ -331,10 +531,6 @@ static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
   static uint16_t            decodedLength    = 0U;
   static ChannelSyncPacket_t commsChannelSyncPackets[Platform::NUMBER_OF_COMMS_CHANNELS];
   static ChannelResponse_t   commsChannelResponses[Platform::NUMBER_OF_COMMS_CHANNELS];
-
-  updateIdentifiersIfRequested();
-
-  static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_NODE_ID, _localNodeID));
 
   if (decodeMeshPacket(packetBufferPtr,
                        packetLength,
@@ -419,6 +615,12 @@ static void processRawMeshData(void)
   static uint8_t  meshPacketRXBuffer[MAX_MESH_PACKET_SIZE] = {0U};
   static uint16_t meshPacketRXLength                       = 0U;
 
+  if (s_bufferResetRequired == true)
+  {
+    s_bufferResetRequired = false;
+    for (CircularBuffer &circularBuffer : _circularBuffer) circularBuffer.reset();
+  }
+
   for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_CHANNELS; commsChannel++)
   {
     CircularBuffer::Error_t bufferStatus = _circularBuffer[commsChannel].getPacket(meshPacketRXBuffer,
@@ -428,17 +630,17 @@ static void processRawMeshData(void)
     /* Early return if no packets ready */
     if (bufferStatus != CircularBuffer::ERROR_NONE)
     {
-      if (bufferStatus == CircularBuffer::ERROR_NO_EOL_BUFFER_FULL ||
-          bufferStatus == CircularBuffer::ERROR_OUTPUT_BUFFER_LENGTH)
+      if ((bufferStatus == CircularBuffer::ERROR_NO_EOL_BUFFER_FULL  ) ||
+          (bufferStatus == CircularBuffer::ERROR_OUTPUT_BUFFER_LENGTH) )
       {
         /* Reset the buffer if no valid packet has been found or if
-         * the valid packet is too long for the mesh packet buffer */
+         * the valid packet is too long for the request packet buffer */
         _circularBuffer[commsChannel].reset();
       }
     }
     else
     {
-      /* Process the packet that has been copied into the mesh packet buffer */
+      /* Process the packet that has been copied into the request packet buffer */
       processEncodedMeshPacket(static_cast<Platform::CommsChannel_t>(commsChannel),
                                meshPacketRXBuffer,
                                meshPacketRXLength);
@@ -446,49 +648,69 @@ static void processRawMeshData(void)
   }
 }
 
-static void updateWatchdog(void)
+static void updateWatchdog(const uint32_t currentTime)
 {
-  uint32_t        currentTime                   = Platform::getMillis();
   static uint32_t previousWatchdogIncrementTime = currentTime;
-  static uint32_t watchdogCount                 = 0U;
-  static uint32_t watchdogTimeout               = 0U;
-  static uint8_t  prevWatchdogClear             = WATCHDOG_FAULT_INACTIVE;
+  static uint8_t  prevWatchdogReset             = WATCHDOG_FAULT_INACTIVE;
 
-  if ((currentTime - previousWatchdogIncrementTime) > WATCHDOG_PERIOD_MILLISECONDS)
+  if (s_firstMessageReceived == false)
   {
-    if (watchdogCount < MAX_UINT32) watchdogCount++;
+    return; /* Early Return */
+  }
 
-    if ((_universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_TIMEOUT, watchdogTimeout) != Atams::ERROR_NONE) ||
-        ((watchdogCount    > watchdogTimeout) &&
-         (watchdogTimeout != 0U             )                                                                  ) )
+  if ((currentTime - previousWatchdogIncrementTime) > WATCHDOG_UPDATE_PERIOD)
+  {
+    if (s_watchdogCount < Atams::MAX_UINT32) s_watchdogCount++;
+
+    if ((_watchdogPeriod > 0U             ) &&
+        (s_watchdogCount > _watchdogPeriod) )
     {
       _universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, WATCHDOG_FAULT_ACTIVE);
     }
     else
     {
-      uint8_t watchdogClear = WATCHDOG_FAULT_INACTIVE;
+      uint8_t watchdogReset = 0U;
 
-      static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_RESET, watchdogClear));
+      static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_RESET, watchdogReset));
 
-      if ((watchdogClear     == WATCHDOG_FAULT_ACTIVE  ) &&
-          (prevWatchdogClear == WATCHDOG_FAULT_INACTIVE) )
+      if ((watchdogReset     == WATCHDOG_RESET_PASSCODE) &&
+          (prevWatchdogReset != WATCHDOG_RESET_PASSCODE) )
       {
         _universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, WATCHDOG_FAULT_INACTIVE);
       }
 
-      prevWatchdogClear = watchdogClear;
+      prevWatchdogReset = watchdogReset;
     }
 
     previousWatchdogIncrementTime = currentTime;
   }
 }
 
+static bool validateUniversalBlock(const MemoryMap_t &memoryMap)
+{
+  bool                          blockValid         = false;
+  const DataBlock::Descriptor_t *universalBlockPtr = memoryMap.blockDescriptors[BLOCK_ID_UNIVERSAL];
+
+  if ((universalBlockPtr != nullptr                         ) &&
+      (universalBlockPtr == &BlockUniversal::blockDescriptor) )
+  {
+    blockValid = true;
+  }
+
+  return (blockValid);
+}
+
 static Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap)
 {
   Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
-  if ((memoryMap.noOfDataBlocks > sizeof(_dataBlocks)       ) ||
-      (memoryMap.noOfDataBlocks > MAX_NUMBER_OF_DATA_BLOCKS ) )
+  if ((memoryMap.noOfDataBlocks > sizeof(_dataBlocks)             ) ||
+      (memoryMap.noOfDataBlocks > Atams::MAX_NUMBER_OF_DATA_BLOCKS) )
+  {
+    return (Atams::ERROR_MEMORY_MAP); /* Early Return */
+  }
+
+  if (validateUniversalBlock(memoryMap) == false)
   {
     return (Atams::ERROR_MEMORY_MAP); /* Early Return */
   }
@@ -523,13 +745,10 @@ static Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap)
       varIndex++;
     }
 
-    if (statusReturn != Atams::ERROR_NONE) break; /* Early Break */
-
     blockIndex++;
   }
 
-  if ((statusReturn                  != Atams::ERROR_NONE       ) ||
-      (memoryMap.genInfo.genChecksum != _nodeCRC.getRollingCRC()) )
+  if (memoryMap.genInfo.genChecksum != _nodeCRC.getRollingCRC())
   {
     statusReturn = Atams::ERROR_MEMORY_MAP;
   }
@@ -586,13 +805,14 @@ static Atams::Error_t sharedInit(const MemoryMap_t &memoryMap)
 
 static void waitForCoreInit(CoreID_t coreID)
 {
-  volatile CoreInitStatus_t coreInitStatus = CORE_INIT_IN_PROGRESS;
+  uint32_t                  previousCoreCheckTime = 0U;
+  volatile CoreInitStatus_t coreInitStatus         = CORE_INIT_IN_PROGRESS;
 
   while (coreInitStatus == CORE_INIT_IN_PROGRESS)
   {
     uint32_t currentTime = Platform::getMillis();
 
-    if (currentTime - _previousCoreCheckTime >= CORE_STATUS_CHECK_PERIOD)
+    if (currentTime - previousCoreCheckTime >= CORE_STATUS_CHECK_PERIOD)
     {
       Platform::acquireVarStorageLock();
 
@@ -600,7 +820,7 @@ static void waitForCoreInit(CoreID_t coreID)
 
       Platform::releaseVarStorageLock();
 
-      _previousCoreCheckTime = currentTime;
+      previousCoreCheckTime = currentTime;
     }
   }
 }
@@ -766,20 +986,19 @@ static void initCommsBuffers(void)
   }
 }
 
-static bool universalAccessLocked(uint16_t varID)
+static void restoreDefaultsNoReturn(void)
 {
-  bool     accessLocked   = true;
-  uint32_t unlockPasscode = 0U;
+  static_cast<void>(restoreDefaults());
+}
 
-  static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_UNIVERSAL_UNLOCK, unlockPasscode));
+static void restoreDefaultsUserBlocksNoReturn(void)
+{
+  static_cast<void>(restoreDefaultsUserBlocks());
+}
 
-  if ((varID          == BlockUniversal::VAR_ID_UNIVERSAL_UNLOCK) ||
-      (unlockPasscode == Atams::UNIVERSAL_UNLOCK_PASSCODE       ) )
-  {
-    accessLocked = false;
-  }
-
-  return (accessLocked);
+static void saveToNVMNoReturn(void)
+{
+  static_cast<void>(saveToNVM());
 }
 
 /*************************************************************************************/
@@ -837,14 +1056,30 @@ Atams::Error_t initControlCore(const MemoryMap_t &memoryMap)
   return (initStatus);
 }
 
-Atams::Error_t initDefaults(void)
+Atams::Error_t restoreDefaults(void)
 {
   Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
   for (DataBlock &dataBlock : _dataBlocks)
   {
-    if (statusReturn == Atams::ERROR_NONE) statusReturn = dataBlock.initDefaults();
+    if (statusReturn == Atams::ERROR_NONE) statusReturn = dataBlock.restoreDefaults();
   }
+
+  if (statusReturn == Atams::ERROR_NONE) statusReturn = saveToNVM();
+
+  return (statusReturn);
+}
+
+Atams::Error_t restoreDefaultsUserBlocks(void)
+{
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
+
+  for (uint8_t blockIndex = Atams::FIRST_USER_BLOCK_ID; blockIndex < _memoryMap.noOfDataBlocks; blockIndex++)
+  {
+    if (statusReturn == Atams::ERROR_NONE) statusReturn = _dataBlocks[blockIndex].restoreDefaults();
+  }
+
+  if (statusReturn == Atams::ERROR_NONE) statusReturn = saveToNVM();
 
   return (statusReturn);
 }
@@ -877,7 +1112,12 @@ Atams::Error_t loadFromNVM(void)
 
   if (statusReturn == Atams::ERROR_NONE) statusReturn = loadNVMAllBlocks(nvmHeader);
 
-  if (statusReturn != Atams::ERROR_NONE) initDefaults();
+  static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_STORAGE_STATUS,           statusReturn));
+  static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE, ATAMS_TRUE));
+
+  /* Messages may have been received while storage was in progress -
+   * request buffer reset to clear old data */
+  s_bufferResetRequired = true;
 
   return (statusReturn);
 }
@@ -900,7 +1140,7 @@ Atams::Error_t saveToNVM(void)
     return (Atams::ERROR_PLATFORM);          /* Early Return */
   }
 
-  /* Write genInfo to NVM */
+  /* Write genInfo to NVM after header */
   if (!Platform::writeToNVM(sizeof(Atams::NVMHeader_t), sizeof(Atams::GenInfo_t), reinterpret_cast<uint8_t*>(&_memoryMap.genInfo)))
   {
     return (Atams::ERROR_PLATFORM);          /* Early Return */
@@ -911,21 +1151,32 @@ Atams::Error_t saveToNVM(void)
   /* Write valid header to validate NVM */
   if (statusReturn == Atams::ERROR_NONE) statusReturn = constructAndWriteNVMHeader(requiredNVMSpace);
 
+  static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_STORAGE_STATUS,           statusReturn));
+  static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE, ATAMS_TRUE));
+
+  /* Messages may have been received while storage was in progress -
+   * request buffer reset to clear old data */
+  s_bufferResetRequired = true;
+
   return (statusReturn);
 }
 
 void updateCommsPolling(void)
 {
+  uint32_t currentTime = Platform::getMillis();
   Platform::update();
-  updateWatchdog();
   processRawMeshData();
+  updateWatchdog(currentTime);
+  updateConfigurationState();
 }
 
 void updateCommsBlocking(void)
 {
-  Platform::waitOnCommsBufferSemaphore(Atams::WATCHDOG_PERIOD_MILLISECONDS);
-  updateWatchdog();
+  uint32_t currentTime = Platform::getMillis();
+  Platform::waitOnCommsBufferSemaphore(Atams::WATCHDOG_UPDATE_PERIOD);
   processRawMeshData();
+  updateWatchdog(currentTime);
+  updateConfigurationState();
 }
 
 template <typename T>
@@ -936,12 +1187,6 @@ Atams::Error_t write(const uint8_t  blockID,
   if (blockID >= _memoryMap.noOfDataBlocks)
   {
     return (Atams::ERROR_BLOCK_ID); /* Early Return */
-  }
-
-  if ((blockID == Atams::BLOCK_ID_UNIVERSAL) &&
-      (universalAccessLocked(varID)        ) )
-  {
-      return (Atams::ERROR_UNIVERSAL_BLOCK_LOCKED);
   }
 
   return (_dataBlocks[blockID].write(varID, writeData));
@@ -987,13 +1232,6 @@ Atams::Error_t externalTransfer(const Access_t  accessRequest,
     return (Atams::ERROR_BLOCK_ID); /* Early Return */
   }
 
-  if ((blockID       == Atams::BLOCK_ID_UNIVERSAL) &&
-      (accessRequest == Atams::ACCESS_WRITE      ) &&
-      (universalAccessLocked(varID)              ) )
-  {
-      return (Atams::ERROR_UNIVERSAL_BLOCK_LOCKED);
-  }
-
   return (_dataBlocks[blockID].externalTransfer(accessRequest, varID, dataStoragePtr, length));
 }
 
@@ -1010,9 +1248,9 @@ DataStatusReturn_t<uint8_t> getMemberLength(const uint8_t blockID, const uint16_
   return (_dataBlocks[blockID].getMemberLength(varID));
 }
 
-bool watchdogFaultActive(void)
+bool getWatchdogFault(void)
 {
-  uint8_t watchdogFaultState = WATCHDOG_FAULT_ACTIVE;
+  uint8_t watchdogFaultState = Atams::WATCHDOG_FAULT_ACTIVE;
   _universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, watchdogFaultState);
   return (static_cast<bool>(watchdogFaultState));
 }

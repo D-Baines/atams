@@ -59,28 +59,27 @@ enum VarID_t: uint16_t
   VAR_ID_WRITE_FLOAT  = 12U,
   VAR_ID_READ_FLOAT   = 13U,
 
-  NUMBER_OF_EXAMPLE2_VARS
+  NUMBER_OF_VARS
 };
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-inline constexpr uint8_t  DEFAULT_WRITE_UINT8  = 1U;
-inline constexpr int8_t   DEFAULT_WRITE_INT8   = 2;
-inline constexpr uint8_t  DEFAULT_READ_UINT8   = 3U;
-inline constexpr int8_t   DEFAULT_READ_INT8    = 4;
-inline constexpr uint16_t DEFAULT_WRITE_UINT16 = 5U;
-inline constexpr int16_t  DEFAULT_WRITE_INT16  = 6;
-inline constexpr uint16_t DEFAULT_READ_UINT16  = 7U;
-inline constexpr int16_t  DEFAULT_READ_INT16   = 8;
-inline constexpr uint32_t DEFAULT_WRITE_UINT32 = 9UL;
-inline constexpr int32_t  DEFAULT_WRITE_INT32  = 10L;
-inline constexpr uint32_t DEFAULT_READ_UINT32  = 11UL;
-inline constexpr int32_t  DEFAULT_READ_INT32   = 12L;
-inline constexpr float    DEFAULT_WRITE_FLOAT  = 13.0F;
-inline constexpr float    DEFAULT_READ_FLOAT   = 14.0F;
-
+inline constexpr uint8_t  DEFAULT_WRITE_UINT8  {1};
+inline constexpr int8_t   DEFAULT_WRITE_INT8   {2};
+inline constexpr uint8_t  DEFAULT_READ_UINT8   {3};
+inline constexpr int8_t   DEFAULT_READ_INT8    {4};
+inline constexpr uint16_t DEFAULT_WRITE_UINT16 {5};
+inline constexpr int16_t  DEFAULT_WRITE_INT16  {6};
+inline constexpr uint16_t DEFAULT_READ_UINT16  {7};
+inline constexpr int16_t  DEFAULT_READ_INT16   {8};
+inline constexpr uint32_t DEFAULT_WRITE_UINT32 {9};
+inline constexpr int32_t  DEFAULT_WRITE_INT32  {10};
+inline constexpr uint32_t DEFAULT_READ_UINT32  {11};
+inline constexpr int32_t  DEFAULT_READ_INT32   {12};
+inline constexpr float    DEFAULT_WRITE_FLOAT  {13.0F};
+inline constexpr float    DEFAULT_READ_FLOAT   {14.0F};
 
 /*************************************************************************************/
 /* CONST EXTERNS                                                                     */

@@ -41,13 +41,13 @@ static const GenInfo_t genInfo =
 {
   /* .atamsVersionMajor = */ 0U,
   /* .atamsVersionMinor = */ 1U,
-  /* .genDay            = */ 13U,
+  /* .genDay            = */ 19U,
   /* .genMonth          = */ 4U,
   /* .genYear           = */ 2025U,
-  /* .genHour           = */ 15U,
-  /* .genMinute         = */ 3U,
-  /* .genSecond         = */ 52U,
-  /* .genChecksum       = */ 0U
+  /* .genHour           = */ 19U,
+  /* .genMinute         = */ 7U,
+  /* .genSecond         = */ 2U,
+  /* .genChecksum       = */ 2433352831U
 };
 
 static const DataBlock::Descriptor_t* blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS] = 
@@ -63,45 +63,45 @@ static const DataBlock::Descriptor_t* blockDescriptors[Platform::NODE_NUMBER_OF_
                                         
 Atams::Error_t initUniversalInfo(void)
 {
-  Atams::Error_t initStatus = Atams::ERROR_NONE;
+  Atams::Error_t error = Atams::ERROR_NONE;
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR,
-                                                                 genInfo.atamsVersionMajor);
+  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
+                                   BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR,
+                                   genInfo.atamsVersionMajor);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::VAR_ID_ATAMS_VERSION_MINOR,
-                                                                 genInfo.atamsVersionMinor);
+  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
+                                   BlockUniversal::VAR_ID_ATAMS_VERSION_MINOR,
+                                   genInfo.atamsVersionMinor);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::VAR_ID_MAP_GEN_DAY,
-                                                                 genInfo.genDay);
+  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
+                                   BlockUniversal::VAR_ID_MAP_GEN_DAY,
+                                   genInfo.genDay);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::VAR_ID_MAP_GEN_MONTH,
-                                                                 genInfo.genMonth);
+  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
+                                   BlockUniversal::VAR_ID_MAP_GEN_MONTH,
+                                   genInfo.genMonth);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::VAR_ID_MAP_GEN_YEAR,
-                                                                 genInfo.genYear);
+  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
+                                   BlockUniversal::VAR_ID_MAP_GEN_YEAR,
+                                   genInfo.genYear);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::VAR_ID_MAP_GEN_HOUR,
-                                                                 genInfo.genHour);
+  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
+                                   BlockUniversal::VAR_ID_MAP_GEN_HOUR,
+                                   genInfo.genHour);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::VAR_ID_MAP_GEN_MINUTE,
-                                                                 genInfo.genMinute);
+  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
+                                   BlockUniversal::VAR_ID_MAP_GEN_MINUTE,
+                                   genInfo.genMinute);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::VAR_ID_MAP_GEN_SECOND,
-                                                                 genInfo.genSecond);
+  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
+                                   BlockUniversal::VAR_ID_MAP_GEN_SECOND,
+                                   genInfo.genSecond);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = Atams::write(BLOCK_ID_UNIVERSAL,
-                                                                 BlockUniversal::VAR_ID_MAP_CHECKSUM,
-                                                                 genInfo.genChecksum);
+  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
+                                   BlockUniversal::VAR_ID_MAP_CHECKSUM,
+                                   genInfo.genChecksum);
   
-  return (initStatus); 
+  return (error); 
 }
 
 /*************************************************************************************/
