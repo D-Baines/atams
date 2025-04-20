@@ -7,40 +7,44 @@ class CRC32:
     DECIMAL_WIDTH_8_BIT: int = 256
     NUMBER_OF_CRC_BITS: int  = 32
 
-    def __init__(self, generator_polynomial: int = CRC32_POLYNOMIAL) -> None:
-        self._crc_table   = self._generate_crc_table(generator_polynomial)
-        self._rolling_crc = self.CRC_RESET_VALUE
+    def __init__(self, generatorPolynomial: int = CRC32_POLYNOMIAL) -> None:
+        self.crcTable   = self.generateCrcTable(generatorPolynomial)
+        self.rollingCrc = self.CRC_RESET_VALUE
 
-    def _generate_crc_table(self, poly: int):
+    def generateCrcTable(self, poly: int):
         table = []
         for byte in range(self.DECIMAL_WIDTH_8_BIT):
             crc = byte
             for _ in range(self.BITS_IN_A_BYTE):
                 if crc & 1:
-                    crc = (crc >> 1) ^ poly
+                    crc = (crc >> 1) ^ (poly & 0xFFFFFFFF)  # Mask polynomial to 32 bits
                 else:
                     crc >>= 1
-            table.append(crc)
+                crc &= 0xFFFFFFFF  # Ensure intermediate CRC remains within 32 bits
+            table.append(crc & 0xFFFFFFFF)  # Mask table entry to 32 bits
         return table
 
-    def _reflect(self, data: int, bit_count: int) -> int:
+    def reflect(self, data: int, bitCount: int) -> int:
         reflection = 0
-        for i in range(bit_count):
+        for i in range(bitCount):
             if data & (1 << i):
-                reflection |= (1 << (bit_count - 1 - i))
-        return reflection
+                reflection |= (1 << (bitCount - 1 - i))
+        return reflection & 0xFFFFFFFF  # Ensure reflection remains within 32 bits
 
-    def calculate_crc(self, byte_buffer: bytes) -> int:
+    def calculateCrc(self, byteBuffer: bytes) -> int:
         crc = self.CRC_RESET_VALUE
-        for byte in byte_buffer:
-            crc = (crc >> self.BITS_IN_A_BYTE) ^ self._crc_table[(crc ^ byte) & self.BYTE_MASK]
-        return self._reflect(crc ^ self.FINAL_XOR_VALUE, self.NUMBER_OF_CRC_BITS)
+        for byte in byteBuffer:
+            crc = (crc >> self.BITS_IN_A_BYTE) ^ self.crcTable[(crc ^ byte) & self.BYTE_MASK]
+            crc &= 0xFFFFFFFF  # Ensure intermediate CRC remains within 32 bits
+        return self.reflect(crc ^ self.FINAL_XOR_VALUE, self.NUMBER_OF_CRC_BITS) & 0xFFFFFFFF  # Mask final CRC to 32 bits
 
-    def begin_rolling_crc(self) -> None:
-        self._rolling_crc = self.CRC_RESET_VALUE
+    def beginRollingCrc(self) -> None:
+        self.rollingCrc = self.CRC_RESET_VALUE
 
-    def update_rolling_crc(self, byte: int) -> None:
-        self._rolling_crc = (self._rolling_crc >> self.BITS_IN_A_BYTE) ^ self._crc_table[(self._rolling_crc ^ byte) & self.BYTE_MASK]
+    def updateRollingCrc(self, byte: int) -> None:
+        byte &= 0xFFFFFFFF  # Ensure the input value is treated as uint32_t
+        self.rollingCrc = (self.rollingCrc >> self.BITS_IN_A_BYTE) ^ self.crcTable[(self.rollingCrc ^ byte) & self.BYTE_MASK]
+        self.rollingCrc &= 0xFFFFFFFF  # Ensure the CRC value remains within 32 bits
 
-    def get_rolling_crc(self) -> int:
-        return self._reflect(self._rolling_crc ^ self.FINAL_XOR_VALUE, self.NUMBER_OF_CRC_BITS)
+    def getRollingCrc(self) -> int:
+        return self.reflect(self.rollingCrc ^ self.FINAL_XOR_VALUE, self.NUMBER_OF_CRC_BITS) & 0xFFFFFFFF  # Return the CRC value constrained to 32 bits

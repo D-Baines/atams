@@ -1,12 +1,11 @@
 import customtkinter
-import pandas
 import os
 from   tkinter          import filedialog
 from   CTkToolTip       import *
 from   PIL              import Image
 from   enum             import Enum
-from   enum             import StrEnum
 from   AtamsFileAutogen import generateCppFiles
+from tkinter import PhotoImage
 
 FRAMEWORK_NAME = "Atams"
 
@@ -33,6 +32,14 @@ tooltipImageDir = os.path.join(scriptDir, 'Images', 'tooltip.png')
 tooltipImage    = customtkinter.CTkImage(light_image=Image.open(tooltipImageDir), 
                                          dark_image=Image.open(tooltipImageDir), 
                                          size=(16,16))
+logoImageDir = os.path.join(scriptDir, 'Images', 'logo.png')
+logoImage    = customtkinter.CTkImage(light_image=Image.open(logoImageDir), 
+                                      dark_image=Image.open(logoImageDir), 
+                                      size=(245,56))
+headerImageDir = os.path.join(scriptDir, 'Images', 'header.png')
+headerImage    = customtkinter.CTkImage(light_image=Image.open(headerImageDir), 
+                                        dark_image=Image.open(headerImageDir), 
+                                        size=(220,13))
 
 class directorySearchBox:
   def __init__(self, parentFrame: customtkinter.CTkFrame, labelText: str, search: SearchType, topPad: int, tipMessage: str):
@@ -61,7 +68,10 @@ class directorySearchBox:
       self.entry.insert(0, self.path)
 
 def runFileGeneration(memoryMapName, memoryMapXlsxPath, nodeDir, hubDir):
-  generationStatus = generateCppFiles(memoryMapName, memoryMapXlsxPath, nodeDir, hubDir)
+  try:
+    generationStatus = generateCppFiles(memoryMapName, memoryMapXlsxPath, nodeDir, hubDir)
+  except:
+     generationStatus = "Error: File Generation Failed - Invalid Memory Map"
   statusLabel.configure(text=generationStatus)
    
 def overwriteAccepted(window, memoryMapName: str, memoryMapXlsxPath:str, nodeDir: str, hubDir:str):
@@ -131,15 +141,22 @@ customtkinter.set_appearance_mode("dark")      # Modes:  system (default), light
 customtkinter.set_default_color_theme("green") # Themes: blue (default), dark-blue, green
 app = customtkinter.CTk()
 app.title(FRAMEWORK_NAME.upper() + " Memory Map Generator")
-app.geometry('850x600')
-app.minsize(width=850, height=600)
+app.geometry('700x600')
+app.minsize(width=620, height=550)
+
+# Load the image: png/gif tested
+icon = PhotoImage(file=os.path.join(scriptDir, 'Images', 'icon.png'))
+
+# Set the window icon
+app.iconphoto(True, icon)
         
 fullFrame = customtkinter.CTkFrame(app, fg_color="transparent")
 fullFrame.place(relwidth=0.7, relx=0.5, rely=0.5, anchor=customtkinter.CENTER)
 
-title = customtkinter.CTkLabel(fullFrame, text=(FRAMEWORK_NAME.upper() + "\n Memory Map Generator"))
-title.pack(side='top', pady=(0,30))
-title.configure(font=("TkDefaultFont", 26), text_color="#666")
+logoLabel   = customtkinter.CTkLabel(fullFrame, text="", image=logoImage)
+headerLabel = customtkinter.CTkLabel(fullFrame, text="", image=headerImage)
+logoLabel.pack(side='top', pady=(0,0))
+headerLabel.pack(side='top', pady=(0,30))
 
 entryFrame = customtkinter.CTkFrame(fullFrame, height=123, fg_color="transparent")
 entryFrame.pack(side='top', fill='x')
@@ -156,30 +173,30 @@ memMapSearch  = directorySearchBox(entryFrame,
                                    "Memory Map Excel File Path:",                    
                                    SearchType.FILE,      
                                    8,
-                                   "Browse and select the Memory Map .xlsx file used to \n"
+                                   """\nBrowse and select the Memory Map ".xlsx" file used to \n"""
                                    "define the memory layout of your Node device. \n\n" 
                                    "An example template can be found here: \n"
-                                   +FRAMEWORK_NAME+"/Templates/MemoryMapTemplate.xlsx")
+                                   +FRAMEWORK_NAME+"/Templates/MemoryMapTemplate.xlsx\n")
 nodeDirSearch = directorySearchBox(entryFrame, 
                                    "Node Device Directory Path ("+FRAMEWORK_NAME+"/Node):", 
                                    SearchType.DIRECTORY, 
                                    23,
-                                   "Browse and select the "+FRAMEWORK_NAME+"/Node folder located \n"
-                                   "in your Hub device software workspace. \n"
-                                   "Memory Map C++ files will be generated in this \n"
-                                   "location. Ensure access is permitted to all \n"
-                                   "sub-folders.")
+                                   "\nBrowse and select the "+FRAMEWORK_NAME+"/Node folder located \n"
+                                   "in your Node device software workspace. \n"
+                                   "\n\nMemory Map C++ files will be generated in this\n"
+                                   "directory.\n\nEnsure access is permitted to all \n"
+                                   "sub-directories.\n")
 hubDirSearch  = directorySearchBox(entryFrame, 
-                                   "Hub Device Directory Path ("+FRAMEWORK_NAME+"/Hub):",   
+                                   "\nHub Device Directory Path ("+FRAMEWORK_NAME+"/Hub):",   
                                    SearchType.DIRECTORY, 
                                    23,
-                                   "Browse and select the "+FRAMEWORK_NAME+"/Hub folder located \n"
+                                   "\nBrowse and select the "+FRAMEWORK_NAME+"/Hub folder located \n"
                                    "in your Hub device software workspace. \n"
-                                   "Memory Map C++ files will be generated in this \n"
-                                   "location. Ensure access is permitted to all \n"
-                                   "sub-folders.")
+                                   "\n\nMemory Map C++ files will be generated in this \n"
+                                   "directory.\n\nEnsure access is permitted to all \n"
+                                   "sub-directories.\n")
 
-statusLabel = customtkinter.CTkLabel(fullFrame, text="Fill in Fields and Click Generate to Generate C++ Files")
+statusLabel = customtkinter.CTkLabel(fullFrame, text="Confirm file paths, input map name, then click to generate C++ Files")
 statusLabel.pack(side='bottom')
 
 generateFrame = customtkinter.CTkFrame(fullFrame, width=800, height=100, fg_color="transparent")

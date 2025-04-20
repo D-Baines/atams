@@ -173,7 +173,7 @@ private Platform::MemoryLock
                                            const uint16_t         varID,
                                            const Access_t         accessRequest,
                                            const RequestPattern_t requestPattern);
-  #endif
+  //#endif
 
   /*-- Private -----------------------------------------------------------------------*/
 

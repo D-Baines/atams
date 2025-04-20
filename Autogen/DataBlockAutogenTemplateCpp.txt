@@ -40,10 +40,10 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 
 static Atams::Error_t initDefaults(DataBlock &blockToInit)
 {
-  Atams::Error_t initStatus = Atams::ERROR_NONE;
+  Atams::Error_t error = Atams::ERROR_NONE;
 
 $$$AUTOGEN$$$INIT_DEFAULTS_DEFINITION$$$AUTOGEN$$$
-  return (initStatus); 
+  return (error); 
 }
 
 /*************************************************************************************/

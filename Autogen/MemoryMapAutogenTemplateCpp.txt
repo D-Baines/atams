@@ -62,10 +62,10 @@ $$$AUTOGEN$$$BLOCK_DESC_REFERENCES$$$AUTOGEN$$$
                                         
 Atams::Error_t initUniversalInfo($$$AUTOGEN$$$NODE_INIT_REFERENCE$$$AUTOGEN$$$)
 {
-  Atams::Error_t initStatus = Atams::ERROR_NONE;
+  Atams::Error_t error = Atams::ERROR_NONE;
 
 $$$AUTOGEN$$$INIT_MAP_UNIVERSAL_INFO_DEFINITION$$$AUTOGEN$$$  
-  return (initStatus); 
+  return (error); 
 }
 
 /*************************************************************************************/
