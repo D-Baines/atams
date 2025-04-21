@@ -141,6 +141,25 @@ bool writeToNVM(uint32_t startIndex, uint32_t size, const uint8_t * const inputP
   return (false);
 }
 
+bool enterConfigurationState(void)
+{
+  return (true);
+}
+
+void exitConfigurationState(void)
+{
+
+}
+
+void setBitrate(Atams::BitrateOption_t bitrateOption)
+{
+  static_cast<void>(bitrateOption);
+}
+
+void resetNode(void)
+{
+  HAL_NVIC_SystemReset();
+}
 
 } } /* End Namespace - Atams::Platform */
 

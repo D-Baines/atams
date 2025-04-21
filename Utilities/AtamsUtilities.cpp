@@ -82,11 +82,11 @@ void uint32ToBuffer(const uint32_t value, uint8_t* buffer)
   buffer[3U] = static_cast<uint8_t>((value                     ) & SINGLE_BYTE_MASK);
 }
 
-Atams::Error_t decodeMeshPacket(const uint8_t  *inputBuffer,
-                                const uint16_t  inputBufferLength,
-                                      uint8_t  *decodedBuffer,
-                                const uint16_t  decodedBufferMaxLength,
-                                      uint16_t &decodedLength)
+Atams::Error_t decodeMeshPacket(const uint8_t  * const inputBuffer,
+                                const uint16_t         inputBufferLength,
+                                      uint8_t  * const decodedBuffer,
+                                const uint16_t         decodedBufferMaxLength,
+                                      uint16_t        &decodedLength)
 {
   COBS::Result_t COBSDecodeResult = COBS::decode(inputBuffer, inputBufferLength, decodedBuffer, decodedBufferMaxLength);
 
@@ -114,11 +114,11 @@ Atams::Error_t decodeMeshPacket(const uint8_t  *inputBuffer,
   return (Atams::ERROR_NONE);
 }
 
-Error_t encodeMeshPacket(      uint8_t  *inputBuffer,
-                         const uint16_t  inputLength,
-                               uint8_t  *encodedBuffer,
-                         const uint16_t  encodedBufferMaxLength,
-                               uint16_t &encodedLength)
+Error_t encodeMeshPacket(      uint8_t  * const inputBuffer,
+                         const uint16_t         inputLength,
+                               uint8_t  * const encodedBuffer,
+                         const uint16_t         encodedBufferMaxLength,
+                               uint16_t        &encodedLength)
 {
   if (inputLength < MESH_SIZE_HEADER)
   {

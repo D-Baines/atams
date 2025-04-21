@@ -44,8 +44,6 @@ namespace Atams {
 
 static constexpr uint8_t  ABORT_RESPONSE_SIZE      = Atams::MESH_SIZE_HEADER + sizeof(Atams::Error_t);
 static constexpr uint32_t WATCHDOG_UPDATE_PERIOD   = 1U;
-static constexpr uint8_t  WATCHDOG_FAULT_ACTIVE    = 1U;
-static constexpr uint8_t  WATCHDOG_FAULT_INACTIVE  = 0U;
 static constexpr uint32_t CORE_STATUS_CHECK_PERIOD = 10U;
 
 /*************************************************************************************/
@@ -65,6 +63,12 @@ enum StoragePasscodeID_t: uint8_t
   PASSCODE_ID_RESTORE_ALL         = 2U,
   PASSCODE_ID_RESET_NODE          = 3U,
   NUMBER_OF_PASSCODES
+};
+
+enum WatchdogFaultStatus_t: uint8_t
+{
+  WATCHDOG_FAULT_INACTIVE = 0U,
+  WATCHDOG_FAULT_ACTIVE   = 1U
 };
 
 struct ChannelResponse_t
@@ -112,15 +116,16 @@ static DataBlock            &_universalBlock = _dataBlocks[BLOCK_ID_UNIVERSAL];
 /* PRIVATE VARIABLES                                                                 */
 /*************************************************************************************/
 
-static uint8_t     _localNodeID           = 0U;
-static uint8_t     _prevSyncNodeID        = Atams::NODE_ID_NULL;
-static uint8_t     _finalSyncNodeID       = 0U;
-static uint8_t     _firstSyncNodeID       = 0U;
-static uint8_t     _bitrateOption         = 0U;
-static uint32_t    _watchdogPeriod        = 0U;
-static bool        _universalVarChanged   = 0U;
-static uint32_t    s_watchdogCount        = 0U;
-static bool        s_firstMessageReceived = false;
+static uint8_t  _localNodeID           = 0U;
+static uint8_t  _prevSyncNodeID        = Atams::NODE_ID_NULL;
+static uint8_t  _finalSyncNodeID       = 0U;
+static uint8_t  _firstSyncNodeID       = 0U;
+static uint8_t  _bitrateOption         = static_cast<uint8_t>(Atams::BITRATE_OPTION_0);
+static uint32_t _watchdogPeriod        = 0U;
+static bool     _universalVarChanged   = 0U;
+static uint32_t s_watchdogCount        = 0U;
+static bool     s_firstMessageReceived = false;
+static uint32_t s_watchdogStatus       = WATCHDOG_FAULT_INACTIVE;
 
 static Atams::ConfigurationStatus_t s_configurationState  = Atams::CONFIGURATION_STATUS_INACTIVE;
 static bool                         s_bufferResetRequired = false;
@@ -131,8 +136,8 @@ static CoreInitStatus_t _coreInitComplete[Atams::NUMBER_OF_CORES] = {CORE_INIT_I
                                                                      CORE_INIT_IN_PROGRESS};
 
 /* Storage Passcode Function Declarations */
-static void restoreDefaultsNoReturn(void);
-static void restoreDefaultsUserBlocksNoReturn(void);
+static void restoreAndSave(void);
+static void restoreUserBlocksAndSave(void);
 static void saveToNVMNoReturn(void);
 
 static PasscodeChecker_t _configPasscodeCheckers[Atams::NUMBER_OF_PASSCODES] =
@@ -151,7 +156,7 @@ static PasscodeChecker_t _configPasscodeCheckers[Atams::NUMBER_OF_PASSCODES] =
     /* .requiredPasscode = */ Atams::RESTORE_USER_BLOCKS_PASSCODE,
     /* .passcode         = */ 0U,
     /* .prevPasscode     = */ 0U,
-    /* .processFunction  = */ restoreDefaultsUserBlocksNoReturn
+    /* .processFunction  = */ restoreUserBlocksAndSave
   },
   /* [PASSCODE_ID_RESTORE_ALL] = */
   {
@@ -159,7 +164,7 @@ static PasscodeChecker_t _configPasscodeCheckers[Atams::NUMBER_OF_PASSCODES] =
     /* .requiredPasscode = */ Atams::RESTORE_ALL_PASSCODE,
     /* .passcode         = */ 0U,
     /* .prevPasscode     = */ 0U,
-    /* .processFunction  = */ restoreDefaultsNoReturn
+    /* .processFunction  = */ restoreAndSave
   },
   /* [PASSCODE_ID_RESET_NODE] = */
   {
@@ -234,6 +239,19 @@ static void sendResponsePacket(Platform::CommsChannel_t commsChannel,
   }
 }
 
+static void processUniversalRead(const uint16_t varID)
+{
+  switch (varID)
+  {
+    case BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE:
+      _universalBlock.write(BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE, static_cast<uint8_t>(Atams::ATAMS_FALSE));
+      break;
+    default:
+      /* Do Nothing */
+      break;
+  }
+}
+
 /* WARNING - No checks done on datagramHeader subsystemID or memberIndex. */
 static void processDatagramRead(ChannelResponse_t &response,
                                 DatagramHeader_t   datagramHeader,
@@ -252,6 +270,7 @@ static void processDatagramRead(ChannelResponse_t &response,
   }
   else
   {
+    if (datagramHeader.blockID == BLOCK_ID_UNIVERSAL) processUniversalRead(datagramHeader.varID);
     datagramHeader.command = RESPONSE_ACK_READ;
     datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
     response.index += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + payloadLength);
@@ -294,7 +313,7 @@ static void applyUniversalConfiguration(void)
   static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_LAST_NODE_ID,     _finalSyncNodeID));
   static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_BITRATE,          _bitrateOption));
   static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_PERIOD,  _watchdogPeriod));
-  Platform::setBitrate(_bitrateOption);
+  Platform::setBitrate(static_cast<Atams::BitrateOption_t>(_bitrateOption));
 }
 
 static void cancelConfigurationValueChange(void)
@@ -374,7 +393,7 @@ static void updateConfigurationState(void)
       break;
   }
 
-  _universalBlock.write(BlockUniversal::VAR_ID_CONFIGURATION_STATUS, s_configurationState);
+  _universalBlock.write(BlockUniversal::VAR_ID_CONFIGURATION_STATUS, static_cast<uint8_t>(s_configurationState));
 }
 
 static bool accessAllowedWithoutConfig(const uint16_t varID)
@@ -440,7 +459,7 @@ static void processDatagramWrite(ChannelResponse_t &response,
   }
 }
 
-static void resetWatchdogCount(void)
+static void toggleWatchdog(void)
 {
   s_firstMessageReceived = true;
   s_watchdogCount        = 0U;
@@ -449,7 +468,7 @@ static void resetWatchdogCount(void)
 static void processRequestPacket(ChannelResponse_t &response,
                                  uint8_t * const    meshPacket,
                                  const uint16_t     meshPacketLength,
-                                 bool               universalBroadcast)
+                                 const bool         universalBroadcast)
 {
   uint16_t datagramStartIndex = MESH_INDEX_FIRST_DATAGRAM;
 
@@ -518,14 +537,14 @@ static void processRequestPacket(ChannelResponse_t &response,
     }
     else
     {
-      resetWatchdogCount();
+      toggleWatchdog();
     }
   }
 }
 
-static void processEncodedMeshPacket(Platform::CommsChannel_t commsChannel,
-                                     uint8_t                 *packetBufferPtr,
-                                     uint16_t                 packetLength)
+static void processEncodedMeshPacket(const Platform::CommsChannel_t commsChannel,
+                                     const uint8_t                * const packetBufferPtr,
+                                     const uint16_t                 packetLength)
 {
   static uint8_t             decodedPacket[MAX_MESH_PACKET_SIZE];
   static uint16_t            decodedLength    = 0U;
@@ -650,39 +669,55 @@ static void processRawMeshData(void)
 
 static void updateWatchdog(const uint32_t currentTime)
 {
-  static uint32_t previousWatchdogIncrementTime = currentTime;
-  static uint8_t  prevWatchdogReset             = WATCHDOG_FAULT_INACTIVE;
+  static uint32_t s_prevWatchdogUpdateTime = currentTime;
+  static uint32_t s_prevWatchdogReset      = Atams::WATCHDOG_RESET_PASSCODE;
 
   if (s_firstMessageReceived == false)
   {
     return; /* Early Return */
   }
 
-  if ((currentTime - previousWatchdogIncrementTime) > WATCHDOG_UPDATE_PERIOD)
+  if ((currentTime - s_prevWatchdogUpdateTime) > WATCHDOG_UPDATE_PERIOD)
   {
-    if (s_watchdogCount < Atams::MAX_UINT32) s_watchdogCount++;
-
-    if ((_watchdogPeriod > 0U             ) &&
-        (s_watchdogCount > _watchdogPeriod) )
+    switch (s_watchdogStatus)
     {
-      _universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, WATCHDOG_FAULT_ACTIVE);
-    }
-    else
-    {
-      uint8_t watchdogReset = 0U;
+      case WATCHDOG_FAULT_INACTIVE:
 
-      static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_RESET, watchdogReset));
+        if (s_watchdogCount < Atams::MAX_UINT32) s_watchdogCount++;
 
-      if ((watchdogReset     == WATCHDOG_RESET_PASSCODE) &&
-          (prevWatchdogReset != WATCHDOG_RESET_PASSCODE) )
+        if ((_watchdogPeriod > 0U             ) &&
+            (s_watchdogCount > _watchdogPeriod) )
+        {
+          _universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, static_cast<uint8_t>(WATCHDOG_FAULT_ACTIVE));
+          s_watchdogStatus = WATCHDOG_FAULT_ACTIVE;
+        }
+
+        break;
+
+      case WATCHDOG_FAULT_ACTIVE:
       {
-        _universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, WATCHDOG_FAULT_INACTIVE);
-      }
+        uint8_t watchdogReset{0U};
 
-      prevWatchdogReset = watchdogReset;
+        static_cast<void>(_universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_RESET, watchdogReset));
+
+        if ((watchdogReset       == Atams::WATCHDOG_RESET_PASSCODE) &&
+            (s_prevWatchdogReset != Atams::WATCHDOG_RESET_PASSCODE) )
+        {
+          _universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, static_cast<uint8_t>(WATCHDOG_FAULT_INACTIVE));
+          s_watchdogStatus = WATCHDOG_FAULT_INACTIVE;
+        }
+
+        s_prevWatchdogReset = watchdogReset;
+
+        break;
+      }
+      default:
+        _universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, static_cast<uint8_t>(WATCHDOG_FAULT_ACTIVE));
+        s_watchdogStatus = WATCHDOG_FAULT_ACTIVE;
+        break;
     }
 
-    previousWatchdogIncrementTime = currentTime;
+    s_prevWatchdogUpdateTime = currentTime;
   }
 }
 
@@ -986,14 +1021,34 @@ static void initCommsBuffers(void)
   }
 }
 
-static void restoreDefaultsNoReturn(void)
+static void restoreAndSave(void)
 {
-  static_cast<void>(restoreDefaults());
+  Atams::Error_t restoreStatus = restoreDefaults();
+
+  if (restoreStatus == Atams::ERROR_NONE)
+  {
+    static_cast<void>(saveToNVM());
+  }
+  else
+  {
+    static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_STORAGE_STATUS,           static_cast<uint8_t>(restoreStatus)));
+    static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE, static_cast<uint8_t>(ATAMS_TRUE)));
+  }
 }
 
-static void restoreDefaultsUserBlocksNoReturn(void)
+static void restoreUserBlocksAndSave(void)
 {
-  static_cast<void>(restoreDefaultsUserBlocks());
+  Atams::Error_t restoreStatus = restoreDefaultsUserBlocks();
+
+  if (restoreStatus == Atams::ERROR_NONE)
+  {
+    static_cast<void>(saveToNVM());
+  }
+  else
+  {
+    static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_STORAGE_STATUS,           static_cast<uint8_t>(restoreStatus)));
+    static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE, static_cast<uint8_t>(ATAMS_TRUE)));
+  }
 }
 
 static void saveToNVMNoReturn(void)
@@ -1065,8 +1120,6 @@ Atams::Error_t restoreDefaults(void)
     if (statusReturn == Atams::ERROR_NONE) statusReturn = dataBlock.restoreDefaults();
   }
 
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = saveToNVM();
-
   return (statusReturn);
 }
 
@@ -1078,8 +1131,6 @@ Atams::Error_t restoreDefaultsUserBlocks(void)
   {
     if (statusReturn == Atams::ERROR_NONE) statusReturn = _dataBlocks[blockIndex].restoreDefaults();
   }
-
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = saveToNVM();
 
   return (statusReturn);
 }
@@ -1151,8 +1202,10 @@ Atams::Error_t saveToNVM(void)
   /* Write valid header to validate NVM */
   if (statusReturn == Atams::ERROR_NONE) statusReturn = constructAndWriteNVMHeader(requiredNVMSpace);
 
-  static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_STORAGE_STATUS,           statusReturn));
-  static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE, ATAMS_TRUE));
+  static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_STORAGE_STATUS,
+                                          static_cast<uint8_t>(statusReturn)));
+  static_cast<void>(_universalBlock.write(BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE,
+                                          static_cast<uint8_t>(ATAMS_TRUE)));
 
   /* Messages may have been received while storage was in progress -
    * request buffer reset to clear old data */
@@ -1250,9 +1303,7 @@ DataStatusReturn_t<uint8_t> getMemberLength(const uint8_t blockID, const uint16_
 
 bool getWatchdogFault(void)
 {
-  uint8_t watchdogFaultState = Atams::WATCHDOG_FAULT_ACTIVE;
-  _universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, watchdogFaultState);
-  return (static_cast<bool>(watchdogFaultState));
+  return (s_watchdogStatus == WATCHDOG_FAULT_ACTIVE);
 }
 
 DataBlock * getBlockPtr(const uint8_t blockID)

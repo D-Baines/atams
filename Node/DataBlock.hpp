@@ -103,8 +103,6 @@ class DataBlock
 
   Atams::Error_t restoreDefaults(void);
 
-  void resetDataMembers(void);
-
   template <typename T>
   Atams::Error_t write(const uint16_t memberID, const T writeData);
 
@@ -137,6 +135,8 @@ class DataBlock
   uint32_t getNVMSpaceRequirement(void);
 
   Atams::Error_t nvmTransfer(const uint32_t maxIndex, uint32_t &nvmIndex, const NVMTransfer_t transferType);
+
+  void resetDataMembers(void);
 
   /*-- Protected Static Functions ---------------------------------------------------*/
 

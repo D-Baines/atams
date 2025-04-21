@@ -100,7 +100,7 @@ bool enterConfigurationState(void);
 
 void exitConfigurationState(void);
 
-void setBitrate(uint8_t bitrateOption);
+void setBitrate(Atams::BitrateOption_t bitrateOption);
 
 void resetNode(void);
 

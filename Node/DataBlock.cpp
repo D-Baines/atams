@@ -95,25 +95,6 @@ Atams::Error_t DataBlock::restoreDefaults(void)
   return (statusReturn);
 }
 
-void DataBlock::resetDataMembers(void)
-{
-  if (_blockStoragePtr == nullptr)
-  {
-    return;
-  }
-
-  Platform::acquireVarStorageLock();
-
-  for (DataMember_t dataMember : _blockStoragePtr->varStorage)
-  {
-    //TODO:: Volatile memset may be required
-    memset(dataMember.data, 0U, sizeof(dataMember.data));
-  }
-
-  Platform::releaseVarStorageLock();
-}
-
-
 /* WARNING WARNING WARNING - _blockDescriptorPtr and _varStoragePtr are dereferenced without checking nullptr. All nullptrs are guarded by _validVariableCount */
 template <typename T>
 Atams::Error_t DataBlock::write(const uint16_t  memberID,
@@ -344,6 +325,28 @@ Atams::Error_t DataBlock::nvmTransfer(const uint32_t maxIndex, uint32_t &nvmInde
 
   return (Atams::ERROR_NONE);
 }
+
+void DataBlock::resetDataMembers(void)
+{
+  if (_blockStoragePtr == nullptr)
+  {
+    return;
+  }
+
+  Platform::acquireVarStorageLock();
+
+  for (DataMember_t dataMember : _blockStoragePtr->varStorage)
+  {
+    //TODO:: Volatile memset may be required
+    memset(dataMember.data, 0U, sizeof(dataMember.data));
+  }
+
+  Platform::releaseVarStorageLock();
+}
+
+/*************************************************************************************/
+/* STATIC PROTECTED FUNCTION DEFINITIONS                                             */
+/*************************************************************************************/
 
 void DataBlock::resetStorageBlockIndex(void)
 {

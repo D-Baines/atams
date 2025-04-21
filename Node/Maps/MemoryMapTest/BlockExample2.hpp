@@ -59,7 +59,7 @@ enum VarID_t: uint16_t
   VAR_ID_WRITE_FLOAT  = 12U,
   VAR_ID_READ_FLOAT   = 13U,
 
-  NUMBER_OF_VARS
+  NUMBER_OF_EXAMPLE2_VARS
 };
 
 /*************************************************************************************/

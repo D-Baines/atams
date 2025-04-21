@@ -83,13 +83,6 @@ static_assert(std::numeric_limits<float>::is_iec559, "Platform float representat
 /* TYPEDEFS                                                                          */
 /*************************************************************************************/
 
-enum CoreID_t: uint8_t
-{
-  CORE_CONTROL = 0U,
-  CORE_COMMS   = 1U,
-  NUMBER_OF_CORES
-};
-
 enum SystemType_t: uint8_t
 {
   SYSTEM_UNKNOWN = 0U,
@@ -250,6 +243,27 @@ enum RequestPattern_t: uint8_t
   REQUEST_STREAM             = 1U,
   REQUEST_UNTIL_ACK          = 2U,
   NUMBER_OF_REQUEST_PATTERNS = 3U
+};
+
+enum BitrateOption_t: uint8_t
+{
+  BITRATE_OPTION_0 = 0U,
+  BITRATE_OPTION_1 = 1U,
+  BITRATE_OPTION_2 = 2U,
+  BITRATE_OPTION_3 = 3U,
+  BITRATE_OPTION_4 = 4U,
+  BITRATE_OPTION_5 = 5U,
+  BITRATE_OPTION_6 = 6U,
+  BITRATE_OPTION_7 = 7U,
+  BITRATE_OPTION_8 = 8U,
+  BITRATE_OPTION_9 = 9U,
+};
+
+enum CoreID_t: uint8_t
+{
+  CORE_CONTROL = 0U,
+  CORE_COMMS   = 1U,
+  NUMBER_OF_CORES
 };
 
 struct DatagramHeader_t
