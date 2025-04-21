@@ -309,12 +309,31 @@ DataBlock * Node::getBlockPtr(const uint8_t blockID)
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
+bool Node::validateUniversalBlock(const MemoryMap_t &memoryMap)
+{
+  bool                          blockValid         = false;
+  const DataBlock::Descriptor_t *universalBlockPtr = memoryMap.blockDescriptors[BLOCK_ID_UNIVERSAL];
+
+  if ((universalBlockPtr != nullptr                         ) &&
+      (universalBlockPtr == &BlockUniversal::blockDescriptor) )
+  {
+    blockValid = true;
+  }
+
+  return (blockValid);
+}
+
 Atams::Error_t Node::validateMemoryMap(const MemoryMap_t &memoryMap)
 {
   Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
   if ((memoryMap.noOfDataBlocks > sizeof(_dataBlocks)      ) ||
       (memoryMap.noOfDataBlocks > MAX_NUMBER_OF_DATA_BLOCKS) )
+  {
+    return (Atams::ERROR_MEMORY_MAP); /* Early Return */
+  }
+
+  if (validateUniversalBlock(memoryMap) == false)
   {
     return (Atams::ERROR_MEMORY_MAP); /* Early Return */
   }

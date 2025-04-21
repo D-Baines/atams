@@ -225,6 +225,8 @@ private Platform::MemoryLock
 
   /*-- PRIVATE FUNCTION DECLARATIONS --*/
 
+  bool validateUniversalBlock(const MemoryMap_t &memoryMap);
+
   Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap);
 
   Atams::Error_t initBlockDescriptors(const MemoryMap_t &memoryMap);

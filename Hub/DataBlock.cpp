@@ -109,7 +109,7 @@ Atams::Error_t DataBlock::write(const uint16_t  memberID,
 
   Platform::MemoryLock::acquireLock();
 
-  memcpy(&dataMember.data, &writeData, sizeof(dataMember.data));
+  memcpy(&dataMember.data, &writeData, sizeof(writeData));
 
   Platform::MemoryLock::releaseLock();
 

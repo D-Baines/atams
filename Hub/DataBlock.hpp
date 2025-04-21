@@ -53,9 +53,9 @@ private Platform::MemoryLock
 
   struct VarInfo_t
   {
-    DataType_t type        = TYPE_NULL;
-    Access_t   accessLevel = ACCESS_NONE;
-    uint8_t    NVMStorage  = false;
+    VarType_t type        = TYPE_NULL;
+    Access_t  accessLevel = ACCESS_NONE;
+    uint8_t   NVMStorage  = false;
 
     static_assert(sizeof(type)        == 1U, "VarInfo_t member type size invalid");
     static_assert(sizeof(accessLevel) == 1U, "VarInfo_t member type size invalid");
