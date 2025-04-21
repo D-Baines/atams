@@ -31,6 +31,8 @@
 #include "Maps/BlockUniversal.hpp"
 #include "Utilities/CircularBuffer.hpp"
 #include "../Utilities/CRC32.hpp"
+#include "Developer/WatchdogHandler.hpp"
+#include "Developer/ConfigurationHandler.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -43,32 +45,23 @@ namespace Atams {
 /*************************************************************************************/
 
 static constexpr uint8_t  ABORT_RESPONSE_SIZE      = Atams::MESH_SIZE_HEADER + sizeof(Atams::Error_t);
-static constexpr uint32_t WATCHDOG_UPDATE_PERIOD   = 1U;
 static constexpr uint32_t CORE_STATUS_CHECK_PERIOD = 10U;
 
 /*************************************************************************************/
 /* PRIVATE TYPEDEFS                                                                  */
 /*************************************************************************************/
 
+enum NodeCommsState_t: uint8_t
+{
+  NODE_COMMS_UNINITIALISED = 0U,
+  NODE_COMMS_INITIALISED   = 1U,
+  NODE_COMMS_COMMS_ACTIVE  = 2U
+};
+
 enum CoreInitStatus_t: uint8_t
 {
   CORE_INIT_IN_PROGRESS = 0U,
   CORE_INIT_COMPLETE    = 1U
-};
-
-enum StoragePasscodeID_t: uint8_t
-{
-  PASSCODE_ID_STORE_ALL           = 0U,
-  PASSCODE_ID_RESTORE_USER_BLOCKS = 1U,
-  PASSCODE_ID_RESTORE_ALL         = 2U,
-  PASSCODE_ID_RESET_NODE          = 3U,
-  NUMBER_OF_PASSCODES
-};
-
-enum WatchdogFaultStatus_t: uint8_t
-{
-  WATCHDOG_FAULT_INACTIVE = 0U,
-  WATCHDOG_FAULT_ACTIVE   = 1U
 };
 
 struct ChannelResponse_t
@@ -85,97 +78,43 @@ struct ChannelSyncPacket_t
   uint8_t  syncCount = 0U;
 };
 
-typedef void (&PasscodeProcessFunction_t)(void);
+/*************************************************************************************/
+/* PRIVATE FUNCTION DECLARATIONS                                                     */
+/*************************************************************************************/
 
-struct PasscodeChecker_t
-{
-  const BlockUniversal::VarID_t   universalVarID;
-  const uint32_t                  requiredPasscode;
-  uint32_t                        passcode;
-  uint32_t                        prevPasscode;
-  const PasscodeProcessFunction_t processFunction;
-
-  PasscodeChecker_t(void)                                      = delete;
-  PasscodeChecker_t(const PasscodeChecker_t &other)            = delete;
-  PasscodeChecker_t& operator=(const PasscodeChecker_t &other) = delete;
-};
+/* Storage Passcode Function Declarations */
+static void saveToNVMNoReturn(void);
+static void restoreUserBlocksAndSave(void);
+static void restoreAndSave(void);
 
 /*************************************************************************************/
 /* PRIVATE CLASS OBJECTS                                                             */
 /*************************************************************************************/
-
-/*-- Node --*/
 
 static MemoryMap_t          s_memoryMap;
 static BlockOwnerInteractor s_dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
 static CRC32                s_nodeCRC(Atams::CRC32_POLYNOMIAL);
 static CircularBuffer       s_circularBuffers[Platform::NUMBER_OF_COMMS_CHANNELS];
 static DataBlock           &s_universalBlock = s_dataBlocks[BLOCK_ID_UNIVERSAL];
+static WatchdogHandler      s_watchdogHandler(s_universalBlock);
+static ConfigurationHandler s_ConfigurationHandler(s_universalBlock,
+                                                   s_watchdogHandler,
+                                                   saveToNVMNoReturn,
+                                                   restoreUserBlocksAndSave,
+                                                   restoreAndSave,
+                                                   Platform::resetNode);
 
 /*************************************************************************************/
 /* PRIVATE VARIABLES                                                                 */
 /*************************************************************************************/
 
-static uint8_t  s_localNodeID          = 0U;
-static uint8_t  s_prevSyncNodeID       = Atams::NODE_ID_NULL;
-static uint8_t  s_finalSyncNodeID      = 0U;
-static uint8_t  s_firstSyncNodeID      = 0U;
-static uint8_t  s_bitrateOption        = static_cast<uint8_t>(Atams::BITRATE_OPTION_0);
-static uint32_t s_watchdogPeriod       = 0U;
-static bool     s_universalVarChanged  = 0U;
-static uint32_t s_watchdogCount        = 0U;
-static bool     s_firstMessageReceived = false;
-static uint32_t s_watchdogStatus       = WATCHDOG_FAULT_INACTIVE;
-
-static Atams::ConfigurationStatus_t s_configurationState  = Atams::CONFIGURATION_STATUS_INACTIVE;
-static bool                         s_bufferResetRequired = false;
+static NodeCommsState_t s_nodeCommsState      = NODE_COMMS_UNINITIALISED;
+static bool             s_bufferResetRequired = false;
 
 /* Core Init Synchronisation */
 ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 static CoreInitStatus_t s_coreInitComplete[Atams::NUMBER_OF_CORES] = {CORE_INIT_IN_PROGRESS,
                                                                       CORE_INIT_IN_PROGRESS};
-
-/* Storage Passcode Function Declarations */
-static void restoreAndSave(void);
-static void restoreUserBlocksAndSave(void);
-static void saveToNVMNoReturn(void);
-
-static PasscodeChecker_t s_configPasscodeCheckers[Atams::NUMBER_OF_PASSCODES] =
-{
-  /* [PASSCODE_ID_STORE_ALL] = */
-  {
-    /* .universalVarID   = */ BlockUniversal::VAR_ID_STORE_ALL,
-    /* .requiredPasscode = */ Atams::STORE_ALL_PASSCODE,
-    /* .passcode         = */ 0U,
-    /* .prevPasscode     = */ 0U,
-    /* .processFunction  = */ saveToNVMNoReturn
-  },
-  /* [PASSCODE_ID_RESTORE_USER_BLOCKS] = */
-  {
-    /* .universalVarID   = */ BlockUniversal::VAR_ID_RESTORE_USER_BLOCKS,
-    /* .requiredPasscode = */ Atams::RESTORE_USER_BLOCKS_PASSCODE,
-    /* .passcode         = */ 0U,
-    /* .prevPasscode     = */ 0U,
-    /* .processFunction  = */ restoreUserBlocksAndSave
-  },
-  /* [PASSCODE_ID_RESTORE_ALL] = */
-  {
-    /* .universalVarID   = */ BlockUniversal::VAR_ID_RESTORE_ALL,
-    /* .requiredPasscode = */ Atams::RESTORE_ALL_PASSCODE,
-    /* .passcode         = */ 0U,
-    /* .prevPasscode     = */ 0U,
-    /* .processFunction  = */ restoreAndSave
-  },
-  /* [PASSCODE_ID_RESET_NODE] = */
-  {
-    /* .universalVarID   = */ BlockUniversal::VAR_ID_RESTORE_ALL,
-    /* .requiredPasscode = */ Atams::RESET_NODE_PASSCODE,
-    /* .passcode         = */ 0U,
-    /* .prevPasscode     = */ 0U,
-    /* .processFunction  = */ Platform::resetNode
-  },
-};
-
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -195,14 +134,14 @@ static void receiveCallback(const Platform::CommsChannel_t commsChannel,
 static inline void resetResponse(ChannelResponse_t &response)
 {
   response.aborted                     = false;
-  response.buffer[MESH_INDEX_NODE_ID]  = s_localNodeID;
+  response.buffer[MESH_INDEX_NODE_ID]  = s_ConfigurationHandler.getLocalNodeID();
   response.buffer[MESH_INDEX_MSG_TYPE] = Atams::MESSAGE_UNKNOWN;
   response.index                       = MESH_INDEX_FIRST_DATAGRAM;
 }
 
 static inline void abortResponse(ChannelResponse_t &response, Atams::Error_t error)
 {
-  response.buffer[MESH_INDEX_NODE_ID]  = s_localNodeID;
+  response.buffer[MESH_INDEX_NODE_ID]  = s_ConfigurationHandler.getLocalNodeID();;
   response.buffer[MESH_INDEX_MSG_TYPE] = MESSAGE_ABORTED_RESPONSE;
   response.buffer[MESH_SIZE_HEADER]    = error;
   response.index                       = MESH_SIZE_HEADER + sizeof(error);
@@ -278,124 +217,6 @@ static void processDatagramRead(ChannelResponse_t &response,
   }
 }
 
-static void checkConfigurationStateEntry(Atams::ConfigurationStatus_t &configurationState)
-{
-  static uint32_t prevConfigStatePasskey = 0U;
-  uint32_t        configStatePasskey     = 0U;
-
-  if (configurationState == Atams::CONFIGURATION_STATUS_ACTIVE)
-  {
-    return; /* Early Return */
-  }
-
-  static_cast<void>(s_universalBlock.read(BlockUniversal::VAR_ID_CONFIGURATION_PASSKEY, configStatePasskey));
-
-  if ((configStatePasskey     == Atams::CONFIGURATION_PASSKEY_ACCESS) &&
-      (prevConfigStatePasskey != Atams::CONFIGURATION_PASSKEY_ACCESS) )
-  {
-    if (Platform::enterConfigurationState() == true)
-    {
-      configurationState = Atams::CONFIGURATION_STATUS_ACTIVE;
-    }
-    else
-    {
-      configurationState = Atams::CONFIGURATION_STATUS_DENIED;
-    }
-  }
-
-}
-
-static void applyUniversalConfiguration(void)
-{
-  static_cast<void>(s_universalBlock.read(BlockUniversal::VAR_ID_NODE_ID,          s_localNodeID));
-  static_cast<void>(s_universalBlock.read(BlockUniversal::VAR_ID_FIRST_NODE_ID,    s_firstSyncNodeID));
-  static_cast<void>(s_universalBlock.read(BlockUniversal::VAR_ID_PREVIOUS_NODE_ID, s_prevSyncNodeID));
-  static_cast<void>(s_universalBlock.read(BlockUniversal::VAR_ID_LAST_NODE_ID,     s_finalSyncNodeID));
-  static_cast<void>(s_universalBlock.read(BlockUniversal::VAR_ID_BITRATE,          s_bitrateOption));
-  static_cast<void>(s_universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_PERIOD,  s_watchdogPeriod));
-  Platform::setBitrate(static_cast<Atams::BitrateOption_t>(s_bitrateOption));
-}
-
-static void cancelConfigurationValueChange(void)
-{
-  static_cast<void>(s_universalBlock.write(BlockUniversal::VAR_ID_NODE_ID,          s_localNodeID));
-  static_cast<void>(s_universalBlock.write(BlockUniversal::VAR_ID_FIRST_NODE_ID,    s_firstSyncNodeID));
-  static_cast<void>(s_universalBlock.write(BlockUniversal::VAR_ID_PREVIOUS_NODE_ID, s_prevSyncNodeID));
-  static_cast<void>(s_universalBlock.write(BlockUniversal::VAR_ID_LAST_NODE_ID,     s_finalSyncNodeID));
-  static_cast<void>(s_universalBlock.write(BlockUniversal::VAR_ID_BITRATE,          s_bitrateOption));
-  static_cast<void>(s_universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_PERIOD,  s_watchdogPeriod));
-}
-
-static void checkConfigurationStateExit(Atams::ConfigurationStatus_t &configurationState)
-{
-  uint32_t configStatePasskey = 0U;
-
-  if (configurationState != Atams::CONFIGURATION_STATUS_ACTIVE)
-  {
-    return; /* Early Return */
-  }
-
-  static_cast<void>(s_universalBlock.read(BlockUniversal::VAR_ID_CONFIGURATION_PASSKEY, configStatePasskey));
-
-  if (configStatePasskey == Atams::CONFIGURATION_PASSKEY_APPLY)
-  {
-    applyUniversalConfiguration();
-    Platform::exitConfigurationState();
-    configurationState = Atams::CONFIGURATION_STATUS_INACTIVE;
-  }
-  else if (configStatePasskey != Atams::CONFIGURATION_PASSKEY_CANCEL)
-  {
-    cancelConfigurationValueChange();
-    Platform::exitConfigurationState();
-    configurationState = Atams::CONFIGURATION_STATUS_INACTIVE;
-  }
-}
-
-static void checkConfigurationPasscodes(void)
-{
-  for (PasscodeChecker_t &checker : s_configPasscodeCheckers)
-  {
-    static_cast<void>(s_universalBlock.read(checker.universalVarID, checker.passcode));
-
-    if ((checker.passcode     == checker.requiredPasscode) &&
-        (checker.prevPasscode != checker.requiredPasscode) )
-    {
-      checker.processFunction();
-    }
-
-    checker.prevPasscode = checker.passcode;
-  }
-}
-
-static void updateConfigurationState(void)
-{
-  if (s_universalVarChanged == false)
-  {
-    return; /* Early Return */
-  }
-
-  s_universalVarChanged = false;
-
-  switch (s_configurationState)
-  {
-    case CONFIGURATION_STATUS_INACTIVE:
-    case CONFIGURATION_STATUS_DENIED:
-      checkConfigurationStateEntry(s_configurationState);
-      break;
-
-    case CONFIGURATION_STATUS_ACTIVE:
-      checkConfigurationPasscodes();
-      checkConfigurationStateExit(s_configurationState);
-      break;
-
-    default:
-      /* Do Nothing */
-      break;
-  }
-
-  s_universalBlock.write(BlockUniversal::VAR_ID_CONFIGURATION_STATUS, static_cast<uint8_t>(s_configurationState));
-}
-
 static bool accessAllowedWithoutConfig(const uint16_t varID)
 {
   return ((varID == BlockUniversal::VAR_ID_CONFIGURATION_PASSKEY) ||
@@ -406,8 +227,8 @@ static bool checkUniversalAccess(const uint16_t varID)
 {
   bool accessPermitted = false;
 
-  if ((accessAllowedWithoutConfig(varID)                         ) ||
-      (s_configurationState == Atams::CONFIGURATION_STATUS_ACTIVE) )
+  if ((accessAllowedWithoutConfig(varID)              ) ||
+      (s_ConfigurationHandler.getConfigurationActive()) )
   {
     accessPermitted = true;
   }
@@ -443,7 +264,7 @@ static void processDatagramWrite(ChannelResponse_t &response,
       response.index             += DATAGRAM_SIZE_HEADER;
       requestPacketDatagramIndex += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + payloadLength);
       datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
-      if (datagramHeader.blockID == Atams::BLOCK_ID_UNIVERSAL) s_universalVarChanged = true;
+      if (datagramHeader.blockID == Atams::BLOCK_ID_UNIVERSAL) s_ConfigurationHandler.setUpdateRequired();
     }
     else
     {
@@ -457,12 +278,6 @@ static void processDatagramWrite(ChannelResponse_t &response,
     requestPacketDatagramIndex += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + payloadLength);
     datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
   }
-}
-
-static void toggleWatchdog(void)
-{
-  s_firstMessageReceived = true;
-  s_watchdogCount        = 0U;
 }
 
 static void processRequestPacket(ChannelResponse_t &response,
@@ -537,7 +352,8 @@ static void processRequestPacket(ChannelResponse_t &response,
     }
     else
     {
-      toggleWatchdog();
+      s_watchdogHandler.toggleWatchdog();
+      s_nodeCommsState = NODE_COMMS_COMMS_ACTIVE;
     }
   }
 }
@@ -562,6 +378,10 @@ static void processEncodedMeshPacket(const Platform::CommsChannel_t commsChannel
     uint8_t              packetSyncCount = decodedPacket[MESH_INDEX_SYNC];
     ChannelSyncPacket_t &syncPacket      = commsChannelSyncPackets[commsChannel];
     ChannelResponse_t   &response        = commsChannelResponses[commsChannel];
+    uint8_t              localNodeID     = s_ConfigurationHandler.getLocalNodeID();
+    uint8_t              firstSyncNodeID = s_ConfigurationHandler.getFirstSyncNodeID();
+    uint8_t              finalSyncNodeID = s_ConfigurationHandler.getFinalSyncNodeID();
+    uint8_t              prevSyncNodeID  = s_ConfigurationHandler.getPrevSyncNodeID();
 
     switch (messageType)
     {
@@ -571,7 +391,7 @@ static void processEncodedMeshPacket(const Platform::CommsChannel_t commsChannel
         sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE);
         break;
       case MESSAGE_REQUEST:
-        if (packetNodeID == s_localNodeID)
+        if (packetNodeID == localNodeID)
         {
           resetResponse(response);
           processRequestPacket(response, decodedPacket, decodedLength, false);
@@ -579,11 +399,11 @@ static void processEncodedMeshPacket(const Platform::CommsChannel_t commsChannel
         }
         break;
       case MESSAGE_REQUEST_SYNCED:
-        if (packetNodeID == s_localNodeID)
+        if (packetNodeID == localNodeID)
         {
           resetResponse(response);
           syncPacket.syncCount = packetSyncCount;
-          if (s_localNodeID == s_finalSyncNodeID)
+          if (localNodeID == finalSyncNodeID)
           {
             processRequestPacket(response, decodedPacket, decodedLength, false);
           }
@@ -592,25 +412,25 @@ static void processEncodedMeshPacket(const Platform::CommsChannel_t commsChannel
             memcpy(syncPacket.buffer, decodedPacket, decodedLength);
             syncPacket.length = decodedLength;
           }
-          if (s_localNodeID == s_firstSyncNodeID)
+          if (localNodeID == firstSyncNodeID)
           {
             sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
           }
         }
-        else if (packetNodeID == s_finalSyncNodeID)
+        else if (packetNodeID == finalSyncNodeID)
         {
           processRequestPacket(response, syncPacket.buffer, syncPacket.length, false);
         }
         break;
       case MESSAGE_RESPONSE_SYNCED:
-        if (packetNodeID == s_prevSyncNodeID)
+        if (packetNodeID == prevSyncNodeID)
         {
           if (packetSyncCount != syncPacket.syncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT);
           else                                         sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
         }
         break;
       case MESSAGE_SYNC_JOG:
-        if (packetNodeID == s_localNodeID)
+        if (packetNodeID == localNodeID)
         {
           if (packetSyncCount != syncPacket.syncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT);
           else                                         sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
@@ -664,60 +484,6 @@ static void processRawMeshData(void)
                                meshPacketRXBuffer,
                                meshPacketRXLength);
     }
-  }
-}
-
-static void updateWatchdog(const uint32_t currentTime)
-{
-  static uint32_t s_prevWatchdogUpdateTime = currentTime;
-  static uint32_t s_prevWatchdogReset      = Atams::WATCHDOG_RESET_PASSCODE;
-
-  if (s_firstMessageReceived == false)
-  {
-    return; /* Early Return */
-  }
-
-  if ((currentTime - s_prevWatchdogUpdateTime) > WATCHDOG_UPDATE_PERIOD)
-  {
-    switch (s_watchdogStatus)
-    {
-      case WATCHDOG_FAULT_INACTIVE:
-
-        if (s_watchdogCount < Atams::MAX_UINT32) s_watchdogCount++;
-
-        if ((s_watchdogPeriod > 0U             ) &&
-            (s_watchdogCount > s_watchdogPeriod) )
-        {
-          s_universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, static_cast<uint8_t>(WATCHDOG_FAULT_ACTIVE));
-          s_watchdogStatus = WATCHDOG_FAULT_ACTIVE;
-        }
-
-        break;
-
-      case WATCHDOG_FAULT_ACTIVE:
-      {
-        uint32_t watchdogReset{0U};
-
-        static_cast<void>(s_universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_RESET, watchdogReset));
-
-        if ((watchdogReset       == Atams::WATCHDOG_RESET_PASSCODE) &&
-            (s_prevWatchdogReset != Atams::WATCHDOG_RESET_PASSCODE) )
-        {
-          s_universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, static_cast<uint8_t>(WATCHDOG_FAULT_INACTIVE));
-          s_watchdogStatus = WATCHDOG_FAULT_INACTIVE;
-        }
-
-        s_prevWatchdogReset = watchdogReset;
-
-        break;
-      }
-      default:
-        s_universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, static_cast<uint8_t>(WATCHDOG_FAULT_ACTIVE));
-        s_watchdogStatus = WATCHDOG_FAULT_ACTIVE;
-        break;
-    }
-
-    s_prevWatchdogUpdateTime = currentTime;
   }
 }
 
@@ -1084,6 +850,8 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
     initCommsBuffers();
 
     signalCoreInitComplete(CORE_COMMS);
+
+    if (initStatus == Atams::ERROR_NONE) s_nodeCommsState = Atams::NODE_COMMS_INITIALISED;
   }
   else
   {
@@ -1217,19 +985,55 @@ Atams::Error_t saveToNVM(void)
 void updateCommsPolling(void)
 {
   uint32_t currentTime = Platform::getMillis();
-  Platform::update();
-  processRawMeshData();
-  updateWatchdog(currentTime);
-  updateConfigurationState();
+
+  switch (s_nodeCommsState)
+  {
+    case Atams::NODE_COMMS_UNINITIALISED:
+      /* Do Nothing - Wait for successful initialization */
+      break;
+
+    case Atams::NODE_COMMS_INITIALISED:
+      Platform::update();
+      processRawMeshData();
+      break;
+    case Atams::NODE_COMMS_COMMS_ACTIVE:
+      Platform::update();
+      processRawMeshData();
+      s_watchdogHandler.update(currentTime);
+      break;
+    default:
+      /* Do Nothing */
+      break;
+  }
+
+  s_ConfigurationHandler.update();
 }
 
 void updateCommsBlocking(void)
 {
   uint32_t currentTime = Platform::getMillis();
-  Platform::waitOnCommsBufferSemaphore(Atams::WATCHDOG_UPDATE_PERIOD);
-  processRawMeshData();
-  updateWatchdog(currentTime);
-  updateConfigurationState();
+
+  switch (s_nodeCommsState)
+  {
+    case Atams::NODE_COMMS_UNINITIALISED:
+      /* Do Nothing - Wait for successful initialization */
+      break;
+
+    case Atams::NODE_COMMS_INITIALISED:
+      Platform::waitOnCommsBufferSemaphore(WatchdogHandler::WATCHDOG_UPDATE_PERIOD);
+      processRawMeshData();
+      break;
+    case Atams::NODE_COMMS_COMMS_ACTIVE:
+      Platform::waitOnCommsBufferSemaphore(WatchdogHandler::WATCHDOG_UPDATE_PERIOD);
+      processRawMeshData();
+      s_watchdogHandler.update(currentTime);
+      break;
+    default:
+      /* Do Nothing */
+      break;
+  }
+
+  s_ConfigurationHandler.update();
 }
 
 template <typename T>
@@ -1303,7 +1107,7 @@ DataStatusReturn_t<uint8_t> getMemberLength(const uint8_t blockID, const uint16_
 
 bool getWatchdogFault(void)
 {
-  return (s_watchdogStatus == WATCHDOG_FAULT_ACTIVE);
+  return (s_watchdogHandler.getWatchdogFault());
 }
 
 DataBlock * getBlockPtr(const uint8_t blockID)

@@ -54,8 +54,8 @@ class DataBlock
   struct VarInfo_t
   {
     VarType_t type        = TYPE_NULL;
-    Access_t   accessLevel = ACCESS_NONE;
-    uint8_t    NVMStorage  = false;
+    Access_t  accessLevel = ACCESS_NONE;
+    uint8_t   NVMStorage  = false;
 
     static_assert(sizeof(type)        == 1U, "VarInfo_t member type size invalid");
     static_assert(sizeof(accessLevel) == 1U, "VarInfo_t member type size invalid");
@@ -100,6 +100,12 @@ class DataBlock
 
   /* Copy Assignment Operator */
   DataBlock & operator=(const DataBlock &other) = delete;
+
+  /* Move Constructor */
+  DataBlock(DataBlock &&other) = delete;
+
+  /* Move Assignment Operator */
+  DataBlock & operator=(DataBlock &&other) = delete;
 
   Atams::Error_t restoreDefaults(void);
 
@@ -158,16 +164,15 @@ class DataBlock
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  const Descriptor_t *_blockDescriptorPtr = nullptr;
-  VarStorageBlock_t  *_blockStoragePtr    = nullptr;
-  uint16_t            _validVariableCount = 0U;
+  const Descriptor_t *m_blockDescriptorPtr = nullptr;
+  VarStorageBlock_t  *m_blockStoragePtr    = nullptr;
+  uint16_t            m_validVariableCount = 0U;
 
   /*-- Private Static Variables -----------------------------------------------------*/
 
   static VarStorageBlock_t s_varStorageShared[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
 
   static uint32_t s_varStorageBlockIndex;
-
 };
 
 

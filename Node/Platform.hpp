@@ -64,6 +64,7 @@ typedef enum: uint8_t
   NUMBER_OF_COMMS_CHANNELS
 } CommsChannel_t;
 
+/* DO NOT CHANGE THIS TYPEDEF */
 typedef void (*CommsReceiveCallback_t)(const Platform::CommsChannel_t commsChannel,
                                              uint8_t                 *rxBufferPtr,
                                        const uint16_t                 rxBufferLength);

@@ -53,7 +53,6 @@ namespace Atams { namespace Platform {
 
 static SerialPort _meshPort(SerialPort::PORT_ID_MESH);
 
-
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
