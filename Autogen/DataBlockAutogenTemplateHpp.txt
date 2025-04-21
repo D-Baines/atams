@@ -45,7 +45,7 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 enum VarID_t: uint16_t
 {
 $$$AUTOGEN$$$MEMBER_ID_LIST$$$AUTOGEN$$$
-  NUMBER_OF_VARS
+  NUMBER_OF_$$$AUTOGEN$$$BLOCK_NAME_UPPER$$$AUTOGEN$$$_VARS
 };
 
 /*************************************************************************************/

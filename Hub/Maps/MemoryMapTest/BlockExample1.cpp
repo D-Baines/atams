@@ -93,7 +93,7 @@ static Atams::Error_t initDefaults(DataBlock &blockToInit)
 
 const DataBlock::Descriptor_t blockDescriptor =
 {
-  /* .noOfDataMembers = */ BlockExample1::NUMBER_OF_VARS,
+  /* .noOfDataMembers = */ BlockExample1::NUMBER_OF_EXAMPLE1_VARS,
   /* .initDefaults    = */ initDefaults, 
   /* .dataMemberInfo  = */
   {

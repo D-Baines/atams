@@ -125,7 +125,7 @@ def generateBlockDescriptor(platformName:      str,
                             targetFile:        TextIO) -> None:
   memberIterator = 0
   targetFile.write("const DataBlock::Descriptor_t blockDescriptor =\n{\n")
-  targetFile.write("  /* .noOfDataMembers = */ Block"+blockNameCamel+"::NUMBER_OF_VARS,\n")
+  targetFile.write("  /* .noOfDataMembers = */ Block"+blockNameCamel+"::NUMBER_OF_"+blockNameCamel.upper()+"_VARS,\n")
   targetFile.write("  /* .initDefaults    = */ initDefaults, \n")
   targetFile.write("  /* .dataMemberInfo  = */\n  {\n")
   types        = block["Data Type"]
