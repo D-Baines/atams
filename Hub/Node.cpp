@@ -103,20 +103,6 @@ template Atams::Error_t Node::write<int32_t >(const uint8_t blockID, const uint1
 template Atams::Error_t Node::write<float   >(const uint8_t blockID, const uint16_t varID, const float    writeData);
 
 template <typename T>
-Atams::Error_t Node::writeWithRequestPattern(const uint8_t          blockID, 
-                                             const uint16_t         varID, 
-                                             const T                writeData,
-                                             const RequestPattern_t requestPattern)
-{
-  if (blockID >= _memoryMap.noOfDataBlocks)
-  {
-    return (ERROR_BLOCK_ID); 
-  }
-
-  return (_dataBlocks[blockID].writeWithRequestPattern(varID, writeData, requestPattern));
-}
-
-template <typename T>
 Atams::Error_t Node::read(const uint8_t   blockID,
                           const uint16_t  varID,
                                 T        &readData)
@@ -198,32 +184,7 @@ Atams::Error_t Node::setRequestPattern(const uint8_t          blockID,
   /* Lock request packet */
   Platform::MemoryLock::acquireLock();
 
-  Atams::Error_t   statusReturn          = Atams::ERROR_NONE;
-  Access_t         currentRequestAccess  = ACCESS_NONE;
-  RequestPattern_t currentRequestPattern = REQUEST_INACTIVE;
-  
-  statusReturn = _dataBlocks[blockID].getRequestPattern(varID, currentRequestAccess, currentRequestPattern);
-  
-  if ((statusReturn    == Atams::ERROR_NONE      ) &&
-      ((accessRequest  != currentRequestAccess ) ||
-       (requestPattern != currentRequestPattern) ) )
-  {
-    statusReturn = _dataBlocks[blockID].setRequestPattern(varID, accessRequest, requestPattern);
-
-    if (statusReturn == Atams::ERROR_NONE)
-    {
-      statusReturn = processRequestPacketChange(blockID,
-                                                varID,
-                                                accessRequest, 
-                                                requestPattern);
-      
-      if (statusReturn != Atams::ERROR_NONE)
-      {
-        /* TODO:: Consider fatal exception if this returns error */
-        static_cast<void>(_dataBlocks[blockID].setRequestPattern(varID, ACCESS_NONE, REQUEST_INACTIVE));
-      }
-    }
-  }
+  Atams::Error_t statusReturn = _dataBlocks[blockID].setRequestPattern(varID, accessRequest, requestPattern);
 
   /* Unlock request packet */
   Platform::MemoryLock::releaseLock();
@@ -298,6 +259,11 @@ uint8_t Node::getNodeID(void)
 Atams::Error_t Node::getBusError(void)
 {
   return (_busError);
+}
+
+DataBlock &Node::getUniversalBlockRef(void)
+{
+  return (_universalBlock);
 }
 
 DataBlock * Node::getBlockPtr(const uint8_t blockID)
@@ -486,7 +452,7 @@ void Node::responseReceived(uint8_t *inputBuffer, uint16_t inputLength)
 
 void Node::reportBusError(Atams::Error_t busError)
 {
-  _busError = busError;
+  if (_busError == Atams::ERROR_NONE) _busError = busError;
 }
 
 void Node::clearBusError(void)
@@ -528,9 +494,7 @@ bool Node::processDatagramRead(DataBlock              &block,
 
   if (transferStatus == Atams::ERROR_NONE) 
   {
-    transferStatus = updateRequestPattern(datagramHeader.blockID, 
-                                          datagramHeader.varID, 
-                                          Atams::ACCESS_READ);
+    transferStatus = updateRequestPatternOnReceive(datagramHeader.blockID, datagramHeader.varID);
   }
   
   if (transferStatus != Atams::ERROR_NONE) 
@@ -547,9 +511,8 @@ bool Node::processDatagramRead(DataBlock              &block,
 
 bool Node::processDatagramWrite(const DatagramHeader_t datagramHeader, uint16_t &datagramStartIndex)
 {
-  Atams::Error_t transferStatus = updateRequestPattern(datagramHeader.blockID, 
-                                                       datagramHeader.varID, 
-                                                       Atams::ACCESS_WRITE);
+  Atams::Error_t transferStatus = updateRequestPatternOnReceive(datagramHeader.blockID, 
+                                                                datagramHeader.varID);
   if (transferStatus != Atams::ERROR_NONE) 
   {
     reportBusError(transferStatus);
@@ -566,7 +529,7 @@ bool Node::processDatagramNack(const DatagramHeader_t datagramHeader, uint16_t &
 {
   if (datagramHeader.blockID == Atams::BLOCK_ID_UNIVERSAL)
   {
-    reportBusError(Atams::ERROR_UNIVERSAL_BLOCK_LOCKED);
+    reportBusError(Atams::ERROR_CONFIGURATION_STATE_INACTIVE);
     datagramStartIndex += DATAGRAM_SIZE_HEADER;
     return (false);
   }
@@ -746,7 +709,7 @@ Atams::Error_t Node::requestPacketAdjustCurrentDatagram(RequestChangeConfig_t &c
   };
 
   if ((changeConfig.accessRequest  == ACCESS_WRITE  ) &&
-      (changeConfig.requestPattern == REQUEST_ACTIVE) )
+      (changeConfig.requestPattern == REQUEST_STREAM) )
   {
     if (_requestPacket.writeList.addConfig(writeConfig) != WriteList::ERROR_NONE) statusReturn = Atams::ERROR_WRITE_LIST; 
   }
@@ -769,7 +732,7 @@ Atams::Error_t Node::requestPacketAdjustCurrentDatagram(RequestChangeConfig_t &c
            changeConfig.newDatagramLength);
   }
   else if ((changeConfig.accessRequest  == ACCESS_WRITE  ) &&
-           (changeConfig.requestPattern == REQUEST_ACTIVE) )
+           (changeConfig.requestPattern == REQUEST_STREAM) )
   {
     _requestPacket.writeList.removeConfigIfFound(writeConfig);
   }
@@ -787,7 +750,7 @@ Atams::Error_t Node::requestPacketAppendDatagram(RequestChangeConfig_t &changeCo
   changeConfig.datagramStartIndex = _requestPacket.length;
 
   if ((changeConfig.accessRequest  == ACCESS_WRITE  ) &&
-      (changeConfig.requestPattern == REQUEST_ACTIVE) )
+      (changeConfig.requestPattern == REQUEST_STREAM) )
   {
     WriteList::WriteConfig_t writeConfigToAdd =
     {
@@ -868,16 +831,16 @@ Atams::Error_t Node::processRequestPacketChange(const uint8_t          blockID,
 
   if (statusReturn != ERROR_NONE)
   {
-    return (statusReturn);
+    return (statusReturn); /* Early Return */
   }
 
   /* Search Node packet for a datagram matching the new datagram */
   DataStatusReturn_t<bool> datagramSearchResult = findDatagramMatchInPacket(packetChangeConfig);
   
-  if (datagramSearchResult.status == ERROR_NONE)
+  if (datagramSearchResult.status == Atams::ERROR_NONE)
   {
-    if ((requestPattern == REQUEST_INACTIVE) ||
-        (accessRequest  == ACCESS_NONE     ) )
+    if ((requestPattern == Atams::REQUEST_INACTIVE) ||
+        (accessRequest  == Atams::ACCESS_NONE     ) )
     {
       if (datagramSearchResult.data == true) 
       {
@@ -904,9 +867,8 @@ Atams::Error_t Node::processRequestPacketChange(const uint8_t          blockID,
   return (statusReturn);
 }
 
-Atams::Error_t Node::updateRequestPattern(const uint8_t  blockID,
-                                          const uint16_t varID,
-                                          const Access_t accessRequest)
+Atams::Error_t Node::updateRequestPatternOnReceive(const uint8_t  blockID,
+                                                   const uint16_t varID)
 {
   if (blockID >= _memoryMap.noOfDataBlocks)
   {
@@ -923,7 +885,6 @@ Atams::Error_t Node::updateRequestPattern(const uint8_t  blockID,
   statusReturn = _dataBlocks[blockID].getRequestPattern(varID, currentRequestAccess, currentRequestPattern);
   
   if ((statusReturn          == Atams::ERROR_NONE   ) &&
-      (accessRequest         == currentRequestAccess) &&
       (currentRequestPattern == REQUEST_UNTIL_ACK   ) )
   {
     statusReturn = _dataBlocks[blockID].setRequestPattern(varID, ACCESS_NONE, REQUEST_INACTIVE);
@@ -932,7 +893,7 @@ Atams::Error_t Node::updateRequestPattern(const uint8_t  blockID,
     {
       statusReturn = processRequestPacketChange(blockID,
                                                 varID,
-                                                accessRequest, 
+                                                ACCESS_NONE, 
                                                 REQUEST_INACTIVE);
       
       if (statusReturn != Atams::ERROR_NONE)

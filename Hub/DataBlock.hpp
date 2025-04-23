@@ -112,17 +112,24 @@ private Platform::MemoryLock
                        const T        writeData);
 
   template <typename T>
-  Atams::Error_t writeWithRequestPattern(const uint16_t         memberID,
-                                         const T                writeData,          
-                                         const RequestPattern_t requestPattern);
+  Atams::Error_t read(const uint16_t memberID,
+                      T             &readData);
+  
   template <typename T>
-  Atams::Error_t read(const uint16_t  memberID,
-                            T        &readData);
+  Atams::Error_t readIfNew(const uint16_t memberID,
+                           T             &readData);
 
-  //TODO:: Change to check new separated function
   template <typename T>
-  Atams::Error_t readIfNew(const uint16_t  memberID,
-                                 T        &readData);
+  Atams::Error_t writeUntilAck(const uint16_t memberID,
+                               const T        writeData);
+
+  Atams::Error_t startWriteStream(const uint16_t memberID);
+
+  Atams::Error_t startReadUntilAck(const uint16_t memberID);
+
+  Atams::Error_t startReadStream(const uint16_t memberID);
+
+  Atams::Error_t clearRequestPattern(const uint16_t memberID);
 
   DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t memberID);
 
@@ -130,7 +137,7 @@ private Platform::MemoryLock
                                   const uint16_t  memberID,
                                   uint8_t * const dataStoragePtr,
                                   const uint8_t   length);
-       
+
   Atams::Error_t setRequestPattern(const uint16_t         varID,
                                    const Access_t         accessRequest,
                                    const RequestPattern_t requestPattern);

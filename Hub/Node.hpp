@@ -30,7 +30,7 @@
 
 #include <stdint.h>
 #include "../AtamsTypedefs.hpp"
-#include "BlockOwnerInteractor.hpp"
+#include "Developer/BlockOwnerInteractor.hpp"
 #include "DataBlock.hpp"
 #include "Utilities/WriteList.hpp"
 #include "../Utilities/CRC32.hpp"
@@ -63,13 +63,11 @@ private Platform::MemoryLock
 
   friend class Bus;
 
-  /*-- Public -----------------------------------------------------------------------*/
-
   public:
 
-  /*-- PUBLIC CONSTANTS ---------------*/
+  /*-- Public Constants -------------------------------------------------------------*/
 
-  /*-- PUBLIC TYPEDEFS ----------------*/
+  /*-- Public Typedefs --------------------------------------------------------------*/
 
   typedef Atams::Error_t (*InitUniversalDataFunction_t)(Node &nodeToInit);
 
@@ -117,7 +115,7 @@ private Platform::MemoryLock
     }
   };
 
-  /*-- PUBLIC FUNCTION DECLARATIONS ---*/
+  /*-- Public Function Declarations -------------------------------------------------*/
 
   Node(Bus &bus, const uint8_t nodeID);
 
@@ -166,7 +164,28 @@ private Platform::MemoryLock
 
   Atams::Error_t getBusError(void);
 
-  DataBlock * getBlockPtr(const uint8_t blockID);
+  DataBlock &getUniversalBlockRef(void);
+
+  DataBlock *getBlockPtr(const uint8_t blockID);
+
+  Atams::ProcessState_t updateGetGenInfo(Atams::Error_t &error, Atams::GenInfo_t &genInfo);
+
+  Atams::ProcessState_t updateGetNodeIdentifiers(Atams::Error_t &error,
+                                                 uint8_t        &firstNodeID,
+                                                 uint8_t        &lastNodeID,
+                                                 uint8_t        &previousNodeID);
+
+  Atams::ProcessState_t updateConfigurationStateEntry(Atams::Error_t &error);
+
+  Atams::ProcessState_t updateConfigurationStateExit(Atams::Error_t &error);
+
+  Atams::ProcessState_t updateStoreAll(Atams::Error_t &error);
+
+  Atams::ProcessState_t updateSetBitrate(Atams::Error_t &error);
+
+  Atams::ProcessState_t updateSetWatchdogPeriod(Atams::Error_t &error);
+
+  Atams::ProcessState_t updateResetNode(Atams::Error_t &error);
 
   //#if DEVELOPER_TOOLS 
   Atams::Error_t setRequestPatternNoChecks(const uint8_t          blockID,
@@ -175,13 +194,11 @@ private Platform::MemoryLock
                                            const RequestPattern_t requestPattern);
   //#endif
 
-  /*-- Private -----------------------------------------------------------------------*/
-
   private:
 
-  /*-- PRIVATE CONSTANTS --------------*/
+  /*-- Private Functions ------------------------------------------------------------*/
 
-  /*-- PRIVATE TYPEDEFS ---------------*/
+  /*-- Private Typedefs -------------------------------------------------------------*/
 
   struct RequestPacket_t 
   {
@@ -204,15 +221,15 @@ private Platform::MemoryLock
     uint16_t         datagramStartIndex     = 0U;
   };
 
-  /*-- PRIVATE OBJECTS ----------------*/
+  /*-- Private Objects --------------------------------------------------------------*/
 
   Atams::CRC32         _nodeCRC{Atams::CRC32_POLYNOMIAL};
   BlockOwnerInteractor _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
 
-  /*-- PRIVATE VARIABLES --------------*/
+  /*-- Private Variables ------------------------------------------------------------*/
 
   Atams::Bus        &_bus;
-  uint8_t            _nodeID;
+  const uint8_t      _nodeID;
   MemoryMap_t        _memoryMap;
   DataBlock         &_universalBlock                      = _dataBlocks[BLOCK_ID_UNIVERSAL];
   Error_t            _busError                            = ERROR_NONE;
@@ -221,9 +238,8 @@ private Platform::MemoryLock
   uint8_t            _responseBuffer[MAX_MESH_PACKET_SIZE];
   uint16_t           _responseLength   = 0U;
   bool               _newResponseReady = false;
-  
 
-  /*-- PRIVATE FUNCTION DECLARATIONS --*/
+  /*-- Private Function Declarations ------------------------------------------------*/
 
   bool validateUniversalBlock(const MemoryMap_t &memoryMap);
 
@@ -276,9 +292,7 @@ private Platform::MemoryLock
                                             const Access_t         accessRequest,
                                             const RequestPattern_t requestPattern);
 
-  Atams::Error_t updateRequestPattern(const uint8_t  blockID,
-                                      const uint16_t varID,
-                                      const Access_t accessRequest);
+  Atams::Error_t updateRequestPatternOnReceive(const uint8_t blockID, const uint16_t varID);
 
   void updateRequestPacketWriteData(void);
 

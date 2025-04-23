@@ -65,14 +65,6 @@ private Platform::BusPeripheral
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
-  typedef enum: uint8_t
-  {
-    PROCESS_STATE_READY       = 0U,
-    PROCESS_STATE_IN_PROGRESS = 1U,
-    PROCESS_STATE_ERROR       = 2U,
-    PROCESS_STATE_COMPLETE    = 3U
-  } ProcessState_t;
-
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Constructor */
@@ -87,17 +79,18 @@ private Platform::BusPeripheral
   /* Destructor */
   ~Bus(void);
 
-  Bus::ProcessState_t updateInitProcess(Atams::Error_t &error);
-
   Atams::Error_t startUpdateCycle(void);
 
-  void update(void);
+  bool runUpdateCycle(void);
 
-  bool updateCycleComplete(void);
+  Atams::Error_t processBuffers(void);
 
-  bool processBuffers(void);
+  Atams::ProcessState_t updateBusInitProcess(Atams::Error_t &error);
 
-  Bus::ProcessState_t updateSetNodeIDProcess(const uint8_t nodeIDToSet, Atams::Error_t &error); 
+  Atams::ProcessState_t updateSetNodeConfigProcess(const uint8_t         nodeIDToSet, 
+                                                   const BitrateOption_t bitrateOption,
+                                                   const uint32_t        watchdogPeriod,
+                                                   Atams::Error_t       &error); 
 
   /*-- Private ----------------------------------------------------------------------*/
 
@@ -105,20 +98,40 @@ private Platform::BusPeripheral
 
   /*-- Private Constants ------------------------------------------------------------*/
 
+  static constexpr uint8_t MINOR_STATE_ERROR   = 0U;
+  static constexpr uint8_t MINOR_STATE_SUCCESS = 1U;
+
   /*-- Private Typedefs -------------------------------------------------------------*/
 
-  typedef enum: uint8_t
+  enum InitProcessState_t: uint8_t
   {
-    INIT_STATE_START              = 0U,
-    INIT_STATE_START_UPDATE_CYCLE = 1U,
-    INIT_STATE_BUS_UPDATE         = 2U,
-    INIT_STATE_VALIDITY_CHECKS    = 3U,
-    INIT_STATE_ID_ASSIGNMENT      = 4U,
-    INIT_STATE_SUCCESS            = 5U,
-    INIT_STATE_FAILURE            = 6U
-  } InitState_t;
+    INIT_STATE_ERROR                     = MINOR_STATE_ERROR,
+    INIT_STATE_SUCCESS                   = MINOR_STATE_SUCCESS,
+    INIT_STATE_START_UPDATE_CYCLE        = 2U,
+    INIT_STATE_BUS_UPDATE                = 3U,
+    INIT_STATE_START_PERIPHERAL          = 4U,
+    INIT_STATE_CHECK_GEN_INFO            = 5U,
+    INIT_STATE_GET_NODE_IDS              = 7U,
+    INIT_STATE_CHECK_NODE_IDS            = 8U,
+    INIT_STATE_CONFIGURATION_ENTRY       = 9U,
+    INIT_STATE_SET_CONFIG_PASSCODE_ENTER = 10U,
+    INIT_STATE_GET_CONFIG_STATUS_ENTER   = 11U,
+    INIT_STATE_CHECK_CONFIG_STATUS_ENTER = 12U,
+    INIT_STATE_ASSIGN_NODE_IDS           = 13U,
+    INIT_STATE_GET_STORAGE_STATUS_PRE    = 14U,
+    INIT_STATE_SET_STORE_PASSCODE        = 15U,
+    INIT_STATE_GET_STORAGE_STATUS_POST   = 16U,
+    INIT_STATE_RESET_ALL                 = 12U,
+    INIT_STATE_WAIT_FOR_WAKEUP           = 13U
+  };
 
-  typedef enum: uint8_t
+  enum ConfigUpdateProcessState_t: uint8_t
+  {
+    CONFIGURE_STATE_ERROR   = MINOR_STATE_ERROR,
+    CONFIGURE_STATE_SUCCESS = MINOR_STATE_SUCCESS,
+  } ;
+
+  enum UpdateState_t: uint8_t
   {
     UPDATE_STATE_INIT_REQUIRED     = 0U,
     UPDATE_STATE_READY             = 1U,
@@ -126,25 +139,13 @@ private Platform::BusPeripheral
     UPDATE_STATE_COLLECT_RESPONSES = 3U,
     UPDATE_STATE_JOG_NODE          = 4U,
     UPDATE_STATE_CYCLE_COMPLETE    = 5U,
-  } UpdateState_t;
-
-  typedef enum: uint8_t
-  {
-    SET_ID_STATE_READY             = 0U,
-    SET_ID_STATE_SEND_REQUEST      = 1U,
-    SET_ID_STATE_UPDATE_BUS        = 1U,
-    SET_ID_STATE_VALIDATE
-  } SetIDState_t;
+  };
 
   /*-- Private Variables ------------------------------------------------------------*/
   
   Node          *_nodePtrs[Platform::NUMBER_OF_NODES_PER_BUS];
-  uint16_t       _activeNodeIndex      = 0U;
+  uint16_t       m_activeNodeIndex     = 0U;
   uint16_t       _noOfNodesOnBus       = 0U;
-  ProcessState_t _initProcessState     = Bus::PROCESS_STATE_READY;
-  InitState_t    _busInitState         = Bus::INIT_STATE_START;
-  InitState_t    _nextInitState        = Bus::INIT_STATE_START;
-  UpdateState_t  _updateState          = UPDATE_STATE_READY;
   uint8_t        _rxBuffer[MAX_MESH_PACKET_SIZE];
   uint8_t        _decodedBuffer[MAX_MESH_PACKET_SIZE];
   uint8_t        _encodedBuffer[MAX_MESH_PACKET_SIZE];
@@ -156,7 +157,20 @@ private Platform::BusPeripheral
   uint64_t       _prevResponseTime     = 0U;
   uint64_t       _prevRequestTime      = 0U;
 
+  UpdateState_t _updateState = UPDATE_STATE_READY;
+
+  ProcessState_t     _initStateMajor       = Atams::PROCESS_STATE_READY;
+  InitProcessState_t _initStateMinor       = Bus::INIT_STATE_START_PERIPHERAL;
+  InitProcessState_t _nextInitStateMinor   = Bus::INIT_STATE_START_PERIPHERAL;
+
   /*-- Private Function Declarations ------------------------------------------------*/
+
+  void updateInitProcessMinor(Atams::Error_t &error);
+
+  void updateSetNodeConfigProcessMinor(const uint8_t         nodeIDToSet, 
+                                       const BitrateOption_t bitrateOption,
+                                       const uint32_t        watchdogPeriod,
+                                       Atams::Error_t       &error); 
 
   Atams::Error_t addNodeToBus(Node &node);
 
