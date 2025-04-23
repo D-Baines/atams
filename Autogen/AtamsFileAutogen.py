@@ -7,7 +7,8 @@ from   typing     import List, TextIO
 from   datetime   import datetime
 from   AtamsCRC32 import *
 
-FRAMEWORK_NAME = "Atams"
+FRAMEWORK_NAME           = "Atams"
+NUMBER_OF_UNIVERSAL_VARS = 27
 
 class Platforms(Enum):
   NODE = 0
@@ -78,6 +79,7 @@ def generateEnum(iteratorStartValue: int,
     writeSpaces(noOfSpaces, targetFile)
     targetFile.write(" = " + str(iterator) + "U,\n")
     iterator += 1
+  targetFile.seek(targetFile.tell()-1)
 
 def generateConstList(block:        pandas.DataFrame, 
                       memberNames:  List[str], 
@@ -118,49 +120,38 @@ def generateConstList(block:        pandas.DataFrame,
       targetFile.write("};\n")
     memberIterator += 1
 
-def generateBlockDescriptor(platformName:      str, 
-                            blockNameCamel:    str,
-                            block:             pandas.DataFrame,
-                            memberNamesUpper:  List[str],
-                            targetFile:        TextIO) -> None:
-  memberIterator = 0
-  targetFile.write("const DataBlock::Descriptor_t blockDescriptor =\n{\n")
-  targetFile.write("  /* .noOfDataMembers = */ Block"+blockNameCamel+"::NUMBER_OF_"+blockNameCamel.upper()+"_VARS,\n")
-  targetFile.write("  /* .initDefaults    = */ initDefaults, \n")
-  targetFile.write("  /* .dataMemberInfo  = */\n  {\n")
-  types        = block["Data Type"]
-  accessLevels = block["External Access"]
-  nvmStorages  = block["NVM Storage"]
-  
-  for memberName in memberNamesUpper:
-    access        = accessLevels[memberIterator]
-    nvmStorage    = nvmStorages[memberIterator]
-    nvmStorageStr = "false"
-    if (nvmStorage): nvmStorageStr = "true"
-    accessString = ""
-    if (access == "RW"): accessString = "WRITE"
-    else:                accessString = "READ"
-    typeUpper = types[memberIterator].replace("_t", "").upper()
-    targetFile.write("    /* [Block"+blockNameCamel+"::VAR_ID_"+memberName+"] = */\n    {\n")
-    targetFile.write("      /* .type           = */ Atams::TYPE_"+typeUpper+",\n")
-    targetFile.write("      /* .externalAccess = */ Atams::ACCESS_"+accessString+",\n")
-    targetFile.write("      /* .NVMStorage     = */ "+nvmStorageStr+",\n")
-    targetFile.write("    },\n")
-    memberIterator += 1
-  targetFile.write("  }\n};")
+def generateVarInfoList(dataBlockNamesCamel: List[str],
+                        dataBlocks:          pandas.DataFrame,
+                        targetFile:          TextIO) -> None:
+  blockIndex = 0
+  for block in dataBlocks:
+    blockNameCamel = dataBlockNamesCamel[blockIndex]
+    varIDs         = block["Member ID"]
+    types          = block["Data Type"]
+    accessLevels   = block["External Access"]
+    nvmStorages    = block["NVM Storage"]
+    memberIndex    = 0
+    for varID in varIDs:
+      varNameUpper    = varID.replace(" ", "_").upper()
+      typeUpper       = types[memberIndex].replace("_t", "").upper()
+      access          = accessLevels[memberIndex]
+      nvmStorage      = nvmStorages[memberIndex]
+      nvmStorageStr   = "Atams::ATAMS_FALSE"
+      accessString    = "READ"
+      if (nvmStorage):     nvmStorageStr = "Atams::ATAMS_TRUE"
+      if (access == "RW"): accessString = "WRITE"
+      targetFile.write("  /* [Block"+blockNameCamel+"::VAR_ID_"+varNameUpper+"] = */\n")
+      targetFile.write("  {\n")
+      targetFile.write("    /* .type           = */ Atams::TYPE_"+typeUpper+",\n")
+      targetFile.write("    /* .externalAccess = */ Atams::ACCESS_"+accessString+",\n")
+      targetFile.write("    /* .NVMStorage     = */ "+nvmStorageStr+",\n")
+      if ((memberIndex == (len(varIDs)     - 1) ) and 
+          (blockIndex  == (len(dataBlocks) - 1) ) ): targetFile.write("  }")
+      else:                                   targetFile.write("  },\n")
+      memberIndex += 1
+    blockIndex += 1
 
-def generateBlockRefArray(dataBlockNamesCamel: List[str], 
-                          targetFile:          TextIO) -> None:
-  noOfBlocks = len(dataBlockNamesCamel)
-  iterator   = 0
-  while (iterator < noOfBlocks):
-    targetFile.write("  &Block"+dataBlockNamesCamel[iterator]+"::blockDescriptor")
-    if (iterator != (noOfBlocks - 1)):
-      targetFile.write(",\n")
-    iterator += 1
-
-def generateInitUniversalMapInfo(platformName: str,
-                                 targetFile:   TextIO) -> None:
+def generateInitUniversalMapInfo(targetFile: TextIO) -> None:
 
   universalMembersToSet = ["ATAMS_VERSION_MAJOR",
                            "ATAMS_VERSION_MINOR",
@@ -183,57 +174,35 @@ def generateInitUniversalMapInfo(platformName: str,
                    "genChecksum"]  
 
   varIterator = 0
-
-  if (platformName == "Hub"):
-    for memberString in universalMembersToSet:
-      variableName = variableNames[varIterator]
-      targetFile.write("  if (!error) error = nodeToInit.write(BLOCK_ID_UNIVERSAL,\n")
-      targetFile.write("                                       BlockUniversal::VAR_ID_"+memberString+",\n")
-      targetFile.write("                                       genInfo."+variableName+");\n\n")
-      varIterator += 1
-  else:
-    for memberString in universalMembersToSet:
-      variableName = variableNames[varIterator]
-      targetFile.write("  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,\n")
-      targetFile.write("                                   BlockUniversal::VAR_ID_"+memberString+",\n")
-      targetFile.write("                                   genInfo."+variableName+");\n\n")
-      varIterator += 1
+  for varID in universalMembersToSet:
+    variableName = variableNames[varIterator]
+    targetFile.write("  if (!error) error = Atams::write(BlockUniversal::VAR_ID_"+varID+", ")
+    targetFile.write("genInfo."+variableName+");\n")
+    varIterator += 1
   targetFile.seek(targetFile.tell()-1)
 
-def generateMapDefinition(platformName: str,
-                          targetFile:   TextIO) -> None:
-  if (platformName == "Hub"):
-    targetFile.write("Node::MemoryMap_t memoryMap(static_cast<uint8_t>(NUMBER_OF_DATA_BLOCKS),\n")     
-    targetFile.write("                                  genInfo,\n")
-    targetFile.write("                                  initUniversalInfo,\n")
-    targetFile.write("                                  blockDescriptors);\n")
-  else:
-    targetFile.write("MemoryMap_t memoryMap(static_cast<uint8_t>(NUMBER_OF_DATA_BLOCKS),\n")     
-    targetFile.write("                            genInfo,\n")
-    targetFile.write("                            initUniversalInfo,\n")
-    targetFile.write("                            blockDescriptors);\n")
-
-def generateInitDefaultsDefinition(blockNameCamel: str, 
-                                   block:          pandas.DataFrame, 
-                                   memberIDsUpper: List[str], 
-                                   targetFile:     TextIO) -> None:
-  memberIterator      = 0
-  membersWithDefaults = []
-  defaults            = block["Default"]
-
-  for memberID in memberIDsUpper:
-    default = defaults[memberIterator]
-    if (default and (default != "-")):
-      membersWithDefaults.append(memberID)
-    memberIterator += 1
-
-  for memberID in membersWithDefaults:
-    targetFile.write("  if (!error) error = blockToInit.write(Block"+blockNameCamel+"::VAR_ID_"+memberID+",\n")
-    targetFile.write("                                        Block"+blockNameCamel+"::DEFAULT_"+memberID+");\n\n")
+def generateInitDefaultsDefinition(dataBlockNamesCamel: List[str],
+                                   dataBlocks:          pandas.DataFrame,
+                                   targetFile:          TextIO) -> None:
+  blockIndex = 0
+  for block in dataBlocks:
+    blockNameCamel   = dataBlockNamesCamel[blockIndex]
+    varIDs           = block["Member ID"]
+    defaults         = block["Default"]
+    varsWithDefaults = []
+    varIndex         = 0
+    for varID in varIDs:
+      default = defaults[varIndex]
+      if (default and (default != "-")): varsWithDefaults.append(varID)
+      varIndex += 1
+    for varID in varsWithDefaults:
+      varIDCaps = varID.replace(" ", "_").upper()
+      targetFile.write("  if (!error) error = Atams::write(Block"+blockNameCamel+"::VAR_ID_" +varIDCaps+", ")
+      targetFile.write("Block"+blockNameCamel+"::DEFAULT_"+varIDCaps+");\n")
+    blockIndex +=1
   targetFile.seek(targetFile.tell()-1)
 
-def generateMapChecksum(platformName: str, 
-                        dataBlocks:   List[pandas.DataFrame]) -> int:
+def generateMapChecksum(dataBlocks: List[pandas.DataFrame]) -> int:
   crcCalculator = CRC32()
   crcCalculator.beginRollingCrc()
   for block in dataBlocks:
@@ -251,68 +220,55 @@ def generateMapChecksum(platformName: str,
         case "uint32_t": crcCalculator.updateRollingCrc(VarType.TYPE_UINT32.value)
         case "int32_t":  crcCalculator.updateRollingCrc(VarType.TYPE_INT32.value)
         case "float":    crcCalculator.updateRollingCrc(VarType.TYPE_FLOAT.value)
-      if   (accessLevels[varID] == "RW"): crcCalculator.updateRollingCrc(Access.ACCESS_WRITE.value)
-      else:                               crcCalculator.updateRollingCrc(Access.ACCESS_READ.value)
-      if (platformName == "Node"):
-        if (NVMStorages[varID] == "true"): crcCalculator.updateRollingCrc(NVMStorageFlag.STORAGE_TRUE.value)
-        else:                              crcCalculator.updateRollingCrc(NVMStorageFlag.STORAGE_FALSE.value)
+      if (accessLevels[varID] == "RW"):  crcCalculator.updateRollingCrc(Access.ACCESS_WRITE.value)
+      else:                              crcCalculator.updateRollingCrc(Access.ACCESS_READ.value)
+      if (NVMStorages[varID] == "true"): crcCalculator.updateRollingCrc(NVMStorageFlag.STORAGE_TRUE.value)
+      else:                              crcCalculator.updateRollingCrc(NVMStorageFlag.STORAGE_FALSE.value)
       varID += 1
   return (crcCalculator.getRollingCrc())
 
-def autogenCallMap(platformName:        str,
-                   autogenHint:         str,
+def autogenCallMap(autogenHint:         str,
                    memMapNameCamel:     str,
                    dataBlockNamesCamel: List[str], 
-                   dataBlockNamesUpper: List[str], 
                    dataBlocks:          List[pandas.DataFrame],
                    targetFile:          TextIO,
                    timeStamp:           datetime) -> None:
   match (autogenHint):
-    case "PLAT_NAME_CAMEL":
-      targetFile.write(platformName)
-    case "MAP_NAME_CAMEL":
+    case "MAP_NAME_CAMEL": #
       targetFile.write(memMapNameCamel)
-    case "FRAMEWORK_NAME":
+    case "FRAMEWORK_NAME": #
       targetFile.write(FRAMEWORK_NAME)
-    case "BLOCK_ID_LIST":
-      generateEnum(1, len("UNIVERSAL"), "  BLOCK_ID_", dataBlockNamesUpper, targetFile)
-    case "NODE_NAMESPACE":
-      if (platformName == "Hub"): targetFile.write("Node::")
-    case "INIT_MAP_UNIVERSAL_INFO_DEFINITION":
-      generateInitUniversalMapInfo(platformName, targetFile)
-    case "DATA_BLOCK_FILE_INCLUDES":
+    case "VAR_INFO_LIST": 
+      generateVarInfoList(dataBlockNamesCamel, dataBlocks, targetFile)
+    case "DATA_BLOCK_FILE_INCLUDES": #
       for blockName in dataBlockNamesCamel:
         targetFile.write('#include "Block' + blockName + '.hpp"\n')
-    case "BLOCK_DESC_REFERENCES":
-      generateBlockRefArray(dataBlockNamesCamel, targetFile)
-    case "NODE_INIT_REFERENCE":
-      if (platformName == "Hub"): targetFile.write("Node &nodeToInit")
-      else:                            targetFile.write("void")
-    case "MEMORY_MAP_DEFINITION":
-      generateMapDefinition(platformName, targetFile)
-    case "VERSION_MAJOR":
+      targetFile.seek(targetFile.tell()-1)
+    case "INIT_MAP_GEN_INFO_DEFINITION": 
+      generateInitUniversalMapInfo(targetFile)
+    case "INIT_USER_DEFAULTS_DEFINITION":
+      generateInitDefaultsDefinition(dataBlockNamesCamel, dataBlocks, targetFile)
+    case "VERSION_MAJOR": #
       targetFile.write("0U")
-    case "VERSION_MINOR":
+    case "VERSION_MINOR": #
       targetFile.write("1U")
-    case "GENERATION_DAY":
+    case "GENERATION_DAY": #
       targetFile.write(str(timeStamp.day) + "U")
-    case "GENERATION_MONTH":
+    case "GENERATION_MONTH": #
       targetFile.write(str(timeStamp.month) + "U")
-    case "GENERATION_YEAR":
+    case "GENERATION_YEAR": #
       targetFile.write(str(timeStamp.year) + "U")
-    case "GENERATION_HOUR":
+    case "GENERATION_HOUR": #
       targetFile.write(str(timeStamp.hour) + "U")
-    case "GENERATION_MINUTE":
+    case "GENERATION_MINUTE": #
       targetFile.write(str(timeStamp.minute) + "U")
-    case "GENERATION_SECOND":
+    case "GENERATION_SECOND": #
       targetFile.write(str(timeStamp.second) + "U")
-    case "GENERATION_CHECKSUM":
-      targetFile.write(str(generateMapChecksum(platformName, dataBlocks)) + "U")
+    case "GENERATION_CHECKSUM": #
+      targetFile.write(str(generateMapChecksum(dataBlocks)) + "U")
 
-def generateMemoryMapFile(platformName:        str,
-                          memMapNameCamel:     str,
+def generateMemoryMapFile(memMapNameCamel:     str,
                           dataBlockNamesCamel: List[str], 
-                          dataBlockNamesUpper: List[str], 
                           dataBlocks:          List[pandas.DataFrame], 
                           templateFile:        TextIO,
                           targetFile:          TextIO,
@@ -330,11 +286,9 @@ def generateMemoryMapFile(platformName:        str,
         nextStringAutogenCall = True
     elif (nextStringAutogenCall == True):
       splitStrings.remove(string)
-      autogenCallMap(platformName,
-                     string,
+      autogenCallMap(string,
                      memMapNameCamel,
                      dataBlockNamesCamel, 
-                     dataBlockNamesUpper, 
                      dataBlocks,
                      targetFile,
                      timeStamp)
@@ -342,11 +296,12 @@ def generateMemoryMapFile(platformName:        str,
     else:
       targetFile.write(string)
       
-def autogenCallBlock(autogenHint:       str,
-                     memMapNameCamel:   str,
-                     blockNameCamel:    str,
-                     dataBlock:         pandas.DataFrame,
-                     targetFile:        TextIO) -> None:
+def autogenCallBlock(autogenHint:        str,
+                     memMapNameCamel:    str,
+                     blockNameCamel:     str,
+                     dataBlock:          pandas.DataFrame,
+                     cumulativeVarIndex: int,
+                     targetFile:         TextIO) -> None:
   memberIDsUpper = []
   for memberID in dataBlock["Member ID"]:
     memberIDsUpper.append(memberID.replace(" ", "_").upper())
@@ -360,25 +315,19 @@ def autogenCallBlock(autogenHint:       str,
       targetFile.write(blockNameCamel)
     case "BLOCK_NAME_UPPER":
       targetFile.write(blockNameCamel.upper())
-    case "MEMBER_ID_LIST":
-      generateEnum(0, 0, "  VAR_ID_", memberIDsUpper, targetFile)
+    case "VAR_ID_LIST":
+      generateEnum(cumulativeVarIndex, 0, "  VAR_ID_", memberIDsUpper, targetFile)
     case "DEFAULTS":
       generateConstList(dataBlock, memberIDsUpper, "Default", targetFile)
-    case "INIT_DEFAULTS_DEFINITION":
-      generateInitDefaultsDefinition(blockNameCamel, dataBlock, memberIDsUpper, targetFile)
-    case "BLOCK_DESCRIPTOR":
-      generateBlockDescriptor(blockNameCamel, blockNameCamel, dataBlock, memberIDsUpper, targetFile)
-
-def generateDataBlockFile(platformName:      str,
-                          memMapNameCamel:   str,
-                          blockNameCamel:    str,
-                          blockNameUpper:    str,
-                          dataBlock:         pandas.DataFrame, 
-                          templateFile:      TextIO,
-                          targetFile:        TextIO,
-                          timestamp:         datetime) -> None:
-  inputFileString = templateFile.read()
-  splitStrings    = inputFileString.split("$$$")
+  
+def generateDataBlockFile(memMapNameCamel:    str,
+                          blockNameCamel:     str,
+                          dataBlock:          pandas.DataFrame, 
+                          cumulativeVarIndex: int,
+                          templateFile:       TextIO,
+                          targetFile:         TextIO,) -> None:
+  inputFileString       = templateFile.read()
+  splitStrings          = inputFileString.split("$$$")
   nextStringAutogenCall = False
   nextStringAutogenEnd  = False
 
@@ -394,6 +343,7 @@ def generateDataBlockFile(platformName:      str,
                        memMapNameCamel,
                        blockNameCamel,
                        dataBlock,
+                       cumulativeVarIndex,
                        targetFile)
       nextStringAutogenCall = False
     else:
@@ -410,11 +360,11 @@ def generateCppFiles(memMapNameCamel:   str,
   memMapCppName = "Map" + memMapNameCamel + ".cpp"
   dataBlocks          = []
   dataBlockNamesCamel = []
-  dataBlockNamesUpper = []
-  dataBlockHppTemplatePath = os.path.join(os.path.dirname(__file__), 'DataBlockAutogenTemplateHpp.txt')
-  dataBlockCppTemplatePath = os.path.join(os.path.dirname(__file__), 'DataBlockAutogenTemplateCpp.txt')
-  memMapTemplateHppPath = os.path.join(os.path.dirname(__file__), 'MemoryMapAutogenTemplateHpp.txt')
-  memMapTemplateCppPath = os.path.join(os.path.dirname(__file__), 'MemoryMapAutogenTemplateCpp.txt')
+  blockHppTemplatePath   = os.path.join(os.path.dirname(__file__),    'BlockTemplateHpp.txt')
+  mapTemplateHppPathHub  = os.path.join(os.path.dirname(__file__),  'MapTemplateHppHub.txt')
+  mapTemplateHppPathNode = os.path.join(os.path.dirname(__file__), 'MapTemplateHppNode.txt')
+  mapTemplateCppPathHub  = os.path.join(os.path.dirname(__file__),   'MapTemplateCppHub.txt')
+  mapTemplateCppPathNode = os.path.join(os.path.dirname(__file__),  'MapTemplateCppNode.txt')
   memMapNodeDir = os.path.join(nodeDirectory, 'Maps', ('MemoryMap' + memMapNameCamel))
   memMapHubDir  = os.path.join(hubDirectory,  'Maps', ('MemoryMap' + memMapNameCamel))
 
@@ -422,9 +372,7 @@ def generateCppFiles(memMapNameCamel:   str,
     dataBlockNames = pandas.ExcelFile(memoryMapXlsxPath).sheet_names 
     for dataBlockName in dataBlockNames:
       dataBlockNameCamel = dataBlockName.replace(" ", "").lower().capitalize()
-      dataBlockNameUpper = dataBlockName.replace(" ", "_").upper()
       dataBlockNamesCamel.append(dataBlockNameCamel)
-      dataBlockNamesUpper.append(dataBlockNameUpper)
       newBlock = pandas.read_excel(memoryMapXlsxPath, sheet_name=dataBlockName)
       dataBlocks.append(newBlock)
   except:
@@ -436,121 +384,87 @@ def generateCppFiles(memMapNameCamel:   str,
   except:
     return (Error.MAKE_DIRECTORY_FAILED)
 
-  nodeMemMapHppPath = os.path.join(memMapNodeDir, memMapHppName)
-  nodeMemMapCppPath = os.path.join(memMapNodeDir, memMapCppName)
-  hubMemMapHppPath  = os.path.join(memMapHubDir,  memMapHppName)
-  hubMemMapCppPath  = os.path.join(memMapHubDir,  memMapCppName)
+  mapHppPathNode = os.path.join(memMapNodeDir, memMapHppName)
+  mapCppPathNode = os.path.join(memMapNodeDir, memMapCppName)
+  mapHppPathHub     = os.path.join(memMapHubDir,  memMapHppName)
+  mapCppPathHub     = os.path.join(memMapHubDir,  memMapCppName)
 
-  memMapTemplateHpp = open(memMapTemplateHppPath, OpenMethods.READ_ONLY)
-  nodeMemMapHpp     = open(nodeMemMapHppPath,     OpenMethods.WRITE_FORCE)
-  generateMemoryMapFile("Node",
-                        memMapNameCamel, 
+  mapTemplateHppNode = open(mapTemplateHppPathNode, OpenMethods.READ_ONLY)
+  mapHppNode         = open(mapHppPathNode,      OpenMethods.WRITE_FORCE)
+  generateMemoryMapFile(memMapNameCamel, 
                         dataBlockNamesCamel, 
-                        dataBlockNamesUpper, 
                         dataBlocks, 
-                        memMapTemplateHpp, 
-                        nodeMemMapHpp,
+                        mapTemplateHppNode, 
+                        mapHppNode,
                         timeStamp)
-  nodeMemMapHpp.close()
-  memMapTemplateHpp.seek(0)
-  hubMemMapHpp = open(hubMemMapHppPath, OpenMethods.WRITE_FORCE)
-  generateMemoryMapFile("Hub",
-                        memMapNameCamel, 
+  mapHppNode.close()
+  mapTemplateHppNode.close()
+
+  mapTemplateHppHub = open(mapTemplateHppPathHub, OpenMethods.READ_ONLY)
+  mapHppHub         = open(mapHppPathHub,      OpenMethods.WRITE_FORCE)
+  generateMemoryMapFile(memMapNameCamel, 
                         dataBlockNamesCamel, 
-                        dataBlockNamesUpper, 
                         dataBlocks, 
-                        memMapTemplateHpp, 
-                        hubMemMapHpp,
+                        mapTemplateHppHub, 
+                        mapHppHub,
                         timeStamp)
-  hubMemMapHpp.close()
-  memMapTemplateHpp.close()
+  mapHppHub.close()
+  mapTemplateHppHub.close()
   
-  memMapTemplateCpp = open(memMapTemplateCppPath, OpenMethods.READ_ONLY)
-  nodeMemMapCpp     = open(nodeMemMapCppPath,     OpenMethods.WRITE_FORCE)
-  generateMemoryMapFile("Node",
-                        memMapNameCamel,
+  mapTemplateCppNode = open(mapTemplateCppPathNode, OpenMethods.READ_ONLY)
+  mapCppNode         = open(mapCppPathNode,     OpenMethods.WRITE_FORCE)
+  generateMemoryMapFile(memMapNameCamel,
                         dataBlockNamesCamel,
-                        dataBlockNamesUpper,
                         dataBlocks,
-                        memMapTemplateCpp,
-                        nodeMemMapCpp,
+                        mapTemplateCppNode,
+                        mapCppNode,
                         timeStamp)
-  nodeMemMapCpp.close()
-  memMapTemplateCpp.seek(0)
-  hubMemMapCpp = open(hubMemMapCppPath, OpenMethods.WRITE_FORCE)
-  generateMemoryMapFile("Hub",
-                        memMapNameCamel,
-                        dataBlockNamesCamel,
-                        dataBlockNamesUpper,
-                        dataBlocks,
-                        memMapTemplateCpp,
-                        hubMemMapCpp,
-                        timeStamp)
-  hubMemMapCpp.close()
-  memMapTemplateCpp.close()
+  mapCppNode.close()
+  mapTemplateCppNode.close()
 
-  blockIterator = 0
-  dataBlockHppTemplate = open(dataBlockHppTemplatePath, OpenMethods.READ_ONLY)
-  dataBlockCppTemplate = open(dataBlockCppTemplatePath, OpenMethods.READ_ONLY)
+  mapTemplateCppHub = open(mapTemplateCppPathHub, OpenMethods.READ_ONLY)
+  mapCppHub         = open(mapCppPathHub, OpenMethods.WRITE_FORCE)
+  generateMemoryMapFile(memMapNameCamel,
+                        dataBlockNamesCamel,
+                        dataBlocks,
+                        mapTemplateCppHub,
+                        mapCppHub,
+                        timeStamp)
+  mapCppHub.close()
+  mapTemplateCppHub.close()
+
+  blockIterator      = 0
+  cumulativeVarIndex = NUMBER_OF_UNIVERSAL_VARS
+  blockHppTemplate   = open(blockHppTemplatePath, OpenMethods.READ_ONLY)
   for dataBlock in dataBlocks:
-    dataBlockHppTemplate.seek(0)
-    dataBlockCppTemplate.seek(0)
-    
-    dataBlockHppName     = "Block" + dataBlockNamesCamel[blockIterator] + ".hpp"
-    dataBlockHppNodePath = os.path.join(memMapNodeDir, dataBlockHppName)
-    dataBlockNodeHpp     = open(dataBlockHppNodePath, OpenMethods.WRITE_FORCE)
-    generateDataBlockFile("Node",
-                          memMapNameCamel,
-                          dataBlockNamesCamel[blockIterator],
-                          dataBlockNamesUpper[blockIterator],
-                          dataBlock,
-                          dataBlockHppTemplate,
-                          dataBlockNodeHpp,
-                          timeStamp)
-    dataBlockNodeHpp.close()
 
-    dataBlockCppName     = "Block" + dataBlockNamesCamel[blockIterator] + ".cpp"
-    dataBlockCppNodePath = os.path.join(memMapNodeDir, dataBlockCppName)
-    dataBlockNodeCpp     = open(dataBlockCppNodePath, OpenMethods.WRITE_FORCE)
-    generateDataBlockFile("Node",
-                          memMapNameCamel,
-                          dataBlockNamesCamel[blockIterator],
-                          dataBlockNamesUpper[blockIterator],
-                          dataBlock,
-                          dataBlockCppTemplate,
-                          dataBlockNodeCpp,
-                          timeStamp)
-    dataBlockNodeCpp.close()
+    blockHppTemplate.seek(0)
+    blockHppName     = "Block" + dataBlockNamesCamel[blockIterator] + ".hpp"
 
-    dataBlockHppTemplate.seek(0)
-    dataBlockCppTemplate.seek(0)
-
-    dataBlockHppName    = "Block" + dataBlockNamesCamel[blockIterator] + ".hpp"
-    dataBlockHppHubPath = os.path.join(memMapHubDir, dataBlockHppName)
-    dataBlockHubHpp     = open(dataBlockHppHubPath, OpenMethods.WRITE_FORCE)
-    generateDataBlockFile("Hub",
-                          memMapNameCamel,
+    blockHppPathNode = os.path.join(memMapNodeDir, blockHppName)
+    blockHppNode     = open(blockHppPathNode, OpenMethods.WRITE_FORCE)
+    generateDataBlockFile(memMapNameCamel,
                           dataBlockNamesCamel[blockIterator],
-                          dataBlockNamesUpper[blockIterator],
                           dataBlock,
-                          dataBlockHppTemplate,
-                          dataBlockHubHpp,
-                          timeStamp)
-    dataBlockHubHpp.close()
+                          cumulativeVarIndex,
+                          blockHppTemplate,
+                          blockHppNode)
+    blockHppNode.close()
 
-    dataBlockCppName    = "Block" + dataBlockNamesCamel[blockIterator] + ".cpp"
-    dataBlockCppHubPath = os.path.join(memMapHubDir, dataBlockCppName)
-    dataBlockHubCpp     = open(dataBlockCppHubPath, OpenMethods.WRITE_FORCE)
-    generateDataBlockFile("Hub",
-                          memMapNameCamel,
+    blockHppTemplate.seek(0)
+
+    blockHppPathHub = os.path.join(memMapHubDir, blockHppName)
+    blockHppHub     = open(blockHppPathHub, OpenMethods.WRITE_FORCE)
+    generateDataBlockFile(memMapNameCamel,
                           dataBlockNamesCamel[blockIterator],
-                          dataBlockNamesUpper[blockIterator],
                           dataBlock,
-                          dataBlockCppTemplate,
-                          dataBlockHubCpp,
-                          timeStamp)
-    dataBlockHubCpp.close()
-    blockIterator += 1
+                          cumulativeVarIndex,
+                          blockHppTemplate,
+                          blockHppHub)
+    blockHppHub.close()
+
+    blockIterator      += 1
+    cumulativeVarIndex += len(dataBlock["Member ID"])
 
   return (Error.NONE)
 

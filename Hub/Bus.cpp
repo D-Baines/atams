@@ -429,8 +429,7 @@ Atams::Error_t Bus::triggerGenInfoCollectionAllNodes(void)
     
     for (uint16_t varID = BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR; varID <= BlockUniversal::VAR_ID_MAP_CHECKSUM; varID++)
     {
-      statusReturn = nodePtr->setRequestPattern(BLOCK_ID_UNIVERSAL, 
-                                                varID, 
+      statusReturn = nodePtr->setRequestPattern(varID, 
                                                 Atams::ACCESS_READ, 
                                                 Atams::REQUEST_UNTIL_ACK);
 

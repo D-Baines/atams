@@ -47,6 +47,8 @@ class CRC32
 
   /*-- PUBLIC FUNCTION DECLARATIONS ---*/
 
+  CRC32(void);
+
   CRC32(uint32_t generatorPolynomial);
 
   uint32_t calculateCRC(volatile const uint8_t *byteBuffer, uint16_t length);
@@ -63,12 +65,12 @@ class CRC32
 
   /*-- PRIVATE CONSTANTS --------------*/
 
-  static constexpr uint32_t CRC_RESET_VALUE          = 0xFFFFFFFFU;
-  static constexpr uint16_t DECIMAL_WIDTH_8_BIT      = 256U;
-  static constexpr uint8_t  BYTE_MASK                = 0xFFU;
-  static constexpr uint32_t FINAL_XOR_VALUE          = 0xFFFFFFFFU;
-  static constexpr uint8_t  NUMBER_OF_CRC_BITS       = 32U;
-  static constexpr uint8_t  BITS_IN_A_BYTE           = 8U;
+  static constexpr uint32_t CRC_RESET_VALUE     = 0xFFFFFFFFU;
+  static constexpr uint16_t DECIMAL_WIDTH_8_BIT = 256U;
+  static constexpr uint8_t  BYTE_MASK           = 0xFFU;
+  static constexpr uint32_t FINAL_XOR_VALUE     = 0xFFFFFFFFU;
+  static constexpr uint8_t  NUMBER_OF_CRC_BITS  = 32U;
+  static constexpr uint8_t  BITS_IN_A_BYTE      = 8U;
 
   /*-- PRIVATE VARIABLES --------------*/
 
@@ -76,6 +78,8 @@ class CRC32
   uint32_t _rollingCRC = CRC_RESET_VALUE;
 
   /*-- PRIVATE FUNCTION DECLARATIONS --*/
+
+  void generateLookupTable(const uint32_t generatorPolynomial);
 
   uint32_t reflect(const uint32_t data, const uint8_t bitCount);
 };

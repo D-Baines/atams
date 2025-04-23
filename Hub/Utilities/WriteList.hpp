@@ -50,7 +50,6 @@ class WriteList
 
   typedef struct WriteConfig_t
   {
-    uint8_t  blockID;
     uint16_t varID;
     uint16_t meshPacketDataIndex;
     uint8_t  dataLength;
@@ -80,11 +79,11 @@ class WriteList
 
   WriteList(void);
 
-  SearchResult_t findConfig(const WriteConfig_t configToFind);
+  SearchResult_t findConfig(const uint16_t varID);
 
   Error_t addConfig(const WriteConfig_t newWriteConfig);
 
-  void removeConfigIfFound(const WriteConfig_t configToRemove);
+  void removeConfigIfFound(const uint16_t varID);
 
   void updateIndexes(const uint16_t referenceIndex, const int16_t shiftLength);
 

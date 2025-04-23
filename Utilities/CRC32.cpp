@@ -24,7 +24,8 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "../../Atams/Utilities/CRC32.hpp"
+#include "CRC32.hpp"
+#include "../AtamsTypedefs.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -36,26 +37,14 @@ namespace Atams {
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
+CRC32::CRC32(void)
+{
+  generateLookupTable(Atams::CRC32_POLYNOMIAL);
+}
+
 CRC32::CRC32(uint32_t generatorPolynomial)
 {
-  for (uint32_t byteValue = 0U; byteValue < DECIMAL_WIDTH_8_BIT; byteValue++) 
-  {
-    uint32_t crc = byteValue;
-
-    for (uint8_t bitIndex = 0U; bitIndex < BITS_IN_A_BYTE; ++bitIndex) 
-    {
-        if (crc & 1U) 
-        {
-          crc = (crc >> 1U) ^ generatorPolynomial;
-        } 
-        else 
-        {
-          crc >>= 1U;
-        }
-    }
-
-    _crcTable[byteValue] = crc;
-  }
+  generateLookupTable(generatorPolynomial);
 }
 
 uint32_t CRC32::calculateCRC(volatile const uint8_t *byteBuffer, uint16_t length)
@@ -88,6 +77,28 @@ uint32_t CRC32::getRollingCRC(void)
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
+
+void CRC32::generateLookupTable(const uint32_t generatorPolynomial)
+{
+  for (uint32_t byteValue = 0U; byteValue < DECIMAL_WIDTH_8_BIT; byteValue++) 
+  {
+    uint32_t crc = byteValue;
+
+    for (uint8_t bitIndex = 0U; bitIndex < BITS_IN_A_BYTE; ++bitIndex) 
+    {
+        if (crc & 1U) 
+        {
+          crc = (crc >> 1U) ^ generatorPolynomial;
+        } 
+        else 
+        {
+          crc >>= 1U;
+        }
+    }
+
+    _crcTable[byteValue] = crc;
+  }
+}
 
 uint32_t CRC32::reflect(const uint32_t data, const uint8_t bitCount)
 {

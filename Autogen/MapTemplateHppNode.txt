@@ -1,12 +1,11 @@
 /**
   ******************************************************************************
-  * @file    Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.hpp
+  * @file    MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.hpp
   *
   * @author  D. Baines
   *
   * @brief   Auto-generated file containing typedefs, constants, and function
-  *          declarations for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Data Block with name: $$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.
-  *          The Data Block is part of an Atams Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
+  *          declarations for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
   *
   * @version v1.0
   ******************************************************************************
@@ -30,37 +29,24 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../../DataBlock.hpp"
+#include "../../Node.hpp"
+#include "../BlockUniversal.hpp"
+$$$AUTOGEN$$$DATA_BLOCK_FILE_INCLUDES$$$AUTOGEN$$$
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ { namespace Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ {
+namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
 
-/*************************************************************************************/
-/* PUBLIC TYPEDEFS                                                                   */
-/*************************************************************************************/
-
-enum VarID_t: uint16_t
-{
-$$$AUTOGEN$$$MEMBER_ID_LIST$$$AUTOGEN$$$
-  NUMBER_OF_$$$AUTOGEN$$$BLOCK_NAME_UPPER$$$AUTOGEN$$$_VARS
-};
-
-/*************************************************************************************/
-/* PUBLIC CONSTANTS                                                                  */
-/*************************************************************************************/
-
-$$$AUTOGEN$$$DEFAULTS$$$AUTOGEN$$$
 /*************************************************************************************/
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-extern const DataBlock::Descriptor_t blockDescriptor;
+extern const MemoryMap_t memoryMap;
 
 
-} } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ */
+} } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
 
 /**
   * @}End of File

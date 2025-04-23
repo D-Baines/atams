@@ -29,7 +29,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../DataBlock.hpp"
+#include "../../AtamsTypedefs.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -63,21 +63,39 @@ enum VarID_t: uint16_t
   VAR_ID_STORE_ALL                = 17U,
   VAR_ID_RESTORE_USER_BLOCKS      = 18U,
   VAR_ID_RESTORE_ALL              = 19U,
-  VAR_ID_STORAGE_STATUS           = 20U,
-  VAR_ID_STORAGE_PROCESS_COMPLETE = 21U,
-  VAR_ID_WATCHDOG_FAULT_ACTIVE    = 22U,
-  VAR_ID_WATCHDOG_RESET           = 23U,
-  VAR_ID_CRC_ERROR_COUNT          = 24U,
-  VAR_ID_COBS_ERROR_COUNT         = 25U,
+  VAR_ID_RESET_NODE               = 20U,
+  VAR_ID_STORAGE_STATUS           = 21U,
+  VAR_ID_STORAGE_PROCESS_COMPLETE = 22U,
+  VAR_ID_WATCHDOG_FAULT_ACTIVE    = 23U,
+  VAR_ID_WATCHDOG_RESET           = 24U,
+  VAR_ID_CRC_ERROR_COUNT          = 25U,
+  VAR_ID_COBS_ERROR_COUNT         = 26U,
 
-  NUMBER_OF_VARS
+  NUMBER_OF_UNIVERSAL_VARS
 };
+
+/*************************************************************************************/
+/* PUBLIC CONSTANTS                                                                  */
+/*************************************************************************************/
+
+inline constexpr uint8_t  DEFAULT_NODE_ID          {0};
+inline constexpr int8_t   DEFAULT_FIRST_NODE_ID    {0};
+inline constexpr uint8_t  DEFAULT_LAST_NODE_ID     {0};
+inline constexpr int8_t   DEFAULT_PREVIOUS_NODE_ID {0};
+inline constexpr uint16_t DEFAULT_BITRATE          {0};
+inline constexpr int16_t  DEFAULT_WATCHDOG_PERIOD  {0};
 
 /*************************************************************************************/
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-extern const DataBlock::Descriptor_t blockDescriptor;
+extern const VarInfo_t varInfoList[BlockUniversal::NUMBER_OF_UNIVERSAL_VARS];
+
+/*************************************************************************************/
+/* PUBLIC FUNCTION DECLARATIONS                                                      */
+/*************************************************************************************/
+
+Atams::Error_t initDefaults(void);
 
 
 } } /* End Namespace - Atams::BlockUniversal */

@@ -1,12 +1,11 @@
 /**
   ******************************************************************************
-  * @file    Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.cpp
+  * @file    MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.hpp
   *
   * @author  D. Baines
   *
-  * @brief   Auto-generated file containing function definitions for an 
-  *          $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Data Block with name: $$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.
-  *          The Data Block is part of an Atams Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
+  * @brief   Auto-generated file containing typedefs, constants, and function
+  *          declarations for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
   *
   * @version v1.0
   ******************************************************************************
@@ -22,38 +21,32 @@
   ******************************************************************************
   */
 
+/* Pragma to prevent recursive inclusion --------------------------------------------*/
+#pragma once
+
 /*************************************************************************************/
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$.hpp"
+#include <stdint.h>
+#include "../../Node.hpp"
+#include "../BlockUniversal.hpp"
+$$$AUTOGEN$$$DATA_BLOCK_FILE_INCLUDES$$$AUTOGEN$$$
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ { namespace Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ {
-
-/*************************************************************************************/
-/* INIT FUNCTION DEFINITIONS                                                         */
-/*************************************************************************************/
-
-static Atams::Error_t initDefaults(DataBlock &blockToInit)
-{
-  Atams::Error_t error = Atams::ERROR_NONE;
-
-$$$AUTOGEN$$$INIT_DEFAULTS_DEFINITION$$$AUTOGEN$$$
-  return (error); 
-}
+namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
 
 /*************************************************************************************/
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-$$$AUTOGEN$$$BLOCK_DESCRIPTOR$$$AUTOGEN$$$
+extern const Node::MemoryMap_t memoryMap;
 
 
-} } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::Block$$$AUTOGEN$$$BLOCK_NAME_CAMEL$$$AUTOGEN$$$ */
+} } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
 
 /**
   * @}End of File

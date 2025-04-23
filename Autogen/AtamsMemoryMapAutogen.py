@@ -68,10 +68,10 @@ class directorySearchBox:
       self.entry.insert(0, self.path)
 
 def runFileGeneration(memoryMapName, memoryMapXlsxPath, nodeDir, hubDir):
-  try:
-    generationStatus = generateCppFiles(memoryMapName, memoryMapXlsxPath, nodeDir, hubDir)
-  except:
-     generationStatus = "Error: File Generation Failed - Invalid Memory Map"
+  #try:
+  generationStatus = generateCppFiles(memoryMapName, memoryMapXlsxPath, nodeDir, hubDir)
+  #except:
+     #generationStatus = "Error: File Generation Failed - Invalid Memory Map"
   statusLabel.configure(text=generationStatus)
    
 def overwriteAccepted(window, memoryMapName: str, memoryMapXlsxPath:str, nodeDir: str, hubDir:str):

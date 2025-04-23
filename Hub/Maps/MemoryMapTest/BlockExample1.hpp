@@ -30,7 +30,6 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../../DataBlock.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -44,22 +43,21 @@ namespace Atams { namespace MapTest { namespace BlockExample1 {
 
 enum VarID_t: uint16_t
 {
-  VAR_ID_WRITE_UINT8  = 0U,
-  VAR_ID_WRITE_INT8   = 1U,
-  VAR_ID_READ_UINT8   = 2U,
-  VAR_ID_READ_INT8    = 3U,
-  VAR_ID_WRITE_UINT16 = 4U,
-  VAR_ID_WRITE_INT16  = 5U,
-  VAR_ID_READ_UINT16  = 6U,
-  VAR_ID_READ_INT16   = 7U,
-  VAR_ID_WRITE_UINT32 = 8U,
-  VAR_ID_WRITE_INT32  = 9U,
-  VAR_ID_READ_UINT32  = 10U,
-  VAR_ID_READ_INT32   = 11U,
-  VAR_ID_WRITE_FLOAT  = 12U,
-  VAR_ID_READ_FLOAT   = 13U,
-
-  NUMBER_OF_EXAMPLE1_VARS
+  VAR_ID_WRITE_UINT8  = 27U,
+  VAR_ID_WRITE_INT8   = 28U,
+  VAR_ID_READ_UINT8   = 29U,
+  VAR_ID_READ_INT8    = 30U,
+  VAR_ID_WRITE_UINT16 = 31U,
+  VAR_ID_WRITE_INT16  = 32U,
+  VAR_ID_READ_UINT16  = 33U,
+  VAR_ID_READ_INT16   = 34U,
+  VAR_ID_WRITE_UINT32 = 35U,
+  VAR_ID_WRITE_INT32  = 36U,
+  VAR_ID_READ_UINT32  = 37U,
+  VAR_ID_READ_INT32   = 38U,
+  VAR_ID_WRITE_FLOAT  = 39U,
+  VAR_ID_READ_FLOAT   = 40U,
+  NUMBER_OF_VARS
 };
 
 /*************************************************************************************/
@@ -80,12 +78,6 @@ inline constexpr uint32_t DEFAULT_READ_UINT32  {11};
 inline constexpr int32_t  DEFAULT_READ_INT32   {12};
 inline constexpr float    DEFAULT_WRITE_FLOAT  {13.0F};
 inline constexpr float    DEFAULT_READ_FLOAT   {14.0F};
-
-/*************************************************************************************/
-/* CONST EXTERNS                                                                     */
-/*************************************************************************************/
-
-extern const DataBlock::Descriptor_t blockDescriptor;
 
 
 } } } /* End Namespace - Atams::MapTest::BlockExample1 */

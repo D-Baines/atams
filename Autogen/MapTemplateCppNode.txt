@@ -1,0 +1,127 @@
+/**
+  ******************************************************************************
+  * @file    MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.cpp
+  *
+  * @author  D. Baines
+  *
+  * @brief   Auto-generated file containing public function definitions
+  *          for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
+  *
+  * @version v1.0
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) D. Baines
+  * All rights reserved.
+  *
+  * This Source Code Form is subject to the terms of the Mozilla Public
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  *
+  ******************************************************************************
+  */
+
+/*************************************************************************************/
+/* INCLUDES                                                                          */
+/*************************************************************************************/
+
+#include "Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.hpp"
+
+/*************************************************************************************/
+/* NAMESPACE                                                                         */
+/*************************************************************************************/
+
+namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
+
+/*************************************************************************************/
+/* STATIC CONSTANTS                                                                  */
+/*************************************************************************************/
+
+static const GenInfo_t genInfo = 
+{
+  /* .atamsVersionMajor = */ $$$AUTOGEN$$$VERSION_MAJOR$$$AUTOGEN$$$,
+  /* .atamsVersionMinor = */ $$$AUTOGEN$$$VERSION_MINOR$$$AUTOGEN$$$,
+  /* .genDay            = */ $$$AUTOGEN$$$GENERATION_DAY$$$AUTOGEN$$$,
+  /* .genMonth          = */ $$$AUTOGEN$$$GENERATION_MONTH$$$AUTOGEN$$$,
+  /* .genYear           = */ $$$AUTOGEN$$$GENERATION_YEAR$$$AUTOGEN$$$,
+  /* .genHour           = */ $$$AUTOGEN$$$GENERATION_HOUR$$$AUTOGEN$$$,
+  /* .genMinute         = */ $$$AUTOGEN$$$GENERATION_MINUTE$$$AUTOGEN$$$,
+  /* .genSecond         = */ $$$AUTOGEN$$$GENERATION_SECOND$$$AUTOGEN$$$,
+  /* .genChecksum       = */ $$$AUTOGEN$$$GENERATION_CHECKSUM$$$AUTOGEN$$$
+};
+
+static const VarInfo_t varInfoList[Platform::NODE_NUMBER_OF_VARS] =
+{
+  /*------------------------ Universal Var Info -------------------------*/
+  
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_ATAMS_VERSION_MINOR],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_GEN_DAY],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_GEN_MONTH],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_GEN_YEAR],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_GEN_HOUR],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_GEN_MINUTE],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_GEN_SECOND],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_CHECKSUM],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_CONFIGURATION_PASSKEY],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_CONFIGURATION_STATUS],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_NODE_ID],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_FIRST_NODE_ID],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_LAST_NODE_ID],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_PREVIOUS_NODE_ID],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_BITRATE],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_WATCHDOG_PERIOD],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_STORE_ALL],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_RESTORE_USER_BLOCKS],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_RESTORE_ALL],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_RESET_NODE],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_STORAGE_STATUS],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_WATCHDOG_RESET],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_CRC_ERROR_COUNT],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_COBS_ERROR_COUNT],
+
+  /*--------------------------- User Var Info ---------------------------*/
+
+$$$AUTOGEN$$$VAR_INFO_LIST$$$AUTOGEN$$$
+};
+
+/*************************************************************************************/
+/* INIT FUNCTION DEFINITIONS                                                         */
+/*************************************************************************************/
+                                        
+Atams::Error_t initGenInfo(void)
+{
+  Atams::Error_t error = Atams::ERROR_NONE;
+
+$$$AUTOGEN$$$INIT_MAP_GEN_INFO_DEFINITION$$$AUTOGEN$$$  
+  return (error); 
+}
+
+Atams::Error_t initUserDefaults(void)
+{
+  Atams::Error_t error = Atams::ERROR_NONE;
+
+$$$AUTOGEN$$$INIT_USER_DEFAULTS_DEFINITION$$$AUTOGEN$$$  
+  return (error); 
+}
+
+/*************************************************************************************/
+/* EXTERN CONSTANTS                                                                  */
+/*************************************************************************************/
+
+const MemoryMap_t memoryMap =
+{
+  /* noOfVars         = */ static_cast<uint16_t>(Platform::NODE_NUMBER_OF_VARS),
+  /* genInfo          = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::genInfo,
+  /* initGenInfo      = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::initGenInfo,
+  /* initUserDefaults = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::initUserDefaults,
+  /* varInfoList      = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::varInfoList
+};
+
+} } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
+
+/**
+  * @}End of File
+  */

@@ -30,8 +30,7 @@
 
 #include <stdint.h>
 #include "../AtamsTypedefs.hpp"
-#include "Developer/BlockOwnerInteractor.hpp"
-#include "DataBlock.hpp"
+#include "Platform.hpp"
 #include "Utilities/WriteList.hpp"
 #include "../Utilities/CRC32.hpp"
 
@@ -56,8 +55,7 @@ class Bus;
 /* CLASS DEFINITIONS                                                                 */
 /*************************************************************************************/
 
-class Node :
-private Platform::MemoryLock
+class Node
 {
   /*-- Friend Declarations ----------------------------------------------------------*/
 
@@ -69,50 +67,36 @@ private Platform::MemoryLock
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
-  typedef Atams::Error_t (*InitUniversalDataFunction_t)(Node &nodeToInit);
-
   struct MemoryMap_t
   {
-    uint16_t                       noOfDataBlocks    = 0U;
-    GenInfo_t                      genInfo;
-    InitUniversalDataFunction_t    initUniversalData = nullptr;
-    const DataBlock::Descriptor_t *blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
+    const uint16_t   noOfVars = 0U;
+    const GenInfo_t  genInfo;
+    const VarInfo_t (&varInfoList)[Platform::NODE_NUMBER_OF_VARS];
   
-    MemoryMap_t(void)
-    {
-      for (const DataBlock::Descriptor_t *&blockDescriptor : blockDescriptors) blockDescriptor = nullptr;
-    }
+    MemoryMap_t(const uint16_t   inputNoOfVars,
+                const GenInfo_t  inputGenInfo,
+                const VarInfo_t (&initVarInfoList)[Platform::NODE_NUMBER_OF_VARS]) :
+    noOfVars(inputNoOfVars),
+    genInfo(inputGenInfo),
+    varInfoList(initVarInfoList){};
   
-    MemoryMap_t(const uint16_t                      initNoOfDataBlocks,
-                const GenInfo_t                     initGenInfo,
-                const InitUniversalDataFunction_t   universalDataInitFnPtr,
-                const DataBlock::Descriptor_t      *blockDescriptorPtrs[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
-    {
-      noOfDataBlocks    = initNoOfDataBlocks;
-      genInfo           = initGenInfo;
-      initUniversalData = universalDataInitFnPtr;
-      for (uint16_t blockIndex = 0U; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
-      {
-        blockDescriptors[blockIndex] = blockDescriptorPtrs[blockIndex];
-      }
-    };
+    /* Default Constructor */
+    MemoryMap_t(void) = delete;
   
+    /* Default Destructor */
+    ~MemoryMap_t(void){};
+  
+    /* Copy Constructor */
     MemoryMap_t(const MemoryMap_t &other) = delete;
   
-    MemoryMap_t& operator=(const MemoryMap_t &other)
-    {
-      if (&other == this) return (*this);
+    /* Copy Assignment Operator */
+    MemoryMap_t & operator=(const MemoryMap_t &other) = delete;
   
-      noOfDataBlocks    = other.noOfDataBlocks;
-      genInfo           = other.genInfo;
-      initUniversalData = other.initUniversalData;
-      for (uint16_t blockIndex = 0U; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
-      {
-        blockDescriptors[blockIndex] = other.blockDescriptors[blockIndex];
-      }
+    /* Move Constructor */
+    MemoryMap_t(MemoryMap_t &&other) = delete;
   
-      return (*this);
-    }
+    /* Move Assignment Operator */
+    MemoryMap_t & operator=(MemoryMap_t &&other) = delete;
   };
 
   /*-- Public Function Declarations -------------------------------------------------*/
@@ -128,45 +112,27 @@ private Platform::MemoryLock
   Atams::Error_t initDefaults(void);
      
   template <typename T>
-  Atams::Error_t write(const uint8_t blockID, const uint16_t varID, const T writeData);
-
-  template <typename T>
-  Atams::Error_t writeWithRequestPattern(const uint8_t          blockID, 
-                                         const uint16_t         varID, 
-                                         const T                writeData,
-                                         const RequestPattern_t requestPattern);
+  Atams::Error_t write(const uint16_t varID, const T writeData);
   
   template <typename T>
-  Atams::Error_t read(const uint8_t blockID, const uint16_t memberID, T &readData);
+  Atams::Error_t read(const uint16_t memberID, T &readData);
 
   template <typename T>
-  Atams::Error_t readIfNew(const uint8_t blockID, const uint16_t memberID, T &readData);
-
-  Atams::Error_t externalTransfer(const Access_t  accessRequest,
-                                  const uint8_t   blockID,
-                                  const uint16_t  memberID,
-                                  uint8_t * const dataStoragePtr,
-                                  const uint8_t   length);
+  Atams::Error_t readIfNew(const uint16_t memberID, T &readData);
   
-  DataStatusReturn_t<uint8_t> getMemberLength(const uint8_t blockID, const uint16_t memberID);
+  DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t memberID);
 
-  Atams::Error_t setRequestPattern(const uint8_t          blockID,
-                                   const uint16_t         varID,
+  Atams::Error_t setRequestPattern(const uint16_t         varID,
                                    const Access_t         accessRequest,
                                    const RequestPattern_t requestPattern);
 
-  Atams::Error_t getRequestPattern(const uint8_t     blockID,
-                                   const uint16_t    varID,
+  Atams::Error_t getRequestPattern(const uint16_t   varID,
                                    Access_t         &accessRequest,
                                    RequestPattern_t &requestPattern);
 
   uint8_t getNodeID(void);
 
   Atams::Error_t getBusError(void);
-
-  DataBlock &getUniversalBlockRef(void);
-
-  DataBlock *getBlockPtr(const uint8_t blockID);
 
   Atams::ProcessState_t updateGetGenInfo(Atams::Error_t &error, Atams::GenInfo_t &genInfo);
 
@@ -188,15 +154,12 @@ private Platform::MemoryLock
   Atams::ProcessState_t updateResetNode(Atams::Error_t &error);
 
   //#if DEVELOPER_TOOLS 
-  Atams::Error_t setRequestPatternNoChecks(const uint8_t          blockID,
-                                           const uint16_t         varID,
+  Atams::Error_t setRequestPatternNoChecks(const uint16_t         varID,
                                            const Access_t         accessRequest,
                                            const RequestPattern_t requestPattern);
   //#endif
 
   private:
-
-  /*-- Private Functions ------------------------------------------------------------*/
 
   /*-- Private Typedefs -------------------------------------------------------------*/
 
@@ -211,7 +174,6 @@ private Platform::MemoryLock
   {
     Access_t         accessRequest;
     RequestPattern_t requestPattern;
-    uint8_t          blockID; 
     uint16_t         varID;
     DatagramHeader_t newDatagramHeader;
     uint8_t          newDatagramBuffer[DATAGRAM_SIZE_HEADER + MAX_TYPE_SIZE];
@@ -219,37 +181,65 @@ private Platform::MemoryLock
     DatagramHeader_t currentDatagramHeader;
     uint8_t          currentDatagramLength  = 0U;
     uint16_t         datagramStartIndex     = 0U;
+    uint8_t          writePayloadLength     = 0U;
   };
+
+  struct Var_t
+  {
+    uint8_t                 storage[MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
+    Atams::Access_t         requestAccess          = Atams::ACCESS_NONE;
+    Atams::RequestPattern_t requestPattern         = Atams::REQUEST_INACTIVE;
+    bool                    newDataReady           = false;
+  };
+
+  /*-- Static Private Objects -------------------------------------------------------*/
+
+  static Atams::CRC32 s_nodeCRC;
 
   /*-- Private Objects --------------------------------------------------------------*/
 
-  Atams::CRC32         _nodeCRC{Atams::CRC32_POLYNOMIAL};
-  BlockOwnerInteractor _dataBlocks[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
+  Platform::MemoryLock m_requestPacketLock;
+  Platform::MemoryLock m_varStorageLock;
 
   /*-- Private Variables ------------------------------------------------------------*/
 
   Atams::Bus        &_bus;
   const uint8_t      _nodeID;
-  MemoryMap_t        _memoryMap;
-  DataBlock         &_universalBlock                      = _dataBlocks[BLOCK_ID_UNIVERSAL];
-  Error_t            _busError                            = ERROR_NONE;
+  const MemoryMap_t *m_memoryMap;
+  uint16_t           m_validVarCount = 0U;
+  Var_t              m_varStorage[Platform::NODE_NUMBER_OF_VARS];
+  Atams::Error_t     _busError = Atams::ERROR_NONE;
   uint16_t           _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
   RequestPacket_t    _requestPacket;
   uint8_t            _responseBuffer[MAX_MESH_PACKET_SIZE];
   uint16_t           _responseLength   = 0U;
   bool               _newResponseReady = false;
+  
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
+  Atams::Error_t externalTransfer(const Access_t  accessRequest,
+                                  const uint16_t  memberID,
+                                  uint8_t * const bytesPtr,
+                                  const uint8_t   length);
+                              
+  void resetVars(void);
+
+  bool getMemoryMapIsValid(void);
+
+  void invalidateMemoryMap(void);  
+
+  bool validateMapLength(const MemoryMap_t &memoryMap);
+  
   bool validateUniversalBlock(const MemoryMap_t &memoryMap);
+
+  bool validateMapChecksum(const MemoryMap_t &memoryMap);
 
   Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap);
 
   Atams::Error_t initBlockDescriptors(const MemoryMap_t &memoryMap);
 
   Atams::Error_t initUniversalData(const MemoryMap_t &memoryMap);
-
-  void invalidateMemoryMap(void);
 
   Atams::Error_t getEncodedRequestPacket(const Atams::MessageType_t requestType,
                                          uint8_t * const            outputBuffer,
@@ -264,8 +254,7 @@ private Platform::MemoryLock
 
   void processAbortedResponse(void);
 
-  bool processDatagramRead(DataBlock              &block,
-                           const DatagramHeader_t datagramHeader,
+  bool processDatagramRead(const DatagramHeader_t datagramHeader,
                            uint16_t              &datagramStartIndex,
                            const uint8_t          payloadLength);
 
@@ -287,14 +276,13 @@ private Platform::MemoryLock
 
   Atams::Error_t constructDatagram(RequestChangeConfig_t &changeConfig);
   
-  Atams::Error_t processRequestPacketChange(const uint8_t          blockID,
-                                            const uint16_t         varID,
+  Atams::Error_t processRequestPacketChange(const uint16_t         varID,
                                             const Access_t         accessRequest,
                                             const RequestPattern_t requestPattern);
 
-  Atams::Error_t updateRequestPatternOnReceive(const uint8_t blockID, const uint16_t varID);
+  Atams::Error_t updateRequestPatternOnReceive(const uint16_t varID);
 
-  void updateRequestPacketWriteData(void);
+  Atams::Error_t updateRequestPacketWriteData(void);
 
   bool validateGenInfo(void);
 };

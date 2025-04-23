@@ -174,11 +174,10 @@ class CommsLock
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-inline constexpr uint16_t NUMBER_OF_NODES_PER_BUS     = 10U;
-inline constexpr uint16_t NODE_NUMBER_OF_DATA_MEMBERS = 200U; 
-inline constexpr uint16_t NODE_NUMBER_OF_DATA_BLOCKS  = 3U; 
-inline constexpr uint16_t COMMS_BUFFER_SIZE           = 512U;
-inline constexpr uint64_t BUS_RESPONSE_TIMEOUT        = 100U;
+inline constexpr uint16_t NUMBER_OF_NODES_PER_BUS = 10U;
+inline constexpr uint16_t NODE_NUMBER_OF_VARS     = 200U; 
+inline constexpr uint16_t COMMS_BUFFER_SIZE       = 512U;
+inline constexpr uint64_t BUS_RESPONSE_TIMEOUT    = 100U;
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
