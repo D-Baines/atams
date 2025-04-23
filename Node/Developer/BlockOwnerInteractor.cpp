@@ -57,12 +57,12 @@ BlockOwnerInteractor::~BlockOwnerInteractor(void)
 
 Atams::Error_t BlockOwnerInteractor::loadFromNVM(const uint32_t maxIndex, uint32_t &nvmIndex)
 {
-  return (nvmTransfer(maxIndex, nvmIndex, TRANSFER_LOAD));
+  return (DataBlock::nvmTransfer(maxIndex, nvmIndex, TRANSFER_LOAD));
 }
 
 Atams::Error_t BlockOwnerInteractor::saveToNVM(const uint32_t maxIndex, uint32_t &nvmIndex)
 {
-  return (nvmTransfer(maxIndex, nvmIndex, TRANSFER_SAVE));
+  return (DataBlock::nvmTransfer(maxIndex, nvmIndex, TRANSFER_SAVE));
 }
 
 uint32_t BlockOwnerInteractor::getNVMSpaceRequirement(void)

@@ -31,7 +31,6 @@
 #include <stdint.h>
 #include "../AtamsTypedefs.hpp"
 
-
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
@@ -42,16 +41,16 @@ namespace Atams { namespace Platform {
 /* PUBLIC MACROS                                                                     */
 /*************************************************************************************/
 
+/* Dual core shared memory space requirement: 2 + (4 * Platform::NODE_NUMBER_OF_DATA_MEMBERS * Platform::NODE_NUMBER_OF_DATA_BLOCKS) */
 #define ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-inline constexpr uint16_t NODE_NUMBER_OF_DATA_MEMBERS = 50U;  /* Must be <= MAX_NUMBER_OF_DATA_MEMBERS */
-inline constexpr uint16_t NODE_NUMBER_OF_DATA_BLOCKS  = 3U;   /* Must be <= MAX_NUMBER_OF_DATA_BLOCKS  */
-inline constexpr uint16_t COMMS_BUFFER_SIZE           = 512U;
-inline constexpr uint32_t NVM_STORAGE_SIZE            = 1024U;
+inline constexpr uint16_t NODE_NUMBER_OF_VARS = 50U;  /* Must be <= MAX_NUMBER_OF_DATA_MEMBERS */
+inline constexpr uint16_t COMMS_BUFFER_SIZE   = 512U;
+inline constexpr uint32_t NVM_STORAGE_SIZE    = 1024U;
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
@@ -103,10 +102,10 @@ void exitConfigurationState(void);
 
 void setBitrate(Atams::BitrateOption_t bitrateOption);
 
-void resetNode(void);
+Atams::Error_t resetNode(void);
 
 
-} } /* End Atams::Platform Namespace */
+} } /* End Namespace - Atams::Platform */
 
 
 /**

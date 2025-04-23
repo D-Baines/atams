@@ -155,9 +155,11 @@ void setBitrate(Atams::BitrateOption_t bitrateOption)
   static_cast<void>(bitrateOption);
 }
 
-void resetNode(void)
+Atams::Error_t resetNode(void)
 {
   HAL_NVIC_SystemReset();
+
+  return (Atams::ERROR_PLATFORM);
 }
 
 } } /* End Namespace - Atams::Platform */

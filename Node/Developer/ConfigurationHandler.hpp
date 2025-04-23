@@ -29,7 +29,6 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../Maps/BlockUniversal.hpp"
 #include "WatchdogHandler.hpp"
 
 /*************************************************************************************/
@@ -51,17 +50,12 @@ class ConfigurationHandler
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
-  typedef void (&PasscodeProtectedFunction_t)(void);
+  using PasscodeProtectedFunction_t = Atams::Error_t (&)(void);
 
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Constructor */
-  ConfigurationHandler(DataBlock                  &universalDataBlock,
-                       WatchdogHandler            &watchdogHandler,
-                       PasscodeProtectedFunction_t storeFunctionFn,
-                       PasscodeProtectedFunction_t restoreUserBlocksFn,
-                       PasscodeProtectedFunction_t restoreAllFn,
-                       PasscodeProtectedFunction_t resetNodeFn);
+  ConfigurationHandler(WatchdogHandler &watchdogHandler);
 
   /* Destructor */
   ~ConfigurationHandler(void);
@@ -109,7 +103,7 @@ class ConfigurationHandler
 
   struct PasscodeChecker_t
   {
-    const BlockUniversal::VarID_t     universalVarID;
+    const uint8_t                     passcodeVarID;
     const uint32_t                    requiredPasscode;
     uint32_t                          passcode;
     uint32_t                          prevPasscode;
@@ -122,7 +116,6 @@ class ConfigurationHandler
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  DataBlock                   &m_universalBlock;
   WatchdogHandler             &m_watchdogHandler;
   PasscodeChecker_t            m_configPasscodeCheckers[ConfigurationHandler::NUMBER_OF_PASSCODES];
   bool                         m_updateRequired     = false;

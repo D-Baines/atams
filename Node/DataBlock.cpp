@@ -230,7 +230,7 @@ Atams::Error_t DataBlock::initDescriptor(const Descriptor_t * const blockDescrip
     initStatus = Atams::ERROR_NUMBER_OF_DATA_BLOCKS;
   }
   else if ((blockDescriptorPtr->noOfDataMembers > Platform::NODE_NUMBER_OF_DATA_MEMBERS) ||
-           (blockDescriptorPtr->noOfDataMembers > Atams::MAX_NUMBER_OF_DATA_MEMBERS    ) )
+           (blockDescriptorPtr->noOfDataMembers > Atams::MAX_NUMBER_OF_VARS    ) )
   {
     initStatus = Atams::ERROR_NUMBER_OF_DATA_MEMBERS;
   }

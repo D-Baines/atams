@@ -26,6 +26,8 @@
 /*************************************************************************************/
 
 #include "WatchdogHandler.hpp"
+#include "../Node.hpp"
+#include "../Maps/BlockUniversal.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -37,8 +39,7 @@ namespace Atams {
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-WatchdogHandler::WatchdogHandler(DataBlock &universalDataBlock) :
-m_universalBlock(universalDataBlock)
+WatchdogHandler::WatchdogHandler(void)
 {
 
 }
@@ -77,7 +78,7 @@ void WatchdogHandler::update(const uint32_t currentTime)
         if ((m_watchdogPeriod > 0U             ) &&
             (m_watchdogCount  > m_watchdogPeriod) )
         {
-          m_universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, static_cast<uint8_t>(WATCHDOG_FAULT_ACTIVE));
+          Atams::write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, static_cast<uint8_t>(WATCHDOG_FAULT_ACTIVE));
           m_watchdogStatus = WATCHDOG_FAULT_ACTIVE;
         }
 
@@ -87,12 +88,12 @@ void WatchdogHandler::update(const uint32_t currentTime)
       {
         uint32_t watchdogReset{0U};
 
-        static_cast<void>(m_universalBlock.read(BlockUniversal::VAR_ID_WATCHDOG_RESET, watchdogReset));
+        static_cast<void>(Atams::read(BlockUniversal::VAR_ID_WATCHDOG_RESET, watchdogReset));
 
         if ((watchdogReset       == Atams::WATCHDOG_RESET_PASSCODE) &&
             (m_prevWatchdogReset != Atams::WATCHDOG_RESET_PASSCODE) )
         {
-          m_universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, static_cast<uint8_t>(WATCHDOG_FAULT_INACTIVE));
+          Atams::write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, static_cast<uint8_t>(WATCHDOG_FAULT_INACTIVE));
           m_watchdogStatus = WATCHDOG_FAULT_INACTIVE;
         }
 
@@ -101,7 +102,7 @@ void WatchdogHandler::update(const uint32_t currentTime)
         break;
       }
       default:
-        m_universalBlock.write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, static_cast<uint8_t>(WATCHDOG_FAULT_ACTIVE));
+        Atams::write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, static_cast<uint8_t>(WATCHDOG_FAULT_ACTIVE));
         m_watchdogStatus = WATCHDOG_FAULT_ACTIVE;
         break;
     }

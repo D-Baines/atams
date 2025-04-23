@@ -29,7 +29,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../Maps/BlockUniversal.hpp"
+#include "../../AtamsTypedefs.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -56,7 +56,7 @@ class WatchdogHandler
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Constructor */
-  WatchdogHandler(DataBlock &universalDataBlock);
+  WatchdogHandler(void);
 
   /* Destructor */
   ~WatchdogHandler(void);
@@ -96,8 +96,6 @@ class WatchdogHandler
   };
 
   /*-- Private Variables ------------------------------------------------------------*/
-
-  DataBlock &m_universalBlock;
 
   uint32_t m_prevWatchdogUpdateTime = 0U;
   uint32_t m_prevWatchdogReset      = Atams::WATCHDOG_RESET_PASSCODE;

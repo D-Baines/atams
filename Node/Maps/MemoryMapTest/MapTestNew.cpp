@@ -25,7 +25,7 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "MapTest.hpp"
+#include "MapTestNew.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -50,68 +50,73 @@ static const GenInfo_t genInfo =
   /* .genChecksum       = */ 2433352831U
 };
 
-static const DataBlock::Descriptor_t* blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS] = 
-{
-  &BlockUniversal::blockDescriptor,
-  &BlockExample1::blockDescriptor,
-  &BlockExample2::blockDescriptor
-};
-
 /*************************************************************************************/
 /* INIT FUNCTION DEFINITIONS                                                         */
 /*************************************************************************************/
                                         
-Atams::Error_t initUniversalInfo(void)
+Atams::Error_t initGenInfo(void)
 {
   Atams::Error_t error = Atams::ERROR_NONE;
 
-  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
-                                   BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR,
-                                   genInfo.atamsVersionMajor);
+  //if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
+  //                                 BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR,
+  //                                 genInfo.atamsVersionMajor);
 
-  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
-                                   BlockUniversal::VAR_ID_ATAMS_VERSION_MINOR,
-                                   genInfo.atamsVersionMinor);
+  return (error);
+}
 
-  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
-                                   BlockUniversal::VAR_ID_MAP_GEN_DAY,
-                                   genInfo.genDay);
+static Atams::Error_t initUserDefaults(void)
+{
+  Atams::Error_t error = Atams::ERROR_NONE;
 
-  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
-                                   BlockUniversal::VAR_ID_MAP_GEN_MONTH,
-                                   genInfo.genMonth);
+  //if (!error) error = Atams::write(BlockExample2::VAR_ID_WRITE_UINT8,
+  //                                BlockExample2::DEFAULT_WRITE_UINT8);
 
-  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
-                                   BlockUniversal::VAR_ID_MAP_GEN_YEAR,
-                                   genInfo.genYear);
+  return (error);
+}
 
-  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
-                                   BlockUniversal::VAR_ID_MAP_GEN_HOUR,
-                                   genInfo.genHour);
+static Atams::Error_t initAllDefaults(void)
+{
+  Atams::Error_t error = Atams::ERROR_NONE;
 
-  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
-                                   BlockUniversal::VAR_ID_MAP_GEN_MINUTE,
-                                   genInfo.genMinute);
+  //if (!error) error = Atams::write(BlockExample2::VAR_ID_WRITE_UINT8,
+  //                                 BlockExample2::DEFAULT_WRITE_UINT8);
 
-  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
-                                   BlockUniversal::VAR_ID_MAP_GEN_SECOND,
-                                   genInfo.genSecond);
+  if (!error) error = initUserDefaults();
 
-  if (!error) error = Atams::write(BLOCK_ID_UNIVERSAL,
-                                   BlockUniversal::VAR_ID_MAP_CHECKSUM,
-                                   genInfo.genChecksum);
-  
   return (error); 
 }
+
 
 /*************************************************************************************/
 /* EXTERN CONSTANTS                                                                  */
 /*************************************************************************************/
 
-const MemoryMap_t memoryMap(static_cast<uint8_t>(NUMBER_OF_DATA_BLOCKS),
-                            genInfo,
-                            initUniversalInfo,
-                            blockDescriptors);
+static const VarInfo_t varInfoList[Platform::NODE_NUMBER_OF_VARS] =
+{
+  /* [BlockExample2::VAR_ID_WRITE_UINT8] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ false,
+  },
+  /* [BlockExample2::VAR_ID_WRITE_INT8] = */
+  {
+    /* .type           = */ Atams::TYPE_INT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ false,
+  },
+};
+
+const MemoryMap_t memoryMap =
+{
+  /* noOfVars         = */ static_cast<uint8_t>(MapTest::NUMBER_OF_NODE_VARS),
+  /* genInfo          = */ MapTest::genInfo,
+  /* initGenInfo      = */ MapTest::initGenInfo,
+  /* initAllDefaults  = */ MapTest::initAllDefaults,
+  /* initUserDefaults = */ MapTest::initUserDefaults,
+  /* varInfoList      = */ MapTest::varInfoList
+};
 
 
 } } /* End Namespace - Atams::MapTest */

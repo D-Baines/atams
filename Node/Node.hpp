@@ -31,7 +31,6 @@
 #include <stdint.h>
 #include "../AtamsTypedefs.hpp"
 #include "Platform.hpp"
-#include "Developer/BlockOwnerInteractor.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -48,50 +47,59 @@ namespace Atams {
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
 
-typedef Error_t (*InitUniversalDataFunction_t)(void);
+typedef Atams::Error_t (&InitUniversalDataFn_t)(void);
+typedef Atams::Error_t (&InitDefaultsFn_t)(void);
+
+struct VarInfo_t
+{
+  VarType_t type        = TYPE_NULL;
+  Access_t  accessLevel = ACCESS_NONE;
+  uint8_t   NVMStorage  = false;
+
+  static_assert(sizeof(type)        == 1U, "VarInfo_t member type size invalid");
+  static_assert(sizeof(accessLevel) == 1U, "VarInfo_t member type size invalid");
+  static_assert(sizeof(NVMStorage)  == 1U, "VarInfo_t member type size invalid");
+};
 
 struct MemoryMap_t
 {
-  uint16_t                       noOfDataBlocks    = 0U;
-  GenInfo_t                      genInfo;
-  InitUniversalDataFunction_t    initUniversalData = nullptr;
-  const DataBlock::Descriptor_t *blockDescriptors[Platform::NODE_NUMBER_OF_DATA_BLOCKS];
+  const uint16_t              noOfVars = 0U;
+  const GenInfo_t             genInfo;
+  const InitUniversalDataFn_t initGenInfo;
+  const InitDefaultsFn_t      initAllDefaults;
+  const InitDefaultsFn_t      initUserDefaults;
+  const VarInfo_t            (&varInfoList)[Platform::NODE_NUMBER_OF_VARS];
 
-  MemoryMap_t(void)
-  {
-    for (const DataBlock::Descriptor_t *&blockDescriptor : blockDescriptors) blockDescriptor = nullptr;
-  }
+  MemoryMap_t(const uint16_t              inputNoOfVars,
+              const GenInfo_t             inputGenInfo,
+              const InitUniversalDataFn_t initGenInfoFn,
+              const InitDefaultsFn_t      initAllDefaultFn,
+              const InitDefaultsFn_t      initUserDefaultsFn,
+              const VarInfo_t            (&initVarInfoList)[Platform::NODE_NUMBER_OF_VARS]) :
+  noOfVars(inputNoOfVars),
+  genInfo(inputGenInfo),
+  initGenInfo(initGenInfoFn),
+  initAllDefaults(initAllDefaultFn),
+  initUserDefaults(initUserDefaultsFn),
+  varInfoList(initVarInfoList){};
 
-  MemoryMap_t(const uint16_t                     initNoOfDataBlocks,
-              const GenInfo_t                    initGenInfo,
-              const InitUniversalDataFunction_t  universalDataInitFnPtr,
-              const DataBlock::Descriptor_t     *blockDescriptorPtrs[Platform::NODE_NUMBER_OF_DATA_BLOCKS])
-  {
-    noOfDataBlocks    = initNoOfDataBlocks;
-    genInfo           = initGenInfo;
-    initUniversalData = universalDataInitFnPtr;
-    for (uint16_t blockIndex = 0U; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
-    {
-      blockDescriptors[blockIndex] = blockDescriptorPtrs[blockIndex];
-    }
-  };
+  /* Default Constructor */
+  MemoryMap_t(void) = delete;
 
+  /* Default Destructor */
+  ~MemoryMap_t(void);
+
+  /* Copy Constructor */
   MemoryMap_t(const MemoryMap_t &other) = delete;
 
-  MemoryMap_t& operator=(const MemoryMap_t &other)
-  {
-    if (&other == this) return (*this);
+  /* Copy Assignment Operator */
+  MemoryMap_t & operator=(const MemoryMap_t &other) = delete;
 
-    noOfDataBlocks    = other.noOfDataBlocks;
-    genInfo           = other.genInfo;
-    initUniversalData = other.initUniversalData;
-    for (uint16_t blockIndex = 0U; blockIndex < Platform::NODE_NUMBER_OF_DATA_BLOCKS; blockIndex++)
-    {
-      blockDescriptors[blockIndex] = other.blockDescriptors[blockIndex];
-    }
+  /* Move Constructor */
+  MemoryMap_t(MemoryMap_t &&other) = delete;
 
-    return (*this);
-  }
+  /* Move Assignment Operator */
+  MemoryMap_t & operator=(MemoryMap_t &&other) = delete;
 };
 
 /*************************************************************************************/
@@ -104,35 +112,32 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap);
 
 Atams::Error_t initControlCore(const MemoryMap_t &memoryMap);
 
-Atams::Error_t restoreDefaults(void);
+Atams::Error_t initNVM(void);
 
-Atams::Error_t restoreDefaultsUserBlocks(void);
+Atams::Error_t restoreAll(void);
 
-Atams::Error_t loadFromNVM(void);
+Atams::Error_t restoreUserOnly(void);
 
-Atams::Error_t saveToNVM(void);
+Atams::Error_t storeAll(void);
 
 void updateCommsPolling(void);
 
 void updateCommsBlocking(void);
 
 template <typename T>
-Atams::Error_t write(const uint8_t blockID, const uint16_t memberID, const T writeData);
+Atams::Error_t write(const uint16_t varID, const T writeData);
 
 template <typename T>
-Atams::Error_t read(const uint8_t blockID, const uint16_t memberID, T &readData);
+Atams::Error_t read(const uint16_t varID, T &readData);
 
 Atams::Error_t externalTransfer(const Access_t  accessRequest,
-                                const uint8_t   blockID,
-                                const uint16_t  memberID,
-                                uint8_t * const dataStoragePtr,
+                                const uint16_t  varID,
+                                uint8_t * const bytesPtr,
                                 const uint8_t   length);
 
-DataStatusReturn_t<uint8_t> getMemberLength(const uint8_t blockID, const uint16_t memberID);
+DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t memberID);
 
 bool getWatchdogFault(void);
-
-DataBlock * getBlockPtr(const uint8_t blockID);
 
 } /* End Namespace - Atams */
 

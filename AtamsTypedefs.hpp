@@ -52,7 +52,7 @@ inline constexpr uint16_t MAX_MESH_PACKET_SIZE           = 256U;
 inline constexpr uint16_t MAX_NODE_PACKET_SIZE           = 256U;
 inline constexpr uint8_t  MAX_NUMBER_OF_MESH             = 10U;
 inline constexpr uint8_t  MAX_NUMBER_OF_DATA_BLOCKS      = 14U;
-inline constexpr uint16_t MAX_NUMBER_OF_DATA_MEMBERS     = 512U;
+inline constexpr uint16_t MAX_NUMBER_OF_VARS     = 512U;
 inline constexpr uint8_t  MAX_TYPE_SIZE                  = 4U;
 inline constexpr uint8_t  EOL_BYTE                       = 0U;
 inline constexpr int32_t  MAX_INT32                      = 2147483647L;
@@ -274,6 +274,38 @@ enum CoreID_t: uint8_t
   CORE_CONTROL = 0U,
   CORE_COMMS   = 1U,
   NUMBER_OF_CORES
+};
+
+enum UniversalVarID_t: uint16_t
+{
+  UNIVERSAL_VAR_ID_ATAMS_VERSION_MAJOR      = 0U,
+  UNIVERSAL_VAR_ID_ATAMS_VERSION_MINOR      = 1U,
+  UNIVERSAL_VAR_ID_MAP_GEN_DAY              = 2U,
+  UNIVERSAL_VAR_ID_MAP_GEN_MONTH            = 3U,
+  UNIVERSAL_VAR_ID_MAP_GEN_YEAR             = 4U,
+  UNIVERSAL_VAR_ID_MAP_GEN_HOUR             = 5U,
+  UNIVERSAL_VAR_ID_MAP_GEN_MINUTE           = 6U,
+  UNIVERSAL_VAR_ID_MAP_GEN_SECOND           = 7U,
+  UNIVERSAL_VAR_ID_MAP_CHECKSUM             = 8U,
+  UNIVERSAL_VAR_ID_CONFIGURATION_PASSKEY    = 9U,
+  UNIVERSAL_VAR_ID_CONFIGURATION_STATUS     = 10U,
+  UNIVERSAL_VAR_ID_NODE_ID                  = 11U,
+  UNIVERSAL_VAR_ID_FIRST_NODE_ID            = 12U,
+  UNIVERSAL_VAR_ID_LAST_NODE_ID             = 13U,
+  UNIVERSAL_VAR_ID_PREVIOUS_NODE_ID         = 14U,
+  UNIVERSAL_VAR_ID_BITRATE                  = 15U,
+  UNIVERSAL_VAR_ID_WATCHDOG_PERIOD          = 16U,
+  UNIVERSAL_VAR_ID_STORE_ALL                = 17U,
+  UNIVERSAL_VAR_ID_RESTORE_USER_BLOCKS      = 18U,
+  UNIVERSAL_VAR_ID_RESTORE_ALL              = 19U,
+  UNIVERSAL_VAR_ID_STORAGE_STATUS           = 20U,
+  UNIVERSAL_VAR_ID_STORAGE_PROCESS_COMPLETE = 21U,
+  UNIVERSAL_VAR_ID_WATCHDOG_FAULT_ACTIVE    = 22U,
+  UNIVERSAL_VAR_ID_WATCHDOG_RESET           = 23U,
+  UNIVERSAL_VAR_ID_CRC_ERROR_COUNT          = 24U,
+  UNIVERSAL_VAR_ID_COBS_ERROR_COUNT         = 25U,
+
+  NUMBER_OF_UNIVERSAL_VARS
 };
 
 struct DatagramHeader_t
