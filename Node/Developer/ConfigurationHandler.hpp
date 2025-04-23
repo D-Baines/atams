@@ -86,6 +86,8 @@ class ConfigurationHandler
 
   uint8_t getFinalSyncNodeID(void);
 
+  void notifyStorageProcessComplete(Atams::Error_t processStatus);
+
   private:
 
   /*-- Private Constants ------------------------------------------------------------*/
@@ -108,6 +110,7 @@ class ConfigurationHandler
     uint32_t                          passcode;
     uint32_t                          prevPasscode;
     const PasscodeProtectedFunction_t processFunction;
+    bool                              isStorageProcess;
 
     PasscodeChecker_t(void)                                      = delete;
     PasscodeChecker_t(const PasscodeChecker_t &other)            = delete;

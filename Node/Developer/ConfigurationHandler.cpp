@@ -49,7 +49,8 @@ m_configPasscodeCheckers
     /* .requiredPasscode = */ Atams::STORE_ALL_PASSCODE,
     /* .passcode         = */ 0U,
     /* .prevPasscode     = */ 0U,
-    /* .processFunction  = */ Atams::storeAll
+    /* .processFunction  = */ Atams::storeAll,
+    /* .isStorageProcess = */ true
   },
   /* [PASSCODE_ID_RESTORE_USER_BLOCKS] = */
   {
@@ -57,7 +58,8 @@ m_configPasscodeCheckers
     /* .requiredPasscode = */ Atams::RESTORE_USER_BLOCKS_PASSCODE,
     /* .passcode         = */ 0U,
     /* .prevPasscode     = */ 0U,
-    /* .processFunction  = */ Atams::restoreUserOnly
+    /* .processFunction  = */ Atams::restoreUser,
+    /* .isStorageProcess = */ true
   },
   /* [PASSCODE_ID_RESTORE_ALL] = */
   {
@@ -65,7 +67,8 @@ m_configPasscodeCheckers
     /* .requiredPasscode = */ Atams::RESTORE_ALL_PASSCODE,
     /* .passcode         = */ 0U,
     /* .prevPasscode     = */ 0U,
-    /* .processFunction  = */ Atams::restoreAll
+    /* .processFunction  = */ Atams::restoreAll,
+    /* .isStorageProcess = */ true
   },
   /* [PASSCODE_ID_RESET_NODE] = */
   {
@@ -73,7 +76,8 @@ m_configPasscodeCheckers
     /* .requiredPasscode = */ Atams::RESET_NODE_PASSCODE,
     /* .passcode         = */ 0U,
     /* .prevPasscode     = */ 0U,
-    /* .processFunction  = */ Platform::resetNode
+    /* .processFunction  = */ Platform::resetNode,
+    /* .isStorageProcess = */ false
   },
 }
 {
@@ -208,7 +212,12 @@ void ConfigurationHandler::checkConfigurationPasscodes(void)
     if ((checker.passcode     == checker.requiredPasscode) &&
         (checker.prevPasscode != checker.requiredPasscode) )
     {
-      checker.processFunction();
+      Atams::Error_t processStatus = checker.processFunction();
+
+      if (checker.isStorageProcess == true)
+      {
+        notifyStorageProcessComplete(processStatus);
+      }
     }
 
     checker.prevPasscode = checker.passcode;
@@ -241,6 +250,12 @@ void ConfigurationHandler::cancelConfigurationValueChange(void)
   static_cast<void>(Atams::write(BlockUniversal::VAR_ID_LAST_NODE_ID,     m_finalSyncNodeID));
   static_cast<void>(Atams::write(BlockUniversal::VAR_ID_BITRATE,          m_bitrateOption));
   static_cast<void>(Atams::write(BlockUniversal::VAR_ID_WATCHDOG_PERIOD,  watchdogPeriod));
+}
+
+void ConfigurationHandler::notifyStorageProcessComplete(Atams::Error_t processStatus)
+{
+  static_cast<void>(Atams::write(BlockUniversal::VAR_ID_STORAGE_STATUS,           static_cast<uint8_t>(processStatus)));
+  static_cast<void>(Atams::write(BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE, static_cast<uint8_t>(ATAMS_TRUE)));
 }
 
 } /* End Namespace - Atams */

@@ -50,36 +50,22 @@ namespace Atams {
 typedef Atams::Error_t (&InitUniversalDataFn_t)(void);
 typedef Atams::Error_t (&InitDefaultsFn_t)(void);
 
-struct VarInfo_t
-{
-  VarType_t type        = TYPE_NULL;
-  Access_t  accessLevel = ACCESS_NONE;
-  uint8_t   NVMStorage  = false;
-
-  static_assert(sizeof(type)        == 1U, "VarInfo_t member type size invalid");
-  static_assert(sizeof(accessLevel) == 1U, "VarInfo_t member type size invalid");
-  static_assert(sizeof(NVMStorage)  == 1U, "VarInfo_t member type size invalid");
-};
-
 struct MemoryMap_t
 {
   const uint16_t              noOfVars = 0U;
   const GenInfo_t             genInfo;
   const InitUniversalDataFn_t initGenInfo;
-  const InitDefaultsFn_t      initAllDefaults;
   const InitDefaultsFn_t      initUserDefaults;
   const VarInfo_t            (&varInfoList)[Platform::NODE_NUMBER_OF_VARS];
 
   MemoryMap_t(const uint16_t              inputNoOfVars,
               const GenInfo_t             inputGenInfo,
               const InitUniversalDataFn_t initGenInfoFn,
-              const InitDefaultsFn_t      initAllDefaultFn,
               const InitDefaultsFn_t      initUserDefaultsFn,
               const VarInfo_t            (&initVarInfoList)[Platform::NODE_NUMBER_OF_VARS]) :
   noOfVars(inputNoOfVars),
   genInfo(inputGenInfo),
   initGenInfo(initGenInfoFn),
-  initAllDefaults(initAllDefaultFn),
   initUserDefaults(initUserDefaultsFn),
   varInfoList(initVarInfoList){};
 
@@ -87,7 +73,7 @@ struct MemoryMap_t
   MemoryMap_t(void) = delete;
 
   /* Default Destructor */
-  ~MemoryMap_t(void);
+  ~MemoryMap_t(void){};
 
   /* Copy Constructor */
   MemoryMap_t(const MemoryMap_t &other) = delete;
@@ -116,7 +102,7 @@ Atams::Error_t initNVM(void);
 
 Atams::Error_t restoreAll(void);
 
-Atams::Error_t restoreUserOnly(void);
+Atams::Error_t restoreUser(void);
 
 Atams::Error_t storeAll(void);
 

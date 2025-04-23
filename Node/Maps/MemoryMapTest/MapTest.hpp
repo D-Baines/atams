@@ -30,36 +30,15 @@
 
 #include <stdint.h>
 #include "../../Node.hpp"
+#include "../BlockUniversal.hpp"
+#include "BlockExample1.hpp"
+#include "BlockExample2.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
 namespace Atams { namespace MapTest {
-
-/*************************************************************************************/
-/* PUBLIC TYPEDEFS                                                                   */
-/*************************************************************************************/
-             
-enum VarID_t: uint16_t
-{
-  VAR_ID_WRITE_UINT8  = 0U,
-  VAR_ID_WRITE_INT8   = 1U,
-  VAR_ID_READ_UINT8   = 2U,
-  VAR_ID_READ_INT8    = 3U,
-  VAR_ID_WRITE_UINT16 = 4U,
-  VAR_ID_WRITE_INT16  = 5U,
-  VAR_ID_READ_UINT16  = 6U,
-  VAR_ID_READ_INT16   = 7U,
-  VAR_ID_WRITE_UINT32 = 8U,
-  VAR_ID_WRITE_INT32  = 9U,
-  VAR_ID_READ_UINT32  = 10U,
-  VAR_ID_READ_INT32   = 11U,
-  VAR_ID_WRITE_FLOAT  = 12U,
-  VAR_ID_READ_FLOAT   = 13U,
-
-  NUMBER_OF_NODE_VARS
-};
 
 /*************************************************************************************/
 /* CONST EXTERNS                                                                     */

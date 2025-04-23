@@ -276,36 +276,39 @@ enum CoreID_t: uint8_t
   NUMBER_OF_CORES
 };
 
-enum UniversalVarID_t: uint16_t
+struct VarInfo_t
 {
-  UNIVERSAL_VAR_ID_ATAMS_VERSION_MAJOR      = 0U,
-  UNIVERSAL_VAR_ID_ATAMS_VERSION_MINOR      = 1U,
-  UNIVERSAL_VAR_ID_MAP_GEN_DAY              = 2U,
-  UNIVERSAL_VAR_ID_MAP_GEN_MONTH            = 3U,
-  UNIVERSAL_VAR_ID_MAP_GEN_YEAR             = 4U,
-  UNIVERSAL_VAR_ID_MAP_GEN_HOUR             = 5U,
-  UNIVERSAL_VAR_ID_MAP_GEN_MINUTE           = 6U,
-  UNIVERSAL_VAR_ID_MAP_GEN_SECOND           = 7U,
-  UNIVERSAL_VAR_ID_MAP_CHECKSUM             = 8U,
-  UNIVERSAL_VAR_ID_CONFIGURATION_PASSKEY    = 9U,
-  UNIVERSAL_VAR_ID_CONFIGURATION_STATUS     = 10U,
-  UNIVERSAL_VAR_ID_NODE_ID                  = 11U,
-  UNIVERSAL_VAR_ID_FIRST_NODE_ID            = 12U,
-  UNIVERSAL_VAR_ID_LAST_NODE_ID             = 13U,
-  UNIVERSAL_VAR_ID_PREVIOUS_NODE_ID         = 14U,
-  UNIVERSAL_VAR_ID_BITRATE                  = 15U,
-  UNIVERSAL_VAR_ID_WATCHDOG_PERIOD          = 16U,
-  UNIVERSAL_VAR_ID_STORE_ALL                = 17U,
-  UNIVERSAL_VAR_ID_RESTORE_USER_BLOCKS      = 18U,
-  UNIVERSAL_VAR_ID_RESTORE_ALL              = 19U,
-  UNIVERSAL_VAR_ID_STORAGE_STATUS           = 20U,
-  UNIVERSAL_VAR_ID_STORAGE_PROCESS_COMPLETE = 21U,
-  UNIVERSAL_VAR_ID_WATCHDOG_FAULT_ACTIVE    = 22U,
-  UNIVERSAL_VAR_ID_WATCHDOG_RESET           = 23U,
-  UNIVERSAL_VAR_ID_CRC_ERROR_COUNT          = 24U,
-  UNIVERSAL_VAR_ID_COBS_ERROR_COUNT         = 25U,
+  VarType_t type        = Atams::TYPE_NULL;
+  Access_t  accessLevel = Atams::ACCESS_NONE;
+  uint8_t   NVMStorage  = Atams::ATAMS_FALSE;
 
-  NUMBER_OF_UNIVERSAL_VARS
+  bool operator==(const VarInfo_t &other)
+  {
+    if ((type        == other.type       ) &&
+        (accessLevel == other.accessLevel) &&
+        (NVMStorage  == other.NVMStorage ) )
+    {
+      return (true);
+    }
+
+    return (false);
+  }
+
+  bool operator!=(const VarInfo_t &other)
+  {
+    if ((type        != other.type       ) ||
+        (accessLevel != other.accessLevel) ||
+        (NVMStorage  != other.NVMStorage ) )
+    {
+      return (true);
+    }
+
+    return (false);
+  }
+
+  static_assert(sizeof(type)        == 1U, "VarInfo_t member type size invalid");
+  static_assert(sizeof(accessLevel) == 1U, "VarInfo_t member type size invalid");
+  static_assert(sizeof(NVMStorage)  == 1U, "VarInfo_t member type size invalid");
 };
 
 struct DatagramHeader_t
@@ -429,7 +432,7 @@ typedef void (*CommsTransmitCallback_t)(TXMessage_t message);
 /* POST-TYPEDEF CONSTANTS                                                            */
 /*************************************************************************************/
 
-constexpr uint8_t TYPE_LENGTHS[NUMBER_OF_TYPES] =
+constexpr uint8_t TYPE_LENGTHS[Atams::NUMBER_OF_TYPES] =
 {
   /* [TYPE_NULL  ] = */ 0U,
   /* [TYPE_UINT8 ] = */ 1U,

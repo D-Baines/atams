@@ -28,6 +28,7 @@
 #include "string.h"
 #include <typeinfo>
 #include "Node.hpp"
+#include "Maps/BlockUniversal.hpp"
 #include "../Utilities/AtamsUtilities.hpp"
 #include "Utilities/CircularBuffer.hpp"
 #include "../Utilities/CRC32.hpp"
@@ -129,7 +130,7 @@ ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 static CoreInitStatus_t s_coreInitComplete[Atams::NUMBER_OF_CORES] = {CORE_INIT_IN_PROGRESS,
                                                                       CORE_INIT_IN_PROGRESS};
 
-Var_t s_varStorage[Platform::NODE_NUMBER_OF_VARS] = {0U};
+Var_t s_varStorage[Platform::NODE_NUMBER_OF_VARS];
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -197,8 +198,8 @@ static void processUniversalRead(const uint16_t varID)
 {
   switch (varID)
   {
-    case Atams::UNIVERSAL_VAR_ID_STORAGE_PROCESS_COMPLETE:
-      write(Atams::UNIVERSAL_VAR_ID_STORAGE_PROCESS_COMPLETE, static_cast<uint8_t>(Atams::ATAMS_FALSE));
+    case BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE:
+      write(BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE, static_cast<uint8_t>(Atams::ATAMS_FALSE));
       break;
     default:
       /* Do Nothing */
@@ -233,8 +234,8 @@ static void processDatagramRead(ChannelResponse_t &response,
 
 static bool accessAllowedWithoutConfig(const uint16_t varID)
 {
-  return ((varID == Atams::UNIVERSAL_VAR_ID_CONFIGURATION_PASSKEY) ||
-          (varID == Atams::UNIVERSAL_VAR_ID_WATCHDOG_RESET       ) );
+  return ((varID == BlockUniversal::VAR_ID_CONFIGURATION_PASSKEY) ||
+          (varID == BlockUniversal::VAR_ID_WATCHDOG_RESET       ) );
 }
 
 static bool checkUniversalAccess(const uint16_t varID)
@@ -259,7 +260,7 @@ static void processDatagramWrite(ChannelResponse_t &response,
 {
   bool transferAllowed = true;
 
-  if (datagramHeader.blockID == Atams::BLOCK_ID_UNIVERSAL)
+  if (datagramHeader.varID < BlockUniversal::NUMBER_OF_UNIVERSAL_VARS)
   {
     transferAllowed = checkUniversalAccess(datagramHeader.varID);
   }
@@ -457,7 +458,7 @@ static void processEncodedMeshPacket(const Platform::CommsChannel_t commsChannel
   {
     static uint32_t errorCount = 0U;
     errorCount++;
-    Atams::write(Atams::UNIVERSAL_VAR_ID_CRC_ERROR_COUNT, errorCount);
+    Atams::write(BlockUniversal::VAR_ID_CRC_ERROR_COUNT, errorCount);
   }
 }
 
@@ -499,11 +500,6 @@ static void processRawMeshData(void)
   }
 }
 
-static bool validateUniversalVars(const MemoryMap_t &memoryMap)
-{
-
-}
-
 static void resetVars(void)
 {
   Platform::acquireVarStorageLock();
@@ -519,35 +515,71 @@ static void resetVars(void)
 static void invalidateMemoryMap(void)
 {
   s_validVarCount = 0U;
+  s_memoryMap     = nullptr;
   resetVars();
 }
 
 static bool getMemoryMapIsValid(void)
 {
-  return (s_memoryMap != nullptr);
+  return ((s_memoryMap    != nullptr) &&
+          (s_validVarCount > 0U     ) );
 }
 
-static Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap)
+static bool validateMapLength(const MemoryMap_t &memoryMap)
 {
-  Atams::Error_t statusReturn = Atams::ERROR_NONE;
+  bool     lengthValid = true;
+  uint16_t varIndex    = 0U;
 
-  if ((memoryMap.noOfVars != sizeof(s_varStorage)     ) ||
-      (memoryMap.noOfVars  > Atams::MAX_NUMBER_OF_VARS) )
+  if ((memoryMap.noOfVars > sizeof(s_varStorage)                    ) ||
+      (memoryMap.noOfVars > Atams::MAX_NUMBER_OF_VARS               ) ||
+      (memoryMap.noOfVars < BlockUniversal::NUMBER_OF_UNIVERSAL_VARS) )
   {
-    return (Atams::ERROR_MEMORY_MAP); /* Early Return */
+    lengthValid = false;
   }
-
-  if (validateUniversalVars(memoryMap) == false)
-  {
-    return (Atams::ERROR_MEMORY_MAP); /* Early Return */
-  }
-
-  s_nodeCRC.beginRollingCRC();
-
-  uint16_t varIndex = 0U;
 
   for (const VarInfo_t &varInfo : memoryMap.varInfoList)
   {
+    if ((varInfo.type        == Atams::TYPE_NULL  ) ||
+        (varInfo.accessLevel == Atams::ACCESS_NONE) )
+    {
+      if (varIndex != memoryMap.noOfVars) lengthValid = false;
+      break;
+    }
+
+    varIndex++;
+  }
+
+  return (lengthValid);
+}
+
+static bool validateUniversalBlock(const MemoryMap_t &memoryMap)
+{
+  bool     universalValid = true;
+  uint16_t varIndex       = 0U;
+
+  for (VarInfo_t universalVarInfo : BlockUniversal::varInfoList)
+  {
+    VarInfo_t mapVarInfo = memoryMap.varInfoList[varIndex];
+
+    if (universalVarInfo != mapVarInfo) universalValid = false;
+
+    varIndex++;
+  }
+
+  return (universalValid);
+}
+
+static bool validateMapChecksum(const MemoryMap_t &memoryMap)
+{
+  bool     checksumValid = false;
+  uint16_t varIndex      = 0U;
+
+  s_nodeCRC.beginRollingCRC();
+
+  for (const VarInfo_t &varInfo : memoryMap.varInfoList)
+  {
+    if (varIndex == memoryMap.noOfVars) break;
+
     s_nodeCRC.updateRollingCRC(static_cast<uint8_t>(varInfo.type));
     s_nodeCRC.updateRollingCRC(static_cast<uint8_t>(varInfo.accessLevel));
     s_nodeCRC.updateRollingCRC(static_cast<uint8_t>(varInfo.NVMStorage));
@@ -555,14 +587,28 @@ static Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap)
     varIndex++;
   }
 
-  if (memoryMap.genInfo.genChecksum != s_nodeCRC.getRollingCRC())
+  if (memoryMap.genInfo.genChecksum == s_nodeCRC.getRollingCRC())
+  {
+    checksumValid = true;
+  }
+
+  return (checksumValid);
+}
+
+static Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap)
+{
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
+
+  if ((validateMapLength(memoryMap)      == false) ||
+      (validateUniversalBlock(memoryMap) == false) ||
+      (validateMapChecksum(memoryMap)    == false) )
   {
     statusReturn = Atams::ERROR_MEMORY_MAP;
   }
-
-  if (statusReturn == Atams::ERROR_NONE)
+  else
   {
-    s_memoryMap = &memoryMap;
+    s_memoryMap     = &memoryMap;
+    s_validVarCount = memoryMap.noOfVars;
   }
 
   return (statusReturn);
@@ -780,7 +826,9 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
 
   Atams::Error_t initStatus = validateMemoryMap(memoryMap);
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = memoryMap.initAllDefaults();
+  if (initStatus == Atams::ERROR_NONE) initStatus = BlockUniversal::initDefaults();
+
+  if (initStatus == Atams::ERROR_NONE) initStatus = memoryMap.initUserDefaults();
 
   if (initStatus == Atams::ERROR_NONE) initStatus = memoryMap.initGenInfo();
 
@@ -852,13 +900,13 @@ Atams::Error_t initNVM(void)
 
   if (statusReturn == Atams::ERROR_NONE) statusReturn = loadNVMAllVars(nvmHeader);
 
-  static_cast<void>(Atams::write(Atams::UNIVERSAL_VAR_ID_STORAGE_STATUS,           statusReturn));
-  static_cast<void>(Atams::write(Atams::UNIVERSAL_VAR_ID_STORAGE_PROCESS_COMPLETE, ATAMS_TRUE));
+  s_ConfigurationHandler.notifyStorageProcessComplete(statusReturn);
 
-  if (statusReturn == Atams::ERROR_NONE)
+  if (statusReturn != Atams::ERROR_NONE)
   {
     resetVars();
-    s_memoryMap->initAllDefaults();
+    BlockUniversal::initDefaults();
+    s_memoryMap->initUserDefaults();
   }
 
   /* Messages may have been received while storage was in progress -
@@ -870,37 +918,33 @@ Atams::Error_t initNVM(void)
 
 Atams::Error_t restoreAll(void)
 {
-  Atams::Error_t statusReturn = Atams::ERROR_MEMORY_MAP;
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
-  if (getMemoryMapIsValid()) statusReturn = s_memoryMap->initAllDefaults();
+  if (getMemoryMapIsValid() == false)    statusReturn = Atams::ERROR_MEMORY_MAP;
+
+  if (statusReturn == Atams::ERROR_NONE) statusReturn = BlockUniversal::initDefaults();
+
+  if (statusReturn == Atams::ERROR_NONE) statusReturn = s_memoryMap->initUserDefaults();
 
   if (statusReturn == Atams::ERROR_NONE)
   {
     statusReturn = storeAll();
-  }
-  else
-  {
-    static_cast<void>(Atams::write(Atams::UNIVERSAL_VAR_ID_STORAGE_STATUS,           statusReturn));
-    static_cast<void>(Atams::write(Atams::UNIVERSAL_VAR_ID_STORAGE_PROCESS_COMPLETE, ATAMS_TRUE));
   }
 
   return (statusReturn);
 }
 
-Atams::Error_t restoreUserVars(void)
+Atams::Error_t restoreUser(void)
 {
-  Atams::Error_t statusReturn = Atams::ERROR_MEMORY_MAP;
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
-  if (getMemoryMapIsValid()) statusReturn = s_memoryMap->initUserDefaults();
+  if (getMemoryMapIsValid() == false)    statusReturn = Atams::ERROR_MEMORY_MAP;
+
+  if (statusReturn == Atams::ERROR_NONE) statusReturn = s_memoryMap->initUserDefaults();
 
   if (statusReturn == Atams::ERROR_NONE)
   {
     statusReturn = storeAll();
-  }
-  else
-  {
-    static_cast<void>(Atams::write(Atams::UNIVERSAL_VAR_ID_STORAGE_STATUS,           statusReturn));
-    static_cast<void>(Atams::write(Atams::UNIVERSAL_VAR_ID_STORAGE_PROCESS_COMPLETE, ATAMS_TRUE));
   }
 
   return (statusReturn);
@@ -939,9 +983,6 @@ Atams::Error_t storeAll(void)
 
   /* Write valid header to validate NVM */
   if (statusReturn == Atams::ERROR_NONE) statusReturn = constructAndWriteNVMHeader(requiredNVMSpace);
-
-  static_cast<void>(Atams::write(Atams::UNIVERSAL_VAR_ID_STORAGE_STATUS,           static_cast<uint8_t>(statusReturn)));
-  static_cast<void>(Atams::write(Atams::UNIVERSAL_VAR_ID_STORAGE_PROCESS_COMPLETE, static_cast<uint8_t>(ATAMS_TRUE)));
 
   /* Messages may have been received while storage was in progress -
    * request buffer reset to clear old data */
@@ -1008,14 +1049,13 @@ template <typename T>
 Atams::Error_t write(const uint16_t varID,
                      const T        writeData)
 {
-  if (getMemoryMapIsValid() == false) return (Atams::ERROR_MEMORY_MAP); /* Early Return */
-  if (varID >= s_memoryMap->noOfVars) return (Atams:: ERROR_VAR_ID);    /* Early Return */
+  if (varID >= s_validVarCount) return (Atams:: ERROR_VAR_ID); /* Early Return */
 
-  const VarInfo_t &varInfo = s_memoryMap->varInfoList[varID];
+  const Atams::VarInfo_t &varInfo = s_memoryMap->varInfoList[varID];
 
   if (PLATFORM_TYPE_NAMES[varInfo.type] != typeid(T).name()) return (Atams::ERROR_VAR_TYPE); /* Early Return */
 
-  Var_t &var = s_varStorage[varID];
+  Atams::Var_t &var = s_varStorage[varID];
 
   Platform::acquireVarStorageLock();
 
@@ -1038,14 +1078,13 @@ template <typename T>
 Atams::Error_t read(const uint16_t  varID,
                           T        &readData)
 {
-  if (getMemoryMapIsValid() == false) return (Atams::ERROR_MEMORY_MAP); /* Early Return */
-  if (varID >= s_memoryMap->noOfVars) return (Atams:: ERROR_VAR_ID);    /* Early Return */
+  if (varID >= s_validVarCount) return (Atams:: ERROR_VAR_ID); /* Early Return */
 
-  const VarInfo_t &varInfo = s_memoryMap->varInfoList[varID];
+  const Atams::VarInfo_t &varInfo = s_memoryMap->varInfoList[varID];
 
   if (PLATFORM_TYPE_NAMES[varInfo.type] != typeid(T).name()) return (Atams::ERROR_VAR_TYPE); /* Early Return */
 
-  Var_t &var = s_varStorage[varID];
+  Atams::Var_t &var = s_varStorage[varID];
 
   Platform::acquireVarStorageLock();
 
@@ -1069,16 +1108,15 @@ Atams::Error_t externalTransfer(const Access_t  accessRequest,
                                 uint8_t * const bytesPtr,
                                 const uint8_t   length)
 {
-  if (getMemoryMapIsValid() == false) return (Atams::ERROR_MEMORY_MAP); /* Early Return */
-  if (varID >= s_memoryMap->noOfVars) return (Atams:: ERROR_VAR_ID);    /* Early Return */
+  if (varID >= s_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
-  const VarInfo_t &varInfo = s_memoryMap->varInfoList[varID];
+  const Atams::VarInfo_t &varInfo = s_memoryMap->varInfoList[varID];
 
   if (TYPE_LENGTHS[varInfo.type] != length)              return (Atams::ERROR_VAR_LENGTH);     /* Early Return */
   if (bytesPtr                   == nullptr)             return (Atams::ERROR_NULL_PTR);       /* Early Return */
   if (accessRequest              >  varInfo.accessLevel) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
 
-  Var_t         &var         = s_varStorage[varID];
+  Atams::Var_t   &var        = s_varStorage[varID];
   Atams::Error_t accessError = Atams::ERROR_NONE;
 
   Platform::acquireVarStorageLock();
@@ -1108,12 +1146,6 @@ Atams::Error_t externalTransfer(const Access_t  accessRequest,
 DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t varID)
 {
   DataStatusReturn_t<uint8_t> lengthReturn;
-
-  if (getMemoryMapIsValid() == false)
-  {
-    lengthReturn.status = Atams::ERROR_MEMORY_MAP;
-    return (lengthReturn); /* Early Return */
-  }
 
   if (varID >= s_validVarCount)
   {

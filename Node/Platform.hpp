@@ -41,14 +41,14 @@ namespace Atams { namespace Platform {
 /* PUBLIC MACROS                                                                     */
 /*************************************************************************************/
 
-/* Dual core shared memory space requirement: 2 + (4 * Platform::NODE_NUMBER_OF_DATA_MEMBERS * Platform::NODE_NUMBER_OF_DATA_BLOCKS) */
+/* Dual core shared memory space requirement: 2 + (4 * Platform::NODE_NUMBER_OF_VARS) */
 #define ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-inline constexpr uint16_t NODE_NUMBER_OF_VARS = 50U;  /* Must be <= MAX_NUMBER_OF_DATA_MEMBERS */
+inline constexpr uint16_t NODE_NUMBER_OF_VARS = 240U;  /* Must be <= MAX_NUMBER_OF_DATA_MEMBERS */
 inline constexpr uint16_t COMMS_BUFFER_SIZE   = 512U;
 inline constexpr uint32_t NVM_STORAGE_SIZE    = 1024U;
 
