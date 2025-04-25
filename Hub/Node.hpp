@@ -31,8 +31,9 @@
 #include <stdint.h>
 #include "../AtamsTypedefs.hpp"
 #include "Platform.hpp"
-#include "Utilities/WriteList.hpp"
+#include "Developer/WriteList.hpp"
 #include "../Utilities/CRC32.hpp"
+#include "Developer/NodeProcesses.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -44,20 +45,13 @@ namespace Atams {
 /* TYPEDEFS                                                                          */
 /*************************************************************************************/
 
-
-/*************************************************************************************/
-/* FORWARD DECLARATIONS                                                              */
-/*************************************************************************************/
-
-class Bus;
-
 /*************************************************************************************/
 /* CLASS DEFINITIONS                                                                 */
 /*************************************************************************************/
 
 class Node
 {
-  /*-- Friend Declarations ----------------------------------------------------------*/
+  /*-- Friend Class Declarations ----------------------------------------------------*/
 
   friend class Bus;
 
@@ -101,7 +95,7 @@ class Node
 
   /*-- Public Function Declarations -------------------------------------------------*/
 
-  Node(Bus &bus, const uint8_t nodeID);
+  Node(const uint8_t nodeID);
 
   Node(const Node &other) = delete;
 
@@ -115,10 +109,18 @@ class Node
   Atams::Error_t write(const uint16_t varID, const T writeData);
   
   template <typename T>
-  Atams::Error_t read(const uint16_t memberID, T &readData);
+  Atams::Error_t read(const uint16_t varID, T &readData);
 
   template <typename T>
-  Atams::Error_t readIfNew(const uint16_t memberID, T &readData);
+  Atams::Error_t readIfNew(const uint16_t varID, T &readData);
+
+  Atams::Error_t startReadStream(const uint16_t varID);
+
+  Atams::Error_t stopStream(const uint16_t varID);
+
+  Atams::Error_t isNewDataReady(const uint16_t varID, bool &newDataReady);
+
+  Atams::Error_t clearNewDataFlag(const uint16_t varID);
   
   DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t memberID);
 
@@ -130,33 +132,19 @@ class Node
                                    Access_t         &accessRequest,
                                    RequestPattern_t &requestPattern);
 
+   void resetRequestPacket(void);
+
   uint8_t getNodeID(void);
 
   Atams::Error_t getBusError(void);
 
-  Atams::ProcessState_t updateGetGenInfo(Atams::Error_t &error, Atams::GenInfo_t &genInfo);
-
-  Atams::ProcessState_t updateGetNodeIdentifiers(Atams::Error_t &error,
-                                                 uint8_t        &firstNodeID,
-                                                 uint8_t        &lastNodeID,
-                                                 uint8_t        &previousNodeID);
-
-  Atams::ProcessState_t updateConfigurationStateEntry(Atams::Error_t &error);
-
-  Atams::ProcessState_t updateConfigurationStateExit(Atams::Error_t &error);
-
-  Atams::ProcessState_t updateStoreAll(Atams::Error_t &error);
-
-  Atams::ProcessState_t updateSetBitrate(Atams::Error_t &error);
-
-  Atams::ProcessState_t updateSetWatchdogPeriod(Atams::Error_t &error);
-
-  Atams::ProcessState_t updateResetNode(Atams::Error_t &error);
+  bool validateGenInfo(void);
 
   //#if DEVELOPER_TOOLS 
   Atams::Error_t setRequestPatternNoChecks(const uint16_t         varID,
                                            const Access_t         accessRequest,
                                            const RequestPattern_t requestPattern);
+                                           
   //#endif
 
   private:
@@ -165,8 +153,8 @@ class Node
 
   struct RequestPacket_t 
   {
-    uint8_t   buffer[MAX_MESH_PACKET_SIZE] = {0U};
-    uint16_t  length                       = MESH_SIZE_HEADER;
+    uint8_t   buffer[Platform::MAX_BUS_PACKET_SIZE] = {0U};
+    uint16_t  length                                = MESH_SIZE_HEADER;
     WriteList writeList;
   };
 
@@ -174,7 +162,6 @@ class Node
   {
     Access_t         accessRequest;
     RequestPattern_t requestPattern;
-    uint16_t         varID;
     DatagramHeader_t newDatagramHeader;
     uint8_t          newDatagramBuffer[DATAGRAM_SIZE_HEADER + MAX_TYPE_SIZE];
     uint8_t          newDatagramLength      = 0U;
@@ -200,21 +187,25 @@ class Node
 
   Platform::MemoryLock m_requestPacketLock;
   Platform::MemoryLock m_varStorageLock;
+  NodeProcesses        m_nodeProcessHandler;
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  Atams::Bus        &_bus;
-  const uint8_t      _nodeID;
-  const MemoryMap_t *m_memoryMap;
-  uint16_t           m_validVarCount = 0U;
-  Var_t              m_varStorage[Platform::NODE_NUMBER_OF_VARS];
-  Atams::Error_t     _busError = Atams::ERROR_NONE;
-  uint16_t           _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
-  RequestPacket_t    _requestPacket;
-  uint8_t            _responseBuffer[MAX_MESH_PACKET_SIZE];
-  uint16_t           _responseLength   = 0U;
-  bool               _newResponseReady = false;
+  const uint8_t         _nodeID;
+  const MemoryMap_t    *m_memoryMap;
+  uint16_t              m_validVarCount = 0U;
+  Var_t                 m_varStorage[Platform::NODE_NUMBER_OF_VARS];
+  Atams::Error_t        _busError = Atams::ERROR_NONE;
+  uint16_t              _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
+  RequestPacket_t       _requestPacket;
+  uint8_t               _responseBuffer[Platform::MAX_BUS_PACKET_SIZE];
+  uint16_t              _responseLength   = 0U;
+  bool                  _newResponseReady = false;
   
+  /*-- Private Constexpr Function Declarations --------------------------------------*/
+
+  template <typename T>
+  constexpr Atams::VarType_t getAtamsType(void);
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
@@ -262,6 +253,8 @@ class Node
 
   bool processDatagramNack(const DatagramHeader_t datagramHeader, uint16_t &datagramStartIndex);
 
+  Atams::Error_t validateResponseBuffer(uint8_t * const responsePacket, const uint16_t responsePacketLength);
+
   void processResponseBuffer(void);
 
   DataStatusReturn_t<bool> findDatagramMatchInPacket(RequestChangeConfig_t &changeConfig);
@@ -274,8 +267,10 @@ class Node
 
   Atams::Error_t requestPacketAppendDatagram(RequestChangeConfig_t &changeConfig);
 
-  Atams::Error_t constructDatagram(RequestChangeConfig_t &changeConfig);
+  Atams::Error_t constructDatagramBuffer(RequestChangeConfig_t &changeConfig);
   
+  void resetRequestPacketNoLock(void);
+
   Atams::Error_t processRequestPacketChange(const uint16_t         varID,
                                             const Access_t         accessRequest,
                                             const RequestPattern_t requestPattern);
@@ -283,8 +278,6 @@ class Node
   Atams::Error_t updateRequestPatternOnReceive(const uint16_t varID);
 
   Atams::Error_t updateRequestPacketWriteData(void);
-
-  bool validateGenInfo(void);
 };
 
 } /* End Namespace - Atams */

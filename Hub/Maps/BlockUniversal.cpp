@@ -94,6 +94,12 @@ const VarInfo_t varInfoList[BlockUniversal::NUMBER_OF_UNIVERSAL_VARS] =
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
+  /* [BlockUniversal::VAR_ID_MAP_NUMBER_OF_VARS] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT16,
+    /* .externalAccess = */ Atams::ACCESS_READ,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
   /* [BlockUniversal::VAR_ID_CONFIGURATION_PASSKEY] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
@@ -203,25 +209,6 @@ const VarInfo_t varInfoList[BlockUniversal::NUMBER_OF_UNIVERSAL_VARS] =
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
 };
-
-/*************************************************************************************/
-/* PUBLIC FUNCTION DEFINITIONS                                                       */
-/*************************************************************************************/
-
-Atams::Error_t initDefaults(void)
-{
-  Atams::Error_t error = Atams::ERROR_NONE;
-
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_NODE_ID,          BlockUniversal::DEFAULT_NODE_ID);
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_FIRST_NODE_ID,    BlockUniversal::DEFAULT_FIRST_NODE_ID);
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_LAST_NODE_ID,     BlockUniversal::DEFAULT_LAST_NODE_ID);
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_PREVIOUS_NODE_ID, BlockUniversal::DEFAULT_PREVIOUS_NODE_ID);
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_BITRATE,          BlockUniversal::DEFAULT_BITRATE);
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_WATCHDOG_PERIOD,  BlockUniversal::DEFAULT_WATCHDOG_PERIOD);
-
-  return (error);
-}
-
 
 } } /* End Namespace - Atams::BlockUniversal */
 

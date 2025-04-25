@@ -30,8 +30,9 @@
 #include <_types/_uint8_t.h>
 #include <stdint.h>
 #include "../AtamsTypedefs.hpp"
-#include "Utilities/CircularBuffer.hpp"
+#include "Developer/CircularBuffer.hpp"
 #include "Platform.hpp"
+#include "Node.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -40,23 +41,12 @@
 namespace Atams {
 
 /*************************************************************************************/
-/* FORWARD DECLARATIONS                                                              */
-/*************************************************************************************/
-
-class Node;
-
-/*************************************************************************************/
 /* CLASS DEFINITIONS                                                                 */
 /*************************************************************************************/
 
 class   Bus :
-private CircularBuffer,
 private Platform::BusPeripheral
 {
-  /*-- Friend Declarations ----------------------------------------------------------*/
-
-  friend class Node;
-
   /*-- Public -----------------------------------------------------------------------*/
 
   public:
@@ -78,6 +68,10 @@ private Platform::BusPeripheral
 
   /* Destructor */
   ~Bus(void);
+
+  Atams::Error_t addNodeToBus(Node &node);
+
+  void removeNodeFromBus(Node &node);
 
   Atams::Error_t startUpdateCycle(void);
 
@@ -142,13 +136,14 @@ private Platform::BusPeripheral
   };
 
   /*-- Private Variables ------------------------------------------------------------*/
-  
+
+  CircularBuffer m_circularBuffer;
   Node          *_nodePtrs[Platform::NUMBER_OF_NODES_PER_BUS];
   uint16_t       m_activeNodeIndex     = 0U;
   uint16_t       _noOfNodesOnBus       = 0U;
-  uint8_t        _rxBuffer[MAX_MESH_PACKET_SIZE];
-  uint8_t        _decodedBuffer[MAX_MESH_PACKET_SIZE];
-  uint8_t        _encodedBuffer[MAX_MESH_PACKET_SIZE];
+  uint8_t        _rxBuffer[Platform::MAX_BUS_PACKET_SIZE];
+  uint8_t        _decodedBuffer[Platform::MAX_BUS_PACKET_SIZE];
+  uint8_t        _encodedBuffer[Platform::MAX_BUS_PACKET_SIZE];
   uint8_t        _jogBuffer[MESH_SIZE_HEADER];
   uint16_t       _rxLength             = 0U;
   uint16_t       _decodedLength        = 0U;
@@ -171,10 +166,6 @@ private Platform::BusPeripheral
                                        const BitrateOption_t bitrateOption,
                                        const uint32_t        watchdogPeriod,
                                        Atams::Error_t       &error); 
-
-  Atams::Error_t addNodeToBus(Node &node);
-
-  void removeNodeFromBus(Node &node);
 
   virtual void rxCallback(      uint8_t  *rxBufferPtr,
                           const uint16_t  rxBufferLength) final;

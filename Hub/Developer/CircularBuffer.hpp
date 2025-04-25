@@ -72,7 +72,8 @@ private Platform::CommsLock
   /* Constructor */
   CircularBuffer(const uint8_t endOfLineChar);
 
-  void setEOLChar(const uint8_t endOfLineChar);
+  /* Destructor */
+  virtual ~CircularBuffer(void);
 
   /* Copy Constructor */
   CircularBuffer(const CircularBuffer &other) = delete;
@@ -80,8 +81,13 @@ private Platform::CommsLock
   /* Copy Assignment Operator */
   CircularBuffer & operator=(const CircularBuffer &other) = delete;
 
-  /* Destructor */
-  virtual ~CircularBuffer(void);
+  /* Move Constructor */
+  CircularBuffer(CircularBuffer &&other) = delete;
+
+  /* Move Assignment Operator */
+  CircularBuffer & operator=(CircularBuffer &&other) = delete;
+
+  void setEOLChar(const uint8_t endOfLineChar);
 
   void reset(void);
 
@@ -96,7 +102,7 @@ private Platform::CommsLock
 
   /*-- Private Static Constants -----------------------------------------------------*/
 
-  static inline constexpr uint16_t STATIC_BUFFER_SIZE = Platform::COMMS_BUFFER_SIZE;
+  static inline constexpr uint16_t STATIC_BUFFER_SIZE = Platform::CIRCULAR_BUFFER_SIZE;
   static inline constexpr uint8_t  NEW_DATA_READY     = 1U;
 
   /*-- Private Constants ------------------------------------------------------------*/

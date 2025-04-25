@@ -51,7 +51,7 @@ class WriteList
   typedef struct WriteConfig_t
   {
     uint16_t varID;
-    uint16_t meshPacketDataIndex;
+    uint16_t requestPacketIndex;
     uint8_t  dataLength;
   
   } WriteConfig_t;
@@ -79,6 +79,8 @@ class WriteList
 
   WriteList(void);
 
+  void reset(void);
+
   SearchResult_t findConfig(const uint16_t varID);
 
   Error_t addConfig(const WriteConfig_t newWriteConfig);
@@ -101,7 +103,6 @@ class WriteList
 
   WriteConfig_t _configList[LIST_MAX_LENGTH];
   uint16_t      _configCount = 0U;
-
 
   /*-- PRIVATE FUNCTION DEFINITIONS ---*/
 

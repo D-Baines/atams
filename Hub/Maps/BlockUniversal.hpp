@@ -52,24 +52,25 @@ enum VarID_t: uint16_t
   VAR_ID_MAP_GEN_MINUTE           = 6U,
   VAR_ID_MAP_GEN_SECOND           = 7U,
   VAR_ID_MAP_CHECKSUM             = 8U,
-  VAR_ID_CONFIGURATION_PASSKEY    = 9U,
-  VAR_ID_CONFIGURATION_STATUS     = 10U,
-  VAR_ID_NODE_ID                  = 11U,
-  VAR_ID_FIRST_NODE_ID            = 12U,
-  VAR_ID_LAST_NODE_ID             = 13U,
-  VAR_ID_PREVIOUS_NODE_ID         = 14U,
-  VAR_ID_BITRATE                  = 15U,
-  VAR_ID_WATCHDOG_PERIOD          = 16U,
-  VAR_ID_STORE_ALL                = 17U,
-  VAR_ID_RESTORE_USER_BLOCKS      = 18U,
-  VAR_ID_RESTORE_ALL              = 19U,
-  VAR_ID_RESET_NODE               = 20U,
-  VAR_ID_STORAGE_STATUS           = 21U,
-  VAR_ID_STORAGE_PROCESS_COMPLETE = 22U,
-  VAR_ID_WATCHDOG_FAULT_ACTIVE    = 23U,
-  VAR_ID_WATCHDOG_RESET           = 24U,
-  VAR_ID_CRC_ERROR_COUNT          = 25U,
-  VAR_ID_COBS_ERROR_COUNT         = 26U,
+  VAR_ID_MAP_NUMBER_OF_VARS       = 9U,
+  VAR_ID_CONFIGURATION_PASSKEY    = 10U,
+  VAR_ID_CONFIGURATION_STATUS     = 11U,
+  VAR_ID_NODE_ID                  = 12U,
+  VAR_ID_FIRST_NODE_ID            = 13U,
+  VAR_ID_LAST_NODE_ID             = 14U,
+  VAR_ID_PREVIOUS_NODE_ID         = 15U,
+  VAR_ID_BITRATE                  = 16U,
+  VAR_ID_WATCHDOG_PERIOD          = 17U,
+  VAR_ID_STORE_ALL                = 18U,
+  VAR_ID_RESTORE_USER_BLOCKS      = 19U,
+  VAR_ID_RESTORE_ALL              = 20U,
+  VAR_ID_RESET_NODE               = 21U,
+  VAR_ID_STORAGE_STATUS           = 22U,
+  VAR_ID_STORAGE_PROCESS_COMPLETE = 23U,
+  VAR_ID_WATCHDOG_FAULT_ACTIVE    = 24U,
+  VAR_ID_WATCHDOG_RESET           = 25U,
+  VAR_ID_CRC_ERROR_COUNT          = 26U,
+  VAR_ID_COBS_ERROR_COUNT         = 27U,
 
   NUMBER_OF_UNIVERSAL_VARS
 };
@@ -90,13 +91,6 @@ inline constexpr int16_t  DEFAULT_WATCHDOG_PERIOD  {0};
 /*************************************************************************************/
 
 extern const VarInfo_t varInfoList[BlockUniversal::NUMBER_OF_UNIVERSAL_VARS];
-
-/*************************************************************************************/
-/* PUBLIC FUNCTION DECLARATIONS                                                      */
-/*************************************************************************************/
-
-Atams::Error_t initDefaults(void);
-
 
 } } /* End Namespace - Atams::BlockUniversal */
 

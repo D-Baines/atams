@@ -43,16 +43,8 @@ namespace Atams
 
 inline constexpr uint8_t  NODE_ID_MAX                    = 254U;
 inline constexpr uint8_t  NODE_ID_NULL                   = 255U;
-inline constexpr uint8_t  MAX_NUMBER_OF_NODE_IDS         = 255U;
-inline constexpr uint8_t  BLOCK_ID_UNIVERSAL             = 0U;
-inline constexpr uint8_t  FIRST_USER_BLOCK_ID            = 1U;
-inline constexpr uint8_t  USER_DATA_BLOCK_ID_START       = 1U;
-inline constexpr uint16_t MAX_MESH_PACKET_DATAGRAM_COUNT = 256U;
-inline constexpr uint16_t MAX_MESH_PACKET_SIZE           = 256U;
-inline constexpr uint16_t MAX_NODE_PACKET_SIZE           = 256U;
-inline constexpr uint8_t  MAX_NUMBER_OF_MESH             = 10U;
-inline constexpr uint8_t  MAX_NUMBER_OF_DATA_BLOCKS      = 14U;
-inline constexpr uint16_t MAX_NUMBER_OF_VARS             = 512U;
+inline constexpr uint8_t  MAX_NUMBER_OF_NODES_PER_BUS    = 255U;
+inline constexpr uint16_t MAX_NUMBER_OF_VARS             = 8191U;
 inline constexpr uint8_t  MAX_TYPE_SIZE                  = 4U;
 inline constexpr uint8_t  EOL_BYTE                       = 0U;
 inline constexpr int32_t  MAX_INT32                      = 2147483647L;
@@ -143,7 +135,6 @@ enum DatagramIndex_t: uint8_t
 enum DatagramHeaderShift_t: uint8_t
 {
   DATAGRAM_HEADER_SHIFT_COMMAND   = 5U,
-  DATAGRAM_HEADER_SHIFT_BLOCK_ID  = 1U,
   DATAGRAM_HEADER_SHIFT_VAR_ID_HI = 8U,
   DATAGRAM_HEADER_SHIFT_VAR_ID_LO = 0U
 };
@@ -151,57 +142,54 @@ enum DatagramHeaderShift_t: uint8_t
 enum DatagramHeaderMask_t: uint8_t
 {
   DATAGRAM_HEADER_MASK_COMMAND   = 0xE0U,
-  DATAGRAM_HEADER_MASK_BLOCK_ID  = 0x1EU,
-  DATAGRAM_HEADER_MASK_VAR_ID_HI = 0x01U,
+  DATAGRAM_HEADER_MASK_VAR_ID_HI = 0x1FU,
   DATAGRAM_HEADER_MASK_VAR_ID_LO = 0xFFU,
 };
 
 enum Error_t: uint8_t
 {
   ERROR_NONE                         = 0U,
-  ERROR_BLOCK_ID                     = 1U,
-  ERROR_VAR_ID                       = 2U,
-  ERROR_VAR_TYPE                     = 3U,
-  ERROR_VAR_LENGTH                   = 4U,
-  ERROR_REQUEST_BUFFER_LENGTH        = 5U,
-  ERROR_RESPONSE_BUFFER_LENGTH       = 6U,
-  ERROR_NULL_PTR                     = 7U,
-  ERROR_ACCESS_INVALID               = 8U,
-  ERROR_REQUEST_PATTERN_INVALID      = 9U,
-  ERROR_MEMORY_MAP                   = 10U,
-  ERROR_WRITE_LIST                   = 11U,
-  ERROR_ABORT_FAILURE                = 12U,
-  ERROR_ENCODE                       = 13U,
-  ERROR_DECODE                       = 14U,
-  ERROR_MESSAGE_TYPE                 = 15U,
-  ERROR_SYNC_COUNT                   = 16U,
-  ERROR_SYNC_NODE                    = 17U,
-  ERROR_ACCESS_RESPONSE_INVALID      = 18U,
-  ERROR_WRITE_DATA_UPDATE            = 19U,
-  ERROR_PATTERN_AUTO_UPDATE          = 20U,
-  ERROR_PACKET_PROCESSING            = 21U,
-  ERROR_NODE_ID_LIST                 = 22U,
-  ERROR_DATAGRAM_SEARCH              = 23U,
-  ERROR_ERROR_MANAGEMENT             = 24U,
-  ERROR_PLATFORM                     = 25U,
-  ERROR_LIMITS                       = 26U,
-  ERROR_WRITE_LOCK                   = 27U,
-  ERROR_BUS_FULL                     = 28U,
-  ERROR_UPDATE_CYCLE_IN_PROGRESS     = 29U,
-  ERROR_OLD_DATA                     = 30U,
-  ERROR_RESPONSE_TIMEOUT             = 31U,
-  ERROR_NUMBER_OF_DATA_BLOCKS        = 32U,
-  ERROR_NUMBER_OF_DATA_MEMBERS       = 33U,
-  ERROR_NO_RESPONSE                  = 34U,
-  ERROR_INIT_REQUIRED                = 35U,
-  ERROR_NVM_CHECKSUM                 = 36U,
-  ERROR_NVM_GEN_INFO                 = 37U,
-  ERROR_NVM_HEADER_LENGTH            = 38U,
-  ERROR_NVM_HEADER_VALIDITY          = 39U,
-  ERROR_NVM_PLATFORM_SIZE            = 40U,
-  ERROR_INVALID_NACK                 = 41U,
-  ERROR_CONFIGURATION_STATE_INACTIVE = 42U,
-  ERROR_BUS_PROCESSING               = 43U,
+  ERROR_VAR_ID                       = 1U,
+  ERROR_VAR_TYPE                     = 2U,
+  ERROR_VAR_LENGTH                   = 3U,
+  ERROR_REQUEST_BUFFER_LENGTH        = 4U,
+  ERROR_RESPONSE_BUFFER_LENGTH       = 5U,
+  ERROR_NULL_PTR                     = 6U,
+  ERROR_ACCESS_INVALID               = 7U,
+  ERROR_REQUEST_PATTERN_INVALID      = 8U,
+  ERROR_MEMORY_MAP                   = 9U,
+  ERROR_WRITE_LIST_FULL              = 10U,
+  ERROR_ABORT_FAILURE                = 11U,
+  ERROR_ENCODE                       = 12U,
+  ERROR_DECODE                       = 13U,
+  ERROR_MESSAGE_TYPE                 = 14U,
+  ERROR_SYNC_COUNT                   = 15U,
+  ERROR_SYNC_NODE                    = 16U,
+  ERROR_ACCESS_RESPONSE_INVALID      = 17U,
+  ERROR_PATTERN_AUTO_UPDATE          = 19U,
+  ERROR_PACKET_PROCESSING            = 20U,
+  ERROR_NODE_ID_LIST                 = 21U,
+  ERROR_DATAGRAM_SEARCH              = 22U,
+  ERROR_ERROR_MANAGEMENT             = 23U,
+  ERROR_PLATFORM                     = 24U,
+  ERROR_LIMITS                       = 25U,
+  ERROR_WRITE_LOCK                   = 26U,
+  ERROR_BUS_FULL                     = 27U,
+  ERROR_UPDATE_CYCLE_IN_PROGRESS     = 28U,
+  ERROR_OLD_DATA                     = 29U,
+  ERROR_RESPONSE_TIMEOUT             = 30U,
+  ERROR_NO_RESPONSE                  = 33U,
+  ERROR_INIT_REQUIRED                = 34U,
+  ERROR_NVM_CHECKSUM                 = 35U,
+  ERROR_NVM_GEN_INFO                 = 36U,
+  ERROR_NVM_HEADER_LENGTH            = 37U,
+  ERROR_NVM_HEADER_VALIDITY          = 38U,
+  ERROR_NVM_PLATFORM_SIZE            = 39U,
+  ERROR_INVALID_NACK                 = 40U,
+  ERROR_CONFIGURATION_STATE_INACTIVE = 41U,
+  ERROR_BUS_PROCESSING               = 42U,
+  ERROR_REQUEST_PACKET_FATAL         = 43U,
+  ERROR_INVALID_CASE                 = 44U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
@@ -314,7 +302,6 @@ struct VarInfo_t
 struct DatagramHeader_t
 {
   uint8_t  command;
-  uint8_t  blockID;
   uint16_t varID;
 };
 
@@ -329,6 +316,7 @@ struct GenInfo_t
   uint8_t  genMinute          = 0U;
   uint8_t  genSecond          = 0U;
   uint32_t genChecksum        = 0U;
+  uint16_t numberOfVars       = 0U;
 
   bool operator==(const GenInfo_t &other)
   {
@@ -340,7 +328,8 @@ struct GenInfo_t
         (genHour           == other.genHour          ) &&
         (genMinute         == other.genMinute        ) &&
         (genSecond         == other.genSecond        ) &&
-        (genChecksum       == other.genChecksum      ) )
+        (genChecksum       == other.genChecksum      ) &&
+        (numberOfVars      == other.numberOfVars     ) )
     {
       return (true);
     }
@@ -368,6 +357,7 @@ struct GenInfo_t
     genMinute         = 0U;
     genSecond         = 0U;
     genChecksum       = 0U;
+    numberOfVars      = 0U;
   }
 };
 

@@ -37,23 +37,24 @@ namespace Atams { namespace MapTest {
 /* STATIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-static const GenInfo_t genInfo = 
+static const GenInfo_t s_genInfo = 
 {
   /* .atamsVersionMajor = */ 0U,
   /* .atamsVersionMinor = */ 1U,
-  /* .genDay            = */ 23U,
+  /* .genDay            = */ 24U,
   /* .genMonth          = */ 4U,
   /* .genYear           = */ 2025U,
-  /* .genHour           = */ 17U,
-  /* .genMinute         = */ 50U,
-  /* .genSecond         = */ 26U,
-  /* .genChecksum       = */ 2433352831U
+  /* .genHour           = */ 10U,
+  /* .genMinute         = */ 1U,
+  /* .genSecond         = */ 42U,
+  /* .genChecksum       = */ 2433352831U,
+  /* .numberOfVars      = */ 56U
 };
 
-static const VarInfo_t varInfoList[Platform::NODE_NUMBER_OF_VARS] =
+static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
 {
   /*------------------------ Universal Var Info -------------------------*/
-
+  
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR],
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_ATAMS_VERSION_MINOR],
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_GEN_DAY],
@@ -63,6 +64,7 @@ static const VarInfo_t varInfoList[Platform::NODE_NUMBER_OF_VARS] =
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_GEN_MINUTE],
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_GEN_SECOND],
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_CHECKSUM],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_NUMBER_OF_VARS],
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_CONFIGURATION_PASSKEY],
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_CONFIGURATION_STATUS],
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_NODE_ID],
@@ -258,11 +260,11 @@ static const VarInfo_t varInfoList[Platform::NODE_NUMBER_OF_VARS] =
 /* EXTERN CONSTANTS                                                                  */
 /*************************************************************************************/
 
-const MemoryMap_t memoryMap =
+const Node::MemoryMap_t memoryMap =
 {
-  /* noOfVars         = */ static_cast<uint16_t>(Platform::NODE_NUMBER_OF_VARS),
-  /* genInfo          = */ MapTest::genInfo,
-  /* varInfoList      = */ MapTest::varInfoList
+  /* noOfVars         = */ s_genInfo.numberOfVars,
+  /* genInfo          = */ MapTest::s_genInfo,
+  /* varInfoList      = */ MapTest::s_varInfoList
 };
 
 } } /* End Namespace - Atams::MapTest */

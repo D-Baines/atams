@@ -8,7 +8,7 @@ from   datetime   import datetime
 from   AtamsCRC32 import *
 
 FRAMEWORK_NAME           = "Atams"
-NUMBER_OF_UNIVERSAL_VARS = 27
+NUMBER_OF_UNIVERSAL_VARS = 28
 
 class Platforms(Enum):
   NODE = 0
@@ -57,13 +57,6 @@ def writeSpaces(noOfSpaces: int,
     targetFile.write(" ")
     noOfSpaces -= 1
 
-def getSuffixString(typeString: str) -> str:
-  typeStrings   = ["uint8_t", "int8_t", "uint16_t", "int16_t", "uint32_t", "int32_t", "float"]
-  suffixStrings = ["U",       "",       "U",        "",        "UL",       "L",       "F"    ]
-  try:    suffixIndex = typeStrings.index(typeString)
-  except: return("")
-  return (suffixStrings[suffixIndex])
-
 def generateEnum(iteratorStartValue: int,
                  minStringLength:    int,
                  prefixString:       str, 
@@ -108,7 +101,6 @@ def generateConstList(block:        pandas.DataFrame,
       writeSpaces(preNameSpaces, targetFile)
       targetFile.write((columnHeader.replace(' ', '_').upper()) + "_" + memberName)
       writeSpaces(postNameSpaces, targetFile)
-      suffix = getSuffixString(type)
       targetFile.write(" {" + valueAsString)
       if (("." not in valueAsString) and 
           (type == "float"         ) ):
@@ -177,7 +169,7 @@ def generateInitUniversalMapInfo(targetFile: TextIO) -> None:
   for varID in universalMembersToSet:
     variableName = variableNames[varIterator]
     targetFile.write("  if (!error) error = Atams::write(BlockUniversal::VAR_ID_"+varID+", ")
-    targetFile.write("genInfo."+variableName+");\n")
+    targetFile.write("s_genInfo."+variableName+");\n")
     varIterator += 1
   targetFile.seek(targetFile.tell()-1)
 
@@ -232,6 +224,7 @@ def autogenCallMap(autogenHint:         str,
                    dataBlockNamesCamel: List[str], 
                    dataBlocks:          List[pandas.DataFrame],
                    targetFile:          TextIO,
+                   mapNumberOfVars:     int,
                    timeStamp:           datetime) -> None:
   match (autogenHint):
     case "MAP_NAME_CAMEL": #
@@ -248,30 +241,33 @@ def autogenCallMap(autogenHint:         str,
       generateInitUniversalMapInfo(targetFile)
     case "INIT_USER_DEFAULTS_DEFINITION":
       generateInitDefaultsDefinition(dataBlockNamesCamel, dataBlocks, targetFile)
-    case "VERSION_MAJOR": #
+    case "VERSION_MAJOR": 
       targetFile.write("0U")
-    case "VERSION_MINOR": #
+    case "VERSION_MINOR": 
       targetFile.write("1U")
-    case "GENERATION_DAY": #
+    case "GENERATION_DAY": 
       targetFile.write(str(timeStamp.day) + "U")
-    case "GENERATION_MONTH": #
+    case "GENERATION_MONTH": 
       targetFile.write(str(timeStamp.month) + "U")
-    case "GENERATION_YEAR": #
+    case "GENERATION_YEAR": 
       targetFile.write(str(timeStamp.year) + "U")
-    case "GENERATION_HOUR": #
+    case "GENERATION_HOUR": 
       targetFile.write(str(timeStamp.hour) + "U")
-    case "GENERATION_MINUTE": #
+    case "GENERATION_MINUTE": 
       targetFile.write(str(timeStamp.minute) + "U")
-    case "GENERATION_SECOND": #
+    case "GENERATION_SECOND": 
       targetFile.write(str(timeStamp.second) + "U")
-    case "GENERATION_CHECKSUM": #
+    case "GENERATION_CHECKSUM": 
       targetFile.write(str(generateMapChecksum(dataBlocks)) + "U")
+    case "NUMBER_OF_VARS": 
+      targetFile.write(str(mapNumberOfVars) + "U")
 
 def generateMemoryMapFile(memMapNameCamel:     str,
                           dataBlockNamesCamel: List[str], 
                           dataBlocks:          List[pandas.DataFrame], 
                           templateFile:        TextIO,
                           targetFile:          TextIO,
+                          mapNumberOfVars:     int,
                           timeStamp:           datetime) -> None:
   inputFileString = templateFile.read()
   splitStrings    = inputFileString.split("$$$")
@@ -291,6 +287,7 @@ def generateMemoryMapFile(memMapNameCamel:     str,
                      dataBlockNamesCamel, 
                      dataBlocks,
                      targetFile,
+                     mapNumberOfVars,
                      timeStamp)
       nextStringAutogenCall = False
     else:
@@ -383,52 +380,62 @@ def generateCppFiles(memMapNameCamel:   str,
     pathlib.Path(memMapHubDir).mkdir(parents=False, exist_ok=True)
   except:
     return (Error.MAKE_DIRECTORY_FAILED)
+  
+  mapNumberOfVars = NUMBER_OF_UNIVERSAL_VARS
+
+  for block in dataBlocks:
+    blockNumberOfVars = len(block["Member ID"])
+    mapNumberOfVars += blockNumberOfVars
 
   mapHppPathNode = os.path.join(memMapNodeDir, memMapHppName)
   mapCppPathNode = os.path.join(memMapNodeDir, memMapCppName)
-  mapHppPathHub     = os.path.join(memMapHubDir,  memMapHppName)
-  mapCppPathHub     = os.path.join(memMapHubDir,  memMapCppName)
+  mapHppPathHub  = os.path.join(memMapHubDir,  memMapHppName)
+  mapCppPathHub  = os.path.join(memMapHubDir,  memMapCppName)
 
   mapTemplateHppNode = open(mapTemplateHppPathNode, OpenMethods.READ_ONLY)
-  mapHppNode         = open(mapHppPathNode,      OpenMethods.WRITE_FORCE)
+  mapHppNode         = open(mapHppPathNode,         OpenMethods.WRITE_FORCE)
   generateMemoryMapFile(memMapNameCamel, 
                         dataBlockNamesCamel, 
                         dataBlocks, 
                         mapTemplateHppNode, 
                         mapHppNode,
+                        mapNumberOfVars,
                         timeStamp)
   mapHppNode.close()
   mapTemplateHppNode.close()
 
   mapTemplateHppHub = open(mapTemplateHppPathHub, OpenMethods.READ_ONLY)
-  mapHppHub         = open(mapHppPathHub,      OpenMethods.WRITE_FORCE)
+  mapHppHub         = open(mapHppPathHub,         OpenMethods.WRITE_FORCE)
   generateMemoryMapFile(memMapNameCamel, 
                         dataBlockNamesCamel, 
                         dataBlocks, 
                         mapTemplateHppHub, 
                         mapHppHub,
+                        mapNumberOfVars,
                         timeStamp)
   mapHppHub.close()
   mapTemplateHppHub.close()
   
   mapTemplateCppNode = open(mapTemplateCppPathNode, OpenMethods.READ_ONLY)
-  mapCppNode         = open(mapCppPathNode,     OpenMethods.WRITE_FORCE)
+  mapCppNode         = open(mapCppPathNode,         OpenMethods.WRITE_FORCE)
   generateMemoryMapFile(memMapNameCamel,
                         dataBlockNamesCamel,
                         dataBlocks,
                         mapTemplateCppNode,
                         mapCppNode,
+                        mapNumberOfVars,
                         timeStamp)
   mapCppNode.close()
   mapTemplateCppNode.close()
 
   mapTemplateCppHub = open(mapTemplateCppPathHub, OpenMethods.READ_ONLY)
-  mapCppHub         = open(mapCppPathHub, OpenMethods.WRITE_FORCE)
+  mapCppHub         = open(mapCppPathHub,         OpenMethods.WRITE_FORCE)
   generateMemoryMapFile(memMapNameCamel,
                         dataBlockNamesCamel,
                         dataBlocks,
                         mapTemplateCppHub,
                         mapCppHub,
+                        mapNumberOfVars,
                         timeStamp)
   mapCppHub.close()
   mapTemplateCppHub.close()

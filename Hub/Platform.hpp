@@ -46,6 +46,16 @@
 namespace Atams { namespace Platform {
 
 /*************************************************************************************/
+/* PUBLIC CONSTANTS                                                                  */
+/*************************************************************************************/
+
+inline constexpr uint16_t NUMBER_OF_NODES_PER_BUS = 10U;
+inline constexpr uint16_t NODE_NUMBER_OF_VARS     = 100U; 
+inline constexpr uint16_t MAX_BUS_PACKET_SIZE     = 64U;
+inline constexpr uint16_t CIRCULAR_BUFFER_SIZE    = 1024U;
+inline constexpr uint64_t BUS_RESPONSE_TIMEOUT    = 100U;
+
+/*************************************************************************************/
 /* PUBLIC CLASSES                                                                    */
 /*************************************************************************************/
 
@@ -108,7 +118,7 @@ private asio::serial_port
 
   const UserData_t _userData;
 
-  uint8_t _rxBuffer[Atams::MAX_MESH_PACKET_SIZE];
+  uint8_t _rxBuffer[MAX_BUS_PACKET_SIZE];
 
   virtual void rxCallback(      uint8_t  *rxBufferPtr,
                           const uint16_t  rxBufferLength)
@@ -169,15 +179,6 @@ class CommsLock
 
   std::mutex _commsLock;
 };
-
-/*************************************************************************************/
-/* PUBLIC CONSTANTS                                                                  */
-/*************************************************************************************/
-
-inline constexpr uint16_t NUMBER_OF_NODES_PER_BUS = 10U;
-inline constexpr uint16_t NODE_NUMBER_OF_VARS     = 200U; 
-inline constexpr uint16_t COMMS_BUFFER_SIZE       = 512U;
-inline constexpr uint64_t BUS_RESPONSE_TIMEOUT    = 100U;
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */

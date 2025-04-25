@@ -25,7 +25,6 @@
 /*************************************************************************************/
 
 #include "Bus.hpp"
-#include "DataBlock.hpp"
 #include "Node.hpp"
 #include "../Utilities/AtamsUtilities.hpp"
 #include "Maps/BlockUniversal.hpp"
@@ -43,7 +42,6 @@ namespace Atams {
 /*************************************************************************************/
 
 Bus::Bus(Platform::BusPeripheral::UserData_t userData) :
-CircularBuffer(CircularBuffer::DEFAULT_EOL_CHAR),
 Platform::BusPeripheral(userData)
 {
   for (uint8_t ptrIndex = 0U; ptrIndex < Platform::NUMBER_OF_NODES_PER_BUS; ptrIndex++)
@@ -56,6 +54,47 @@ Platform::BusPeripheral(userData)
 Bus::~Bus(void)
 {
 
+}
+
+Atams::Error_t Bus::addNodeToBus(Node &node)
+{
+  if (_noOfNodesOnBus >= Platform::NUMBER_OF_NODES_PER_BUS)
+  {
+    return (Atams::ERROR_BUS_FULL); /* Early Return */
+  }
+
+  _nodePtrs[_noOfNodesOnBus] = &node;
+  _noOfNodesOnBus++;
+
+  return (Atams::ERROR_NONE);
+}
+
+void Bus::removeNodeFromBus(Node &node)
+{
+  uint8_t ptrIndex  = 0U;
+  bool    nodeFound = false;
+
+  for (Node * nodePtr : _nodePtrs)
+  {
+    if (nodePtr == &node)
+    {
+      nodeFound = true;
+      break;
+    }
+    
+    ptrIndex++;
+  }
+
+  if (nodeFound)
+  {
+    while (ptrIndex < (Platform::NUMBER_OF_NODES_PER_BUS - 1U))
+    {
+      _nodePtrs[ptrIndex     ] = _nodePtrs[ptrIndex + 1U];
+      _nodePtrs[ptrIndex + 1U] = nullptr;
+    }
+
+    _noOfNodesOnBus--;
+  }
 }
 
 Atams::Error_t Bus::startUpdateCycle(void)
@@ -126,7 +165,7 @@ bool Bus::runUpdateCycle(void)
         m_activeNodeIndex = 0U;
         _updateState     = UPDATE_STATE_CYCLE_COMPLETE;
       }
-      else if (CircularBuffer::getPacket(_rxBuffer, sizeof(_rxBuffer), _rxLength) == CircularBuffer::ERROR_NONE)
+      else if (m_circularBuffer.getPacket(_rxBuffer, sizeof(_rxBuffer), _rxLength) == CircularBuffer::ERROR_NONE)
       {
         if (validateAndStoreResponsePacket(*activeNodePtr, Atams::MESSAGE_RESPONSE_SYNCED) != Atams::ERROR_DECODE)
         {
@@ -273,51 +312,10 @@ void updateSetNodeConfigProcessMinor(const uint8_t         nodeIDToSet,
  
 }
 
-Atams::Error_t Bus::addNodeToBus(Node &node)
-{
-  if (_noOfNodesOnBus >= Platform::NUMBER_OF_NODES_PER_BUS)
-  {
-    return (Atams::ERROR_BUS_FULL); /* Early Return */
-  }
-
-  _nodePtrs[_noOfNodesOnBus] = &node;
-  _noOfNodesOnBus++;
-
-  return (Atams::ERROR_NONE);
-}
-
-void Bus::removeNodeFromBus(Node &node)
-{
-  uint8_t ptrIndex  = 0U;
-  bool    nodeFound = false;
-
-  for (Node * nodePtr : _nodePtrs)
-  {
-    if (nodePtr == &node)
-    {
-      nodeFound = true;
-      break;
-    }
-
-    ptrIndex++;
-  }
-
-  if (nodeFound)
-  {
-    while (ptrIndex < (Platform::NUMBER_OF_NODES_PER_BUS - 1U))
-    {
-      _nodePtrs[ptrIndex     ] = _nodePtrs[ptrIndex + 1U];
-      _nodePtrs[ptrIndex + 1U] = nullptr;
-    }
-
-    _noOfNodesOnBus--;
-  }
-}
-
 void Bus::rxCallback(      uint8_t  *rxBufferPtr,
                      const uint16_t  rxBufferLength)
 {
-  CircularBuffer::pushHead(rxBufferPtr, rxBufferLength);
+  m_circularBuffer.pushHead(rxBufferPtr, rxBufferLength);
   //Platform::CommsSemaphore::signal(); 
 }
 
@@ -391,9 +389,7 @@ Bus::UpdateState_t Bus::updateNoSync(void)
       }
       break;
     case Bus::UPDATE_STATE_COLLECT_RESPONSES:
-      if (CircularBuffer::getPacket(_rxBuffer, 
-                                    sizeof(_rxBuffer),
-                                    _rxLength        ) == CircularBuffer::ERROR_NONE)
+      if (m_circularBuffer.getPacket(_rxBuffer, sizeof(_rxBuffer), _rxLength) == CircularBuffer::ERROR_NONE)
       {
         if (validateAndStoreResponsePacket(*activeNodePtr, Atams::MESSAGE_RESPONSE) != Atams::ERROR_DECODE)
         {
@@ -478,11 +474,9 @@ Atams::Error_t Bus::assignNodeIDs(void)
   {
     if (nodePtr == nullptr) break;
 
-    DataBlock &universalBlock = nodePtr->getUniversalBlockRef();
-
-    if (!error) error = universalBlock.write(BlockUniversal::VAR_ID_FIRST_NODE_ID,    firstNodeID);
-    if (!error) error = universalBlock.write(BlockUniversal::VAR_ID_LAST_NODE_ID,     lastNodeID);
-    if (!error) error = universalBlock.write(BlockUniversal::VAR_ID_PREVIOUS_NODE_ID, previousNodeID);
+    if (!error) error = nodePtr->write(BlockUniversal::VAR_ID_FIRST_NODE_ID,    firstNodeID);
+    if (!error) error = nodePtr->write(BlockUniversal::VAR_ID_LAST_NODE_ID,     lastNodeID);
+    if (!error) error = nodePtr->write(BlockUniversal::VAR_ID_PREVIOUS_NODE_ID, previousNodeID);
 
     previousNodeID = nodePtr->getNodeID();
   }

@@ -43,6 +43,11 @@ WriteList::WriteList(void)
 
 }
 
+void WriteList::reset(void)
+{
+  _configCount = 0U;
+}
+
 WriteList::SearchResult_t WriteList::findConfig(const uint16_t varID)
 {
   SearchResult_t searchResult = 
@@ -81,19 +86,16 @@ void WriteList::removeConfigIfFound(const uint16_t varID)
 {
   SearchResult_t searchResult = findConfig(varID);
 
-  if (searchResult.configFound == true)
-  {
-    removeConfigAtIndex(searchResult.configIndex);
-  }
+  if (searchResult.configFound == true) removeConfigAtIndex(searchResult.configIndex);
 }
 
 void WriteList::updateIndexes(const uint16_t referenceIndex, const int16_t shiftLength)
 {
   for (WriteConfig_t &writeConfig : _configList)
   {
-    if (writeConfig.meshPacketDataIndex >= referenceIndex)
+    if (writeConfig.requestPacketIndex >= referenceIndex)
     {
-      writeConfig.meshPacketDataIndex += shiftLength;
+      writeConfig.requestPacketIndex += shiftLength;
     }
   }   
 }

@@ -49,15 +49,16 @@ CircularBuffer::CircularBuffer(const uint8_t endOfLineChar)
   for (uint8_t &byte :_buffer) byte = 0U;
 }
 
+CircularBuffer::~CircularBuffer(void)
+{
+
+}
+
 void CircularBuffer::setEOLChar(const uint8_t endOfLineChar)
 {
   _eolChar = endOfLineChar;
 }
 
-CircularBuffer::~CircularBuffer(void)
-{
-  /* Do Nothing - No dynamic allocation */
-}
 
 void CircularBuffer::reset(void)
 {
