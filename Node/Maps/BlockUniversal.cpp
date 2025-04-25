@@ -94,6 +94,12 @@ const VarInfo_t varInfoList[BlockUniversal::NUMBER_OF_UNIVERSAL_VARS] =
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
+  /* [BlockUniversal::VAR_ID_MAP_NUMBER_OF_VARS] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT16,
+    /* .externalAccess = */ Atams::ACCESS_READ,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
   /* [BlockUniversal::VAR_ID_CONFIGURATION_PASSKEY] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,

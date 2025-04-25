@@ -101,7 +101,7 @@ class CircularBuffer
 
   /*-- Private Static Constants -----------------------------------------------------*/
 
-  static inline constexpr uint16_t STATIC_BUFFER_SIZE = Platform::COMMS_BUFFER_SIZE;
+  static inline constexpr uint16_t STATIC_BUFFER_SIZE = Platform::CIRCULAR_BUFFER_SIZE;
   static inline constexpr uint8_t  NEW_DATA_READY     = 1U;
 
   /*-- Private Constants ------------------------------------------------------------*/

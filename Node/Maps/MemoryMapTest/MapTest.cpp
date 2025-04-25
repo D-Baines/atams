@@ -37,20 +37,21 @@ namespace Atams { namespace MapTest {
 /* STATIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-static const GenInfo_t genInfo = 
+static const GenInfo_t s_genInfo = 
 {
   /* .atamsVersionMajor = */ 0U,
   /* .atamsVersionMinor = */ 1U,
-  /* .genDay            = */ 23U,
+  /* .genDay            = */ 24U,
   /* .genMonth          = */ 4U,
   /* .genYear           = */ 2025U,
-  /* .genHour           = */ 17U,
-  /* .genMinute         = */ 50U,
-  /* .genSecond         = */ 26U,
-  /* .genChecksum       = */ 2433352831U
+  /* .genHour           = */ 10U,
+  /* .genMinute         = */ 1U,
+  /* .genSecond         = */ 42U,
+  /* .genChecksum       = */ 2433352831U,
+  /* .numberOfVars      = */ 56U
 };
 
-static const VarInfo_t varInfoList[Platform::NODE_NUMBER_OF_VARS] =
+static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
 {
   /*------------------------ Universal Var Info -------------------------*/
   
@@ -63,6 +64,7 @@ static const VarInfo_t varInfoList[Platform::NODE_NUMBER_OF_VARS] =
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_GEN_MINUTE],
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_GEN_SECOND],
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_CHECKSUM],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ID_MAP_NUMBER_OF_VARS],
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_CONFIGURATION_PASSKEY],
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_CONFIGURATION_STATUS],
   BlockUniversal::varInfoList[BlockUniversal::VAR_ID_NODE_ID],
@@ -262,15 +264,15 @@ Atams::Error_t initGenInfo(void)
 {
   Atams::Error_t error = Atams::ERROR_NONE;
 
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR, genInfo.atamsVersionMajor);
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_ATAMS_VERSION_MINOR, genInfo.atamsVersionMinor);
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_MAP_GEN_DAY, genInfo.genDay);
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_MAP_GEN_MONTH, genInfo.genMonth);
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_MAP_GEN_YEAR, genInfo.genYear);
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_MAP_GEN_HOUR, genInfo.genHour);
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_MAP_GEN_MINUTE, genInfo.genMinute);
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_MAP_GEN_SECOND, genInfo.genSecond);
-  if (!error) error = Atams::write(BlockUniversal::VAR_ID_MAP_CHECKSUM, genInfo.genChecksum);  
+  if (!error) error = Atams::write(BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR, s_genInfo.atamsVersionMajor);
+  if (!error) error = Atams::write(BlockUniversal::VAR_ID_ATAMS_VERSION_MINOR, s_genInfo.atamsVersionMinor);
+  if (!error) error = Atams::write(BlockUniversal::VAR_ID_MAP_GEN_DAY, s_genInfo.genDay);
+  if (!error) error = Atams::write(BlockUniversal::VAR_ID_MAP_GEN_MONTH, s_genInfo.genMonth);
+  if (!error) error = Atams::write(BlockUniversal::VAR_ID_MAP_GEN_YEAR, s_genInfo.genYear);
+  if (!error) error = Atams::write(BlockUniversal::VAR_ID_MAP_GEN_HOUR, s_genInfo.genHour);
+  if (!error) error = Atams::write(BlockUniversal::VAR_ID_MAP_GEN_MINUTE, s_genInfo.genMinute);
+  if (!error) error = Atams::write(BlockUniversal::VAR_ID_MAP_GEN_SECOND, s_genInfo.genSecond);
+  if (!error) error = Atams::write(BlockUniversal::VAR_ID_MAP_CHECKSUM, s_genInfo.genChecksum);  
   return (error); 
 }
 
@@ -315,11 +317,11 @@ Atams::Error_t initUserDefaults(void)
 
 const MemoryMap_t memoryMap =
 {
-  /* noOfVars         = */ static_cast<uint16_t>(Platform::NODE_NUMBER_OF_VARS),
-  /* genInfo          = */ MapTest::genInfo,
+  /* noOfVars         = */ s_genInfo.numberOfVars,
+  /* genInfo          = */ MapTest::s_genInfo,
   /* initGenInfo      = */ MapTest::initGenInfo,
   /* initUserDefaults = */ MapTest::initUserDefaults,
-  /* varInfoList      = */ MapTest::varInfoList
+  /* varInfoList      = */ MapTest::s_varInfoList
 };
 
 } } /* End Namespace - Atams::MapTest */
