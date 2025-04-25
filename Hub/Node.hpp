@@ -114,6 +114,13 @@ class Node
   template <typename T>
   Atams::Error_t readIfNew(const uint16_t varID, T &readData);
 
+  template <typename T>
+  Atams::Error_t writeRequestUntilAck(const uint16_t varID, const T writeData);
+
+  Atams::Error_t readRequestUntilAck(const uint16_t varID);
+
+  Atams::Error_t startWriteStream(const uint16_t varID);
+
   Atams::Error_t startReadStream(const uint16_t varID);
 
   Atams::Error_t stopStream(const uint16_t varID);
@@ -132,7 +139,9 @@ class Node
                                    Access_t         &accessRequest,
                                    RequestPattern_t &requestPattern);
 
-   void resetRequestPacket(void);
+  void resetRequestPacket(void);
+
+  void setNodeID(const uint8_t nodeID);
 
   uint8_t getNodeID(void);
 
@@ -187,20 +196,21 @@ class Node
 
   Platform::MemoryLock m_requestPacketLock;
   Platform::MemoryLock m_varStorageLock;
-  NodeProcesses        m_nodeProcessHandler;
+  Platform::MemoryLock m_busErrorLock;
+  NodeActions          m_nodeProcessHandler;
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  const uint8_t         _nodeID;
-  const MemoryMap_t    *m_memoryMap;
-  uint16_t              m_validVarCount = 0U;
-  Var_t                 m_varStorage[Platform::NODE_NUMBER_OF_VARS];
-  Atams::Error_t        _busError = Atams::ERROR_NONE;
-  uint16_t              _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
-  RequestPacket_t       _requestPacket;
-  uint8_t               _responseBuffer[Platform::MAX_BUS_PACKET_SIZE];
-  uint16_t              _responseLength   = 0U;
-  bool                  _newResponseReady = false;
+  uint8_t            _nodeID;
+  const MemoryMap_t *m_memoryMap;
+  uint16_t           m_validVarCount = 0U;
+  Var_t              m_varStorage[Platform::NODE_NUMBER_OF_VARS];
+  Atams::Error_t     _busError = Atams::ERROR_NONE;
+  uint16_t           _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
+  RequestPacket_t    _requestPacket;
+  uint8_t            _responseBuffer[Platform::MAX_BUS_PACKET_SIZE];
+  uint16_t           _responseLength   = 0U;
+  bool               _newResponseReady = false;
   
   /*-- Private Constexpr Function Declarations --------------------------------------*/
 

@@ -101,7 +101,7 @@ Atams::Error_t Bus::startUpdateCycle(void)
 {
   Atams::Error_t statusReturn = Atams::ERROR_NONE;
   
-  if (_updateState == UPDATE_STATE_READY)
+  if (_updateState == Bus::UPDATE_STATE_READY)
   {
     for (Node * nodePtr : _nodePtrs)
     {
@@ -109,7 +109,11 @@ Atams::Error_t Bus::startUpdateCycle(void)
     }
 
     m_activeNodeIndex = 0U;
-    _updateState     = UPDATE_STATE_SEND_REQUESTS;
+    _updateState     = Bus::UPDATE_STATE_SEND_REQUESTS;
+  }
+  else if (_updateState == Bus::UPDATE_STATE_INIT_REQUIRED)
+  {
+    statusReturn = Atams::ERROR_INIT_REQUIRED;
   }
   else
   {
@@ -121,8 +125,8 @@ Atams::Error_t Bus::startUpdateCycle(void)
 
 bool Bus::runUpdateCycle(void)
 {
-  uint64_t currentTime         = Platform::getMillis();
-  Node    *activeNodePtr       = nullptr;
+  uint64_t currentTime   = Platform::getMillis();
+  Node    *activeNodePtr = nullptr;
 
   if ((m_activeNodeIndex < sizeof(_nodePtrs)) &&
       (m_activeNodeIndex < _noOfNodesOnBus  ) )
@@ -137,15 +141,18 @@ bool Bus::runUpdateCycle(void)
 
   switch (_updateState)
   {
-    case UPDATE_STATE_READY:
+    case Bus::UPDATE_STATE_INIT_REQUIRED:
       /* Do Nothing */
       break;
-    case UPDATE_STATE_SEND_REQUESTS:
+    case Bus::UPDATE_STATE_READY:
+      /* Do Nothing */
+      break;
+    case Bus::UPDATE_STATE_SEND_REQUESTS:
       if (allNodesHandled)
       {
         m_activeNodeIndex  = 0U;
         _prevResponseTime = currentTime;
-        _updateState      = UPDATE_STATE_COLLECT_RESPONSES;
+        _updateState      = Bus::UPDATE_STATE_COLLECT_RESPONSES;
       }
       else if (Platform::BusPeripheral::transmitReady())
       {
@@ -159,11 +166,11 @@ bool Bus::runUpdateCycle(void)
         m_activeNodeIndex++;
       }
       break;
-    case UPDATE_STATE_COLLECT_RESPONSES:
+    case Bus::UPDATE_STATE_COLLECT_RESPONSES:
       if (allNodesHandled)
       {
         m_activeNodeIndex = 0U;
-        _updateState     = UPDATE_STATE_CYCLE_COMPLETE;
+        _updateState     = Bus::UPDATE_STATE_CYCLE_COMPLETE;
       }
       else if (m_circularBuffer.getPacket(_rxBuffer, sizeof(_rxBuffer), _rxLength) == CircularBuffer::ERROR_NONE)
       {
@@ -176,14 +183,14 @@ bool Bus::runUpdateCycle(void)
       { 
         activeNodePtr->reportBusError(ERROR_RESPONSE_TIMEOUT);
         m_activeNodeIndex++;
-        _updateState = UPDATE_STATE_JOG_NODE;
+        _updateState = Bus::UPDATE_STATE_JOG_NODE;
       }
       break;
-    case UPDATE_STATE_JOG_NODE:
+    case Bus::UPDATE_STATE_JOG_NODE:
       if (allNodesHandled)
       {
         m_activeNodeIndex   = 0U;
-        _updateState        = UPDATE_STATE_CYCLE_COMPLETE;
+        _updateState        = Bus::UPDATE_STATE_CYCLE_COMPLETE;
       }
       else
       {
@@ -200,11 +207,11 @@ bool Bus::runUpdateCycle(void)
             Platform::BusPeripheral::transmit(_encodedBuffer, _encodedLength);
           }
           _prevResponseTime = currentTime;
-          _updateState      = UPDATE_STATE_COLLECT_RESPONSES;
+          _updateState      = Bus::UPDATE_STATE_COLLECT_RESPONSES;
         }
       }
       break;
-    case UPDATE_STATE_CYCLE_COMPLETE:
+    case Bus::UPDATE_STATE_CYCLE_COMPLETE:
       break;
     default:
       /* TODO:: Handle error correctly */

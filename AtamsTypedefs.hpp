@@ -41,28 +41,28 @@ namespace Atams
 /* PRE-TYPEDEF CONSTANTS                                                             */
 /*************************************************************************************/
 
-inline constexpr uint8_t  NODE_ID_MAX                    = 254U;
-inline constexpr uint8_t  NODE_ID_NULL                   = 255U;
-inline constexpr uint8_t  MAX_NUMBER_OF_NODES_PER_BUS    = 255U;
-inline constexpr uint16_t MAX_NUMBER_OF_VARS             = 8191U;
-inline constexpr uint8_t  MAX_TYPE_SIZE                  = 4U;
-inline constexpr uint8_t  EOL_BYTE                       = 0U;
-inline constexpr int32_t  MAX_INT32                      = 2147483647L;
-inline constexpr int32_t  MIN_INT32                      = -2147483648L;
-inline constexpr uint32_t MAX_UINT32                     = 4294967295U;
-inline constexpr uint32_t MIN_UINT32                     = 0U;
-inline constexpr uint8_t  BITS_IN_A_BYTE                 = 8U;
-inline constexpr uint32_t CRC32_POLYNOMIAL               = 0x04C11DB7U;
-inline constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID  = 0x00000000U;
-inline constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID    = 0xD0D0CACAU;
-inline constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS   = 0x0000000FU;
-inline constexpr uint32_t CONFIGURATION_PASSKEY_APPLY    = 0x0000000FU;
-inline constexpr uint32_t CONFIGURATION_PASSKEY_CANCEL   = 0x00000000U;
-inline constexpr uint32_t STORE_ALL_PASSCODE             = 0x73617665U;
-inline constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE   = 0x52455553U;
-inline constexpr uint32_t RESTORE_ALL_PASSCODE           = 0x5245414CU;
-inline constexpr uint32_t RESET_NODE_PASSCODE            = 0x0000B33FU;
-inline constexpr uint32_t WATCHDOG_RESET_PASSCODE        = 0x72737477U;
+inline constexpr uint8_t  NODE_ID_MAX                   = 254U;
+inline constexpr uint8_t  MAX_NUMBER_OF_NODES_PER_BUS   = 255U;
+inline constexpr uint16_t MAX_NUMBER_OF_VARS            = 8190U;
+inline constexpr uint16_t VAR_ID_NULL                   = 8191U;
+inline constexpr uint8_t  MAX_TYPE_SIZE                 = 4U;
+inline constexpr uint8_t  EOL_BYTE                      = 0U;
+inline constexpr int32_t  MAX_INT32                     = 2147483647L;
+inline constexpr int32_t  MIN_INT32                     = -2147483648L;
+inline constexpr uint32_t MAX_UINT32                    = 4294967295U;
+inline constexpr uint32_t MIN_UINT32                    = 0U;
+inline constexpr uint8_t  BITS_IN_A_BYTE                = 8U;
+inline constexpr uint32_t CRC32_POLYNOMIAL              = 0x04C11DB7U;
+inline constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID = 0x00000000U;
+inline constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID   = 0xD0D0CACAU;
+inline constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS  = 0x0000000FU;
+inline constexpr uint32_t CONFIGURATION_PASSKEY_APPLY   = 0x0000000FU;
+inline constexpr uint32_t CONFIGURATION_PASSKEY_CANCEL  = 0x00000000U;
+inline constexpr uint32_t STORE_ALL_PASSCODE            = 0x73617665U;
+inline constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE  = 0x52455553U;
+inline constexpr uint32_t RESTORE_ALL_PASSCODE          = 0x5245414CU;
+inline constexpr uint32_t RESET_NODE_PASSCODE           = 0x0000B33FU;
+inline constexpr uint32_t WATCHDOG_RESET_PASSCODE       = 0x72737477U;
 
 /*************************************************************************************/
 /* STATIC ASSERTIONS                                                                 */
@@ -83,14 +83,6 @@ enum ProcessState_t: uint8_t
   PROCESS_STATE_COMPLETE    = 3U
 };
 
-enum SystemType_t: uint8_t
-{
-  SYSTEM_UNKNOWN = 0U,
-  SYSTEM_HUB     = 1U,
-  SYSTEM_NODE    = 2U,
-  SYSTEM_NULL    = 255U,
-};
-
 enum MessageType_t: uint8_t
 {
   MESSAGE_UNKNOWN             = 0U,
@@ -102,6 +94,7 @@ enum MessageType_t: uint8_t
   MESSAGE_SYNC_JOG            = 6U,
   MESSAGE_ABORTED_RESPONSE    = 7U,
 };
+static_assert(sizeof(Atams::MessageType_t) == 1U, "Atams::MessageType_t size invalid");
 
 enum MeshSize_t: uint8_t
 {
@@ -146,6 +139,33 @@ enum DatagramHeaderMask_t: uint8_t
   DATAGRAM_HEADER_MASK_VAR_ID_LO = 0xFFU,
 };
 
+enum AbortSize_t: uint8_t
+{
+  ABORT_SIZE_ERROR     = sizeof(uint8_t),
+  ABORT_SIZE_VAR_ID_HI = sizeof(uint8_t),
+  ABORT_SIZE_VAR_ID_LO = sizeof(uint8_t),
+  ABORT_SIZE_PACKET    = MESH_SIZE_HEADER + ABORT_SIZE_ERROR + ABORT_SIZE_VAR_ID_HI + ABORT_SIZE_VAR_ID_LO
+};
+
+enum AbortIndex_t: uint8_t
+{
+  ABORT_INDEX_ERROR  = MESH_SIZE_HEADER,
+  ABORT_INDEX_VAR_HI = ABORT_INDEX_ERROR     + ABORT_SIZE_ERROR,
+  ABORT_INDEX_VAR_LO = ABORT_INDEX_VAR_HI + ABORT_SIZE_VAR_ID_HI
+};
+
+enum AbortShift_t: uint8_t
+{
+  ABORT_SHIFT_VAR_ID_HI = 8U,
+  ABORT_SHIFT_VAR_ID_LO = 0U
+};
+
+enum AbortMask_t: uint16_t
+{
+  ABORT_MASK_VAR_ID_HI = 0xFFU,
+  ABORT_MASK_VAR_ID_LO = 0xFFU,
+};
+
 enum Error_t: uint8_t
 {
   ERROR_NONE                         = 0U,
@@ -176,7 +196,7 @@ enum Error_t: uint8_t
   ERROR_WRITE_LOCK                   = 26U,
   ERROR_BUS_FULL                     = 27U,
   ERROR_UPDATE_CYCLE_IN_PROGRESS     = 28U,
-  ERROR_OLD_DATA                     = 29U,
+  ERROR_NEW_DATA_NOT_READY           = 29U,
   ERROR_RESPONSE_TIMEOUT             = 30U,
   ERROR_NO_RESPONSE                  = 33U,
   ERROR_INIT_REQUIRED                = 34U,
@@ -187,12 +207,17 @@ enum Error_t: uint8_t
   ERROR_NVM_PLATFORM_SIZE            = 39U,
   ERROR_INVALID_NACK                 = 40U,
   ERROR_CONFIGURATION_STATE_INACTIVE = 41U,
-  ERROR_BUS_PROCESSING               = 42U,
-  ERROR_REQUEST_PACKET_FATAL         = 43U,
-  ERROR_INVALID_CASE                 = 44U,
+  ERROR_BUS_PROCESSING               = 43U,
+  ERROR_REQUEST_PACKET_FATAL         = 44U,
+  ERROR_INVALID_CASE                 = 45U,
+  ERROR_CONFIGURATION_ENTRY          = 46U,
+  ERROR_CONFIGURATION_EXIT           = 47U,
+  ERROR_SET_CONFIG_VAR_FAILED        = 48U,
+  ERROR_STORAGE_PROCESS_FAILED       = 49U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
+static_assert(sizeof(Atams::Error_t) == 1U, "Atams::Error_t size invalid");
 
 enum Access_t: uint8_t
 {
@@ -200,19 +225,23 @@ enum Access_t: uint8_t
   ACCESS_READ  = 1U,
   ACCESS_WRITE = 2U,
 };
+static_assert(sizeof(Atams::Error_t) == 1U, "Atams::Access_t size invalid");
 
-enum AtamsBool_t: uint8_t
+enum Bool_t: uint8_t
 {
   ATAMS_FALSE = 0U,
   ATAMS_TRUE  = 1U
 };
+static_assert(sizeof(Atams::Bool_t) == 1U, "Atams::Bool_t size invalid");
 
-enum ConfigurationStatus_t
+enum ConfigurationStatus_t: uint8_t
 {
   CONFIGURATION_STATUS_INACTIVE = 0U,
   CONFIGURATION_STATUS_ACTIVE   = 1U,
   CONFIGURATION_STATUS_DENIED   = 2U,
+  CONFIGURATION_STATUS_APPLIED  = 3U,
 };
+static_assert(sizeof(Atams::ConfigurationStatus_t) == 1U, "Atams::ConfigurationStatus_t size invalid");
 
 enum AccessResponse_t: uint8_t
 {
@@ -221,6 +250,7 @@ enum AccessResponse_t: uint8_t
   RESPONSE_ACK_WRITE = 2U,
   RESPONSE_FATAL     = 3U
 };
+static_assert(sizeof(Atams::AccessResponse_t) == 1U, "Atams::AccessResponse_t size invalid");
 
 enum VarType_t: uint8_t
 {
@@ -234,6 +264,7 @@ enum VarType_t: uint8_t
   TYPE_FLOAT  = 7U,
   NUMBER_OF_TYPES
 };
+static_assert(sizeof(Atams::VarType_t) == 1U, "Atams::VarType_t size invalid");
 
 enum RequestPattern_t: uint8_t
 {
@@ -242,6 +273,7 @@ enum RequestPattern_t: uint8_t
   REQUEST_UNTIL_ACK          = 2U,
   NUMBER_OF_REQUEST_PATTERNS = 3U
 };
+static_assert(sizeof(Atams::RequestPattern_t) == 1U, "Atams::RequestPattern_t size invalid");
 
 enum BitrateOption_t: uint8_t
 {
@@ -256,6 +288,7 @@ enum BitrateOption_t: uint8_t
   BITRATE_OPTION_8 = 8U,
   BITRATE_OPTION_9 = 9U,
 };
+static_assert(sizeof(Atams::BitrateOption_t) == 1U, "Atams::BitrateOption_t size invalid");
 
 enum CoreID_t: uint8_t
 {
