@@ -126,7 +126,7 @@ class ConfigurationHandler
 
   /* Configuration Parameters */
   uint8_t m_localNodeID     = 0U;
-  uint8_t m_prevSyncNodeID  = Atams::NODE_ID_NULL;
+  uint8_t m_prevSyncNodeID  = 0U;
   uint8_t m_finalSyncNodeID = 0U;
   uint8_t m_firstSyncNodeID = 0U;
   uint8_t m_bitrateOption   = static_cast<uint8_t>(Atams::BITRATE_OPTION_0);

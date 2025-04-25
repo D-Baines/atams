@@ -158,12 +158,15 @@ static inline void resetResponse(ChannelResponse_t &response, uint8_t syncCount)
   response.index                       = MESH_INDEX_FIRST_DATAGRAM;
 }
 
-static inline void abortResponse(ChannelResponse_t &response, Atams::Error_t error)
+static inline void abortResponse(ChannelResponse_t &response, const Atams::Error_t error, const uint16_t varID)
 {
-  response.buffer[MESH_INDEX_NODE_ID]  = s_ConfigurationHandler.getLocalNodeID();;
-  response.buffer[MESH_INDEX_MSG_TYPE] = MESSAGE_ABORTED_RESPONSE;
-  response.buffer[MESH_SIZE_HEADER]    = error;
-  response.index                       = MESH_SIZE_HEADER + sizeof(error);
+  response.buffer[MESH_INDEX_NODE_ID]    = s_ConfigurationHandler.getLocalNodeID();;
+  response.buffer[MESH_INDEX_MSG_TYPE]   = MESSAGE_ABORTED_RESPONSE;
+  response.buffer[ABORT_INDEX_ERROR]     = error;
+  response.buffer[ABORT_INDEX_VAR_ID_HI] = ((varID >> Atams::ABORT_SHIFT_VAR_ID_HI) & Atams::ABORT_MASK_VAR_ID_HI);
+  response.buffer[ABORT_INDEX_VAR_ID_LO] = ((varID >> Atams::ABORT_SHIFT_VAR_ID_LO) & Atams::ABORT_MASK_VAR_ID_LO);
+
+  response.index                       = ABORT_SIZE_PACKET;
   response.aborted                     = true;
 }
 
@@ -179,7 +182,7 @@ static void sendResponsePacket(Platform::CommsChannel_t commsChannel,
     if ((response.buffer[MESH_INDEX_MSG_TYPE] != MESSAGE_ABORTED_RESPONSE) ||
         (response.index                       != ABORT_RESPONSE_SIZE     ) )
     {
-      abortResponse(response, Atams::ERROR_ABORT_FAILURE);
+      abortResponse(response, Atams::ERROR_ABORT_FAILURE, Atams::VAR_ID_NULL);
     }
   }
   else
@@ -223,7 +226,7 @@ static void processDatagramRead(ChannelResponse_t &response,
 
   if (transferStatus != Atams::ERROR_NONE)
   {
-    abortResponse(response, transferStatus);
+    abortResponse(response, transferStatus, datagramHeader.varID);
   }
   else
   {
@@ -285,7 +288,7 @@ static void processDatagramWrite(ChannelResponse_t &response,
     }
     else
     {
-      abortResponse(response, transferStatus);
+      abortResponse(response, transferStatus, datagramHeader.varID);
     }
   }
   else
@@ -303,8 +306,8 @@ static void validateRequestPacket(ChannelResponse_t &response,
                                   const bool         universalBroadcast)
 {
   DatagramHeader_t datagramHeader;
-  uint16_t         datagramStartIndex           = MESH_INDEX_FIRST_DATAGRAM;
-  uint16_t         requiredResponseBufferLength = MESH_SIZE_HEADER;
+  uint16_t         datagramStartIndex     = MESH_INDEX_FIRST_DATAGRAM;
+  uint16_t         requiredResponseLength = MESH_SIZE_HEADER;
 
   while ((datagramStartIndex + DATAGRAM_SIZE_HEADER <= requestPacketLength) &&
          (response.aborted                          == false              ) )
@@ -314,7 +317,7 @@ static void validateRequestPacket(ChannelResponse_t &response,
     if ((universalBroadcast                                              ) &&
         (datagramHeader.varID >= BlockUniversal::NUMBER_OF_UNIVERSAL_VARS) )
     {
-      abortResponse(response, Atams::ERROR_VAR_ID);
+      abortResponse(response, Atams::ERROR_VAR_ID, datagramHeader.varID);
     }
     else
     {
@@ -322,7 +325,7 @@ static void validateRequestPacket(ChannelResponse_t &response,
 
       if (varLength.status != Atams::ERROR_NONE)
       {
-        abortResponse(response, varLength.status);
+        abortResponse(response, varLength.status, datagramHeader.varID);
       }
       else
       {
@@ -330,16 +333,16 @@ static void validateRequestPacket(ChannelResponse_t &response,
         {
           case Atams::ACCESS_READ:
             datagramStartIndex           += DATAGRAM_SIZE_HEADER;
-            requiredResponseBufferLength += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + varLength.data);
+            requiredResponseLength += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + varLength.data);
             break;
 
           case Atams::ACCESS_WRITE:
             datagramStartIndex           += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + varLength.data);
-            requiredResponseBufferLength += DATAGRAM_SIZE_HEADER;
+            requiredResponseLength += DATAGRAM_SIZE_HEADER;
             break;
 
           default:
-            abortResponse(response, Atams::ERROR_ACCESS_INVALID);
+            abortResponse(response, Atams::ERROR_ACCESS_INVALID, datagramHeader.varID);
             break;
         }
       }
@@ -348,8 +351,8 @@ static void validateRequestPacket(ChannelResponse_t &response,
 
   if (response.aborted == false)
   {
-    if (datagramStartIndex           != requestPacketLength    ) abortResponse(response, Atams::ERROR_REQUEST_BUFFER_LENGTH);
-    if (requiredResponseBufferLength  > sizeof(response.buffer)) abortResponse(response, Atams::ERROR_RESPONSE_BUFFER_LENGTH);
+    if (datagramStartIndex     != requestPacketLength    ) abortResponse(response, Atams::ERROR_REQUEST_BUFFER_LENGTH,  Atams::VAR_ID_NULL);
+    if (requiredResponseLength  > sizeof(response.buffer)) abortResponse(response, Atams::ERROR_RESPONSE_BUFFER_LENGTH, Atams::VAR_ID_NULL);
   }
 }
 
@@ -388,7 +391,7 @@ static void processRequestPacket(ChannelResponse_t &response,
         break;
 
       default:
-        abortResponse(response, Atams::ERROR_ACCESS_INVALID);
+        abortResponse(response, Atams::ERROR_ACCESS_INVALID, datagramHeader.varID);
         return;
     }
   }

@@ -102,6 +102,7 @@ void ConfigurationHandler::update(void)
   {
     case CONFIGURATION_STATUS_INACTIVE:
     case CONFIGURATION_STATUS_DENIED:
+    case CONFIGURATION_STATUS_APPLIED:
       checkConfigurationStateEntry(m_configurationState);
       break;
 
@@ -193,9 +194,9 @@ void ConfigurationHandler::checkConfigurationStateExit(Atams::ConfigurationStatu
   {
     applyUniversalConfiguration();
     Platform::exitConfigurationState();
-    configurationState = Atams::CONFIGURATION_STATUS_INACTIVE;
+    configurationState = Atams::CONFIGURATION_STATUS_APPLIED;
   }
-  else if (configStatePasskey != Atams::CONFIGURATION_PASSKEY_CANCEL)
+  else if (configStatePasskey != Atams::CONFIGURATION_PASSKEY_ACCESS)
   {
     cancelConfigurationValueChange();
     Platform::exitConfigurationState();

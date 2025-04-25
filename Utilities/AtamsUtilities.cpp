@@ -143,10 +143,10 @@ Error_t encodeMeshPacket(      uint8_t  * const inputBuffer,
   return (Atams::ERROR_NONE);
 }
 
-void datagramHeaderToBuffer(const DatagramHeader_t &datagramHeader, uint8_t* buffer)
+void datagramHeaderToBuffer(const DatagramHeader_t &datagramHeader, uint8_t *buffer)
 {
   buffer[0U] = static_cast<uint8_t>(((datagramHeader.command << DATAGRAM_HEADER_SHIFT_COMMAND  ) & DATAGRAM_HEADER_MASK_COMMAND  ) |
-                                    ((datagramHeader.varID   << DATAGRAM_HEADER_SHIFT_VAR_ID_HI) & DATAGRAM_HEADER_MASK_VAR_ID_HI) );
+                                    ((datagramHeader.varID   >> DATAGRAM_HEADER_SHIFT_VAR_ID_HI) & DATAGRAM_HEADER_MASK_VAR_ID_HI) );
 
   buffer[1U] = static_cast<uint8_t>((datagramHeader.varID    << DATAGRAM_HEADER_SHIFT_VAR_ID_LO) & DATAGRAM_HEADER_MASK_VAR_ID_LO);
 }
@@ -155,8 +155,8 @@ void bufferToDatagramHeader(const uint8_t *buffer, DatagramHeader_t &datagramHea
 {
   datagramHeader.command = static_cast<uint8_t>(buffer[0U] & DATAGRAM_HEADER_MASK_COMMAND) >> DATAGRAM_HEADER_SHIFT_COMMAND;
 
-  datagramHeader.varID   = static_cast<uint16_t>(((buffer[0U] & DATAGRAM_HEADER_MASK_VAR_ID_HI) << DATAGRAM_HEADER_SHIFT_VAR_ID_HI) |
-                                                 ((buffer[1U] & DATAGRAM_HEADER_MASK_VAR_ID_LO) << DATAGRAM_HEADER_SHIFT_VAR_ID_LO) );
+  datagramHeader.varID   = ((static_cast<uint16_t>(buffer[0U] & DATAGRAM_HEADER_MASK_VAR_ID_HI) << DATAGRAM_HEADER_SHIFT_VAR_ID_HI) |
+                            (static_cast<uint16_t>(buffer[1U] & DATAGRAM_HEADER_MASK_VAR_ID_LO) >> DATAGRAM_HEADER_SHIFT_VAR_ID_LO) );
 }
 
 
