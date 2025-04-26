@@ -77,10 +77,9 @@ static_assert(std::numeric_limits<float>::is_iec559, "Platform float representat
 
 enum ProcessState_t: uint8_t
 {
-  PROCESS_STATE_READY       = 0U,
-  PROCESS_STATE_IN_PROGRESS = 1U,
-  PROCESS_STATE_ERROR       = 2U,
-  PROCESS_STATE_COMPLETE    = 3U
+  PROCESS_STATE_IN_PROGRESS = 0U,
+  PROCESS_STATE_ERROR       = 1U,
+  PROCESS_STATE_COMPLETE    = 2U
 };
 
 enum MessageType_t: uint8_t
@@ -207,13 +206,14 @@ enum Error_t: uint8_t
   ERROR_NVM_PLATFORM_SIZE            = 39U,
   ERROR_INVALID_NACK                 = 40U,
   ERROR_CONFIGURATION_STATE_INACTIVE = 41U,
+  ERROR_CONFIGURATION_STATE_DENIED   = 42U,
   ERROR_BUS_PROCESSING               = 43U,
   ERROR_REQUEST_PACKET_FATAL         = 44U,
   ERROR_INVALID_CASE                 = 45U,
-  ERROR_CONFIGURATION_ENTRY          = 46U,
-  ERROR_CONFIGURATION_EXIT           = 47U,
-  ERROR_SET_CONFIG_VAR_FAILED        = 48U,
-  ERROR_STORAGE_PROCESS_FAILED       = 49U,
+  ERROR_CONFIGURATION_EXIT           = 46U,
+  ERROR_SET_CONFIG_VAR_FAILED        = 47U,
+  ERROR_STORAGE_PROCESS_FAILED       = 48U,
+  ERROR_PROCESS_TIMEOUT              = 49U,
 
   NUMBER_OF_ATAMS_ERRORS
 };

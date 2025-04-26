@@ -106,7 +106,8 @@ class NodeActions
     START    = 0U,
     COLLECT  = 1U,
     VALIDATE = 2U,
-    COMPLETE = 3U
+    COMPLETE = 3U,
+    ERROR    = 4U
   };
 
   enum class CollectNodeIDsState : uint8_t
@@ -114,7 +115,8 @@ class NodeActions
     START     = 0U,
     COLLECT   = 1U,
     CHECK_NEW = 2U,
-    COMPLETE  = 3U
+    COMPLETE  = 3U,
+    ERROR     = 4U
   };
 
   enum class ConfigEntryState : uint8_t
@@ -125,7 +127,8 @@ class NodeActions
     WRITE_PASSCODE      = 3U,
     COLLECT_STATUS_POST = 4U,
     CHECK_STATUS_POST   = 5U,
-    COMPLETE            = 6U
+    COMPLETE            = 6U,
+    ERROR               = 7U
   };
 
   enum class ConfigExitState : uint8_t
@@ -136,7 +139,8 @@ class NodeActions
     WRITE_PASSCODE      = 3U,
     COLLECT_STATUS_POST = 4U,
     CHECK_STATUS_POST   = 5U,
-    COMPLETE            = 6U
+    COMPLETE            = 6U,
+    ERROR               = 7U
   };
 
   enum class SetConfigVarState : uint8_t
@@ -148,7 +152,8 @@ class NodeActions
     CHECK         = 4U,
     CANCEL_CONFIG = 5U,
     APPLY_CONFIG  = 6U,
-    COMPLETE      = 7U
+    COMPLETE      = 7U,
+    ERROR         = 8U
   };
 
   enum class StorageProcessState : uint8_t
@@ -163,7 +168,8 @@ class NodeActions
     STATUS_CHECK_POST  = 7U,
     CANCEL_CONFIG      = 10U,
     APPLY_CONFIG       = 11U,
-    COMPLETE           = 12U
+    COMPLETE           = 12U,
+    ERROR              = 13U
   };
 
   enum class ResetNodeState : uint8_t
@@ -172,7 +178,8 @@ class NodeActions
     ENTER_CONFIG   = 1U,
     WRITE_PASSCODE = 2U,
     CHECK_ACK      = 3U,
-    COMPLETE       = 4U
+    COMPLETE       = 4U,
+    ERROR          = 5U
   };
 
   /*-- Private Helper Struct Declarations -------------------------------------------*/
@@ -181,19 +188,22 @@ class NodeActions
   struct ProcessHandler
   {
     ProcessHandler(Node &node) :
-    node_(node){}
+    node(node){}
 
-    Node                 &node_;
-    Atams::ProcessState_t processState   = Atams::PROCESS_STATE_READY;
-    T                     minorState     = T::START;
-    T                     exitMinorState = T::START;
-    Atams::Error_t        error          = Atams::ERROR_NONE;
+    Node                 &node;
+    Atams::ProcessState_t processState  = Atams::PROCESS_STATE_COMPLETE;
+    T                     minorState    = T::START;
+    Atams::Error_t        error         = Atams::ERROR_NONE;
+    Atams::Error_t        minorError    = Atams::ERROR_NONE;
+    uint32_t              prevEventTime = 0U;
 
-    void endProcess(Atams::Error_t error);
+    void terminate(Atams::Error_t error);
 
-    bool processTerminatred(void);
+    void setProcessComplete(void);
 
-    void handleBufferClear(void);
+    bool getProcessTerminated(void);
+
+    void resetProcess(void);
   };
   
   /*-- Private Objects --------------------------------------------------------------*/
@@ -208,9 +218,10 @@ class NodeActions
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  uint32_t storageRequestedTime_ = 0U;
-
   /*-- Private Function Declarations ------------------------------------------------*/
+
+  template<typename T>
+  void cancelConfigProcess(ProcessHandler<T> &process, Atams::Error_t error);
 
   template<typename T>
   Atams::ProcessState_t updateSetConfigVar(Atams::Error_t &error, const uint16_t varID, const T value);
