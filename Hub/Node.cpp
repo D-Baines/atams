@@ -187,7 +187,7 @@ Atams::Error_t Node::stopStream(const uint16_t varID)
   return (Node::setRequestPattern(varID, Atams::ACCESS_NONE, Atams::REQUEST_INACTIVE));
 }
 
-Atams::Error_t Node::isNewDataReady(const uint16_t varID, bool &newDataReady)
+Atams::Error_t Node::getNewDataFlag(const uint16_t varID, bool &newDataReady)
 {
   if (varID >= m_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -208,6 +208,33 @@ Atams::Error_t Node::clearNewDataFlag(const uint16_t varID)
 
   m_varStorageLock.acquireLock();
   var.newDataReady = false;
+  m_varStorageLock.releaseLock();
+
+  return (Atams::ERROR_NONE);
+}
+
+Atams::Error_t Node::getAckFlag(const uint16_t varID, bool &ackReceived)
+{
+  if (varID >= m_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
+
+  Node::Var_t &var = m_varStorage[varID];
+
+  m_varStorageLock.acquireLock();
+  ackReceived = var.ackReceived;
+  m_varStorageLock.releaseLock();
+
+  if (ackReceived) return (Atams::ERROR_NONE);
+  else             return (Atams::ERROR_ACK_NOT_RECEIVED);
+}
+
+Atams::Error_t Node::clearAckFlag(const uint16_t varID)
+{
+  if (varID >= m_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
+
+  Node::Var_t &var = m_varStorage[varID];
+
+  m_varStorageLock.acquireLock();
+  var.ackReceived = false;
   m_varStorageLock.releaseLock();
 
   return (Atams::ERROR_NONE);
@@ -619,6 +646,14 @@ bool Node::processDatagramWrite(const DatagramHeader_t datagramHeader, uint16_t 
   bool cancelProcessing = false;
 
   Atams::Error_t transferStatus = updateRequestPatternOnReceive(datagramHeader.varID);
+  
+  if (transferStatus == Atams::ERROR_NONE)
+  {
+    /* VarID validity confirmed in updateRequestPatternOnReceive*/
+    m_varStorageLock.acquireLock();
+    m_varStorage[datagramHeader.varID].ackReceived = true;
+    m_varStorageLock.releaseLock();
+  }
 
   if (transferStatus != Atams::ERROR_NONE) cancelProcessing = true;
   else                                     datagramStartIndex += DATAGRAM_SIZE_HEADER;

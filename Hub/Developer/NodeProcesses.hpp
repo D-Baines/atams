@@ -71,6 +71,20 @@ class NodeActions
   /* Move Assignment Operator */
   NodeActions & operator=(NodeActions &&other) = delete;
 
+  void beginValidateGenInfoProcess(void);
+
+  void beginCollectNodeIDsProcess(void);
+
+  void beginConfigEntryProcess(void);
+
+  void beginConfigExitProcess(void);
+
+  void beginSetConfigVarProcess(void);
+
+  void beginStorageProcess(void);
+
+  void beginResetNodeProcess(void);
+  
   Atams::ProcessState_t updateValidateGenInfo(Atams::Error_t &error, bool &genInfoIsValid);
 
   Atams::ProcessState_t updateCollectNodeIdentifiers(Atams::Error_t &error);
@@ -148,12 +162,13 @@ class NodeActions
     START         = 0U,
     ENTER_CONFIG  = 1U,
     WRITE         = 2U,
-    READ          = 3U,
-    CHECK         = 4U,
-    CANCEL_CONFIG = 5U,
-    APPLY_CONFIG  = 6U,
-    COMPLETE      = 7U,
-    ERROR         = 8U
+    CHECK_ACK     = 3U,
+    CANCEL_CONFIG = 4U,
+    APPLY_CONFIG  = 5U,
+    READ          = 6U,
+    CHECK_VALUE   = 7U,
+    COMPLETE      = 8U,
+    ERROR         = 9U
   };
 
   enum class StorageProcessState : uint8_t
@@ -167,7 +182,7 @@ class NodeActions
     STATUS_STREAM      = 6U,
     STATUS_CHECK_POST  = 7U,
     CANCEL_CONFIG      = 10U,
-    APPLY_CONFIG       = 11U,
+    EXIT_CONFIG        = 11U,
     COMPLETE           = 12U,
     ERROR              = 13U
   };
@@ -191,11 +206,12 @@ class NodeActions
     node(node){}
 
     Node                 &node;
-    Atams::ProcessState_t processState  = Atams::PROCESS_STATE_COMPLETE;
-    T                     minorState    = T::START;
-    Atams::Error_t        error         = Atams::ERROR_NONE;
-    Atams::Error_t        minorError    = Atams::ERROR_NONE;
-    uint32_t              prevEventTime = 0U;
+    Atams::ProcessState_t processState    = Atams::PROCESS_STATE_COMPLETE;
+    Atams::ProcessState_t subProcessState = Atams::PROCESS_STATE_COMPLETE;
+    T                     specificState   = T::START;
+    Atams::Error_t        error           = Atams::ERROR_NONE;
+    Atams::Error_t        minorError      = Atams::ERROR_NONE;
+    uint32_t              prevEventTime   = 0U;
 
     void terminate(Atams::Error_t error);
 
@@ -215,6 +231,7 @@ class NodeActions
   ProcessHandler<ConfigExitState>      configExitProcess_;
   ProcessHandler<SetConfigVarState>    setConfigVarProcess_;
   ProcessHandler<StorageProcessState>  storageProcess_;
+  ProcessHandler<ResetNodeState>       resetNodeProcess_;
 
   /*-- Private Variables ------------------------------------------------------------*/
 
@@ -222,6 +239,9 @@ class NodeActions
 
   template<typename T>
   void cancelConfigProcess(ProcessHandler<T> &process, Atams::Error_t error);
+
+  template<typename T>
+  void updateCancelConfigState(ProcessHandler<T> &process);
 
   template<typename T>
   Atams::ProcessState_t updateSetConfigVar(Atams::Error_t &error, const uint16_t varID, const T value);

@@ -125,9 +125,13 @@ class Node
 
   Atams::Error_t stopStream(const uint16_t varID);
 
-  Atams::Error_t isNewDataReady(const uint16_t varID, bool &newDataReady);
+  Atams::Error_t getNewDataFlag(const uint16_t varID, bool &newDataReady);
 
   Atams::Error_t clearNewDataFlag(const uint16_t varID);
+
+  Atams::Error_t getAckFlag(const uint16_t varID, bool &ackReceived);
+
+  Atams::Error_t clearAckFlag(const uint16_t varID);
   
   DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t memberID);
 
@@ -186,6 +190,7 @@ class Node
     Atams::Access_t         requestAccess          = Atams::ACCESS_NONE;
     Atams::RequestPattern_t requestPattern         = Atams::REQUEST_INACTIVE;
     bool                    newDataReady           = false;
+    bool                    ackReceived            = false;
   };
 
   /*-- Static Private Objects -------------------------------------------------------*/
