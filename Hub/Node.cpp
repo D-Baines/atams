@@ -30,8 +30,8 @@
 #include <type_traits>
 #include "string.h"
 #include "Node.hpp"
-#include "../Utilities/AtamsUtilities.hpp"
-#include "Maps/BlockUniversal.hpp"
+#include "../Shared/Utilities/AtamsUtilities.hpp"
+#include "../Shared/Maps/BlockUniversal.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -44,7 +44,6 @@ namespace Atams {
 /*************************************************************************************/
 
 Node::Node(const uint8_t nodeID) :
-m_nodeProcessHandler(*this),
 _nodeID(nodeID)
 {
 
@@ -52,7 +51,25 @@ _nodeID(nodeID)
 
 Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
 {
-  return (validateMemoryMap(memoryMap));
+  Atams::Error_t statusReturn = Atams::validateMemoryMap(memoryMap.sharedMemoryMap, Platform::NODE_NUMBER_OF_VARS);
+
+  if (statusReturn == Atams::ERROR_NONE)
+  {
+    if ((m_varStorageLock.init()   ) &&
+        (m_requestPacketLock.init()) &&
+        (m_busErrorLock.init()     ) )
+    {
+      m_memoryMap     = &memoryMap.sharedMemoryMap;
+      m_validVarCount = memoryMap.sharedMemoryMap.noOfVars;
+    }
+    else 
+    {
+      invalidateMemoryMap();
+      statusReturn = ERROR_PLATFORM;
+    }
+  }
+
+  return (statusReturn);
 }
 
 template <typename T>
@@ -114,7 +131,7 @@ template Atams::Error_t Node::read<int32_t >(const uint16_t varID, int32_t  &rea
 template Atams::Error_t Node::read<float   >(const uint16_t varID, float    &readData);
 
 template <typename T>
-Atams::Error_t Node::readIfNew(const uint16_t varID, T &readData)
+Atams::Error_t Node::readIfDataReady(const uint16_t varID, T &readData)
 {
   if (varID >= m_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -138,13 +155,13 @@ Atams::Error_t Node::readIfNew(const uint16_t varID, T &readData)
   return (statusReturn);
 }
 
-template Atams::Error_t Node::readIfNew<uint8_t >(const uint16_t varID, uint8_t  &readData);
-template Atams::Error_t Node::readIfNew<int8_t  >(const uint16_t varID, int8_t   &readData);
-template Atams::Error_t Node::readIfNew<uint16_t>(const uint16_t varID, uint16_t &readData);
-template Atams::Error_t Node::readIfNew<int16_t >(const uint16_t varID, int16_t  &readData);
-template Atams::Error_t Node::readIfNew<uint32_t>(const uint16_t varID, uint32_t &readData);
-template Atams::Error_t Node::readIfNew<int32_t >(const uint16_t varID, int32_t  &readData);
-template Atams::Error_t Node::readIfNew<float   >(const uint16_t varID, float    &readData);
+template Atams::Error_t Node::readIfDataReady<uint8_t >(const uint16_t varID, uint8_t  &readData);
+template Atams::Error_t Node::readIfDataReady<int8_t  >(const uint16_t varID, int8_t   &readData);
+template Atams::Error_t Node::readIfDataReady<uint16_t>(const uint16_t varID, uint16_t &readData);
+template Atams::Error_t Node::readIfDataReady<int16_t >(const uint16_t varID, int16_t  &readData);
+template Atams::Error_t Node::readIfDataReady<uint32_t>(const uint16_t varID, uint32_t &readData);
+template Atams::Error_t Node::readIfDataReady<int32_t >(const uint16_t varID, int32_t  &readData);
+template Atams::Error_t Node::readIfDataReady<float   >(const uint16_t varID, float    &readData);
 
 template <typename T>
 Atams::Error_t Node::writeRequestUntilAck(const uint16_t varID, const T writeData)
@@ -187,7 +204,7 @@ Atams::Error_t Node::stopStream(const uint16_t varID)
   return (Node::setRequestPattern(varID, Atams::ACCESS_NONE, Atams::REQUEST_INACTIVE));
 }
 
-Atams::Error_t Node::getNewDataFlag(const uint16_t varID, bool &newDataReady)
+Atams::Error_t Node::getDataReadyFlag(const uint16_t varID, bool &newDataReady)
 {
   if (varID >= m_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -200,7 +217,7 @@ Atams::Error_t Node::getNewDataFlag(const uint16_t varID, bool &newDataReady)
   return (Atams::ERROR_NONE);
 }
 
-Atams::Error_t Node::clearNewDataFlag(const uint16_t varID)
+Atams::Error_t Node::clearDataReadyFlag(const uint16_t varID)
 {
   if (varID >= m_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -238,6 +255,73 @@ Atams::Error_t Node::clearAckFlag(const uint16_t varID)
   m_varStorageLock.releaseLock();
 
   return (Atams::ERROR_NONE);
+}
+
+Atams::Error_t Node::clearDataReadyStartRead(const uint16_t varID)
+{
+  Atams::Error_t error = Node::clearDataReadyFlag(varID);
+  if (!error)    error = Node::startReadStream(varID);
+
+  return (error);
+}
+
+Atams::Error_t Node::stopStreamGetDataReady(const uint16_t varID, bool &newDataReady)
+{
+  Atams::Error_t error = Node::stopStream(varID);
+  if (!error)    error = Node::getDataReadyFlag(varID, newDataReady);
+
+  return (error);
+}
+
+Atams::Error_t Node::stopStreamGetAckFlag(const uint16_t varID, bool &ackReceived)
+{
+  Atams::Error_t error = Node::stopStream(varID);
+  if (!error)    error = Node::getAckFlag(varID, ackReceived);
+
+  return (error);
+}
+
+template<typename T>
+Atams::Error_t Node::stopStreamReadIfDataReady(const uint16_t varID, T &readData)
+{
+  Atams::Error_t error = Node::stopStream(varID);
+  if (!error)    error = Node::readIfDataReady(varID, readData);
+
+  return (error);
+}
+
+template Atams::Error_t Node::stopStreamReadIfDataReady<uint8_t >(const uint16_t varID, uint8_t  &readData);
+template Atams::Error_t Node::stopStreamReadIfDataReady<int8_t  >(const uint16_t varID, int8_t   &readData);
+template Atams::Error_t Node::stopStreamReadIfDataReady<uint16_t>(const uint16_t varID, uint16_t &readData);
+template Atams::Error_t Node::stopStreamReadIfDataReady<int16_t >(const uint16_t varID, int16_t  &readData);
+template Atams::Error_t Node::stopStreamReadIfDataReady<uint32_t>(const uint16_t varID, uint32_t &readData);
+template Atams::Error_t Node::stopStreamReadIfDataReady<int32_t >(const uint16_t varID, int32_t  &readData);
+template Atams::Error_t Node::stopStreamReadIfDataReady<float   >(const uint16_t varID, float    &readData);
+
+template<typename T>
+Atams::Error_t Node::clearAckStartWrite(const uint16_t varID, const T writeData)
+{
+  Atams::Error_t error = Node::clearAckFlag(varID);
+  if (!error)    error = Node::write(varID, writeData);
+  if (!error)    error = Node::startWriteStream(varID);
+
+  return (error);
+}
+
+template Atams::Error_t Node::clearAckStartWrite<uint8_t >(const uint16_t varID, const uint8_t  writeData);
+template Atams::Error_t Node::clearAckStartWrite<int8_t  >(const uint16_t varID, const int8_t   writeData);
+template Atams::Error_t Node::clearAckStartWrite<uint16_t>(const uint16_t varID, const uint16_t writeData);
+template Atams::Error_t Node::clearAckStartWrite<int16_t >(const uint16_t varID, const int16_t  writeData);
+template Atams::Error_t Node::clearAckStartWrite<uint32_t>(const uint16_t varID, const uint32_t writeData);
+template Atams::Error_t Node::clearAckStartWrite<int32_t >(const uint16_t varID, const int32_t  writeData);
+template Atams::Error_t Node::clearAckStartWrite<float   >(const uint16_t varID, const float    writeData);
+
+Atams::Error_t Node::stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived)
+{
+  Atams::Error_t error = Node::stopStream(varID);
+  if (!error)    error = Node::getAckFlag(varID, ackReceived);
+
+  return (error);
 }
 
 DataStatusReturn_t<uint8_t> Node::getMemberLength(const uint16_t varID)
@@ -353,7 +437,7 @@ bool Node::validateGenInfo(void)
   static_cast<void>(read(BlockUniversal::VAR_ID_MAP_GEN_MINUTE,      genInfo.genMinute));
   static_cast<void>(read(BlockUniversal::VAR_ID_MAP_GEN_SECOND,      genInfo.genSecond));
   static_cast<void>(read(BlockUniversal::VAR_ID_MAP_CHECKSUM,        genInfo.genChecksum));
-  static_cast<void>(read(BlockUniversal::VAR_ID_MAP_NUMBER_OF_VARS,  genInfo.numberOfVars));
+  static_cast<void>(read(BlockUniversal::VAR_ID_MAP_NUMBER_OF_VARS,  genInfo.noOfVars));
 
   if ((genInfo != nullGenInfo         ) &&
       (genInfo == m_memoryMap->genInfo) )
@@ -396,7 +480,7 @@ Atams::Error_t Node::externalTransfer(const Access_t  accessRequest,
   const Atams::VarInfo_t &varInfo = m_memoryMap->varInfoList[varID];
 
   if (TYPE_LENGTHS[varInfo.type] != length ) return (Atams::ERROR_VAR_LENGTH); /* Early Return */
-  if (bytesPtr                   == nullptr) return (Atams::ERROR_NULL_PTR);   /* Early Return */
+  if (bytesPtr                   == nullptr) return (Atams::ERROR_NULLPTR);   /* Early Return */
 
   Node::Var_t    &var        = m_varStorage[varID];
   Atams::Error_t accessError = Atams::ERROR_NONE;
@@ -446,95 +530,6 @@ void Node::invalidateMemoryMap(void)
   m_validVarCount = 0U;
   m_memoryMap     = nullptr;
   resetVars();
-}
-
-bool Node::validateMapLength(const MemoryMap_t &memoryMap)
-{
-  bool     lengthValid = true;
-  uint16_t varIndex    = 0U;
-
-  if ((memoryMap.noOfVars > sizeof(m_varStorage)                    ) ||
-      (memoryMap.noOfVars > Atams::MAX_NUMBER_OF_VARS               ) ||
-      (memoryMap.noOfVars < BlockUniversal::NUMBER_OF_UNIVERSAL_VARS) )
-  {
-    lengthValid = false;
-  }
-
-  for (const VarInfo_t &varInfo : memoryMap.varInfoList)
-  {
-    if ((varInfo.type        == Atams::TYPE_NULL  ) ||
-        (varInfo.accessLevel == Atams::ACCESS_NONE) )
-    {
-      if (varIndex != memoryMap.noOfVars) lengthValid = false;
-      break;
-    }
-
-    varIndex++;
-  }
-
-  return (lengthValid);
-}
-
-bool Node::validateUniversalBlock(const MemoryMap_t &memoryMap)
-{
-  bool     universalValid = true;
-  uint16_t varIndex       = 0U;
-
-  for (VarInfo_t universalVarInfo : BlockUniversal::varInfoList)
-  {
-    VarInfo_t mapVarInfo = memoryMap.varInfoList[varIndex];
-
-    if (universalVarInfo != mapVarInfo) universalValid = false;
-
-    varIndex++;
-  }
-
-  return (universalValid);
-}
-
-bool Node::validateMapChecksum(const MemoryMap_t &memoryMap)
-{
-  bool     checksumValid = false;
-  uint16_t varIndex      = 0U;
-
-  s_nodeCRC.beginRollingCRC();
-
-  for (const VarInfo_t &varInfo : memoryMap.varInfoList)
-  {
-    if (varIndex == memoryMap.noOfVars) break;
-
-    s_nodeCRC.updateRollingCRC(static_cast<uint8_t>(varInfo.type));
-    s_nodeCRC.updateRollingCRC(static_cast<uint8_t>(varInfo.accessLevel));
-    s_nodeCRC.updateRollingCRC(static_cast<uint8_t>(varInfo.NVMStorage));
-
-    varIndex++;
-  }
-
-  if (memoryMap.genInfo.genChecksum == s_nodeCRC.getRollingCRC())
-  {
-    checksumValid = true;
-  }
-
-  return (checksumValid);
-}
-
-Atams::Error_t Node::validateMemoryMap(const MemoryMap_t &memoryMap)
-{
-  Atams::Error_t statusReturn = Atams::ERROR_NONE;
-
-  if ((validateMapLength(memoryMap)      == false) ||
-      (validateUniversalBlock(memoryMap) == false) ||
-      (validateMapChecksum(memoryMap)    == false) )
-  {
-    statusReturn = Atams::ERROR_MEMORY_MAP;
-  }
-  else
-  {
-    m_memoryMap     = &memoryMap;
-    m_validVarCount = memoryMap.noOfVars;
-  }
-
-  return (statusReturn);
 }
 
 Atams::Error_t Node::getEncodedRequestPacket(const Atams::MessageType_t requestType,
@@ -601,8 +596,8 @@ void Node::clearBusError(void)
 
 void Node::processAbortedResponse(void)
 {
-  uint8_t  bufferVarIDHi = _responseBuffer[Atams::ABORT_INDEX_VAR_HI];
-  uint8_t  bufferVarIDLo = _responseBuffer[Atams::ABORT_INDEX_VAR_LO];
+  uint8_t  bufferVarIDHi = _responseBuffer[Atams::ABORT_INDEX_VAR_ID_HI];
+  uint8_t  bufferVarIDLo = _responseBuffer[Atams::ABORT_INDEX_VAR_ID_LO];
   uint8_t  errorByte     = _responseBuffer[Atams::ABORT_INDEX_ERROR];
   uint16_t varID         = ((static_cast<uint16_t>(bufferVarIDHi & Atams::ABORT_MASK_VAR_ID_HI) << Atams::ABORT_SHIFT_VAR_ID_HI) |
                             (static_cast<uint16_t>(bufferVarIDLo & Atams::ABORT_MASK_VAR_ID_LO) << Atams::ABORT_SHIFT_VAR_ID_HI) );

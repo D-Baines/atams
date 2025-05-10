@@ -29,7 +29,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../../AtamsTypedefs.hpp"
+#include "../../Shared/AtamsTypedefs.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -54,7 +54,7 @@ class NodeActions
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Default Constructor */
-  NodeActions(Node &node);
+  NodeActions(void);
 
   /* Default Destructor */
   ~NodeActions(void);
@@ -71,41 +71,45 @@ class NodeActions
   /* Move Assignment Operator */
   NodeActions & operator=(NodeActions &&other) = delete;
 
-  void beginValidateGenInfoProcess(void);
+  void beginValidateGenInfoProcess(Node *node);
 
-  void beginCollectNodeIDsProcess(void);
+  void beginCollectNodeIDsProcess(Node *node);
 
-  void beginConfigEntryProcess(void);
+  void beginConfigEntryProcess(Node *node);
 
-  void beginConfigExitProcess(void);
+  void beginConfigExitProcess(Node *node, const bool applyChangesOnExit);
 
-  void beginSetConfigVarProcess(void);
+  void beginSetNodeID(Node *node, const uint8_t nodeID);
 
-  void beginStorageProcess(void);
+  void beginSetBitrate(Node *node, const Atams::BitrateOption_t bitrateOption);
 
-  void beginResetNodeProcess(void);
+  void beginSetWatchdogPeriod(Node *node, const uint32_t watchdogPeriod);
+
+  void beginStorageProcess(Node *node);
+
+  void beginResetNodeProcess(Node *node);
   
-  Atams::ProcessState_t updateValidateGenInfo(Atams::Error_t &error, bool &genInfoIsValid);
+  Atams::ProcessState updateValidateGenInfo(Atams::Error_t &error, bool &genInfoIsValid);
 
-  Atams::ProcessState_t updateCollectNodeIdentifiers(Atams::Error_t &error);
+  Atams::ProcessState updateCollectNodeIDs(Atams::Error_t &error);
 
-  Atams::ProcessState_t updateConfigurationStateEntry(Atams::Error_t &error);
+  Atams::ProcessState updateConfigurationStateEntry(Atams::Error_t &error);
 
-  Atams::ProcessState_t updateConfigurationStateExit(Atams::Error_t &error, bool applyChanges);
+  Atams::ProcessState updateConfigurationStateExit(Atams::Error_t &error);
 
-  Atams::ProcessState_t updateSetNodeID(Atams::Error_t &error, uint8_t nodeID);
+  Atams::ProcessState updateSetNodeID(Atams::Error_t &error);
 
-  Atams::ProcessState_t updateSetBitrate(Atams::Error_t &error, Atams::BitrateOption_t bitrateOption);
+  Atams::ProcessState updateSetBitrate(Atams::Error_t &error);
 
-  Atams::ProcessState_t updateSetWatchdogPeriod(Atams::Error_t &error, uint32_t watchdogPeriod);
+  Atams::ProcessState updateSetWatchdogPeriod(Atams::Error_t &error);
 
-  Atams::ProcessState_t updateStoreAll(Atams::Error_t &error);
+  Atams::ProcessState updateStoreAll(Atams::Error_t &error);
 
-  Atams::ProcessState_t updateRestoreAll(Atams::Error_t &error);
+  Atams::ProcessState updateRestoreAll(Atams::Error_t &error);
 
-  Atams::ProcessState_t updateRestoreUserBlocks(Atams::Error_t &error);
+  Atams::ProcessState updateRestoreUserBlocks(Atams::Error_t &error);
 
-  Atams::ProcessState_t updateResetNode(Atams::Error_t &error);
+  Atams::ProcessState updateResetNode(Atams::Error_t &error);
 
   private:
 
@@ -159,16 +163,17 @@ class NodeActions
 
   enum class SetConfigVarState : uint8_t
   {
-    START         = 0U,
-    ENTER_CONFIG  = 1U,
-    WRITE         = 2U,
-    CHECK_ACK     = 3U,
-    CANCEL_CONFIG = 4U,
-    APPLY_CONFIG  = 5U,
-    READ          = 6U,
-    CHECK_VALUE   = 7U,
-    COMPLETE      = 8U,
-    ERROR         = 9U
+    START              = 0U,
+    ENTER_CONFIG       = 1U,
+    WRITE              = 2U,
+    CHECK_ACK          = 3U,
+    CANCEL_CONFIG      = 4U,
+    BEGIN_APPLY_CONFIG = 5U,
+    APPLY_CONFIG       = 6U,
+    READ               = 7U,
+    CHECK_VALUE        = 8U,
+    COMPLETE           = 9U,
+    ERROR              = 10U
   };
 
   enum class StorageProcessState : uint8_t
@@ -182,9 +187,10 @@ class NodeActions
     STATUS_STREAM      = 6U,
     STATUS_CHECK_POST  = 7U,
     CANCEL_CONFIG      = 10U,
-    EXIT_CONFIG        = 11U,
-    COMPLETE           = 12U,
-    ERROR              = 13U
+    BEGIN_EXIT_CONFIG  = 11U,
+    EXIT_CONFIG        = 12U,
+    COMPLETE           = 13U,
+    ERROR              = 14U
   };
 
   enum class ResetNodeState : uint8_t
@@ -193,8 +199,9 @@ class NodeActions
     ENTER_CONFIG   = 1U,
     WRITE_PASSCODE = 2U,
     CHECK_ACK      = 3U,
-    COMPLETE       = 4U,
-    ERROR          = 5U
+    CANCEL_CONFIG  = 4U,
+    COMPLETE       = 5U,
+    ERROR          = 6U
   };
 
   /*-- Private Helper Struct Declarations -------------------------------------------*/
@@ -202,29 +209,30 @@ class NodeActions
   template <typename T>
   struct ProcessHandler
   {
-    ProcessHandler(Node &node) :
-    node(node){}
+    ProcessHandler(void)  = default;
+    ~ProcessHandler(void) = default;
+    ProcessHandler(const ProcessHandler &other)             = delete;
+    ProcessHandler & operator=(const ProcessHandler &other) = delete;
+    ProcessHandler(ProcessHandler &&other)                  = delete;
+    ProcessHandler & operator=(ProcessHandler &&other)      = delete;
 
-    Node                 &node;
-    Atams::ProcessState_t processState    = Atams::PROCESS_STATE_COMPLETE;
-    Atams::ProcessState_t subProcessState = Atams::PROCESS_STATE_COMPLETE;
-    T                     specificState   = T::START;
-    Atams::Error_t        error           = Atams::ERROR_NONE;
-    Atams::Error_t        minorError      = Atams::ERROR_NONE;
-    uint32_t              prevEventTime   = 0U;
+    Node               *nodePtr         = nullptr;
+    Atams::ProcessState processState    = Atams::ProcessState::COMPLETE;
+    Atams::ProcessState subProcessState = Atams::ProcessState::COMPLETE;
+    T                   specificState   = T::START;
+    Atams::Error_t      error           = Atams::ERROR_NONE;
+    Atams::Error_t      cancelError     = Atams::ERROR_NONE;
+    uint32_t            prevEventTime   = 0U;
 
-    void terminate(Atams::Error_t error);
-
-    void setProcessComplete(void);
-
-    bool getProcessTerminated(void);
-
-    void resetProcess(void);
+    Atams::Error_t assignNode(Node *node);
+    void           terminate(Atams::Error_t error);
+    void           setProcessComplete(void);
+    bool           getProcessTerminated(void);
+    void           resetProcess(void);
   };
   
   /*-- Private Objects --------------------------------------------------------------*/
 
-  Node &node_;
   ProcessHandler<ValidateGenInfoState> validateGenInfoProcess_;
   ProcessHandler<CollectNodeIDsState>  collectNodeIDsProcess_;
   ProcessHandler<ConfigEntryState>     configEntryProcess_;
@@ -235,6 +243,11 @@ class NodeActions
 
   /*-- Private Variables ------------------------------------------------------------*/
 
+  bool                   applyChanges_        {false};
+  uint8_t                nodeIDToSet_         {0U};
+  Atams::BitrateOption_t bitrateOptionToSet_  {Atams::BitrateOption_t::BITRATE_OPTION_0};
+  uint32_t               watchdogPeriodToSet_ {0U};
+
   /*-- Private Function Declarations ------------------------------------------------*/
 
   template<typename T>
@@ -244,16 +257,24 @@ class NodeActions
   void updateCancelConfigState(ProcessHandler<T> &process);
 
   template<typename T>
-  Atams::ProcessState_t updateSetConfigVar(Atams::Error_t &error, const uint16_t varID, const T value);
+  Atams::ProcessState updateSetConfigVar(Atams::Error_t &error, const uint16_t varID, const T value);
 
-  Atams::ProcessState_t updateStorageProcess(Atams::Error_t &error, const uint16_t varID, uint32_t passcode);
+  Atams::ProcessState updateStorageProcess(Atams::Error_t &error, const uint16_t varID, uint32_t passcode);
+  
+  void startReadGenInfo(Node &node);
+
+  Atams::Error_t validateCollectedGenInfo(Node &node, bool &genInfoIsValid);
+
+  void startReadAllNodeIDs(Node &node);
+
+  Atams::Error_t validateReadAllNodeIDs(Node &node);
 };
 
 } /* End Namespace - Atams */
 
 
-/**
-  * @}End of File
+  /**
+    * @}End of File
   */
 
 

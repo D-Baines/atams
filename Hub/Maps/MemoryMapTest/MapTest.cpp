@@ -37,7 +37,7 @@ namespace Atams { namespace MapTest {
 /* STATIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-static const GenInfo_t s_genInfo = 
+static constexpr GenInfo_t s_genInfo = 
 {
   /* .atamsVersionMajor = */ 0U,
   /* .atamsVersionMinor = */ 1U,
@@ -48,10 +48,10 @@ static const GenInfo_t s_genInfo =
   /* .genMinute         = */ 1U,
   /* .genSecond         = */ 42U,
   /* .genChecksum       = */ 2433352831U,
-  /* .numberOfVars      = */ 56U
+  /* .noOfVars          = */ 56U
 };
 
-static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
+static const VarInfo_t s_varInfoList[s_genInfo.noOfVars] =
 {
   /*------------------------ Universal Var Info -------------------------*/
   
@@ -262,9 +262,12 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
 
 const Node::MemoryMap_t memoryMap =
 {
-  /* noOfVars         = */ s_genInfo.numberOfVars,
-  /* genInfo          = */ MapTest::s_genInfo,
-  /* varInfoList      = */ MapTest::s_varInfoList
+  /* .sharedMemoryMap = */
+  {
+    /* .noOfVars    = */ s_genInfo.noOfVars,
+    /* .genInfo     = */ s_genInfo,
+    /* .varInfoList = */ s_varInfoList
+  }
 };
 
 } } /* End Namespace - Atams::MapTest */

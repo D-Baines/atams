@@ -75,11 +75,11 @@ static_assert(std::numeric_limits<float>::is_iec559, "Platform float representat
 /* TYPEDEFS                                                                          */
 /*************************************************************************************/
 
-enum ProcessState_t: uint8_t
+enum class ProcessState: uint8_t
 {
-  PROCESS_STATE_IN_PROGRESS = 0U,
-  PROCESS_STATE_ERROR       = 1U,
-  PROCESS_STATE_COMPLETE    = 2U
+  IN_PROGRESS = 0U,
+  ERROR       = 1U,
+  COMPLETE    = 2U
 };
 
 enum MessageType_t: uint8_t
@@ -148,9 +148,9 @@ enum AbortSize_t: uint8_t
 
 enum AbortIndex_t: uint8_t
 {
-  ABORT_INDEX_ERROR  = MESH_SIZE_HEADER,
-  ABORT_INDEX_VAR_HI = ABORT_INDEX_ERROR     + ABORT_SIZE_ERROR,
-  ABORT_INDEX_VAR_LO = ABORT_INDEX_VAR_HI + ABORT_SIZE_VAR_ID_HI
+  ABORT_INDEX_ERROR     = MESH_SIZE_HEADER,
+  ABORT_INDEX_VAR_ID_HI = ABORT_INDEX_ERROR     + ABORT_SIZE_ERROR,
+  ABORT_INDEX_VAR_ID_LO = ABORT_INDEX_VAR_ID_HI + ABORT_SIZE_VAR_ID_HI
 };
 
 enum AbortShift_t: uint8_t
@@ -173,7 +173,7 @@ enum Error_t: uint8_t
   ERROR_VAR_LENGTH                   = 3U,
   ERROR_REQUEST_BUFFER_LENGTH        = 4U,
   ERROR_RESPONSE_BUFFER_LENGTH       = 5U,
-  ERROR_NULL_PTR                     = 6U,
+  ERROR_NULLPTR                     = 6U,
   ERROR_ACCESS_INVALID               = 7U,
   ERROR_REQUEST_PATTERN_INVALID      = 8U,
   ERROR_MEMORY_MAP                   = 9U,
@@ -185,36 +185,35 @@ enum Error_t: uint8_t
   ERROR_SYNC_COUNT                   = 15U,
   ERROR_SYNC_NODE                    = 16U,
   ERROR_ACCESS_RESPONSE_INVALID      = 17U,
-  ERROR_PATTERN_AUTO_UPDATE          = 19U,
-  ERROR_PACKET_PROCESSING            = 20U,
-  ERROR_NODE_ID_LIST                 = 21U,
-  ERROR_DATAGRAM_SEARCH              = 22U,
-  ERROR_ERROR_MANAGEMENT             = 23U,
-  ERROR_PLATFORM                     = 24U,
-  ERROR_LIMITS                       = 25U,
-  ERROR_WRITE_LOCK                   = 26U,
-  ERROR_BUS_FULL                     = 27U,
-  ERROR_UPDATE_CYCLE_IN_PROGRESS     = 28U,
-  ERROR_NEW_DATA_NOT_READY           = 29U,
-  ERROR_ACK_NOT_RECEIVED             = 30U,
-  ERROR_RESPONSE_TIMEOUT             = 31U,
-  ERROR_NO_RESPONSE                  = 32U,
-  ERROR_INIT_REQUIRED                = 33U,
-  ERROR_NVM_CHECKSUM                 = 34U,
-  ERROR_NVM_GEN_INFO                 = 35U,
-  ERROR_NVM_HEADER_LENGTH            = 36U,
-  ERROR_NVM_HEADER_VALIDITY          = 37U,
-  ERROR_NVM_PLATFORM_SIZE            = 38U,
-  ERROR_INVALID_NACK                 = 39U,
-  ERROR_CONFIGURATION_STATE_INACTIVE = 40U,
-  ERROR_CONFIGURATION_STATE_DENIED   = 41U,
-  ERROR_BUS_PROCESSING               = 42U,
-  ERROR_REQUEST_PACKET_FATAL         = 43U,
-  ERROR_INVALID_CASE                 = 44U,
-  ERROR_CONFIGURATION_EXIT           = 45U,
-  ERROR_SET_CONFIG_VAR_FAILED        = 46U,
-  ERROR_STORAGE_PROCESS_FAILED       = 47U,
-  ERROR_PROCESS_TIMEOUT              = 48U,
+  ERROR_PATTERN_AUTO_UPDATE          = 18U,
+  ERROR_PACKET_PROCESSING            = 19U,
+  ERROR_DATAGRAM_SEARCH              = 20U,
+  ERROR_ERROR_MANAGEMENT             = 21U,
+  ERROR_PLATFORM                     = 22U,
+  ERROR_LIMITS                       = 23U,
+  ERROR_WRITE_LOCK                   = 24U,
+  ERROR_BUS_FULL                     = 25U,
+  ERROR_UPDATE_CYCLE_IN_PROGRESS     = 26U,
+  ERROR_NEW_DATA_NOT_READY           = 27U,
+  ERROR_ACK_NOT_RECEIVED             = 28U,
+  ERROR_RESPONSE_TIMEOUT             = 29U,
+  ERROR_NO_RESPONSE                  = 30U,
+  ERROR_INIT_REQUIRED                = 31U,
+  ERROR_NVM_CHECKSUM                 = 32U,
+  ERROR_NVM_GEN_INFO                 = 33U,
+  ERROR_NVM_HEADER_LENGTH            = 34U,
+  ERROR_NVM_HEADER_VALIDITY          = 35U,
+  ERROR_NVM_PLATFORM_SIZE            = 36U,
+  ERROR_INVALID_NACK                 = 37U,
+  ERROR_CONFIGURATION_STATE_INACTIVE = 38U,
+  ERROR_CONFIGURATION_STATE_DENIED   = 39U,
+  ERROR_REQUEST_PACKET_FATAL         = 40U,
+  ERROR_INVALID_CASE                 = 41U,
+  ERROR_CONFIGURATION_EXIT           = 42U,
+  ERROR_SET_CONFIG_VAR_FAILED        = 43U,
+  ERROR_STORAGE_PROCESS_FAILED       = 44U,
+  ERROR_PROCESS_TIMEOUT              = 45U,
+  ERROR_INITIALISATION_REQUIRED      = 46U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
@@ -263,7 +262,7 @@ enum VarType_t: uint8_t
   TYPE_UINT32 = 5U,
   TYPE_INT32  = 6U,
   TYPE_FLOAT  = 7U,
-  NUMBER_OF_TYPES
+  NUMBER_OF_VAR_TYPES
 };
 static_assert(sizeof(Atams::VarType_t) == 1U, "Atams::VarType_t size invalid");
 
@@ -306,26 +305,16 @@ struct VarInfo_t
 
   bool operator==(const VarInfo_t &other)
   {
-    if ((type        == other.type       ) &&
-        (accessLevel == other.accessLevel) &&
-        (NVMStorage  == other.NVMStorage ) )
-    {
-      return (true);
-    }
-
-    return (false);
+    return ((type        == other.type       ) &&
+            (accessLevel == other.accessLevel) &&
+            (NVMStorage  == other.NVMStorage ) );
   }
 
   bool operator!=(const VarInfo_t &other)
   {
-    if ((type        != other.type       ) ||
-        (accessLevel != other.accessLevel) ||
-        (NVMStorage  != other.NVMStorage ) )
-    {
-      return (true);
-    }
-
-    return (false);
+    return ((type        != other.type       ) ||
+            (accessLevel != other.accessLevel) ||
+            (NVMStorage  != other.NVMStorage ) );
   }
 
   static_assert(sizeof(type)        == 1U, "VarInfo_t member type size invalid");
@@ -350,7 +339,7 @@ struct GenInfo_t
   uint8_t  genMinute          = 0U;
   uint8_t  genSecond          = 0U;
   uint32_t genChecksum        = 0U;
-  uint16_t numberOfVars       = 0U;
+  uint16_t noOfVars           = 0U;
 
   bool operator==(const GenInfo_t &other)
   {
@@ -363,7 +352,7 @@ struct GenInfo_t
         (genMinute         == other.genMinute        ) &&
         (genSecond         == other.genSecond        ) &&
         (genChecksum       == other.genChecksum      ) &&
-        (numberOfVars      == other.numberOfVars     ) )
+        (noOfVars      == other.noOfVars     ) )
     {
       return (true);
     }
@@ -391,7 +380,7 @@ struct GenInfo_t
     genMinute         = 0U;
     genSecond         = 0U;
     genChecksum       = 0U;
-    numberOfVars      = 0U;
+    noOfVars          = 0U;
   }
 };
 
@@ -452,11 +441,43 @@ struct TXMessage_t
 
 typedef void (*CommsTransmitCallback_t)(TXMessage_t message);
 
+struct SharedMemoryMap_t
+{
+  const uint16_t   noOfVars = 0U;
+  const GenInfo_t  genInfo;
+  const VarInfo_t *varInfoList;
+
+  SharedMemoryMap_t(const uint16_t   initNumberOfVars,
+                    const GenInfo_t  initGenInfo,
+                    const VarInfo_t (*initVarInfoList)) :
+  noOfVars(initNumberOfVars),
+  genInfo(initGenInfo),
+  varInfoList(initVarInfoList){};
+
+  /* Default Constructor */
+  SharedMemoryMap_t(void) = delete;
+
+  /* Default Destructor */
+  ~SharedMemoryMap_t(void){};
+
+  /* Copy Constructor */
+  SharedMemoryMap_t(const SharedMemoryMap_t &other) = delete;
+
+  /* Copy Assignment Operator */
+  SharedMemoryMap_t & operator=(const SharedMemoryMap_t &other) = delete;
+
+  /* Move Constructor */
+  SharedMemoryMap_t(SharedMemoryMap_t &&other) = delete;
+
+  /* Move Assignment Operator */
+  SharedMemoryMap_t & operator=(SharedMemoryMap_t &&other) = delete;
+};
+
 /*************************************************************************************/
 /* POST-TYPEDEF CONSTANTS                                                            */
 /*************************************************************************************/
 
-constexpr uint8_t TYPE_LENGTHS[Atams::NUMBER_OF_TYPES] =
+constexpr uint8_t TYPE_LENGTHS[Atams::NUMBER_OF_VAR_TYPES] =
 {
   /* [TYPE_NULL  ] = */ 0U,
   /* [TYPE_UINT8 ] = */ 1U,

@@ -26,7 +26,6 @@
 /*************************************************************************************/
 
 #include "BlockUniversal.hpp"
-#include "../Node.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -209,6 +208,7 @@ const VarInfo_t varInfoList[BlockUniversal::NUMBER_OF_UNIVERSAL_VARS] =
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
 };
+
 
 } } /* End Namespace - Atams::BlockUniversal */
 

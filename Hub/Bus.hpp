@@ -27,12 +27,12 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include <_types/_uint8_t.h>
 #include <stdint.h>
-#include "../AtamsTypedefs.hpp"
+#include "../Shared/AtamsTypedefs.hpp"
 #include "Developer/CircularBuffer.hpp"
 #include "Platform.hpp"
 #include "Node.hpp"
+#include "../Shared/Maps/BlockUniversal.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -60,31 +60,43 @@ private Platform::BusPeripheral
   /* Constructor */
   Bus(Platform::BusPeripheral::UserData_t userData);
 
+  /* Default Constructor */
+  Bus(void) = delete;
+
+  /* Default Destructor */
+  ~Bus(void) = default;
+
   /* Copy Constructor */
   Bus(const Bus &other) = delete;
 
   /* Copy Assignment Operator */
   Bus & operator=(const Bus &other) = delete;
 
-  /* Destructor */
-  ~Bus(void);
+  /* Move Constructor */
+  Bus(Bus &&other) = delete;
+
+  /* Move Assignment Operator */
+  Bus & operator=(Bus &&other) = delete;
 
   Atams::Error_t addNodeToBus(Node &node);
 
   void removeNodeFromBus(Node &node);
 
+  Atams::ProcessState updateBusInitProcess(Atams::Error_t &error);
+
   Atams::Error_t startUpdateCycle(void);
 
-  bool runUpdateCycle(void);
+  Atams::ProcessState runUpdateCycleSync(Atams::Error_t &error);
+
+  Atams::ProcessState runUpdateCycleAsync(Atams::Error_t &error);
 
   Atams::Error_t processBuffers(void);
 
-  Atams::ProcessState_t updateBusInitProcess(Atams::Error_t &error);
+  void beginSetNodeConfigProcess(const uint8_t         nodeIDToSet, 
+                                 const BitrateOption_t bitrateOption,
+                                 const uint32_t        watchdogPeriod);
 
-  Atams::ProcessState_t updateSetNodeConfigProcess(const uint8_t         nodeIDToSet, 
-                                                   const BitrateOption_t bitrateOption,
-                                                   const uint32_t        watchdogPeriod,
-                                                   Atams::Error_t       &error); 
+  Atams::ProcessState updateSetNodeConfigProcess(Atams::Error_t &error); 
 
   /*-- Private ----------------------------------------------------------------------*/
 
@@ -92,93 +104,183 @@ private Platform::BusPeripheral
 
   /*-- Private Constants ------------------------------------------------------------*/
 
-  static constexpr uint8_t MINOR_STATE_ERROR   = 0U;
-  static constexpr uint8_t MINOR_STATE_SUCCESS = 1U;
-
   /*-- Private Typedefs -------------------------------------------------------------*/
 
-  enum InitProcessState_t: uint8_t
+  enum class InitState: uint8_t
   {
-    INIT_STATE_ERROR                     = MINOR_STATE_ERROR,
-    INIT_STATE_SUCCESS                   = MINOR_STATE_SUCCESS,
-    INIT_STATE_START_UPDATE_CYCLE        = 2U,
-    INIT_STATE_BUS_UPDATE                = 3U,
-    INIT_STATE_START_PERIPHERAL          = 4U,
-    INIT_STATE_CHECK_GEN_INFO            = 5U,
-    INIT_STATE_GET_NODE_IDS              = 7U,
-    INIT_STATE_CHECK_NODE_IDS            = 8U,
-    INIT_STATE_CONFIGURATION_ENTRY       = 9U,
-    INIT_STATE_SET_CONFIG_PASSCODE_ENTER = 10U,
-    INIT_STATE_GET_CONFIG_STATUS_ENTER   = 11U,
-    INIT_STATE_CHECK_CONFIG_STATUS_ENTER = 12U,
-    INIT_STATE_ASSIGN_NODE_IDS           = 13U,
-    INIT_STATE_GET_STORAGE_STATUS_PRE    = 14U,
-    INIT_STATE_SET_STORE_PASSCODE        = 15U,
-    INIT_STATE_GET_STORAGE_STATUS_POST   = 16U,
-    INIT_STATE_RESET_ALL                 = 12U,
-    INIT_STATE_WAIT_FOR_WAKEUP           = 13U
+    START                 = 0U,
+    VALIDATE_GEN_INFO     = 2U,
+    VALIDATE_IDS          = 4U,
+    ENTER_CONFIG          = 5U,
+    ASSIGN_NODE_IDS       = 6U,
+    SAVE_AND_EXIT         = 7U,
+    VALIDATE_IDS_POST     = 8U,
+    START_UPDATE_CYCLE    = 9U,
+    UPDATE_CYCLE          = 10U,
+    COMPLETE              = 11U,
+    ERROR                 = 12U,
   };
 
-  enum ConfigUpdateProcessState_t: uint8_t
+  enum class ConfigUpdateState: uint8_t
   {
-    CONFIGURE_STATE_ERROR   = MINOR_STATE_ERROR,
-    CONFIGURE_STATE_SUCCESS = MINOR_STATE_SUCCESS,
-  } ;
-
-  enum UpdateState_t: uint8_t
-  {
-    UPDATE_STATE_INIT_REQUIRED     = 0U,
-    UPDATE_STATE_READY             = 1U,
-    UPDATE_STATE_SEND_REQUESTS     = 2U,
-    UPDATE_STATE_COLLECT_RESPONSES = 3U,
-    UPDATE_STATE_JOG_NODE          = 4U,
-    UPDATE_STATE_CYCLE_COMPLETE    = 5U,
+    START               = 0U,
+    INIT_NODE           = 1U,
+    BEGIN_CONFIG_ENTRY  = 2U,
+    UPDATE_CONFIG_ENTRY = 3U,
+    WRITE_CONFIG        = 4U,
+    CHECK_ACK           = 5U,
+    BEGIN_CONFIG_EXIT   = 6U,
+    UPDATE_CONFIG_EXIT  = 7U,
+    READ_CONFIG         = 8U,
+    CHECK_CONFIG        = 9U,
+    SEND_REQUEST        = 10U,
+    GET_RESPONSE        = 11U,
+    COMPLETE            = 12U,
+    ERROR               = 13U
   };
+
+  enum class UpdateState: uint8_t
+  {
+    START             = 0U,
+    SEND_REQUESTS     = 1U,
+    COLLECT_RESPONSES = 2U,
+    JOG_NODE          = 3U,
+    COMPLETE          = 4U,
+    ERROR             = 5U,
+  };
+
+  enum class ValidateState: uint8_t
+  {
+    START        = 0U,
+    UPDATE       = 1U,
+    VALIDATE     = 2U,
+    COMPLETE     = 3U,
+    ERROR        = 4U
+  }; 
+
+  struct UniversalConfig_t
+  {
+    uint8_t  nodeID;
+    uint8_t  bitrateOption;
+    uint32_t watchdogPeriod;
+
+    bool operator!=(const UniversalConfig_t &other)
+    {
+      return ((nodeID         != other.nodeID        ) ||
+              (bitrateOption  != other.bitrateOption ) ||
+              (watchdogPeriod != other.watchdogPeriod) );
+    }
+  };
+
+  /*-- Private Helper Struct Declarations -----------------------------------------*/
+
+  struct ProcessHandlerBase
+  {
+    ProcessHandlerBase(void) = default;
+
+    Atams::ProcessState processState     = Atams::ProcessState::COMPLETE;
+    Atams::ProcessState subProcessState  = Atams::ProcessState::COMPLETE;
+    Atams::Error_t      error            = Atams::ERROR_NONE;
+    uint32_t            prevEventTime    = 0U;
+    bool                allNodesComplete = false;
+  };
+  
+  template <typename T>
+  struct ProcessHandler :
+  public ProcessHandlerBase
+  {
+    ProcessHandler(void) = default;
+    T specificState      = T::START;
+
+    void terminate(Atams::Error_t error);
+    void setProcessComplete(void);
+    bool getProcessTerminated(void);
+    void resetProcess(void);
+  };
+
+  /*-- Static Private Variables -----------------------------------------------------*/
+
+  static const GenInfo_t         blankGenInfo_;
+  static const Node::MemoryMap_t dummyMemoryMap_;
+
+  /*-- Private Objects --------------------------------------------------------------*/
+                                      
+  Atams::CircularBuffer circularBuffer_;
+  Atams::Node          *nodePtrs_[Platform::NUMBER_OF_NODES_PER_BUS];
+  NodeActions           nodeProcessHandler_;
+  Atams::Node           dummyNode_ = {0U};
+
+  Bus::ProcessHandler<Bus::InitState>         initProcessHandler_;
+  Bus::ProcessHandler<Bus::ConfigUpdateState> configUpdateProcessHandler_;
+  Bus::ProcessHandler<Bus::ValidateState>     validateGenInfoProcessHandler_;
+  Bus::ProcessHandler<Bus::UpdateState>       updateProcessHandler_;
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  CircularBuffer m_circularBuffer;
-  Node          *_nodePtrs[Platform::NUMBER_OF_NODES_PER_BUS];
-  uint16_t       m_activeNodeIndex     = 0U;
-  uint16_t       _noOfNodesOnBus       = 0U;
-  uint8_t        _rxBuffer[Platform::MAX_BUS_PACKET_SIZE];
-  uint8_t        _decodedBuffer[Platform::MAX_BUS_PACKET_SIZE];
-  uint8_t        _encodedBuffer[Platform::MAX_BUS_PACKET_SIZE];
-  uint8_t        _jogBuffer[MESH_SIZE_HEADER];
-  uint16_t       _rxLength             = 0U;
-  uint16_t       _decodedLength        = 0U;
-  uint16_t       _encodedLength        = 0U;
-  uint8_t        _activeSyncCount      = 0U;
-  uint64_t       _prevResponseTime     = 0U;
-  uint64_t       _prevRequestTime      = 0U;
+  uint16_t activeNodeIndex_     = 0U;
+  uint16_t noOfNodesOnBus_      = 0U;
+  uint8_t  rxBuffer_[Platform::MAX_BUS_PACKET_SIZE];
+  uint8_t  decodedBuffer_[Platform::MAX_BUS_PACKET_SIZE];
+  uint8_t  encodedBuffer_[Platform::MAX_BUS_PACKET_SIZE];
+  uint8_t  jogBuffer_[MESH_SIZE_HEADER];
+  uint16_t rxLength_            = 0U;
+  uint16_t decodedLength_       = 0U;
+  uint16_t encodedLength_       = 0U;
+  uint8_t  activeSyncCount_     = 0U;
 
-  UpdateState_t _updateState = UPDATE_STATE_READY;
-
-  ProcessState_t     _initStateMajor       = Atams::PROCESS_STATE_READY;
-  InitProcessState_t _initStateMinor       = Bus::INIT_STATE_START_PERIPHERAL;
-  InitProcessState_t _nextInitStateMinor   = Bus::INIT_STATE_START_PERIPHERAL;
+  UniversalConfig_t setupConfig_;
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
-  void updateInitProcessMinor(Atams::Error_t &error);
+  bool waitForRequestTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType);
+  
+  bool waitForTransmitJog(Atams::Node &node, Bus::ProcessHandlerBase &process);
 
-  void updateSetNodeConfigProcessMinor(const uint8_t         nodeIDToSet, 
-                                       const BitrateOption_t bitrateOption,
-                                       const uint32_t        watchdogPeriod,
-                                       Atams::Error_t       &error); 
+  bool waitForResponse(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse);
 
   virtual void rxCallback(      uint8_t  *rxBufferPtr,
                           const uint16_t  rxBufferLength) final;
 
   Atams::Error_t validateAndStoreResponsePacket(Node &node, const MessageType_t responseType);
 
-  Bus::UpdateState_t updateNoSync(void);
-
-  Atams::Error_t triggerGenInfoCollectionAllNodes(void);
-
-  Atams::Error_t checkGenInfoAllNodes(void);
-
   Atams::Error_t assignNodeIDs(void);
+
+  void beginValidateGenInfoAllNodes(void);
+
+  void beginValidateIDsAllNodes(void);
+
+  void beginConfigurationEntryAllNodes(void);
+
+  void beginStoreAllNodes(void);
+
+  Atams::ProcessState updateValidateGenInfoAllNodes(Atams::Error_t &error);
+
+  Atams::ProcessState updateValidateIDsAllNodes(Atams::Error_t &error);
+
+  void updateConfigurationEntryAllNode(Atams::Error_t &error);
+
+  void updateStoreAllNodes(Atams::Error_t &error);
+
+  void startWriteConfigVars(void);
+
+  bool allConfigAcknowledged(void);
+
+  void startReadConfigVars(void);
+
+  Atams::Error_t validateConfigVars(void);
+
+  /* Update State */
+
+  Atams::Node * getActiveNodePtr(void);
+
+  bool tryNodeIncrement(void);
+
+  void startResponseCollectionSync(void);
+
+  void triggerJogSync(void);
+
+  void triggerNextRequestAsync(void);
+
 };
 
 

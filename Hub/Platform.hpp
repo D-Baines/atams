@@ -30,7 +30,7 @@
 
 #include <stdint.h>
 #include <mutex>
-#include "../AtamsTypedefs.hpp"
+#include "../Shared/AtamsTypedefs.hpp"
 #include "Platform/asio-1.30.2/include/asio.hpp"
 
 /*************************************************************************************/
@@ -106,10 +106,12 @@ private asio::serial_port
     return (true);
   }
 
-  void transmit(uint8_t *buffer, uint16_t length)
+  bool transmit(uint8_t *buffer, uint16_t length)
   {
     /* Transmit Buffer */
     asio::write(static_cast<asio::serial_port&>(*this), asio::buffer(buffer, length));
+
+    return (true);
   }
 
   void update(void);

@@ -28,6 +28,7 @@
 #include <string.h>
 #include "AtamsUtilities.hpp"
 #include "../AtamsTypedefs.hpp"
+#include "../Maps/BlockUniversal.hpp"
 #include "COBS.hpp"
 #include "CRC32.hpp"
 
@@ -42,7 +43,7 @@ namespace Atams
 /* PRIVATE VARIABLES                                                                 */
 /*************************************************************************************/
 
-static CRC32 _commsCRC(Atams::CRC32_POLYNOMIAL);
+static CRC32 atamsCRC_(Atams::CRC32_POLYNOMIAL);
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
@@ -104,7 +105,7 @@ Atams::Error_t decodeMeshPacket(const uint8_t  * const inputBuffer,
 
   memset(&decodedBuffer[MESH_INDEX_CRC], 0U, MESH_SIZE_CRC);
 
-  if (packetCRC != _commsCRC.calculateCRC(decodedBuffer, COBSDecodeResult.outputLength))
+  if (packetCRC != atamsCRC_.calculateCRC(decodedBuffer, COBSDecodeResult.outputLength))
   {
     return (Atams::ERROR_DECODE);
   }
@@ -127,7 +128,7 @@ Error_t encodeMeshPacket(      uint8_t  * const inputBuffer,
 
   memset(&inputBuffer[MESH_INDEX_CRC], 0U, MESH_SIZE_CRC);
 
-  uint32_t CRCResult = _commsCRC.calculateCRC(inputBuffer, inputLength);
+  uint32_t CRCResult = atamsCRC_.calculateCRC(inputBuffer, inputLength);
 
   uint32ToBuffer(CRCResult, &inputBuffer[MESH_INDEX_CRC]);
 
@@ -157,6 +158,111 @@ void bufferToDatagramHeader(const uint8_t *buffer, DatagramHeader_t &datagramHea
 
   datagramHeader.varID   = ((static_cast<uint16_t>(buffer[0U] & DATAGRAM_HEADER_MASK_VAR_ID_HI) << DATAGRAM_HEADER_SHIFT_VAR_ID_HI) |
                             (static_cast<uint16_t>(buffer[1U] & DATAGRAM_HEADER_MASK_VAR_ID_LO) >> DATAGRAM_HEADER_SHIFT_VAR_ID_LO) );
+}
+
+bool validateMapLength(const SharedMemoryMap_t &memoryMap, const uint32_t varStorageLength)
+{
+  bool     lengthValid = true;
+  uint16_t varIndex    = 0U;
+
+  if ((memoryMap.noOfVars > varStorageLength                        ) ||
+      (memoryMap.noOfVars > Atams::MAX_NUMBER_OF_VARS               ) ||
+      (memoryMap.noOfVars < BlockUniversal::NUMBER_OF_UNIVERSAL_VARS) )
+  {
+    lengthValid = false;
+  }
+
+  for (uint16_t varID = 0U; varID < memoryMap.noOfVars; varID++)
+  {
+    const VarInfo_t varInfo = memoryMap.varInfoList[varID];
+
+    if ((varInfo.type        > Atams::NUMBER_OF_VAR_TYPES) ||
+        (varInfo.accessLevel > Atams::ACCESS_WRITE       ) ||
+        (varInfo.NVMStorage  > Atams::ATAMS_TRUE         ) )
+    {
+      lengthValid = false;
+      break;
+    }
+    
+    if ((varInfo.type        == Atams::TYPE_NULL  ) ||
+        (varInfo.accessLevel == Atams::ACCESS_NONE) )
+    {
+      if (varIndex != memoryMap.noOfVars) lengthValid = false;
+      break;
+    }
+
+    varIndex++;
+  }
+
+  return (lengthValid);
+}
+
+bool validateUniversalBlock(const SharedMemoryMap_t &memoryMap)
+{
+  bool     universalValid = true;
+  uint16_t varIndex       = 0U;
+
+  if (memoryMap.noOfVars < BlockUniversal::NUMBER_OF_UNIVERSAL_VARS)
+  {
+    return (false); /* Early Return */
+  }
+
+  for (VarInfo_t universalVarInfo : BlockUniversal::varInfoList)
+  {
+    VarInfo_t mapVarInfo = memoryMap.varInfoList[varIndex];
+
+    if (universalVarInfo != mapVarInfo) universalValid = false;
+
+    varIndex++;
+  }
+
+  return (universalValid);
+}
+
+bool validateMapChecksum(const SharedMemoryMap_t &memoryMap)
+{
+  bool     checksumValid = false;
+  uint16_t varIndex      = 0U;
+
+  atamsCRC_.beginRollingCRC();
+
+  for (uint16_t varID = 0U; varID < memoryMap.noOfVars; varID++)
+  {
+    const VarInfo_t varInfo = memoryMap.varInfoList[varID];
+    
+    if (varIndex == memoryMap.noOfVars) break;
+
+    atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.type));
+    atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.accessLevel));
+    atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.NVMStorage));
+
+    varIndex++;
+  }
+
+  if (memoryMap.genInfo.genChecksum == atamsCRC_.getRollingCRC())
+  {
+    checksumValid = true;
+  }
+
+  return (checksumValid);
+}
+
+Atams::Error_t validateMemoryMap(const SharedMemoryMap_t &memoryMap, const uint32_t varStorageLength)
+{
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
+
+  if (memoryMap.varInfoList == nullptr)
+  {
+    statusReturn = Atams::ERROR_MEMORY_MAP;
+  }
+  if ((validateMapLength(memoryMap, varStorageLength) == false) ||
+      (validateUniversalBlock(memoryMap)              == false) ||
+      (validateMapChecksum(memoryMap)                 == false) )
+  {
+    statusReturn = Atams::ERROR_MEMORY_MAP;
+  }
+
+  return (statusReturn);
 }
 
 

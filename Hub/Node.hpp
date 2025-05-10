@@ -29,10 +29,10 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../AtamsTypedefs.hpp"
+#include "../Shared/AtamsTypedefs.hpp"
+#include "../Shared/Utilities/CRC32.hpp"
 #include "Platform.hpp"
 #include "Developer/WriteList.hpp"
-#include "../Utilities/CRC32.hpp"
 #include "Developer/NodeProcesses.hpp"
 
 /*************************************************************************************/
@@ -63,43 +63,30 @@ class Node
 
   struct MemoryMap_t
   {
-    const uint16_t   noOfVars = 0U;
-    const GenInfo_t  genInfo;
-    const VarInfo_t (&varInfoList)[Platform::NODE_NUMBER_OF_VARS];
-  
-    MemoryMap_t(const uint16_t   inputNoOfVars,
-                const GenInfo_t  inputGenInfo,
-                const VarInfo_t (&initVarInfoList)[Platform::NODE_NUMBER_OF_VARS]) :
-    noOfVars(inputNoOfVars),
-    genInfo(inputGenInfo),
-    varInfoList(initVarInfoList){};
-  
-    /* Default Constructor */
-    MemoryMap_t(void) = delete;
-  
-    /* Default Destructor */
-    ~MemoryMap_t(void){};
-  
-    /* Copy Constructor */
-    MemoryMap_t(const MemoryMap_t &other) = delete;
-  
-    /* Copy Assignment Operator */
-    MemoryMap_t & operator=(const MemoryMap_t &other) = delete;
-  
-    /* Move Constructor */
-    MemoryMap_t(MemoryMap_t &&other) = delete;
-  
-    /* Move Assignment Operator */
-    MemoryMap_t & operator=(MemoryMap_t &&other) = delete;
+    SharedMemoryMap_t sharedMemoryMap;
   };
 
   /*-- Public Function Declarations -------------------------------------------------*/
 
   Node(const uint8_t nodeID);
 
+  /* Default Constructor */
+  Node(void) = delete;
+
+  /* Default Constructor */
+  ~Node(void) = default;
+
+  /* Copy Constructor */
   Node(const Node &other) = delete;
 
+  /* Copy Assignment Operator */
   Node & operator=(const Node &other) = delete;
+
+  /* Move Constructor */
+  Node(Node &&other) = delete;
+
+  /* Move Assignment Operator */
+  Node & operator=(Node &&other) = delete;
 
   Atams::Error_t init(const MemoryMap_t &memoryMap);
 
@@ -112,7 +99,7 @@ class Node
   Atams::Error_t read(const uint16_t varID, T &readData);
 
   template <typename T>
-  Atams::Error_t readIfNew(const uint16_t varID, T &readData);
+  Atams::Error_t readIfDataReady(const uint16_t varID, T &readData);
 
   template <typename T>
   Atams::Error_t writeRequestUntilAck(const uint16_t varID, const T writeData);
@@ -125,13 +112,27 @@ class Node
 
   Atams::Error_t stopStream(const uint16_t varID);
 
-  Atams::Error_t getNewDataFlag(const uint16_t varID, bool &newDataReady);
+  Atams::Error_t getDataReadyFlag(const uint16_t varID, bool &newDataReady);
 
-  Atams::Error_t clearNewDataFlag(const uint16_t varID);
+  Atams::Error_t clearDataReadyFlag(const uint16_t varID);
 
   Atams::Error_t getAckFlag(const uint16_t varID, bool &ackReceived);
 
   Atams::Error_t clearAckFlag(const uint16_t varID);
+
+  Atams::Error_t clearDataReadyStartRead(const uint16_t varID);
+
+  Atams::Error_t stopStreamGetDataReady(const uint16_t varID, bool &newDataReady);
+
+  Atams::Error_t stopStreamGetAckFlag(const uint16_t varID, bool &ackReceived);
+
+  template<typename T>
+  Atams::Error_t stopStreamReadIfDataReady(const uint16_t varID, T &readData);
+
+  template<typename T>
+  Atams::Error_t clearAckStartWrite(const uint16_t varID, const T writeData);
+  
+  Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
   
   DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t memberID);
 
@@ -206,16 +207,16 @@ class Node
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  uint8_t            _nodeID;
-  const MemoryMap_t *m_memoryMap;
-  uint16_t           m_validVarCount = 0U;
-  Var_t              m_varStorage[Platform::NODE_NUMBER_OF_VARS];
-  Atams::Error_t     _busError = Atams::ERROR_NONE;
-  uint16_t           _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
-  RequestPacket_t    _requestPacket;
-  uint8_t            _responseBuffer[Platform::MAX_BUS_PACKET_SIZE];
-  uint16_t           _responseLength   = 0U;
-  bool               _newResponseReady = false;
+  uint8_t                  _nodeID;
+  const SharedMemoryMap_t *m_memoryMap;
+  uint16_t                 m_validVarCount = 0U;
+  Var_t                    m_varStorage[Platform::NODE_NUMBER_OF_VARS];
+  Atams::Error_t           _busError = Atams::ERROR_NONE;
+  uint16_t                 _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
+  RequestPacket_t          _requestPacket;
+  uint8_t                  _responseBuffer[Platform::MAX_BUS_PACKET_SIZE];
+  uint16_t                 _responseLength   = 0U;
+  bool                     _newResponseReady = false;
   
   /*-- Private Constexpr Function Declarations --------------------------------------*/
 
@@ -234,14 +235,6 @@ class Node
   bool getMemoryMapIsValid(void);
 
   void invalidateMemoryMap(void);  
-
-  bool validateMapLength(const MemoryMap_t &memoryMap);
-  
-  bool validateUniversalBlock(const MemoryMap_t &memoryMap);
-
-  bool validateMapChecksum(const MemoryMap_t &memoryMap);
-
-  Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap);
 
   Atams::Error_t initBlockDescriptors(const MemoryMap_t &memoryMap);
 
