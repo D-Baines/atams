@@ -461,7 +461,10 @@ struct SharedMemoryMap_t
   ~SharedMemoryMap_t(void){};
 
   /* Copy Constructor */
-  SharedMemoryMap_t(const SharedMemoryMap_t &other) = delete;
+  SharedMemoryMap_t(const SharedMemoryMap_t &other) :
+  noOfVars(other.noOfVars),
+  genInfo(other.genInfo),
+  varInfoList(other.varInfoList){};
 
   /* Copy Assignment Operator */
   SharedMemoryMap_t & operator=(const SharedMemoryMap_t &other) = delete;

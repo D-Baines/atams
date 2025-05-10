@@ -27,7 +27,7 @@
 
 #include "ConfigurationHandler.hpp"
 #include "../Node.hpp"
-#include "../Maps/BlockUniversal.hpp"
+#include "../../Shared/Maps/BlockUniversal.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */

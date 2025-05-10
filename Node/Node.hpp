@@ -29,7 +29,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../AtamsTypedefs.hpp"
+#include "../Shared/AtamsTypedefs.hpp"
 #include "Platform.hpp"
 
 /*************************************************************************************/
@@ -52,22 +52,16 @@ typedef Atams::Error_t (&InitDefaultsFn_t)(void);
 
 struct MemoryMap_t
 {
-  const uint16_t              noOfVars = 0U;
-  const GenInfo_t             genInfo;
+  const SharedMemoryMap_t     sharedMap;
   const InitUniversalDataFn_t initGenInfo;
   const InitDefaultsFn_t      initUserDefaults;
-  const VarInfo_t            (&varInfoList)[Platform::NODE_NUMBER_OF_VARS];
 
-  MemoryMap_t(const uint16_t              inputNoOfVars,
-              const GenInfo_t             inputGenInfo,
+  MemoryMap_t(const SharedMemoryMap_t    &initSharedMemoryMap,
               const InitUniversalDataFn_t initGenInfoFn,
-              const InitDefaultsFn_t      initUserDefaultsFn,
-              const VarInfo_t            (&initVarInfoList)[Platform::NODE_NUMBER_OF_VARS]) :
-  noOfVars(inputNoOfVars),
-  genInfo(inputGenInfo),
+              const InitDefaultsFn_t      initUserDefaultsFn) :
+  sharedMap(initSharedMemoryMap),
   initGenInfo(initGenInfoFn),
-  initUserDefaults(initUserDefaultsFn),
-  varInfoList(initVarInfoList){};
+  initUserDefaults(initUserDefaultsFn){};
 
   /* Default Constructor */
   MemoryMap_t(void) = delete;

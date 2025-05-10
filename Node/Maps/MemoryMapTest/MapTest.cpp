@@ -41,14 +41,14 @@ static const GenInfo_t s_genInfo =
 {
   /* .atamsVersionMajor = */ 0U,
   /* .atamsVersionMinor = */ 1U,
-  /* .genDay            = */ 24U,
-  /* .genMonth          = */ 4U,
+  /* .genDay            = */ 10U,
+  /* .genMonth          = */ 5U,
   /* .genYear           = */ 2025U,
-  /* .genHour           = */ 10U,
-  /* .genMinute         = */ 1U,
-  /* .genSecond         = */ 42U,
+  /* .genHour           = */ 23U,
+  /* .genMinute         = */ 25U,
+  /* .genSecond         = */ 59U,
   /* .genChecksum       = */ 2433352831U,
-  /* .numberOfVars      = */ 56U
+  /* .noOfVars          = */ 56U
 };
 
 static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
@@ -308,6 +308,7 @@ Atams::Error_t initUserDefaults(void)
   if (!error) error = Atams::write(BlockExample2::VAR_ID_READ_INT32, BlockExample2::DEFAULT_READ_INT32);
   if (!error) error = Atams::write(BlockExample2::VAR_ID_WRITE_FLOAT, BlockExample2::DEFAULT_WRITE_FLOAT);
   if (!error) error = Atams::write(BlockExample2::VAR_ID_READ_FLOAT, BlockExample2::DEFAULT_READ_FLOAT);  
+
   return (error); 
 }
 
@@ -317,11 +318,14 @@ Atams::Error_t initUserDefaults(void)
 
 const MemoryMap_t memoryMap =
 {
-  /* noOfVars         = */ s_genInfo.numberOfVars,
-  /* genInfo          = */ MapTest::s_genInfo,
+  /* .sharedMemoryMap = */
+  {
+    /* .noOfVars    = */ MapTest::s_genInfo.noOfVars,
+    /* .genInfo     = */ MapTest::s_genInfo,
+    /* .varInfoList = */ MapTest::s_varInfoList
+  },
   /* initGenInfo      = */ MapTest::initGenInfo,
   /* initUserDefaults = */ MapTest::initUserDefaults,
-  /* varInfoList      = */ MapTest::s_varInfoList
 };
 
 } } /* End Namespace - Atams::MapTest */

@@ -57,12 +57,13 @@ enum VarID_t: uint16_t
   VAR_ID_READ_INT32   = 39U,
   VAR_ID_WRITE_FLOAT  = 40U,
   VAR_ID_READ_FLOAT   = 41U,
-  NUMBER_OF_VARS
 };
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
+
+inline constexpr uint16_t NUMBER_OF_VARS {14};
 
 inline constexpr uint8_t  DEFAULT_WRITE_UINT8  {1};
 inline constexpr int8_t   DEFAULT_WRITE_INT8   {2};

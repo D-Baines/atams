@@ -80,17 +80,18 @@ enum VarID_t: uint16_t
 /*************************************************************************************/
 
 inline constexpr uint8_t  DEFAULT_NODE_ID          {0};
-inline constexpr int8_t   DEFAULT_FIRST_NODE_ID    {0};
+inline constexpr uint8_t  DEFAULT_FIRST_NODE_ID    {0};
 inline constexpr uint8_t  DEFAULT_LAST_NODE_ID     {0};
-inline constexpr int8_t   DEFAULT_PREVIOUS_NODE_ID {0};
-inline constexpr uint16_t DEFAULT_BITRATE          {0};
-inline constexpr int16_t  DEFAULT_WATCHDOG_PERIOD  {0};
+inline constexpr uint8_t  DEFAULT_PREVIOUS_NODE_ID {0};
+inline constexpr uint8_t  DEFAULT_BITRATE          {0};
+inline constexpr uint32_t DEFAULT_WATCHDOG_PERIOD  {0};
 
 /*************************************************************************************/
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
 extern const VarInfo_t varInfoList[BlockUniversal::NUMBER_OF_UNIVERSAL_VARS];
+
 
 } } /* End Namespace - Atams::BlockUniversal */
 

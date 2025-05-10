@@ -221,30 +221,27 @@ bool validateUniversalBlock(const SharedMemoryMap_t &memoryMap)
 
 bool validateMapChecksum(const SharedMemoryMap_t &memoryMap)
 {
-  bool     checksumValid = false;
-  uint16_t varIndex      = 0U;
+  uint16_t varIndex = 0U;
 
   atamsCRC_.beginRollingCRC();
 
-  for (uint16_t varID = 0U; varID < memoryMap.noOfVars; varID++)
+  for (uint16_t varID = BlockUniversal::NUMBER_OF_UNIVERSAL_VARS; varID < memoryMap.noOfVars; varID++)
   {
     const VarInfo_t varInfo = memoryMap.varInfoList[varID];
     
     if (varIndex == memoryMap.noOfVars) break;
 
     atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.type));
+    uint32_t crcValue = atamsCRC_.getRollingCRC();
     atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.accessLevel));
     atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.NVMStorage));
 
     varIndex++;
   }
 
-  if (memoryMap.genInfo.genChecksum == atamsCRC_.getRollingCRC())
-  {
-    checksumValid = true;
-  }
+  uint32_t calculatedChecksum = atamsCRC_.getRollingCRC();
 
-  return (checksumValid);
+  return (memoryMap.genInfo.genChecksum == calculatedChecksum);
 }
 
 Atams::Error_t validateMemoryMap(const SharedMemoryMap_t &memoryMap, const uint32_t varStorageLength)
