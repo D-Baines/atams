@@ -101,7 +101,7 @@ const VarInfo_t varInfoList[BlockUniversal::NUMBER_OF_UNIVERSAL_VARS] =
   },
   /* [BlockUniversal::VAR_ID_CONFIGURATION_PASSKEY] = */
   {
-    /* .type           = */ Atams::TYPE_UINT8,
+    /* .type           = */ Atams::TYPE_UINT32,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
