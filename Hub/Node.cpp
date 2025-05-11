@@ -395,8 +395,7 @@ void Node::resetRequestPacket(void)
 {
   m_requestPacketLock.acquireLock();
 
-  _requestPacket.length = 0U;
-  _requestPacket.writeList.reset();
+  resetRequestPacketNoLock();
 
   m_requestPacketLock.releaseLock();
 }
@@ -618,31 +617,27 @@ void Node::processAbortedResponse(void)
 /* Warning - no check of remaining response buffer length before copy, *
  * validateResponseBuffer must be called before using this function    */
 bool Node::processDatagramRead(const DatagramHeader_t datagramHeader,
-                               uint16_t              &datagramStartIndex,
-                               const uint8_t          payloadLength)
+                                         uint16_t              &datagramStartIndex,
+                                         const uint8_t          payloadLength)
 {
-  bool cancelProcessing = false;
+  Atams::Error_t status = updateRequestPatternOnReceive(datagramHeader.varID);
 
-  Atams::Error_t transferStatus = updateRequestPatternOnReceive(datagramHeader.varID);
+  if (status == Atams::ERROR_NONE) status = externalTransfer(Atams::ACCESS_WRITE,
+                                                           datagramHeader.varID,
+                                                           &_responseBuffer[datagramStartIndex + DATAGRAM_INDEX_PAYLOAD],
+                                                           payloadLength); 
 
-  if (transferStatus == Atams::ERROR_NONE) transferStatus = externalTransfer(Atams::ACCESS_WRITE,
-                                                                             datagramHeader.varID,
-                                                                             &_responseBuffer[datagramStartIndex + DATAGRAM_INDEX_PAYLOAD],
-                                                                             payloadLength); 
+  if (status == Atams::ERROR_NONE) datagramStartIndex += (DATAGRAM_SIZE_HEADER + payloadLength);
+  else                             reportBusError(status);
 
-  if (transferStatus != Atams::ERROR_NONE) cancelProcessing    = true;
-  else                                     datagramStartIndex += (DATAGRAM_SIZE_HEADER + payloadLength);
-
-  return (cancelProcessing);
+  return (status != Atams::ERROR_NONE);
 }
 
 bool Node::processDatagramWrite(const DatagramHeader_t datagramHeader, uint16_t &datagramStartIndex)
 {
-  bool cancelProcessing = false;
-
-  Atams::Error_t transferStatus = updateRequestPatternOnReceive(datagramHeader.varID);
+  Atams::Error_t status = updateRequestPatternOnReceive(datagramHeader.varID);
   
-  if (transferStatus == Atams::ERROR_NONE)
+  if (status == Atams::ERROR_NONE)
   {
     /* VarID validity confirmed in updateRequestPatternOnReceive*/
     m_varStorageLock.acquireLock();
@@ -650,35 +645,36 @@ bool Node::processDatagramWrite(const DatagramHeader_t datagramHeader, uint16_t 
     m_varStorageLock.releaseLock();
   }
 
-  if (transferStatus != Atams::ERROR_NONE) cancelProcessing = true;
-  else                                     datagramStartIndex += DATAGRAM_SIZE_HEADER;
-
-  return (cancelProcessing);
+  if (status == Atams::ERROR_NONE) datagramStartIndex += DATAGRAM_SIZE_HEADER;
+  else                            reportBusError(status);
+  
+  return (status != Atams::ERROR_NONE);
 }
 
 bool Node::processDatagramNack(const DatagramHeader_t datagramHeader, uint16_t &datagramStartIndex)
 {
+  Atams::Error_t statusReturn     = Atams::ERROR_NONE;
+  bool           cancelProcessing = false;
+
   if (datagramHeader.varID < BlockUniversal::NUMBER_OF_UNIVERSAL_VARS)
   {
-    Atams::Error_t transferStatus = updateRequestPatternOnReceive(datagramHeader.varID);
+    Atams::Error_t statusReturn = updateRequestPatternOnReceive(datagramHeader.varID);
 
-    if (transferStatus != Atams::ERROR_NONE)
+    if (statusReturn == Atams::ERROR_NONE)
     {
-      reportBusError(transferStatus);
-      return (true);
-    }
-    else 
-    {
-      reportBusError(Atams::ERROR_CONFIGURATION_STATE_INACTIVE);
+      statusReturn = Atams::ERROR_CONFIGURATION_STATE_INACTIVE;
       datagramStartIndex += DATAGRAM_SIZE_HEADER;
-      return (false);
     }
   }
   else 
   {
-    reportBusError(Atams::ERROR_INVALID_NACK);
-    return (true);
+    cancelProcessing = true;
+    statusReturn = Atams::ERROR_INVALID_NACK;
   }
+
+  if (statusReturn != Atams::ERROR_NONE) reportBusError(statusReturn);
+
+  return (cancelProcessing);
 }
 
 Atams::Error_t Node::validateResponseBuffer(uint8_t * const responsePacket,
@@ -731,6 +727,8 @@ void Node::processResponseBuffer(void)
     return; /* Early Return */
   }
 
+  _newResponseReady = false;
+
   if (_responseBuffer[MESH_INDEX_MSG_TYPE] == Atams::MESSAGE_ABORTED_RESPONSE)
   {
     processAbortedResponse();
@@ -777,13 +775,6 @@ void Node::processResponseBuffer(void)
         break;
     }
   }
-
-  /* TODO:: Move Length Check To Start */
-  if ((cancelProcessing   == false          ) &&
-      (datagramStartIndex != _responseLength) )
-  {
-    reportBusError(Atams::ERROR_RESPONSE_BUFFER_LENGTH);
-  }
 }
 
 DataStatusReturn_t<bool> Node::findDatagramMatchInPacket(RequestChangeConfig_t &changeConfig)
@@ -829,7 +820,7 @@ DataStatusReturn_t<bool> Node::findDatagramMatchInPacket(RequestChangeConfig_t &
 
 Atams::Error_t Node::requestPacketShift(const uint16_t shiftIndex, const int16_t shiftLength)
 {  
-  if (shiftLength < _requestPacket.length)
+  if (static_cast<uint16_t>(_requestPacket.length + shiftLength) < Atams::MESH_SIZE_HEADER)
   {
     return (Atams::ERROR_REQUEST_PACKET_FATAL); /* Early Return */
   }
@@ -976,7 +967,7 @@ Atams::Error_t Node::constructDatagramBuffer(RequestChangeConfig_t &changeConfig
 
 void Node::resetRequestPacketNoLock(void)
 {
-  _requestPacket.length = 0U;
+  _requestPacket.length = Atams::MESH_SIZE_HEADER;
   _requestPacket.writeList.reset();
 }
 
@@ -1003,7 +994,7 @@ Atams::Error_t Node::processRequestPacketChange(const uint16_t         varID,
 
   if (datagramFoundInPacket.status != Atams::ERROR_NONE)
   {
-    resetRequestPacket();
+    resetRequestPacketNoLock();
     return (Atams::ERROR_REQUEST_PACKET_FATAL); /* Early Return */
   } 
 
@@ -1032,7 +1023,7 @@ Atams::Error_t Node::processRequestPacketChange(const uint16_t         varID,
     }
   }
 
-  if (statusReturn == Atams::ERROR_REQUEST_PACKET_FATAL) resetRequestPacket();
+  if (statusReturn == Atams::ERROR_REQUEST_PACKET_FATAL) resetRequestPacketNoLock();
 
   return (statusReturn);
 }

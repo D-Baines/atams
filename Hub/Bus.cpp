@@ -79,6 +79,15 @@ void Bus::removeNodeFromBus(Node &node)
   }
 }
 
+Atams::Error_t Bus::startPeripheral(void)
+{
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
+
+  if (BusPeripheral::startPeripheral() == false) statusReturn = Atams::ERROR_PLATFORM;
+
+  return (statusReturn);
+}
+
 Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
 {
   (void)error;
@@ -191,21 +200,21 @@ Atams::ProcessState Bus::runUpdateCycleSync(Atams::Error_t &error)
   {
     case Bus::UpdateState::START: /* Fall-through */
     case Bus::UpdateState::SEND_REQUESTS:
-      if (waitForRequestTransmit(*activeNodePtr, process, Atams::MESSAGE_REQUEST_SYNCED) == true)
+      if (pollForRequestTransmit(*activeNodePtr, process, Atams::MESSAGE_REQUEST_SYNCED) == true)
       {
         if (tryNodeIncrement() == false) startResponseCollectionSync();
         //else if (process.error)          Platform::CommsSemaphore::release();
       }
       break;
     case Bus::UpdateState::COLLECT_RESPONSES:
-      if (waitForResponse(*activeNodePtr, process, Atams::MESSAGE_RESPONSE_SYNCED) == true)
+      if (pollForResponse(*activeNodePtr, process, Atams::MESSAGE_RESPONSE_SYNCED) == true)
       {
         if (tryNodeIncrement() == false) process.setProcessComplete();
         else                             triggerJogSync();
       }
       break;
     case Bus::UpdateState::JOG_NODE:
-      if (waitForTransmitJog(*activeNodePtr, process) == true) updateState = Bus::UpdateState::COLLECT_RESPONSES;
+      if (pollForJogTransmit(*activeNodePtr, process) == true) updateState = Bus::UpdateState::COLLECT_RESPONSES;
       break;
     case Bus::UpdateState::COMPLETE: /* Fall-through */
     case Bus::UpdateState::ERROR:
@@ -237,14 +246,14 @@ Atams::ProcessState Bus::runUpdateCycleAsync(Atams::Error_t &error)
   {
     case Bus::UpdateState::START: /* Fall-through */
     case Bus::UpdateState::SEND_REQUESTS:
-      if (waitForRequestTransmit(*activeNodePtr, process, Atams::MESSAGE_REQUEST) == true)
+      if (pollForRequestTransmit(*activeNodePtr, process, Atams::MESSAGE_REQUEST) == true)
       {
         if (process.error) triggerNextRequestAsync();
         else               updateState = Bus::UpdateState::COLLECT_RESPONSES;
       }
       break;
     case Bus::UpdateState::COLLECT_RESPONSES:
-      if (waitForResponse(*activeNodePtr, process, Atams::MESSAGE_RESPONSE) == true)
+      if (pollForResponse(*activeNodePtr, process, Atams::MESSAGE_RESPONSE) == true)
       {
         triggerNextRequestAsync();
       }
@@ -304,7 +313,8 @@ Atams::ProcessState Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
   switch (configUpdateState)
   { 
     case Bus::ConfigUpdateState::START:
-      configUpdateState = Bus::ConfigUpdateState::INIT_NODE;
+      if (!Platform::BusPeripheral::startPeripheral()) process.terminate(Atams::ERROR_PLATFORM);
+      else                                             configUpdateState = Bus::ConfigUpdateState::INIT_NODE;
       break;
     case Bus::ConfigUpdateState::INIT_NODE:
       process.error = dummyNode_.init(dummyMemoryMap_);
@@ -319,42 +329,62 @@ Atams::ProcessState Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
       subProcessState = nodeProcessHandler_.updateConfigurationStateEntry(process.error);
       if      (subProcessState == Atams::ProcessState::COMPLETE) configUpdateState = Bus::ConfigUpdateState::WRITE_CONFIG;
       else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);
+      else                                                       triggerNextSetNodeConfigCycle(configUpdateState);
       break;
     case Bus::ConfigUpdateState::WRITE_CONFIG:
       startWriteConfigVars();
+      triggerNextSetNodeConfigCycle(Bus::ConfigUpdateState::CHECK_ACK);
       break;
     case Bus::ConfigUpdateState::CHECK_ACK:
-      if (allConfigAcknowledged() == true) configUpdateState = Bus::ConfigUpdateState::BEGIN_CONFIG_EXIT;
-      else                                 process.terminate(Atams::ERROR_ACK_NOT_RECEIVED);
+      if (allConfigVarsAcknowledged()) configUpdateState = Bus::ConfigUpdateState::BEGIN_CONFIG_EXIT;
+      else                             process.terminate(Atams::ERROR_ACK_NOT_RECEIVED);
       break;
     case Bus::ConfigUpdateState::BEGIN_CONFIG_EXIT:
       nodeProcessHandler_.beginConfigExitProcess(&dummyNode_, true);
+      configUpdateState = Bus::ConfigUpdateState::UPDATE_CONFIG_EXIT;
       break;
     case Bus::ConfigUpdateState::UPDATE_CONFIG_EXIT:
       subProcessState = nodeProcessHandler_.updateConfigurationStateExit(process.error);
       if      (subProcessState == Atams::ProcessState::COMPLETE) configUpdateState = Bus::ConfigUpdateState::READ_CONFIG;
       else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);
+      else                                                       triggerNextSetNodeConfigCycle(configUpdateState);
       break;
     case Bus::ConfigUpdateState::READ_CONFIG:
       startReadConfigVars();
+      triggerNextSetNodeConfigCycle(Bus::ConfigUpdateState::CHECK_CONFIG);
       break;
     case Bus::ConfigUpdateState::CHECK_CONFIG:
       process.error = validateConfigVars();
       if (process.error) process.terminate(process.error);
-      else               process.setProcessComplete();
+      else              configUpdateState = Bus::ConfigUpdateState::BEGIN_SAVE_ALL;
+      break;
+    case Bus::ConfigUpdateState::BEGIN_SAVE_ALL:
+      nodeProcessHandler_.beginStorageProcess(&dummyNode_);
+      configUpdateState = Bus::ConfigUpdateState::UPDATE_SAVE_ALL;
+      break;
+    case Bus::ConfigUpdateState::UPDATE_SAVE_ALL:
+      subProcessState = nodeProcessHandler_.updateStoreAll(process.error);
+      if      (subProcessState == Atams::ProcessState::COMPLETE) process.setProcessComplete();
+      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);
+      else                                                       triggerNextSetNodeConfigCycle(configUpdateState);
       break;
     case Bus::ConfigUpdateState::SEND_REQUEST:
-      if (waitForRequestTransmit(dummyNode_, process, MESSAGE_BROADCAST_UNIVERSAL) == true)
+      if (pollForRequestTransmit(dummyNode_, process, MESSAGE_BROADCAST_UNIVERSAL) == true)
       {
         if (process.error) process.terminate(process.error);
         else               configUpdateState = Bus::ConfigUpdateState::GET_RESPONSE;               
       }
       break;
     case Bus::ConfigUpdateState::GET_RESPONSE:
-      if (waitForResponse(dummyNode_, process, MESSAGE_RESPONSE) == true)
+      Platform::BusPeripheral::update();
+      if (pollForResponse(dummyNode_, process, MESSAGE_BROADCAST_RESPONSE) == true)
       {
         if (process.error) process.terminate(process.error);
-        else               process.setProcessComplete();            
+        else               
+        {
+          dummyNode_.processResponseBuffer();
+          configUpdateState = process.nextSpecificState;        
+        }
       }
       break;
     case Bus::ConfigUpdateState::COMPLETE:
@@ -375,7 +405,7 @@ Atams::ProcessState Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-bool Bus::waitForRequestTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType)
+bool Bus::pollForRequestTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType)
 {
   uint32_t currentTime          = Platform::getMillis();
   bool     messageSendAttempted = false;
@@ -401,7 +431,7 @@ bool Bus::waitForRequestTransmit(Atams::Node &node, Bus::ProcessHandlerBase &pro
   return (messageSendAttempted);
 }
 
-bool Bus::waitForTransmitJog(Atams::Node &node, Bus::ProcessHandlerBase &process)
+bool Bus::pollForJogTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process)
 {
   uint32_t currentTime          = Platform::getMillis();
   bool     messageSendAttempted = false;
@@ -428,7 +458,7 @@ bool Bus::waitForTransmitJog(Atams::Node &node, Bus::ProcessHandlerBase &process
   return (messageSendAttempted);
 }
 
-bool Bus::waitForResponse(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse)
+bool Bus::pollForResponse(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse)
 {
   uint32_t currentTime  = Platform::getMillis();
   bool     waitOverFlag = false;
@@ -452,14 +482,10 @@ bool Bus::waitForResponse(Atams::Node &node, Bus::ProcessHandlerBase &process, c
 
 void Bus::rxCallback(uint8_t *rxBufferPtr, const uint16_t rxBufferLength)
 {
-  if (rxBufferLength <= sizeof(rxBuffer_))
-  {
-    memcpy(rxBuffer_, rxBufferPtr, rxBufferLength);
-    rxLength_ = rxBufferLength;
-  }
+  static_cast<void>(circularBuffer_.pushHead(rxBufferPtr, rxBufferLength));
 }
 
-Atams::Error_t Bus::validateAndStoreResponsePacket(Node &node, const MessageType_t responseType)
+Atams::Error_t Bus::validateAndStoreResponsePacket(Node &node, const MessageType_t expectedResponse)
 {
   Atams::Error_t statusReturn = Atams::ERROR_NONE;
 
@@ -469,15 +495,16 @@ Atams::Error_t Bus::validateAndStoreResponsePacket(Node &node, const MessageType
                        sizeof(decodedBuffer_), 
                        decodedLength_) == Atams::ERROR_NONE)
   {
-    uint8_t packetNodeID    = decodedBuffer_[MESH_INDEX_NODE_ID];
-    uint8_t packetSyncCount = decodedBuffer_[MESH_INDEX_SYNC];
-    uint8_t messageType     = decodedBuffer_[MESH_INDEX_MSG_TYPE];
+    uint8_t              packetNodeID    = decodedBuffer_[MESH_INDEX_NODE_ID];
+    uint8_t              packetSyncCount = decodedBuffer_[MESH_INDEX_SYNC];
+    Atams::MessageType_t messageType     = static_cast<MessageType_t>(decodedBuffer_[MESH_INDEX_MSG_TYPE]);
 
-    if      (packetSyncCount != activeSyncCount_)            statusReturn = Atams::ERROR_SYNC_COUNT;
-    else if (packetNodeID    != node.getNodeID())            statusReturn = Atams::ERROR_SYNC_NODE;
-    else if ((messageType    != responseType            ) &&
-             (messageType    != MESSAGE_ABORTED_RESPONSE) )  statusReturn = Atams::ERROR_MESSAGE_TYPE;
-    else                                                     node.responseReceived(decodedBuffer_, decodedLength_);
+    if      (packetSyncCount != activeSyncCount_)              statusReturn = Atams::ERROR_SYNC_COUNT;
+    else if ((messageType    != MESSAGE_BROADCAST_RESPONSE) &&
+             (packetNodeID   != node.getNodeID()          ) )  statusReturn = Atams::ERROR_SYNC_NODE;
+    else if ((messageType    != expectedResponse        ) &&
+             (messageType    != MESSAGE_ABORTED_RESPONSE) )    statusReturn = Atams::ERROR_MESSAGE_TYPE;
+    else                                                       node.responseReceived(decodedBuffer_, decodedLength_);
 
     if (statusReturn != Atams::ERROR_NONE) node.reportBusError(statusReturn);
   }
@@ -592,12 +619,12 @@ Atams::ProcessState Bus::updateValidateGenInfoAllNodes(Atams::Error_t &error)
 
 void Bus::startWriteConfigVars(void)
 {
-  static_cast<void>(dummyNode_.clearAckStartWrite(BlockUniversal::VAR_ID_NODE_ID, setupConfig_.nodeID));
-  static_cast<void>(dummyNode_.clearAckStartWrite(BlockUniversal::VAR_ID_BITRATE, setupConfig_.bitrateOption));
+  static_cast<void>(dummyNode_.clearAckStartWrite(BlockUniversal::VAR_ID_NODE_ID,         setupConfig_.nodeID));
+  static_cast<void>(dummyNode_.clearAckStartWrite(BlockUniversal::VAR_ID_BITRATE,         setupConfig_.bitrateOption));
   static_cast<void>(dummyNode_.clearAckStartWrite(BlockUniversal::VAR_ID_WATCHDOG_PERIOD, setupConfig_.watchdogPeriod));
 }
 
-bool Bus::allConfigAcknowledged(void)
+bool Bus::allConfigVarsAcknowledged(void)
 {
   bool ackReceived = true;
 
@@ -679,6 +706,12 @@ void Bus::triggerNextRequestAsync(void)
     //Platform::CommsSemaphore::release();
     updateProcessHandler_.specificState = Bus::UpdateState::SEND_REQUESTS;
   }
+}
+
+void Bus::triggerNextSetNodeConfigCycle(const Bus::ConfigUpdateState nextState)
+{
+  configUpdateProcessHandler_.nextSpecificState = nextState;
+  configUpdateProcessHandler_.specificState     = Bus::ConfigUpdateState::SEND_REQUEST;
 }
 
 /*************************************************************************************/

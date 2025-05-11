@@ -30,7 +30,7 @@
 
 #include <stdint.h>
 #include "../../Node.hpp"
-#include "../BlockUniversal.hpp"
+#include "../../../Shared/Maps/BlockUniversal.hpp"
 $$$AUTOGEN$$$DATA_BLOCK_FILE_INCLUDES$$$AUTOGEN$$$
 
 /*************************************************************************************/

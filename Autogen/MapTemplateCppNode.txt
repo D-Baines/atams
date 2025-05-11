@@ -48,7 +48,7 @@ static const GenInfo_t s_genInfo =
   /* .genMinute         = */ $$$AUTOGEN$$$GENERATION_MINUTE$$$AUTOGEN$$$,
   /* .genSecond         = */ $$$AUTOGEN$$$GENERATION_SECOND$$$AUTOGEN$$$,
   /* .genChecksum       = */ $$$AUTOGEN$$$GENERATION_CHECKSUM$$$AUTOGEN$$$,
-  /* .numberOfVars      = */ $$$AUTOGEN$$$NUMBER_OF_VARS$$$AUTOGEN$$$
+  /* .noOfVars          = */ $$$AUTOGEN$$$NUMBER_OF_VARS$$$AUTOGEN$$$
 };
 
 static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
@@ -106,6 +106,7 @@ Atams::Error_t initUserDefaults(void)
   Atams::Error_t error = Atams::ERROR_NONE;
 
 $$$AUTOGEN$$$INIT_USER_DEFAULTS_DEFINITION$$$AUTOGEN$$$  
+
   return (error); 
 }
 
@@ -115,11 +116,14 @@ $$$AUTOGEN$$$INIT_USER_DEFAULTS_DEFINITION$$$AUTOGEN$$$
 
 const MemoryMap_t memoryMap =
 {
-  /* noOfVars         = */ s_genInfo.numberOfVars,
-  /* genInfo          = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::s_genInfo,
+  /* .sharedMemoryMap = */
+  {
+    /* .noOfVars    = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::s_genInfo.noOfVars,
+    /* .genInfo     = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::s_genInfo,
+    /* .varInfoList = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::s_varInfoList
+  },
   /* initGenInfo      = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::initGenInfo,
   /* initUserDefaults = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::initUserDefaults,
-  /* varInfoList      = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::s_varInfoList
 };
 
 } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */

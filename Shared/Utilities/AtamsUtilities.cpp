@@ -232,7 +232,6 @@ bool validateMapChecksum(const SharedMemoryMap_t &memoryMap)
     if (varIndex == memoryMap.noOfVars) break;
 
     atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.type));
-    uint32_t crcValue = atamsCRC_.getRollingCRC();
     atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.accessLevel));
     atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.NVMStorage));
 

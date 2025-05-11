@@ -183,14 +183,15 @@ class NodeActions
     PROGRESS_CLEAR     = 2U,
     PROGRESS_READ_PRE  = 3U,
     PROGRESS_CHECK_PRE = 4U,
-    WRITE_PASSCODE     = 5U,
-    STATUS_STREAM      = 6U,
-    STATUS_CHECK_POST  = 7U,
-    CANCEL_CONFIG      = 10U,
-    BEGIN_EXIT_CONFIG  = 11U,
-    EXIT_CONFIG        = 12U,
-    COMPLETE           = 13U,
-    ERROR              = 14U
+    CLEAR_PASSCODE     = 5U,
+    WRITE_PASSCODE     = 6U,
+    STATUS_STREAM      = 7U,
+    STATUS_CHECK_POST  = 8U,
+    CANCEL_CONFIG      = 9U,
+    BEGIN_EXIT_CONFIG  = 10U,
+    EXIT_CONFIG        = 11U,
+    COMPLETE           = 12U,
+    ERROR              = 13U
   };
 
   enum class ResetNodeState : uint8_t

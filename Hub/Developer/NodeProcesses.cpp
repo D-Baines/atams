@@ -235,7 +235,7 @@ Atams::ProcessState NodeActions::updateConfigurationStateEntry(Atams::Error_t &e
       break;
     case ConfigEntryState::CHECK_STATUS_PRE:
       process.error = node.stopStreamReadIfDataReady(BlockUniversal::VAR_ID_CONFIGURATION_STATUS, configState);
-      if      (process.error)                                     process.terminate(error);
+      if      (process.error)                                     process.terminate(process.error);
       else if (configState == Atams::CONFIGURATION_STATUS_ACTIVE) process.setProcessComplete();
       else                                                        process.specificState = ConfigEntryState::WRITE_PASSCODE;
       break; 
@@ -251,7 +251,7 @@ Atams::ProcessState NodeActions::updateConfigurationStateEntry(Atams::Error_t &e
       break;
     case ConfigEntryState::CHECK_STATUS_POST:
       process.error = node.stopStreamReadIfDataReady(BlockUniversal::VAR_ID_CONFIGURATION_STATUS, configState);
-      if      (process.error)                                       process.terminate(error);
+      if      (process.error)                                       process.terminate(process.error);
       else if (configState == Atams::CONFIGURATION_STATUS_ACTIVE)   process.setProcessComplete();
       else if (configState == Atams::CONFIGURATION_STATUS_DENIED)   process.terminate(Atams::ERROR_CONFIGURATION_STATE_DENIED);
       else if (configState == Atams::CONFIGURATION_STATUS_INACTIVE) process.terminate(Atams::ERROR_CONFIGURATION_STATE_INACTIVE);
@@ -382,9 +382,9 @@ Atams::ProcessState NodeActions::updateResetNode(Atams::Error_t &error)
       process.specificState = ResetNodeState::ENTER_CONFIG;
       break;
     case ResetNodeState::ENTER_CONFIG:
-      subProcessState = updateConfigurationStateEntry(error);
+      subProcessState = updateConfigurationStateEntry(process.error);
       if      (subProcessState == Atams::ProcessState::COMPLETE) process.specificState = ResetNodeState::WRITE_PASSCODE;
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(error);
+      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);
       break;
     case ResetNodeState::WRITE_PASSCODE:
       static_cast<void>(node.clearAckStartWrite(BlockUniversal::VAR_ID_RESET_NODE, Atams::RESET_NODE_PASSCODE));
@@ -455,9 +455,9 @@ Atams::ProcessState NodeActions::updateSetConfigVar(Atams::Error_t &error, const
       process.specificState = SetConfigVarState::ENTER_CONFIG;
       break;
     case SetConfigVarState::ENTER_CONFIG:
-      subProcessState = updateConfigurationStateEntry(error);
+      subProcessState = updateConfigurationStateEntry(process.error);
       if      (subProcessState == Atams::ProcessState::COMPLETE) process.specificState = SetConfigVarState::WRITE;
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(error);
+      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);
       break;
     case SetConfigVarState::WRITE:
       static_cast<void>(node.clearAckStartWrite(varID, value));
@@ -542,11 +542,15 @@ Atams::ProcessState NodeActions::updateStorageProcess(Atams::Error_t &error, con
     case StorageProcessState::PROGRESS_CHECK_PRE:
       process.error = node.stopStreamReadIfDataReady(BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE, storeComplete);
       if      (process.error)                       cancelConfigProcess(process, process.error);
-      else if (storeComplete == Atams::ATAMS_FALSE) process.specificState = StorageProcessState::WRITE_PASSCODE;
+      else if (storeComplete == Atams::ATAMS_FALSE) process.specificState = StorageProcessState::CLEAR_PASSCODE;
       else                                          cancelConfigProcess(process, Atams::ERROR_STORAGE_PROCESS_FAILED);
       break;
+    case StorageProcessState::CLEAR_PASSCODE:
+      static_cast<void>(node.clearAckStartWrite(passcodeVarID, static_cast<uint32_t>(0U)));
+      process.specificState = StorageProcessState::WRITE_PASSCODE;
+      break;
     case StorageProcessState::WRITE_PASSCODE:
-      static_cast<void>(node.clearAckStartWrite(passcodeVarID, passcode));
+      static_cast<void>(node.write(passcodeVarID, passcode));
       process.specificState = StorageProcessState::STATUS_STREAM;
       break;
     case StorageProcessState::STATUS_STREAM:

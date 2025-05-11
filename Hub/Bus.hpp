@@ -82,6 +82,8 @@ private Platform::BusPeripheral
 
   void removeNodeFromBus(Node &node);
 
+  Atams::Error_t startPeripheral(void);
+
   Atams::ProcessState updateBusInitProcess(Atams::Error_t &error);
 
   Atams::Error_t startUpdateCycle(void);
@@ -133,10 +135,12 @@ private Platform::BusPeripheral
     UPDATE_CONFIG_EXIT  = 7U,
     READ_CONFIG         = 8U,
     CHECK_CONFIG        = 9U,
-    SEND_REQUEST        = 10U,
-    GET_RESPONSE        = 11U,
-    COMPLETE            = 12U,
-    ERROR               = 13U
+    BEGIN_SAVE_ALL      = 10U,
+    UPDATE_SAVE_ALL     = 11U,
+    SEND_REQUEST        = 12U,
+    GET_RESPONSE        = 13U,
+    COMPLETE            = 14U,
+    ERROR               = 15U
   };
 
   enum class UpdateState: uint8_t
@@ -191,6 +195,7 @@ private Platform::BusPeripheral
   {
     ProcessHandler(void) = default;
     T specificState      = T::START;
+    T nextSpecificState  = T::START;
 
     void terminate(Atams::Error_t error);
     void setProcessComplete(void);
@@ -232,11 +237,11 @@ private Platform::BusPeripheral
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
-  bool waitForRequestTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType);
+  bool pollForRequestTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType);
   
-  bool waitForTransmitJog(Atams::Node &node, Bus::ProcessHandlerBase &process);
+  bool pollForJogTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process);
 
-  bool waitForResponse(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse);
+  bool pollForResponse(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse);
 
   virtual void rxCallback(      uint8_t  *rxBufferPtr,
                           const uint16_t  rxBufferLength) final;
@@ -263,7 +268,7 @@ private Platform::BusPeripheral
 
   void startWriteConfigVars(void);
 
-  bool allConfigAcknowledged(void);
+  bool allConfigVarsAcknowledged(void);
 
   void startReadConfigVars(void);
 
@@ -280,6 +285,8 @@ private Platform::BusPeripheral
   void triggerJogSync(void);
 
   void triggerNextRequestAsync(void);
+
+  void triggerNextSetNodeConfigCycle(const Bus::ConfigUpdateState nextState);
 
 };
 

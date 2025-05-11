@@ -120,6 +120,8 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
     increaseTailIndex(outputLength);
   }
 
+  if (_atomicByteCount == 0U) _newDataReady = !CircularBuffer::NEW_DATA_READY;
+
   Platform::CommsLock::releaseLock();
 
   return (CircularBuffer::ERROR_NONE);

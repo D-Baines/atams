@@ -212,6 +212,7 @@ def generateMapChecksum(dataBlocks: List[pandas.DataFrame]) -> int:
         case "uint32_t": crcCalculator.updateRollingCrc(VarType.TYPE_UINT32.value)
         case "int32_t":  crcCalculator.updateRollingCrc(VarType.TYPE_INT32.value)
         case "float":    crcCalculator.updateRollingCrc(VarType.TYPE_FLOAT.value)
+      print(crcCalculator.getRollingCrc())
       if (accessLevels[varID] == "RW"):  crcCalculator.updateRollingCrc(Access.ACCESS_WRITE.value)
       else:                              crcCalculator.updateRollingCrc(Access.ACCESS_READ.value)
       if (NVMStorages[varID] == "true"): crcCalculator.updateRollingCrc(NVMStorageFlag.STORAGE_TRUE.value)
@@ -314,6 +315,8 @@ def autogenCallBlock(autogenHint:        str,
       targetFile.write(blockNameCamel.upper())
     case "VAR_ID_LIST":
       generateEnum(cumulativeVarIndex, 0, "  VAR_ID_", memberIDsUpper, targetFile)
+    case "NUMBER_OF_VARS":
+      targetFile.write(str(len(dataBlock["Member ID"])))
     case "DEFAULTS":
       generateConstList(dataBlock, memberIDsUpper, "Default", targetFile)
   
