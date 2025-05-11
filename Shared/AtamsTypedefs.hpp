@@ -55,14 +55,14 @@ inline constexpr uint8_t  BITS_IN_A_BYTE                = 8U;
 inline constexpr uint32_t CRC32_POLYNOMIAL              = 0x04C11DB7U;
 inline constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID = 0x00000000U;
 inline constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID   = 0xD0D0CACAU;
-inline constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS  = 0x0000000FU;
-inline constexpr uint32_t CONFIGURATION_PASSKEY_APPLY   = 0x0000000FU;
+inline constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS  = 0x454E5452U;
+inline constexpr uint32_t CONFIGURATION_PASSKEY_APPLY   = 0x41504C59U;
 inline constexpr uint32_t CONFIGURATION_PASSKEY_CANCEL  = 0x00000000U;
-inline constexpr uint32_t STORE_ALL_PASSCODE            = 0x73617665U;
-inline constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE  = 0x52455553U;
-inline constexpr uint32_t RESTORE_ALL_PASSCODE          = 0x5245414CU;
-inline constexpr uint32_t RESET_NODE_PASSCODE           = 0x0000B33FU;
-inline constexpr uint32_t WATCHDOG_RESET_PASSCODE       = 0x72737477U;
+inline constexpr uint32_t STORE_ALL_PASSCODE            = 0x53415645U;
+inline constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE  = 0x55534552U;
+inline constexpr uint32_t RESTORE_ALL_PASSCODE          = 0x52535452U;
+inline constexpr uint32_t RESET_NODE_PASSCODE           = 0x4E525354U;
+inline constexpr uint32_t WATCHDOG_RESET_PASSCODE       = 0x57444F47U;
 
 /*************************************************************************************/
 /* STATIC ASSERTIONS                                                                 */
