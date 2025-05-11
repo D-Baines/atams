@@ -86,12 +86,13 @@ enum MessageType_t: uint8_t
 {
   MESSAGE_UNKNOWN             = 0U,
   MESSAGE_BROADCAST_UNIVERSAL = 1U,
-  MESSAGE_REQUEST             = 2U,
-  MESSAGE_RESPONSE            = 3U,
-  MESSAGE_REQUEST_SYNCED      = 4U,
-  MESSAGE_RESPONSE_SYNCED     = 5U,
-  MESSAGE_SYNC_JOG            = 6U,
-  MESSAGE_ABORTED_RESPONSE    = 7U,
+  MESSAGE_BROADCAST_RESPONSE  = 2U,
+  MESSAGE_REQUEST             = 3U,
+  MESSAGE_RESPONSE            = 4U,
+  MESSAGE_REQUEST_SYNCED      = 5U,
+  MESSAGE_RESPONSE_SYNCED     = 6U,
+  MESSAGE_SYNC_JOG            = 7U,
+  MESSAGE_ABORTED_RESPONSE    = 8U,
 };
 static_assert(sizeof(Atams::MessageType_t) == 1U, "Atams::MessageType_t size invalid");
 
