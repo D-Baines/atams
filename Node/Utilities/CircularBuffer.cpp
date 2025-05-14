@@ -34,15 +34,6 @@
 
 namespace Atams {
 
-// _atomicByteCount is accessed by two threads:
-// - Producer thread: only increments, and reads to check buffer fullness.
-// - Consumer thread: only decrements, and reads to check buffer emptiness.
-// All modifications are done inside a lock.
-// Reads are done outside the lock, but this is safe because:
-// - Each thread only modifies in one direction (increment or decrement).
-// - Reads are used for early exit only; actual data access is locked.
-// Assumes 1-byte atomicity on target platform. `volatile` ensures no compiler caching.
-
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
@@ -78,11 +69,11 @@ CircularBuffer::~CircularBuffer(void)
 void CircularBuffer::reset(void)
 {
   Platform::acquireCommsBufferLock(_lockArgument);
-  _headIndex       = 0U;
-  _tailIndex       = 0U;
-  _eolSearchIndex  = 0U;
-  _atomicByteCount = 0U;
-  _newDataReady    = !CircularBuffer::NEW_DATA_READY;
+  _headIndex      = 0U;
+  _tailIndex      = 0U;
+  _eolSearchIndex = 0U;
+  _byteCount      = 0U;
+  _newDataReady   = !CircularBuffer::NEW_DATA_READY;
   Platform::releaseCommsBufferLock(_lockArgument);
 }
 
@@ -100,8 +91,6 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
 
   Platform::acquireCommsBufferLock(_lockArgument);
 
-  _newDataReady = !CircularBuffer::NEW_DATA_READY;
-
   CircularBuffer::Error_t eolSearchResult = eolSearch();
 
   /* Early return if no EOL byte found */
@@ -118,7 +107,6 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
     resetEOLIndex();
     statusReturn = CircularBuffer::ERROR_OUTPUT_BUFFER_LENGTH;
   }
-
   else
   {
     uint16_t preWrapLength = STATIC_BUFFER_SIZE - _tailIndex;
@@ -137,6 +125,8 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
     increaseTailIndex(outputLength);
   }
 
+  if (_byteCount == 0U) _newDataReady = !CircularBuffer::NEW_DATA_READY;
+
   Platform::releaseCommsBufferLock(_lockArgument);
 
   return (CircularBuffer::ERROR_NONE);
@@ -152,9 +142,10 @@ CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
 
   Platform::acquireCommsBufferLock(_lockArgument);
 
-  if((_atomicByteCount + inputLength) >= STATIC_BUFFER_SIZE)
+  if((_byteCount + inputLength) >= STATIC_BUFFER_SIZE)
   {
-    return (CircularBuffer::ERROR_FULL);
+    Platform::releaseCommsBufferLock(_lockArgument);
+    return (CircularBuffer::ERROR_FULL); /* Early Return */
   }
 
   uint16_t preWrapLength  = STATIC_BUFFER_SIZE - _headIndex;
@@ -185,16 +176,16 @@ CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
 
 inline void CircularBuffer::increaseHeadIndex(uint16_t length)
 {
-  _headIndex        = (_headIndex + length) % STATIC_BUFFER_SIZE;
-  _atomicByteCount += length;
-  _eolToHead       += length;
+  _headIndex  = (_headIndex + length) % STATIC_BUFFER_SIZE;
+  _byteCount += length;
+  _eolToHead += length;
 }
 
 inline void CircularBuffer::increaseTailIndex(uint16_t length)
 {
-  _tailIndex        = (_tailIndex + length) % STATIC_BUFFER_SIZE;
-  _atomicByteCount -= length;
-  _eolToTail       -= length;
+  _tailIndex  = (_tailIndex + length) % STATIC_BUFFER_SIZE;
+  _byteCount -= length;
+  _eolToTail -= length;
 }
 
 inline void CircularBuffer::incrementEOLIndex(void)
@@ -206,9 +197,9 @@ inline void CircularBuffer::incrementEOLIndex(void)
 
 inline void CircularBuffer::resetEOLIndex(void)
 {
-  _eolSearchIndex  = _tailIndex;
-  _eolToTail       = 0U;
-  _eolToHead       = _atomicByteCount;
+  _eolSearchIndex = _tailIndex;
+  _eolToTail      = 0U;
+  _eolToHead      = _byteCount;
 }
 
 inline CircularBuffer::Error_t CircularBuffer::eolSearch(void)
@@ -222,8 +213,8 @@ inline CircularBuffer::Error_t CircularBuffer::eolSearch(void)
     if (eolFound) return (CircularBuffer::ERROR_NONE);
   }
 
-  if (_atomicByteCount == STATIC_BUFFER_SIZE) return (CircularBuffer::ERROR_NO_EOL_BUFFER_FULL);
-  else                                        return (CircularBuffer::ERROR_NO_EOL_FOUND);
+  if (_byteCount == STATIC_BUFFER_SIZE) return (CircularBuffer::ERROR_NO_EOL_BUFFER_FULL);
+  else                                  return (CircularBuffer::ERROR_NO_EOL_FOUND);
 }
 
 

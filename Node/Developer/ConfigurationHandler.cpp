@@ -81,11 +81,6 @@ m_configPasscodeCheckers
   },
 }
 {
-
-}
-
-ConfigurationHandler::~ConfigurationHandler(void)
-{
   /* Do Nothing */
 }
 
@@ -258,6 +253,7 @@ void ConfigurationHandler::notifyStorageProcessComplete(Atams::Error_t processSt
   static_cast<void>(Atams::write(BlockUniversal::VAR_ID_STORAGE_STATUS,           static_cast<uint8_t>(processStatus)));
   static_cast<void>(Atams::write(BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE, static_cast<uint8_t>(ATAMS_TRUE)));
 }
+
 
 } /* End Namespace - Atams */
 

@@ -124,20 +124,56 @@ void signalCommsBufferSemaphore(void)
 
 }
 
-bool readFromNVM(uint32_t startIndex, uint32_t size, uint8_t * const outputPtr)
+bool eraseNVM(void)
 {
-  static_cast<void>(startIndex);
-  static_cast<void>(size);
-  static_cast<void>(outputPtr);
-  return (false);
+  FLASH_EraseInitTypeDef eraseInitStruct;
+  uint32_t               secotrError = 0U;
+
+  /* Fill EraseInit structure*/
+  eraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
+  eraseInitStruct.VoltageRange  = FLASH_VOLTAGE_RANGE_3;
+  eraseInitStruct.Banks         = FLASH_BANK_1;
+  eraseInitStruct.Sector        = FLASH_SECTOR_7;
+  eraseInitStruct.NbSectors     = 1U;
+
+  if (HAL_FLASH_Unlock() != HAL_OK) return (false);
+
+  if (HAL_FLASHEx_Erase(&eraseInitStruct, &secotrError) != HAL_OK)
+  {
+    HAL_FLASH_Lock();
+    return (false);
+  }
+
+  if (HAL_FLASH_Lock() != HAL_OK) return (false);
+
+  return (true);
 }
 
-bool writeToNVM(uint32_t startIndex, uint32_t size, const uint8_t * const inputPtr)
+bool readFromNVM(const uint32_t readIndex, uint8_t * outputPtr, const uint32_t readLength)
 {
-  static_cast<void>(startIndex);
-  static_cast<void>(size);
-  static_cast<void>(inputPtr);
-  return (false);
+  if (outputPtr == nullptr) return (false);
+
+  for (uint32_t byteIndex = 0U; byteIndex < readLength; byteIndex++)
+  {
+    outputPtr[byteIndex] = *reinterpret_cast<uint8_t*>(0x081E0000 + readIndex + byteIndex);
+  }
+
+  return (true);
+}
+
+bool writeToNVM(const uint32_t writeIndex, uint8_t (&nvmUnit)[Platform::NVM_UNIT_SIZE])
+{
+  if (HAL_FLASH_Unlock() != HAL_OK) return (false);
+
+  if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_FLASHWORD, (0x081E0000 + writeIndex), reinterpret_cast<uint32_t>(nvmUnit)) != HAL_OK)
+  {
+    HAL_FLASH_Lock();
+    return (false);
+  }
+
+  if (HAL_FLASH_Lock() != HAL_OK) return (false);
+
+  return (true);
 }
 
 bool enterConfigurationState(void)

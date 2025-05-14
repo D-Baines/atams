@@ -92,8 +92,6 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap);
 
 Atams::Error_t initControlCore(const MemoryMap_t &memoryMap);
 
-Atams::Error_t initNVM(void);
-
 Atams::Error_t restoreAll(void);
 
 Atams::Error_t restoreUser(void);

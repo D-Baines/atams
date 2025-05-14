@@ -39,16 +39,6 @@ namespace Atams {
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-WatchdogHandler::WatchdogHandler(void)
-{
-
-}
-
-WatchdogHandler::~WatchdogHandler(void)
-{
-  /* Do Nothing */
-}
-
 void WatchdogHandler::setWatchdogPeriod(uint32_t period)
 {
   m_watchdogPeriod = period;

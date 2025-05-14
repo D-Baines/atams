@@ -174,7 +174,7 @@ enum Error_t: uint8_t
   ERROR_VAR_LENGTH                   = 3U,
   ERROR_REQUEST_BUFFER_LENGTH        = 4U,
   ERROR_RESPONSE_BUFFER_LENGTH       = 5U,
-  ERROR_NULLPTR                     = 6U,
+  ERROR_NULLPTR                      = 6U,
   ERROR_ACCESS_INVALID               = 7U,
   ERROR_REQUEST_PATTERN_INVALID      = 8U,
   ERROR_MEMORY_MAP                   = 9U,
@@ -205,16 +205,17 @@ enum Error_t: uint8_t
   ERROR_NVM_HEADER_LENGTH            = 34U,
   ERROR_NVM_HEADER_VALIDITY          = 35U,
   ERROR_NVM_PLATFORM_SIZE            = 36U,
-  ERROR_INVALID_NACK                 = 37U,
-  ERROR_CONFIGURATION_STATE_INACTIVE = 38U,
-  ERROR_CONFIGURATION_STATE_DENIED   = 39U,
-  ERROR_REQUEST_PACKET_FATAL         = 40U,
-  ERROR_INVALID_CASE                 = 41U,
-  ERROR_CONFIGURATION_EXIT           = 42U,
-  ERROR_SET_CONFIG_VAR_FAILED        = 43U,
-  ERROR_STORAGE_PROCESS_FAILED       = 44U,
-  ERROR_PROCESS_TIMEOUT              = 45U,
-  ERROR_INITIALISATION_REQUIRED      = 46U,
+  ERROR_NVM_WRITE_ORDER              = 37U,
+  ERROR_INVALID_NACK                 = 38U,
+  ERROR_CONFIGURATION_STATE_INACTIVE = 39U,
+  ERROR_CONFIGURATION_STATE_DENIED   = 40U,
+  ERROR_REQUEST_PACKET_FATAL         = 41U,
+  ERROR_INVALID_CASE                 = 42U,
+  ERROR_CONFIGURATION_EXIT           = 43U,
+  ERROR_SET_CONFIG_VAR_FAILED        = 44U,
+  ERROR_STORAGE_PROCESS_FAILED       = 45U,
+  ERROR_PROCESS_TIMEOUT              = 46U,
+  ERROR_INITIALISATION_REQUIRED      = 47U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
@@ -387,8 +388,14 @@ struct GenInfo_t
 
 struct NVMHeader_t
 {
+  uint32_t  identifier = NVM_HEADER_IDENTIFIER_INVALID;
+  uint32_t  length     = 0U;
+  GenInfo_t genInfo;
+};
+
+struct NVMFooter_t
+{
   uint32_t identifier = NVM_HEADER_IDENTIFIER_INVALID;
-  uint32_t length     = 0U;
   uint32_t checksum   = 0U;
 };
 

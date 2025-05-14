@@ -115,7 +115,7 @@ class CircularBuffer
   volatile uint16_t _headIndex       = 0U;
   volatile uint16_t _tailIndex       = 0U;
   volatile uint16_t _eolSearchIndex  = 0U;
-  volatile uint16_t _atomicByteCount = 0U;
+  volatile uint16_t _byteCount = 0U;
   volatile uint16_t _eolToHead       = 0U;
   volatile uint16_t _eolToTail       = 0U;
   volatile uint8_t  _newDataReady    = !CircularBuffer::NEW_DATA_READY; /* UINT8_T MUST BE ATOMIC ON TARGET PLATFORM */

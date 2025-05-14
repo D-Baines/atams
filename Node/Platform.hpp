@@ -52,6 +52,7 @@ inline constexpr uint16_t NODE_NUMBER_OF_VARS  = 100U;  /* Must be <= MAX_NUMBER
 inline constexpr uint16_t MAX_BUS_PACKET_SIZE  = 64U;
 inline constexpr uint16_t CIRCULAR_BUFFER_SIZE = 1024U;
 inline constexpr uint32_t NVM_STORAGE_SIZE     = 1024U;
+inline constexpr uint8_t  NVM_UNIT_SIZE        = 32U;
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
@@ -93,9 +94,11 @@ void waitOnCommsBufferSemaphore(uint32_t timeoutMilliseconds);
 
 void signalCommsBufferSemaphore(void);
 
-bool readFromNVM(uint32_t startIndex, uint32_t size, uint8_t * const outputPtr);
+bool eraseNVM(void);
 
-bool writeToNVM(uint32_t startIndex, uint32_t size, const uint8_t * const inputPtr);
+bool readFromNVM(const uint32_t readIndex, uint8_t * outputPtr, const uint32_t readLength);
+
+bool writeToNVM(uint32_t writeIndex, uint8_t (&nvmUnit)[Platform::NVM_UNIT_SIZE]);
 
 bool enterConfigurationState(void);
 

@@ -58,7 +58,7 @@ class ConfigurationHandler
   ConfigurationHandler(WatchdogHandler &watchdogHandler);
 
   /* Destructor */
-  ~ConfigurationHandler(void);
+  ~ConfigurationHandler(void) = default;
 
   /* Copy Constructor */
   ConfigurationHandler(const ConfigurationHandler &other) = delete;
