@@ -354,7 +354,7 @@ struct GenInfo_t
         (genMinute         == other.genMinute        ) &&
         (genSecond         == other.genSecond        ) &&
         (genChecksum       == other.genChecksum      ) &&
-        (noOfVars      == other.noOfVars     ) )
+        (noOfVars          == other.noOfVars         ) )
     {
       return (true);
     }
