@@ -31,8 +31,9 @@
 #include "../Shared/AtamsTypedefs.hpp"
 #include "Developer/CircularBuffer.hpp"
 #include "Platform.hpp"
-#include "Node.hpp"
 #include "../Shared/Maps/BlockUniversal.hpp"
+#include "Developer/NodeActions.hpp"
+#include "Node.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -54,6 +55,8 @@ private Platform::BusPeripheral
   /*-- Public Constants -------------------------------------------------------------*/
 
   /*-- Public Typedefs --------------------------------------------------------------*/
+
+  /*-- Public Helper Class Definitions ----------------------------------------------*/
 
   /*-- Public Function Declarations -------------------------------------------------*/
 
@@ -211,9 +214,10 @@ private Platform::BusPeripheral
   /*-- Private Objects --------------------------------------------------------------*/
                                       
   Atams::CircularBuffer circularBuffer_;
-  Atams::Node          *nodePtrs_[Platform::NUMBER_OF_NODES_PER_BUS];
+  Node                 *nodePtrs_[Platform::NUMBER_OF_NODES_PER_BUS];
   NodeActions           nodeProcessHandler_;
-  Atams::Node           dummyNode_ = {0U};
+  Node                  dummyNode_ = {0U};
+  NodeCallbackHandler  &dummyNodeCallbackHandler_ = dummyNode_;
 
   Bus::ProcessHandler<Bus::InitState>         initProcessHandler_;
   Bus::ProcessHandler<Bus::ConfigUpdateState> configUpdateProcessHandler_;
@@ -237,16 +241,16 @@ private Platform::BusPeripheral
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
-  bool pollForRequestTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType);
+  bool pollForRequestTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType);
   
-  bool pollForJogTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process);
+  bool pollForJogTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process);
 
-  bool pollForResponse(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse);
+  bool pollForResponse(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse);
 
   virtual void rxCallback(      uint8_t  *rxBufferPtr,
                           const uint16_t  rxBufferLength) final;
 
-  Atams::Error_t validateAndStoreResponsePacket(Node &node, const MessageType_t responseType);
+  Atams::Error_t validateAndStoreResponsePacket(Atams::NodeCallbackHandler &node, const MessageType_t responseType);
 
   Atams::Error_t assignNodeIDs(void);
 

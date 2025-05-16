@@ -33,7 +33,8 @@
 #include "../Shared/Utilities/CRC32.hpp"
 #include "Platform.hpp"
 #include "Developer/WriteList.hpp"
-#include "Developer/NodeProcesses.hpp"
+#include "Developer/NodeCallbackHandler.hpp"
+#include "Developer/NodeActions.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -46,14 +47,19 @@ namespace Atams {
 /*************************************************************************************/
 
 /*************************************************************************************/
+/* FORWARD DECLARATIONS                                                              */
+/*************************************************************************************/
+
+class Bus;
+
+/*************************************************************************************/
 /* CLASS DEFINITIONS                                                                 */
 /*************************************************************************************/
 
-class Node
+class Node :
+public NodeCallbackHandler
 {
   /*-- Friend Class Declarations ----------------------------------------------------*/
-
-  friend class Bus;
 
   public:
 
@@ -148,11 +154,9 @@ class Node
 
   void setNodeID(const uint8_t nodeID);
 
-  uint8_t getNodeID(void);
+  virtual uint8_t getNodeID(void) final;
 
-  Atams::Error_t getBusError(void);
-
-  bool validateGenInfo(void);
+  virtual Atams::Error_t getBusError(void) final;
 
   //#if DEVELOPER_TOOLS 
   Atams::Error_t setRequestPatternNoChecks(const uint16_t         varID,
@@ -240,17 +244,6 @@ class Node
 
   Atams::Error_t initUniversalData(const MemoryMap_t &memoryMap);
 
-  Atams::Error_t getEncodedRequestPacket(const Atams::MessageType_t requestType,
-                                         uint8_t * const            outputBuffer,
-                                         const uint16_t             outputBufferMaxLength, 
-                                         uint16_t                  &outputLength);
-
-  void responseReceived(uint8_t *inputBuffer, uint16_t inputLength);
-
-  void reportBusError(Atams::Error_t busError);
-
-  void clearBusError(void);
-
   void processAbortedResponse(void);
 
   bool processDatagramRead(const DatagramHeader_t datagramHeader,
@@ -262,8 +255,6 @@ class Node
   bool processDatagramNack(const DatagramHeader_t datagramHeader, uint16_t &datagramStartIndex);
 
   Atams::Error_t validateResponseBuffer(uint8_t * const responsePacket, const uint16_t responsePacketLength);
-
-  void processResponseBuffer(void);
 
   DataStatusReturn_t<bool> findDatagramMatchInPacket(RequestChangeConfig_t &changeConfig);
 
@@ -286,6 +277,21 @@ class Node
   Atams::Error_t updateRequestPatternOnReceive(const uint16_t varID);
 
   Atams::Error_t updateRequestPacketWriteData(void);
+
+  virtual bool validateGenInfo(void);
+
+  virtual void reportBusError(Atams::Error_t busError) final;
+  
+  virtual void clearBusError(void) final;
+
+  virtual void responseReceived(uint8_t *inputBuffer, uint16_t inputLength) final;
+
+  virtual void processResponseBuffer(void) final;
+
+  virtual Atams::Error_t getEncodedRequestPacket(const Atams::MessageType_t requestType,
+                                                 uint8_t * const            outputBuffer,
+                                                 const uint16_t             outputBufferMaxLength, 
+                                                 uint16_t                  &outputLength) final;
 };
 
 } /* End Namespace - Atams */

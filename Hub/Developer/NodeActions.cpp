@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    NodeProcesses.cpp
+  * @file    NodeActions.cpp
   *
   * @author  D. Baines
   *
@@ -25,8 +25,9 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "NodeProcesses.hpp"
+#include "NodeActions.hpp"
 #include "../Node.hpp"
+#include "NodeCallbackHandler.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"
 #include "../Platform.hpp"
 
@@ -39,16 +40,6 @@ namespace Atams {
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
-
-NodeActions::NodeActions(void)
-{
-  /* Do Nothing */
-}
-
-NodeActions::~NodeActions(void)
-{
-  /* Do Nothing */
-}
 
 void NodeActions::beginValidateGenInfoProcess(Node *node)
 {
@@ -611,8 +602,9 @@ void NodeActions::startReadGenInfo(Node &node)
 
 Atams::Error_t NodeActions::validateCollectedGenInfo(Node &node, bool &genInfoIsValid)
 {
-  Atams::Error_t error        = Atams::ERROR_NONE;
-  bool           newDataReady = false;
+  NodeCallbackHandler &callbackHandler = node;
+  Atams::Error_t       error           = Atams::ERROR_NONE;
+  bool                 newDataReady    = false;
 
   for (uint8_t varID = BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR; 
        varID <= BlockUniversal::VAR_ID_MAP_NUMBER_OF_VARS; 
@@ -622,7 +614,7 @@ Atams::Error_t NodeActions::validateCollectedGenInfo(Node &node, bool &genInfoIs
     if (!newDataReady) error = Atams::ERROR_NEW_DATA_NOT_READY;
   }
 
-  if (!error) genInfoIsValid = node.validateGenInfo();
+  if (!error) genInfoIsValid = callbackHandler.validateGenInfo();
   
   return (error);
 }

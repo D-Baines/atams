@@ -421,8 +421,32 @@ Atams::Error_t Node::getBusError(void)
   return (errorReturn);
 }
 
+/*************************************************************************************/
+/* PRIVATE CONSTEXPR FUNCTION DEFINITIONS                                            */
+/*************************************************************************************/
+
+template <typename T>
+constexpr Atams::VarType_t Node::getAtamsType(void)
+{
+    if      constexpr (std::is_same<T, uint8_t>::value)  return (Atams::TYPE_UINT8);
+    else if constexpr (std::is_same<T, int8_t>::value)   return (Atams::TYPE_INT8);
+    else if constexpr (std::is_same<T, uint16_t>::value) return (Atams::TYPE_UINT16);
+    else if constexpr (std::is_same<T, int16_t>::value)  return (Atams::TYPE_INT16);
+    else if constexpr (std::is_same<T, uint32_t>::value) return (Atams::TYPE_UINT32);
+    else if constexpr (std::is_same<T, int32_t>::value)  return (Atams::TYPE_INT32);
+    else if constexpr (std::is_same<T, float>::value)    return (Atams::TYPE_FLOAT);
+    else static_assert(!std::is_same<T, T>::value, "Invalid type passed to getAtamsType");
+    return (Atams::TYPE_NULL);
+}
+
+/*************************************************************************************/
+/* PRIVATE FUNCTION DEFINITIONS                                                      */
+/*************************************************************************************/
+
 bool Node::validateGenInfo(void)
 {
+  if (getMemoryMapIsValid() == false) return (false); /* Early Return */
+  
   const GenInfo_t nullGenInfo;
   bool            genInfoMatch = false;
   GenInfo_t       genInfo;
@@ -446,28 +470,6 @@ bool Node::validateGenInfo(void)
 
   return (genInfoMatch);
 }
-
-/*************************************************************************************/
-/* PRIVATE CONSTEXPR FUNCTION DEFINITIONS                                            */
-/*************************************************************************************/
-
-template <typename T>
-constexpr Atams::VarType_t Node::getAtamsType(void)
-{
-    if      constexpr (std::is_same<T, uint8_t>::value)  return (Atams::TYPE_UINT8);
-    else if constexpr (std::is_same<T, int8_t>::value)   return (Atams::TYPE_INT8);
-    else if constexpr (std::is_same<T, uint16_t>::value) return (Atams::TYPE_UINT16);
-    else if constexpr (std::is_same<T, int16_t>::value)  return (Atams::TYPE_INT16);
-    else if constexpr (std::is_same<T, uint32_t>::value) return (Atams::TYPE_UINT32);
-    else if constexpr (std::is_same<T, int32_t>::value)  return (Atams::TYPE_INT32);
-    else if constexpr (std::is_same<T, float>::value)    return (Atams::TYPE_FLOAT);
-    else static_assert(!std::is_same<T, T>::value, "Invalid type passed to getTypeID");
-    return (Atams::TYPE_NULL);
-}
-
-/*************************************************************************************/
-/* PRIVATE FUNCTION DEFINITIONS                                                      */
-/*************************************************************************************/
 
 Atams::Error_t Node::externalTransfer(const Access_t  accessRequest,
                                       const uint16_t  varID,
@@ -529,89 +531,6 @@ void Node::invalidateMemoryMap(void)
   m_validVarCount = 0U;
   m_memoryMap     = nullptr;
   resetVars();
-}
-
-Atams::Error_t Node::getEncodedRequestPacket(const Atams::MessageType_t requestType,
-                                             uint8_t * const            outputBuffer,
-                                             const uint16_t             outputBufferMaxLength, 
-                                             uint16_t                  &outputLength)
-{
-  Atams::Error_t statusReturn = Atams::ERROR_NONE;
-
-  m_requestPacketLock.acquireLock();
-
-  if (updateRequestPacketWriteData() != Atams::ERROR_NONE)
-  {
-    resetRequestPacket();
-    statusReturn = Atams::ERROR_REQUEST_PACKET_FATAL;
-  }
-  else 
-  {
-    _requestPacket.buffer[MESH_INDEX_MSG_TYPE] = requestType;
-    _requestPacket.buffer[MESH_INDEX_NODE_ID ] = _nodeID;
-  
-    statusReturn = encodeMeshPacket(_requestPacket.buffer, 
-                                    _requestPacket.length, 
-                                    outputBuffer, 
-                                    outputBufferMaxLength, 
-                                    outputLength);
-  }
-
-  m_requestPacketLock.releaseLock();
-
-  if (statusReturn != Atams::ERROR_NONE) reportBusError(statusReturn);
-
-  return (statusReturn);
-}
-
-void Node::responseReceived(uint8_t *inputBuffer, uint16_t inputLength)
-{
-  if ((inputBuffer != nullptr                ) &&
-      (inputLength <= sizeof(_responseBuffer)) ) 
-  {
-    memcpy(_responseBuffer, inputBuffer, inputLength);
-    _responseLength   = inputLength;
-    _newResponseReady = true;
-  }
-  else
-  {
-    reportBusError(Atams::ERROR_RESPONSE_BUFFER_LENGTH);
-  }
-}
-
-void Node::reportBusError(Atams::Error_t busError)
-{
-  m_busErrorLock.acquireLock();
-  if (_busError == Atams::ERROR_NONE) _busError = busError;
-  m_busErrorLock.releaseLock();
-}
-
-void Node::clearBusError(void)
-{
-  m_busErrorLock.acquireLock();
-  _busError = Atams::ERROR_NONE;
-  m_busErrorLock.releaseLock();
-}
-
-void Node::processAbortedResponse(void)
-{
-  uint8_t  bufferVarIDHi = _responseBuffer[Atams::ABORT_INDEX_VAR_ID_HI];
-  uint8_t  bufferVarIDLo = _responseBuffer[Atams::ABORT_INDEX_VAR_ID_LO];
-  uint8_t  errorByte     = _responseBuffer[Atams::ABORT_INDEX_ERROR];
-  uint16_t varID         = ((static_cast<uint16_t>(bufferVarIDHi & Atams::ABORT_MASK_VAR_ID_HI) << Atams::ABORT_SHIFT_VAR_ID_HI) |
-                            (static_cast<uint16_t>(bufferVarIDLo & Atams::ABORT_MASK_VAR_ID_LO) << Atams::ABORT_SHIFT_VAR_ID_HI) );
-
-  if ((_responseLength != Atams::ABORT_SIZE_PACKET) ||
-      (errorByte       >= NUMBER_OF_ATAMS_ERRORS  ) ||
-      (varID           >= m_validVarCount         ) ) 
-  {
-    reportBusError(Atams::ERROR_ABORT_FAILURE);
-  }
-  else
-  {
-    if (errorByte == Atams::ERROR_VAR_ID) updateRequestPatternOnReceive(varID);
-    reportBusError(static_cast<Atams::Error_t>(errorByte));
-  }
 }
 
 /* Warning - no check of remaining response buffer length before copy, *
@@ -921,12 +840,11 @@ Atams::Error_t Node::requestPacketAppendDatagram(RequestChangeConfig_t &changeCo
   if ((changeConfig.accessRequest  == Atams::ACCESS_WRITE  ) &&
       (changeConfig.requestPattern == Atams::REQUEST_STREAM) )
   {
-    WriteList::WriteConfig_t writeConfigToAdd =
-    {
-      .varID               = changeConfig.newDatagramHeader.varID, 
-      .requestPacketIndex = static_cast<uint16_t>(changeConfig.datagramStartIndex + DATAGRAM_SIZE_HEADER),
-      .dataLength          = static_cast<uint8_t> (changeConfig.writePayloadLength)
-    };
+    WriteList::WriteConfig_t writeConfigToAdd;
+
+    writeConfigToAdd.varID              = changeConfig.newDatagramHeader.varID;
+    writeConfigToAdd.requestPacketIndex = static_cast<uint16_t>(changeConfig.datagramStartIndex + DATAGRAM_SIZE_HEADER);
+    writeConfigToAdd.dataLength         = static_cast<uint8_t> (changeConfig.writePayloadLength);
 
     if (_requestPacket.writeList.addConfig(writeConfigToAdd) != WriteList::ERROR_NONE)
     {
@@ -1084,6 +1002,89 @@ Atams::Error_t Node::updateRequestPacketWriteData(void)
   }
 
   return (Atams::ERROR_NONE);
+}
+
+void Node::reportBusError(Atams::Error_t busError)
+{
+  m_busErrorLock.acquireLock();
+  if (_busError == Atams::ERROR_NONE) _busError = busError;
+  m_busErrorLock.releaseLock();
+}
+
+void Node::clearBusError(void)
+{
+  m_busErrorLock.acquireLock();
+  _busError = Atams::ERROR_NONE;
+  m_busErrorLock.releaseLock();
+}
+
+void Node::responseReceived(uint8_t *inputBuffer, uint16_t inputLength)
+{
+  if ((inputBuffer != nullptr                ) &&
+      (inputLength <= sizeof(_responseBuffer)) ) 
+  {
+    memcpy(_responseBuffer, inputBuffer, inputLength);
+    _responseLength   = inputLength;
+    _newResponseReady = true;
+  }
+  else
+  {
+    reportBusError(Atams::ERROR_RESPONSE_BUFFER_LENGTH);
+  }
+}
+
+void Node::processAbortedResponse(void)
+{
+  uint8_t  bufferVarIDHi = _responseBuffer[Atams::ABORT_INDEX_VAR_ID_HI];
+  uint8_t  bufferVarIDLo = _responseBuffer[Atams::ABORT_INDEX_VAR_ID_LO];
+  uint8_t  errorByte     = _responseBuffer[Atams::ABORT_INDEX_ERROR];
+  uint16_t varID         = ((static_cast<uint16_t>(bufferVarIDHi & Atams::ABORT_MASK_VAR_ID_HI) << Atams::ABORT_SHIFT_VAR_ID_HI) |
+                            (static_cast<uint16_t>(bufferVarIDLo & Atams::ABORT_MASK_VAR_ID_LO) << Atams::ABORT_SHIFT_VAR_ID_HI) );
+
+  if ((_responseLength != Atams::ABORT_SIZE_PACKET) ||
+      (errorByte       >= NUMBER_OF_ATAMS_ERRORS  ) ||
+      (varID           >= m_validVarCount         ) ) 
+  {
+    reportBusError(Atams::ERROR_ABORT_FAILURE);
+  }
+  else
+  {
+    if (errorByte == Atams::ERROR_VAR_ID) updateRequestPatternOnReceive(varID);
+    reportBusError(static_cast<Atams::Error_t>(errorByte));
+  }
+}
+
+Atams::Error_t Node::getEncodedRequestPacket(const Atams::MessageType_t requestType,
+                                             uint8_t * const            outputBuffer,
+                                             const uint16_t             outputBufferMaxLength, 
+                                             uint16_t                  &outputLength)
+{
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
+
+  m_requestPacketLock.acquireLock();
+
+  if (updateRequestPacketWriteData() != Atams::ERROR_NONE)
+  {
+    resetRequestPacket();
+    statusReturn = Atams::ERROR_REQUEST_PACKET_FATAL;
+  }
+  else 
+  {
+    _requestPacket.buffer[MESH_INDEX_MSG_TYPE] = requestType;
+    _requestPacket.buffer[MESH_INDEX_NODE_ID ] = _nodeID;
+  
+    statusReturn = encodeMeshPacket(_requestPacket.buffer, 
+                                    _requestPacket.length, 
+                                    outputBuffer, 
+                                    outputBufferMaxLength, 
+                                    outputLength);
+  }
+
+  m_requestPacketLock.releaseLock();
+
+  if (statusReturn != Atams::ERROR_NONE) reportBusError(statusReturn);
+
+  return (statusReturn);
 }
 
 

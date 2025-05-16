@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    NodeProcesses.hpp
+  * @file    NodeActions.hpp
   *
   * @author  D. Baines
   *
@@ -54,10 +54,10 @@ class NodeActions
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Default Constructor */
-  NodeActions(void);
+  NodeActions(void) = default;
 
   /* Default Destructor */
-  ~NodeActions(void);
+  ~NodeActions(void) = default;
 
   /* Copy Constructor */
   NodeActions(const NodeActions &other) = delete;
