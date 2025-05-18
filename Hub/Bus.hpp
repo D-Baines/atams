@@ -85,8 +85,6 @@ private Platform::BusPeripheral
 
   void removeNodeFromBus(Node &node);
 
-  Atams::Error_t startPeripheral(void);
-
   Atams::ProcessState updateBusInitProcess(Atams::Error_t &error);
 
   Atams::Error_t startUpdateCycle(void);
@@ -97,9 +95,7 @@ private Platform::BusPeripheral
 
   Atams::Error_t processBuffers(void);
 
-  void beginSetNodeConfigProcess(const uint8_t         nodeIDToSet, 
-                                 const BitrateOption_t bitrateOption,
-                                 const uint32_t        watchdogPeriod);
+  void beginSetNodeConfigProcess(const NodeUserConfig_t &userConfig);
 
   Atams::ProcessState updateSetNodeConfigProcess(Atams::Error_t &error); 
 
@@ -109,41 +105,33 @@ private Platform::BusPeripheral
 
   /*-- Private Constants ------------------------------------------------------------*/
 
+  static inline constexpr uint32_t SET_CONFIG_BUS_TIMEOUT = 100U;
+  static inline constexpr uint32_t MAX_CONFIG_RETRIES = 10U;
+
   /*-- Private Typedefs -------------------------------------------------------------*/
 
   enum class InitState: uint8_t
   {
-    START                 = 0U,
-    VALIDATE_GEN_INFO     = 2U,
-    VALIDATE_IDS          = 4U,
-    ENTER_CONFIG          = 5U,
-    ASSIGN_NODE_IDS       = 6U,
-    SAVE_AND_EXIT         = 7U,
-    VALIDATE_IDS_POST     = 8U,
-    START_UPDATE_CYCLE    = 9U,
-    UPDATE_CYCLE          = 10U,
-    COMPLETE              = 11U,
-    ERROR                 = 12U,
+    START               = 0U,
+    VALIDATE_GEN_INFO   = 1U,
+    VALIDATE_IDS_PRE    = 2U,
+    SET_BUS_IDS         = 3U,
+    STORE_BUS_IDS        = 4U,
+    VALIDATE_IDS_POST   = 5U,
+    COMPLETE            = 6U,
+    ERROR               = 7U,
   };
 
   enum class ConfigUpdateState: uint8_t
   {
-    START               = 0U,
-    INIT_NODE           = 1U,
-    BEGIN_CONFIG_ENTRY  = 2U,
-    UPDATE_CONFIG_ENTRY = 3U,
-    WRITE_CONFIG        = 4U,
-    CHECK_ACK           = 5U,
-    BEGIN_CONFIG_EXIT   = 6U,
-    UPDATE_CONFIG_EXIT  = 7U,
-    READ_CONFIG         = 8U,
-    CHECK_CONFIG        = 9U,
-    BEGIN_SAVE_ALL      = 10U,
-    UPDATE_SAVE_ALL     = 11U,
-    SEND_REQUEST        = 12U,
-    GET_RESPONSE        = 13U,
-    COMPLETE            = 14U,
-    ERROR               = 15U
+    START        = 0U,
+    INIT_NODE    = 1U,
+    WRITE_CONFIG = 2U,
+    STORE_CONFIG = 3U,
+    SEND_REQUEST = 4U,
+    GET_RESPONSE = 5U,
+    COMPLETE     = 6U,
+    ERROR        = 7U
   };
 
   enum class UpdateState: uint8_t
@@ -165,30 +153,17 @@ private Platform::BusPeripheral
     ERROR        = 4U
   }; 
 
-  struct UniversalConfig_t
-  {
-    uint8_t  nodeID;
-    uint8_t  bitrateOption;
-    uint32_t watchdogPeriod;
-
-    bool operator!=(const UniversalConfig_t &other)
-    {
-      return ((nodeID         != other.nodeID        ) ||
-              (bitrateOption  != other.bitrateOption ) ||
-              (watchdogPeriod != other.watchdogPeriod) );
-    }
-  };
-
   /*-- Private Helper Struct Declarations -----------------------------------------*/
 
   struct ProcessHandlerBase
   {
     ProcessHandlerBase(void) = default;
 
-    Atams::ProcessState processState     = Atams::ProcessState::COMPLETE;
-    Atams::ProcessState subProcessState  = Atams::ProcessState::COMPLETE;
-    Atams::Error_t      error            = Atams::ERROR_NONE;
+    Atams::ProcessState processState     = Atams::ProcessState::ERROR;
+    Atams::ProcessState subProcessState  = Atams::ProcessState::ERROR;
+    Atams::Error_t      error            = Atams::ERROR_INIT_REQUIRED;
     uint32_t            prevEventTime    = 0U;
+    uint8_t             activeNodeIndex  = 0U;
     bool                allNodesComplete = false;
   };
   
@@ -197,6 +172,7 @@ private Platform::BusPeripheral
   public ProcessHandlerBase
   {
     ProcessHandler(void) = default;
+    
     T specificState      = T::START;
     T nextSpecificState  = T::START;
 
@@ -211,7 +187,7 @@ private Platform::BusPeripheral
   static const GenInfo_t         blankGenInfo_;
   static const Node::MemoryMap_t dummyMemoryMap_;
 
-  /*-- Private Objects --------------------------------------------------------------*/
+  /*-- Private Class Objects --------------------------------------------------------*/
                                       
   Atams::CircularBuffer circularBuffer_;
   Node                 *nodePtrs_[Platform::NUMBER_OF_NODES_PER_BUS];
@@ -226,20 +202,24 @@ private Platform::BusPeripheral
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  uint16_t activeNodeIndex_     = 0U;
-  uint16_t noOfNodesOnBus_      = 0U;
   uint8_t  rxBuffer_[Platform::MAX_BUS_PACKET_SIZE];
   uint8_t  decodedBuffer_[Platform::MAX_BUS_PACKET_SIZE];
   uint8_t  encodedBuffer_[Platform::MAX_BUS_PACKET_SIZE];
   uint8_t  jogBuffer_[MESH_SIZE_HEADER];
-  uint16_t rxLength_            = 0U;
-  uint16_t decodedLength_       = 0U;
-  uint16_t encodedLength_       = 0U;
-  uint8_t  activeSyncCount_     = 0U;
 
-  UniversalConfig_t setupConfig_;
+  uint16_t activeNodeIndex_ = 0U;
+  uint16_t noOfNodesOnBus_  = 0U;
+  uint16_t rxLength_        = 0U;
+  uint16_t decodedLength_   = 0U;
+  uint16_t encodedLength_   = 0U;
+  uint8_t  activeSyncCount_ = 0U;
+
+  NodeUserConfig_t userConfigToSet_;
+  Atams::BusIDs_t  busIDsToSet_;
 
   /*-- Private Function Declarations ------------------------------------------------*/
+
+  void clearAllBusError(void);
 
   bool pollForRequestTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType);
   
@@ -247,28 +227,10 @@ private Platform::BusPeripheral
 
   bool pollForResponse(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse);
 
-  virtual void rxCallback(      uint8_t  *rxBufferPtr,
-                          const uint16_t  rxBufferLength) final;
+  virtual void rxCallback(uint8_t       *rxBufferPtr,
+                          const uint16_t rxBufferLength) final;
 
   Atams::Error_t validateAndStoreResponsePacket(Atams::NodeCallbackHandler &node, const MessageType_t responseType);
-
-  Atams::Error_t assignNodeIDs(void);
-
-  void beginValidateGenInfoAllNodes(void);
-
-  void beginValidateIDsAllNodes(void);
-
-  void beginConfigurationEntryAllNodes(void);
-
-  void beginStoreAllNodes(void);
-
-  Atams::ProcessState updateValidateGenInfoAllNodes(Atams::Error_t &error);
-
-  Atams::ProcessState updateValidateIDsAllNodes(Atams::Error_t &error);
-
-  void updateConfigurationEntryAllNode(Atams::Error_t &error);
-
-  void updateStoreAllNodes(Atams::Error_t &error);
 
   void startWriteConfigVars(void);
 
@@ -277,8 +239,6 @@ private Platform::BusPeripheral
   void startReadConfigVars(void);
 
   Atams::Error_t validateConfigVars(void);
-
-  /* Update State */
 
   Atams::Node * getActiveNodePtr(void);
 
@@ -290,8 +250,25 @@ private Platform::BusPeripheral
 
   void triggerNextRequestAsync(void);
 
-  void triggerNextSetNodeConfigCycle(const Bus::ConfigUpdateState nextState);
+  void beginInitValidateGenInfo(Atams::Node &node);
+  
+  void beginInitValidateIDs(Atams::Node &node, const bool preAssignment, const Atams::BusIDs_t busIDs);
+  
+  void beginInitSetBusIDs(Atams::Node &node, Atams::BusIDs_t busIDs);
 
+  void beginInitStore(Atams::Node &node);
+
+  void startNextNodeInit(void);
+
+  void beginSetConfigWrite(void);
+
+  void beginSetConfigStore(void);
+
+  void updateSetConfigSendRequest(void);
+
+  void updateSetConfigGetResponse(void);
+
+  void startNextConfigCycle(const Bus::ConfigUpdateState nextState);
 };
 
 

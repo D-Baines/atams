@@ -201,7 +201,7 @@ enum Error_t: uint8_t
   ERROR_NO_RESPONSE                  = 30U,
   ERROR_INIT_REQUIRED                = 31U,
   ERROR_NVM_CHECKSUM                 = 32U,
-  ERROR_NVM_GEN_INFO                 = 33U,
+  ERROR_GEN_INFO_MISMATCH            = 33U,
   ERROR_NVM_HEADER_LENGTH            = 34U,
   ERROR_NVM_HEADER_VALIDITY          = 35U,
   ERROR_NVM_PLATFORM_SIZE            = 36U,
@@ -216,6 +216,7 @@ enum Error_t: uint8_t
   ERROR_STORAGE_PROCESS_FAILED       = 45U,
   ERROR_PROCESS_TIMEOUT              = 46U,
   ERROR_INITIALISATION_REQUIRED      = 47U,
+  ERROR_ID_ASSIGNMENT_FAILED         = 48U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
@@ -404,6 +405,34 @@ struct DataStatusReturn_t
 {
   T              data;
   Atams::Error_t status;
+};
+
+struct NodeUserConfig_t
+{
+  uint8_t                nodeID;
+  Atams::BitrateOption_t bitrateOption;
+  uint32_t               watchdogPeriod;
+
+  bool operator==(const NodeUserConfig_t &other)
+  {
+    return ((nodeID         == other.nodeID        ) &&
+            (bitrateOption  == other.bitrateOption ) &&
+            (watchdogPeriod == other.watchdogPeriod) );
+  }
+};
+
+struct BusIDs_t
+{
+  uint8_t firstNodeID;
+  uint8_t lastNodeID;
+  uint8_t previousNodeID;
+
+  bool operator==(const BusIDs_t &other)
+  {
+    return ((firstNodeID    == other.firstNodeID   ) &&
+            (lastNodeID     == other.lastNodeID    ) &&
+            (previousNodeID == other.previousNodeID) );
+  }
 };
 
 struct TXMessage_t
