@@ -250,6 +250,8 @@ class NodeActions
     ProcessHandler(ProcessHandler &&other)                  = delete;
     ProcessHandler & operator=(ProcessHandler &&other)      = delete;
 
+    static inline constexpr uint32_t TIMEOUT = 5000U;
+
     Node               *nodePtr         = nullptr;
     Atams::ProcessState processState    = Atams::ProcessState::COMPLETE;
     Atams::ProcessState subProcessState = Atams::ProcessState::COMPLETE;
@@ -257,11 +259,14 @@ class NodeActions
     Atams::Error_t      error           = Atams::ERROR_NONE;
     Atams::Error_t      cancelError     = Atams::ERROR_NONE;
     uint32_t            prevEventTime   = 0U;
+    uint32_t            startTime       = 0U;
 
     void resetAndAssignNode(Node &node);
     void terminate(Atams::Error_t error);
     void setProcessComplete(void);
     bool getProcessTerminated(void);
+    void updateTimeout(void);
+    bool nullptrCheck(void);
   };
   
   /*-- Private Objects --------------------------------------------------------------*/

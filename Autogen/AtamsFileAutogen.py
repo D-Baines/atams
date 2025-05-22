@@ -153,7 +153,8 @@ def generateInitUniversalMapInfo(targetFile: TextIO) -> None:
                            "MAP_GEN_HOUR", 
                            "MAP_GEN_MINUTE", 
                            "MAP_GEN_SECOND",
-                           "MAP_CHECKSUM"]  
+                           "MAP_CHECKSUM",
+                           "MAP_NUMBER_OF_VARS"]  
   
   variableNames = ["atamsVersionMajor",
                    "atamsVersionMinor",
@@ -163,7 +164,8 @@ def generateInitUniversalMapInfo(targetFile: TextIO) -> None:
                    "genHour", 
                    "genMinute", 
                    "genSecond",
-                   "genChecksum"]  
+                   "genChecksum",
+                   "noOfVars"]  
 
   varIterator = 0
   for varID in universalMembersToSet:

@@ -98,6 +98,7 @@ Atams::Error_t initGenInfo(void)
   Atams::Error_t error = Atams::ERROR_NONE;
 
 $$$AUTOGEN$$$INIT_MAP_GEN_INFO_DEFINITION$$$AUTOGEN$$$  
+
   return (error); 
 }
 

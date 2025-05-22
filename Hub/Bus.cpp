@@ -28,6 +28,7 @@
 #include "Node.hpp"
 #include "../Shared/Utilities/AtamsUtilities.hpp"
 #include "Platform.hpp"
+#include "../Shared/Maps/BlockUniversal.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -42,7 +43,7 @@ namespace Atams {
 Bus::Bus(Platform::BusPeripheral::UserData_t userData)
 : Platform::BusPeripheral(userData),
   circularBuffer_(Atams::EOL_BYTE),
-  activeNodeIndex_(0U),
+  updateNodeIndex_(0U),
   noOfNodesOnBus_(0U),
   rxLength_(0U),
   decodedLength_(0U),
@@ -80,14 +81,17 @@ void Bus::removeNodeFromBus(Node &node)
   }
 }
 
+void Bus::beginBusInitProcess(void)
+{
+  initProcessHandler_.resetProcess();
+  initProcessHandler_.specificState = Bus::InitState::START;
+  /* resetAllRequestPackets(); */
+}
+
 Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
 {
   Bus::ProcessHandler<Bus::InitState> &process         = initProcessHandler_;
   Atams::ProcessState                 &processState    = process.processState;
-  Atams::ProcessState                 &subProcessState = process.subProcessState;
-  Bus::InitState                      &initState       = process.specificState;
-  Atams::Node                         *activeNodePtr   = nodePtrs_[activeNodeIndex_];
-  bool                                 dataIsValid     = false;
   Atams::Error_t                       cycleError      = Atams::ERROR_NONE;
 
   if (runUpdateCycleAsync(cycleError) == Atams::ProcessState::IN_PROGRESS) 
@@ -95,9 +99,29 @@ Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
     return (processState); /* Early Return */
   }
 
-  if (activeNodePtr == nullptr) process.terminate(Atams::ERROR_NULLPTR);
+  Atams::ProcessState &subProcessState = process.subProcessState;
+  Bus::InitState      &initState       = process.specificState;
+  bool                 dataIsValid     = false;
+  Atams::Node         *initNodePtr     = nodePtrs_[initNodeIndex_];
+  Atams::Node         *firstNodePtr    = nodePtrs_[0];
+  Atams::Node         *lastNodePtr     = nodePtrs_[noOfNodesOnBus_  - 1U];
+  Atams::Node         *prevNodePtr;
+  if (initNodeIndex_ == 0U) prevNodePtr = initNodePtr;
+  else                      prevNodePtr = nodePtrs_[initNodeIndex_ - 1U];
 
-  Atams::Node &node = *activeNodePtr;
+  if ((initNodePtr  == nullptr) ||
+      (firstNodePtr == nullptr) ||
+      (lastNodePtr  == nullptr) ||
+      (prevNodePtr  == nullptr) ) 
+  {
+    process.terminate(Atams::ERROR_NULLPTR);
+  }
+  else
+  {
+    busIDsToSet_ = {firstNodePtr->getNodeID(), lastNodePtr->getNodeID(), prevNodePtr->getNodeID()};
+  }
+
+  Atams::Node &node = *initNodePtr;
 
   switch (initState)
   {
@@ -151,18 +175,19 @@ Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
 
 Atams::Error_t Bus::startUpdateCycle(void)
 {
-  if (initProcessHandler_.processState != Atams::ProcessState::COMPLETE)
-  {
-    return (Atams::ERROR_INIT_REQUIRED);            /* Early Return */
-  }
+  //if (initProcessHandler_.processState != Atams::ProcessState::COMPLETE)
+  //{
+  //  return (Atams::ERROR_INIT_REQUIRED);            /* Early Return */
+  //}
   if (updateProcessHandler_.processState == Atams::ProcessState::IN_PROGRESS)
   {
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
   }
 
   clearAllBusError();
-  activeNodeIndex_ = 0U;
+  updateNodeIndex_ = 0U;
   updateProcessHandler_.resetProcess();
+  updateProcessHandler_.specificState = Bus::UpdateState::SEND_REQUESTS;
 
   return (Atams::ERROR_NONE);
 }
@@ -172,27 +197,26 @@ Atams::ProcessState Bus::runUpdateCycleSync(Atams::Error_t &error)
   Bus::ProcessHandler<Bus::UpdateState> &process         = updateProcessHandler_;
   Atams::ProcessState                   &processState    = process.processState;
   Bus::UpdateState                      &updateState     = process.specificState;
-  Node                                  *activeNodePtr   = getActiveNodePtr();
+  Node                                  *activeNodePtr   = getUpdateNodePtr();
 
-  BusPeripheral::update();
+  Platform::BusPeripheral::update();
   //Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
 
   if (activeNodePtr == nullptr) process.terminate(Atams::ERROR_NULLPTR);
 
   switch (updateState)
   {
-    case Bus::UpdateState::START: 
     case Bus::UpdateState::SEND_REQUESTS:
       if (pollForRequestTransmit(*activeNodePtr, process, Atams::MESSAGE_REQUEST_SYNCED) == true)
       {
-        if      (tryNodeIncrement() == false) startResponseCollectionSync();
+        if      (tryNodeIncrementUpdate() == false) startResponseCollectionSync();
         //else if (process.error)               Platform::CommsSemaphore::release();
       }
       break;
     case Bus::UpdateState::COLLECT_RESPONSES:
       if (pollForResponse(*activeNodePtr, process, Atams::MESSAGE_RESPONSE_SYNCED) == true)
       {
-        if (tryNodeIncrement() == false) process.setProcessComplete();
+        if (tryNodeIncrementUpdate() == false) process.setProcessComplete();
         else                             triggerJogSync();
       }
       break;
@@ -215,19 +239,18 @@ Atams::ProcessState Bus::runUpdateCycleSync(Atams::Error_t &error)
 
 Atams::ProcessState Bus::runUpdateCycleAsync(Atams::Error_t &error)
 { 
-  Bus::ProcessHandler<Bus::UpdateState> &process         = updateProcessHandler_;
-  Atams::ProcessState                   &processState    = process.processState;
-  Bus::UpdateState                      &updateState     = process.specificState;
-  Node                                  *activeNodePtr   = getActiveNodePtr();
+  Bus::ProcessHandler<Bus::UpdateState> &process                = updateProcessHandler_;
+  Atams::ProcessState                   &processState           = process.processState;
+  Bus::UpdateState                      &updateState            = process.specificState;
+  Node                                  *activeNodePtr          = getUpdateNodePtr();
+  NodeCallbackHandler                   *nodeCallbackHandlerPtr = activeNodePtr;
 
-  BusPeripheral::update();
   //Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
 
   if (activeNodePtr == nullptr) process.terminate(Atams::ERROR_NULLPTR);
 
   switch (updateState)
   {
-    case Bus::UpdateState::START:
     case Bus::UpdateState::SEND_REQUESTS:
       if (pollForRequestTransmit(*activeNodePtr, process, Atams::MESSAGE_REQUEST))
       {
@@ -236,7 +259,15 @@ Atams::ProcessState Bus::runUpdateCycleAsync(Atams::Error_t &error)
       }
       break;
     case Bus::UpdateState::COLLECT_RESPONSES:
-      if (pollForResponse(*activeNodePtr, process, Atams::MESSAGE_RESPONSE)) triggerNextRequestAsync();
+      Platform::BusPeripheral::update();
+      if (pollForResponse(*activeNodePtr, process, Atams::MESSAGE_RESPONSE) == true) 
+      {
+        if (process.error == Atams::ERROR_NONE) 
+        {
+          nodeCallbackHandlerPtr->processResponseBuffer();
+        }
+        triggerNextRequestAsync();
+      }
       break;
     case Bus::UpdateState::COMPLETE:
     case Bus::UpdateState::ERROR:
@@ -278,6 +309,7 @@ void Bus::beginSetNodeConfigProcess(const NodeUserConfig_t &userConfig)
 {
   userConfigToSet_ = userConfig;
   configUpdateProcessHandler_.resetProcess();
+  configUpdateProcessHandler_.specificState = Bus::ConfigUpdateState::START;
   dummyNode_.resetRequestPacket();
 }
 
@@ -453,27 +485,27 @@ Atams::Error_t Bus::validateAndStoreResponsePacket(Atams::NodeCallbackHandler &n
   return (statusReturn);
 }
 
-Atams::Node * Bus::getActiveNodePtr(void)
+Atams::Node * Bus::getUpdateNodePtr(void)
 {
   Node *nodePtr = nullptr;
 
-  if ((activeNodeIndex_            < Platform::NUMBER_OF_NODES_PER_BUS) &&
-      (activeNodeIndex_            < noOfNodesOnBus_                  ) &&
-      (nodePtrs_[activeNodeIndex_] != nullptr                         ) ) 
+  if ((updateNodeIndex_            < Platform::NUMBER_OF_NODES_PER_BUS) &&
+      (updateNodeIndex_            < noOfNodesOnBus_                  ) &&
+      (nodePtrs_[updateNodeIndex_] != nullptr                         ) ) 
   {
-    nodePtr = nodePtrs_[activeNodeIndex_];
+    nodePtr = nodePtrs_[updateNodeIndex_];
   }
   
   return (nodePtr);
 }
 
-bool Bus::tryNodeIncrement(void)
+bool Bus::tryNodeIncrementUpdate(void)
 {
   bool incrementValid = false;
 
-  if (activeNodeIndex_ + 1U < noOfNodesOnBus_)
+  if (updateNodeIndex_ + 1U < noOfNodesOnBus_)
   {
-    activeNodeIndex_++;
+    updateNodeIndex_++;
     incrementValid = true;
   }
 
@@ -482,7 +514,7 @@ bool Bus::tryNodeIncrement(void)
 
 void Bus::startResponseCollectionSync(void)
 {
-  activeNodeIndex_ = 0U;
+  updateNodeIndex_ = 0U;
   updateProcessHandler_.specificState = Bus::UpdateState::COLLECT_RESPONSES;
 }
 
@@ -494,7 +526,7 @@ void Bus::triggerJogSync(void)
 
 void Bus::triggerNextRequestAsync(void)
 {
-  if (tryNodeIncrement() == false) 
+  if (tryNodeIncrementUpdate() == false) 
   {
     updateProcessHandler_.setProcessComplete();
   }
@@ -532,30 +564,16 @@ void Bus::beginInitStore(Atams::Node &node)
 
 void Bus::startNextNodeInit(void)
 {
-  Bus::ProcessHandler<Bus::InitState> &process         = initProcessHandler_;
-  uint8_t                             &activeNodeIndex = process.activeNodeIndex;
+  Bus::ProcessHandler<Bus::InitState> &process = initProcessHandler_;
 
-  if ((activeNodeIndex + 1U) < noOfNodesOnBus_)
+  if ((initNodeIndex_ + 1U) < noOfNodesOnBus_)
   {
-    activeNodeIndex++;
+    initNodeIndex_++;
 
-    Atams::Node *activeNodePtr   = nodePtrs_[activeNodeIndex_];
-    Atams::Node *firstNodePtr    = nodePtrs_[0];
-    Atams::Node *lastNodePtr     = nodePtrs_[noOfNodesOnBus_ - 1U];
-    Atams::Node *prevNodePtr     = nodePtrs_[activeNodeIndex_ - 1U];
+    Atams::Node *initNodePtr = nodePtrs_[initNodeIndex_];
 
-    if ((activeNodePtr == nullptr) ||
-        (firstNodePtr  == nullptr) ||
-        (lastNodePtr   == nullptr) ||
-        (prevNodePtr   == nullptr) ) 
-    {
-      process.terminate(Atams::ERROR_NULLPTR);
-    }
-    else
-    {
-      beginInitValidateGenInfo(*activeNodePtr);
-      busIDsToSet_ = {firstNodePtr->getNodeID(), lastNodePtr->getNodeID(), prevNodePtr->getNodeID()};
-    }
+    if (initNodePtr == nullptr) process.terminate(Atams::ERROR_NULLPTR);
+    else                        beginInitValidateGenInfo(*initNodePtr);
   }
   else
   {
@@ -653,7 +671,6 @@ template <typename T>
 void Bus::ProcessHandler<T>::resetProcess(void)
 {
   this->error         = Atams::ERROR_NONE;
-  this->specificState = T::START;
   this->processState  = Atams::ProcessState::IN_PROGRESS;
 }
 

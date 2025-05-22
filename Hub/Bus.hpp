@@ -31,7 +31,6 @@
 #include "../Shared/AtamsTypedefs.hpp"
 #include "Developer/CircularBuffer.hpp"
 #include "Platform.hpp"
-#include "../Shared/Maps/BlockUniversal.hpp"
 #include "Developer/NodeActions.hpp"
 #include "Node.hpp"
 
@@ -85,6 +84,8 @@ private Platform::BusPeripheral
 
   void removeNodeFromBus(Node &node);
 
+  void beginBusInitProcess(void);
+
   Atams::ProcessState updateBusInitProcess(Atams::Error_t &error);
 
   Atams::Error_t startUpdateCycle(void);
@@ -136,12 +137,11 @@ private Platform::BusPeripheral
 
   enum class UpdateState: uint8_t
   {
-    START             = 0U,
-    SEND_REQUESTS     = 1U,
-    COLLECT_RESPONSES = 2U,
-    JOG_NODE          = 3U,
-    COMPLETE          = 4U,
-    ERROR             = 5U,
+    SEND_REQUESTS     = 0U,
+    COLLECT_RESPONSES = 1U,
+    JOG_NODE          = 2U,
+    COMPLETE          = 3U,
+    ERROR             = 4U,
   };
 
   enum class ValidateState: uint8_t
@@ -163,7 +163,6 @@ private Platform::BusPeripheral
     Atams::ProcessState subProcessState  = Atams::ProcessState::ERROR;
     Atams::Error_t      error            = Atams::ERROR_INIT_REQUIRED;
     uint32_t            prevEventTime    = 0U;
-    uint8_t             activeNodeIndex  = 0U;
     bool                allNodesComplete = false;
   };
   
@@ -173,8 +172,8 @@ private Platform::BusPeripheral
   {
     ProcessHandler(void) = default;
     
-    T specificState      = T::START;
-    T nextSpecificState  = T::START;
+    T specificState      = T::COMPLETE;
+    T nextSpecificState  = T::COMPLETE;
 
     void terminate(Atams::Error_t error);
     void setProcessComplete(void);
@@ -207,7 +206,8 @@ private Platform::BusPeripheral
   uint8_t  encodedBuffer_[Platform::MAX_BUS_PACKET_SIZE];
   uint8_t  jogBuffer_[MESH_SIZE_HEADER];
 
-  uint16_t activeNodeIndex_ = 0U;
+  uint16_t initNodeIndex_   = 0U;
+  uint16_t updateNodeIndex_ = 0U;
   uint16_t noOfNodesOnBus_  = 0U;
   uint16_t rxLength_        = 0U;
   uint16_t decodedLength_   = 0U;
@@ -240,9 +240,9 @@ private Platform::BusPeripheral
 
   Atams::Error_t validateConfigVars(void);
 
-  Atams::Node * getActiveNodePtr(void);
+  Atams::Node * getUpdateNodePtr(void);
 
-  bool tryNodeIncrement(void);
+  bool tryNodeIncrementUpdate(void);
 
   void startResponseCollectionSync(void);
 

@@ -91,12 +91,12 @@ private Platform::CommsLock
 
   void reset(void);
 
-  CircularBuffer::Error_t getPacket(      uint8_t  *targetBuffer,
+  CircularBuffer::Error_t getPacket(uint8_t * const targetBuffer,
                                     const uint16_t  maxOutputLength,
-                                          uint16_t &outputLength);
+                                    uint16_t       &outputLength);
 
-  CircularBuffer::Error_t pushHead(const uint8_t *inputBuffer,
-                                   const uint16_t inputLength);
+  CircularBuffer::Error_t pushHead(const uint8_t * const inputBuffer,
+                                   const uint16_t        inputLength);
 
   private:
 

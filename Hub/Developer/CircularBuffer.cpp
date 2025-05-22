@@ -127,8 +127,8 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
   return (CircularBuffer::ERROR_NONE);
 }
 
-CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
-                                                 const uint16_t inputLength)
+CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t * const inputBuffer,
+                                                 const uint16_t        inputLength)
 {
   if (inputBuffer == nullptr)
   {
