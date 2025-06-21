@@ -26,9 +26,9 @@
 /*************************************************************************************/
 
 #include "Platform.hpp"
-
 #include "../../../PeripheralLayer/SerialPort.hpp"
 #include "main.h"
+#include "string.h"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -105,13 +105,15 @@ void releaseVarStorageLock(void)
 void acquireCommsBufferLock(CommsChannel_t channelToLock)
 {
   static_cast<void>(channelToLock);
-  HAL_NVIC_DisableIRQ(UART4_IRQn);
+  HAL_NVIC_DisableIRQ(USART2_IRQn);
+  HAL_NVIC_DisableIRQ(DMA1_Stream0_IRQn);
 }
 
 void releaseCommsBufferLock(CommsChannel_t channelToLock)
 {
   static_cast<void>(channelToLock);
-  HAL_NVIC_EnableIRQ(UART4_IRQn);
+  HAL_NVIC_EnableIRQ(USART2_IRQn);
+  HAL_NVIC_DisableIRQ(DMA1_Stream0_IRQn);
 }
 
 void waitOnCommsBufferSemaphore(uint32_t timeoutMilliseconds)
@@ -127,18 +129,20 @@ void signalCommsBufferSemaphore(void)
 bool eraseNVM(void)
 {
   FLASH_EraseInitTypeDef eraseInitStruct;
-  uint32_t               secotrError = 0U;
+  uint32_t               sectorError = 0U;
 
   /* Fill EraseInit structure*/
   eraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
   eraseInitStruct.VoltageRange  = FLASH_VOLTAGE_RANGE_3;
-  eraseInitStruct.Banks         = FLASH_BANK_1;
+  eraseInitStruct.Banks         = FLASH_BANK_2;
   eraseInitStruct.Sector        = FLASH_SECTOR_7;
   eraseInitStruct.NbSectors     = 1U;
 
+  __HAL_FLASH_CLEAR_FLAG_BANK2(FLASH_FLAG_ALL_ERRORS_BANK2);
+
   if (HAL_FLASH_Unlock() != HAL_OK) return (false);
 
-  if (HAL_FLASHEx_Erase(&eraseInitStruct, &secotrError) != HAL_OK)
+  if (HAL_FLASHEx_Erase(&eraseInitStruct, &sectorError) != HAL_OK)
   {
     HAL_FLASH_Lock();
     return (false);
@@ -153,12 +157,9 @@ bool readFromNVM(const uint32_t readIndex, uint8_t * outputPtr, const uint32_t r
 {
   if (outputPtr == nullptr) return (false);
 
-  for (uint32_t byteIndex = 0U; byteIndex < readLength; byteIndex++)
-  {
-    outputPtr[byteIndex] = *reinterpret_cast<uint8_t*>(0x081E0000 + readIndex + byteIndex);
-  }
+  memcpy(outputPtr, reinterpret_cast<uint8_t*>(0x081E0000 + readIndex), readLength);
 
-  return (true);
+  return (HAL_FLASH_GetError() == HAL_OK);
 }
 
 bool writeToNVM(const uint32_t writeIndex, uint8_t (&nvmUnit)[Platform::NVM_UNIT_SIZE])

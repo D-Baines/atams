@@ -110,7 +110,7 @@ static NVMUnitHandler       s_nvmUnitHandler(s_nodeCRC);
 static uint16_t         s_validVarCount       = 0U;
 static NodeCommsState_t s_nodeCommsState      = NODE_COMMS_UNINITIALISED;
 static bool             s_bufferResetRequired = false;
-static bool             s_nvmRequired         = false;
+static uint8_t          s_activeSyncCount     = 0U;
 
 /* Core Init Synchronisation */
 ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
@@ -154,9 +154,10 @@ static void receiveCallback(const Platform::CommsChannel_t commsChannel,
 
 static inline void resetResponse(ChannelResponse_t &response, uint8_t syncCount)
 {
+  s_activeSyncCount = syncCount;
   response.aborted                     = false;
   response.buffer[MESH_INDEX_MSG_TYPE] = Atams::MESSAGE_UNKNOWN;
-  response.buffer[MESH_INDEX_SYNC]     = syncCount;
+  response.buffer[MESH_INDEX_SYNC]     = s_activeSyncCount;
   response.buffer[MESH_INDEX_NODE_ID]  = s_ConfigurationHandler.getLocalNodeID();
   response.index                       = MESH_INDEX_FIRST_DATAGRAM;
 }
@@ -440,6 +441,7 @@ static void processEncodedMeshPacket(const Platform::CommsChannel_t commsChannel
     uint8_t              firstSyncNodeID = s_ConfigurationHandler.getFirstSyncNodeID();
     uint8_t              finalSyncNodeID = s_ConfigurationHandler.getFinalSyncNodeID();
     uint8_t              prevSyncNodeID  = s_ConfigurationHandler.getPrevSyncNodeID();
+    uint8_t              packetSyncCount = decodedPacket[MESH_INDEX_SYNC];
 
     switch (messageType)
     {
@@ -464,14 +466,23 @@ static void processEncodedMeshPacket(const Platform::CommsChannel_t commsChannel
         else if (packetNodeID == finalSyncNodeID)
         {
           processRequestPacket(response, syncPacket.buffer, syncPacket.length, false);
+          if (localNodeID == firstSyncNodeID) sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
         }
         break;
       case MESSAGE_RESPONSE_SYNCED:
         if ((packetNodeID == prevSyncNodeID) &&
-            (packetNodeID != localNodeID   ) ) sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
+            (packetNodeID != localNodeID   ) )
+        {
+          if (packetSyncCount != s_activeSyncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT, Atams::VAR_ID_NULL);
+          sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
+        }
         break;
       case MESSAGE_SYNC_JOG:
-        if (packetNodeID == localNodeID) sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
+        if (packetNodeID == localNodeID)
+        {
+          if (packetSyncCount != s_activeSyncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT, Atams::VAR_ID_NULL);
+          sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
+        }
         break;
       default:
         /* Do Nothing */
@@ -543,10 +554,17 @@ static void invalidateMemoryMap(void)
   resetVars();
 }
 
-static bool getMemoryMapIsValid(void)
+static Atams::Error_t getMemoryMapIsValid(void)
 {
-  return ((s_memoryMap    != nullptr) &&
-          (s_validVarCount > 0U     ) );
+  if ((s_memoryMap    != nullptr) &&
+      (s_validVarCount > 0U     ) )
+  {
+    return (Atams::ERROR_NONE);
+  }
+  else
+  {
+    return (Atams::ERROR_MEMORY_MAP);
+  }
 }
 
 static void waitForCoreInit(CoreID_t coreID)
@@ -585,7 +603,7 @@ static Atams::Error_t validateNVMChecksum(const NVMHeader_t &nvmHeader, const NV
 
   s_nodeCRC.beginRollingCRC();
 
-  for (uint32_t nvmIndex = sizeof(NVMHeader_t); nvmIndex < endOfVarStorage; nvmIndex++)
+  for (uint32_t nvmIndex = 0U; nvmIndex < endOfVarStorage; nvmIndex++)
   {
     uint8_t nvmByte;
 
@@ -597,7 +615,9 @@ static Atams::Error_t validateNVMChecksum(const NVMHeader_t &nvmHeader, const NV
     s_nodeCRC.updateRollingCRC(nvmByte);
   }
 
-  if (nvmFooter.checksum != s_nodeCRC.getRollingCRC())
+  const uint32_t nvmChecksum = s_nodeCRC.getRollingCRC();
+
+  if (nvmFooter.checksum != nvmChecksum)
   {
     statusReturn = Atams::ERROR_NVM_CHECKSUM;
   }
@@ -607,16 +627,16 @@ static Atams::Error_t validateNVMChecksum(const NVMHeader_t &nvmHeader, const NV
 
 static uint32_t getNVMVarSpaceRequirement(void)
 {
-  uint32_t requiredNVMSpace = sizeof(NVMHeader_t) + sizeof(GenInfo_t);
+  uint32_t requiredVarSpace = 0U;
 
   for (uint16_t varID = 0U; varID < s_memoryMap->sharedMap.noOfVars; varID++)
   {
     const VarInfo_t &varInfo = s_memoryMap->sharedMap.varInfoList[varID];
 
-    if (varInfo.NVMStorage) requiredNVMSpace += Atams::TYPE_LENGTHS[varInfo.type];
+    if (varInfo.NVMStorage) requiredVarSpace += Atams::TYPE_LENGTHS[varInfo.type];
   }
 
-  return (requiredNVMSpace);
+  return (requiredVarSpace);
 }
 
 static Atams::Error_t constructAndStoreFooter(const uint32_t nvmSpaceUsed)
@@ -627,7 +647,7 @@ static Atams::Error_t constructAndStoreFooter(const uint32_t nvmSpaceUsed)
   nvmFooter.identifier = Atams::NVM_HEADER_IDENTIFIER_VALID;
   nvmFooter.checksum   = s_nodeCRC.getRollingCRC();
 
-  statusReturn = s_nvmUnitHandler.writeToNVM(0U, reinterpret_cast<uint8_t*>(&nvmFooter), sizeof(NVMFooter_t));
+  statusReturn = s_nvmUnitHandler.writeToNVM(nvmSpaceUsed, reinterpret_cast<uint8_t*>(&nvmFooter), sizeof(NVMFooter_t));
 
   return (statusReturn);
 }
@@ -678,7 +698,7 @@ static Atams::Error_t nvmTransferVars(const uint32_t      maxIndex,
 static Atams::Error_t loadNVMAllVars(const NVMHeader_t &nvmHeader)
 {
   Atams::Error_t nvmStatus = Atams::ERROR_NONE;
-  uint32_t       nvmIndex  = sizeof(NVMHeader_t) + sizeof(GenInfo_t);
+  uint32_t       nvmIndex  = sizeof(NVMHeader_t);;
 
   nvmStatus = nvmTransferVars(nvmHeader.length, nvmIndex, TRANSFER_LOAD);
 
@@ -714,6 +734,15 @@ static Atams::Error_t initUniversalDefaults(void)
   if (!error) error = Atams::write(BlockUniversal::VAR_ID_PREVIOUS_NODE_ID, BlockUniversal::DEFAULT_PREVIOUS_NODE_ID);
   if (!error) error = Atams::write(BlockUniversal::VAR_ID_BITRATE,          BlockUniversal::DEFAULT_BITRATE);
   if (!error) error = Atams::write(BlockUniversal::VAR_ID_WATCHDOG_PERIOD,  BlockUniversal::DEFAULT_WATCHDOG_PERIOD);
+
+  return (error);
+}
+
+static Atams::Error_t initAllDefaults(void)
+{
+  Atams::Error_t error = getMemoryMapIsValid();
+  if (!error)    error = initUniversalDefaults();
+  if (!error)    error = s_memoryMap->initUserDefaults();
 
   return (error);
 }
@@ -760,44 +789,24 @@ static Atams::Error_t validateNVMGenInfo(const NVMHeader_t &nvmHeader)
   return ((nvmGenInfo == mapGenInfo) ? Atams::ERROR_NONE : Atams::ERROR_NVM_GEN_INFO);
 }
 
-static bool checkNVMRequirement(void)
-{
-  s_nvmRequired = false;
-
-  for (uint16_t varID = 0U; varID < s_memoryMap->sharedMap.noOfVars; varID++)
-  {
-    const VarInfo_t &varInfo = s_memoryMap->sharedMap.varInfoList[varID];
-
-    if (varInfo.NVMStorage) s_nvmRequired = true;
-  }
-
-  return (s_nvmRequired);
-}
-
-/* Warning - No checks for valid memory map */
 static Atams::Error_t initNVM(void)
 {
-  Atams::Error_t statusReturn = Atams::ERROR_NONE;
+  Atams::Error_t statusReturn = getMemoryMapIsValid();
   NVMHeader_t    nvmHeader;
   NVMFooter_t    nvmFooter;
 
-  if (checkNVMRequirement() == false) return (Atams::ERROR_NONE); /* Early Return */
-
   statusReturn = validateNVMHeaderFooter(nvmHeader, nvmFooter);
 
-  if (!statusReturn == Atams::ERROR_NONE) statusReturn = validateNVMGenInfo(nvmHeader);
+  if (statusReturn == Atams::ERROR_NONE) statusReturn = validateNVMGenInfo(nvmHeader);
 
-  if (!statusReturn == Atams::ERROR_NONE) statusReturn = loadNVMAllVars(nvmHeader);
+  if (statusReturn == Atams::ERROR_NONE) statusReturn = loadNVMAllVars(nvmHeader);
 
-  s_ConfigurationHandler.notifyStorageProcessComplete(statusReturn);
-
-  if (!statusReturn == Atams::ERROR_NONE)
+  if (statusReturn != Atams::ERROR_NONE)
   {
     resetVars();
-    initUniversalDefaults();
-    s_memoryMap->initUserDefaults();
-
   }
+
+  s_ConfigurationHandler.notifyStorageProcessComplete(statusReturn);
 
   /* Messages may have been received while storage was in progress -
    * request buffer reset to clear old data */
@@ -829,16 +838,20 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
     s_validVarCount =  memoryMap.sharedMap.noOfVars;
   }
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = initUniversalDefaults();
+  if (initStatus == Atams::ERROR_NONE) initStatus = initAllDefaults();
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = memoryMap.initUserDefaults();
+  if ((initStatus == Atams::ERROR_NONE) &&
+      (initNVM()  != Atams::ERROR_NONE) )
+  {
+    initStatus = initAllDefaults();
+  }
 
   if (initStatus == Atams::ERROR_NONE) initStatus = memoryMap.initGenInfo();
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = initNVM();
-
   if (initStatus == Atams::ERROR_NONE)
   {
+    s_ConfigurationHandler.initConfiguration();
+
     Platform::setReceiveCallback(receiveCallback);
 
     initCommsBuffers();
@@ -878,11 +891,7 @@ Atams::Error_t initControlCore(const MemoryMap_t &memoryMap)
 
 Atams::Error_t restoreAll(void)
 {
-  Atams::Error_t statusReturn = Atams::ERROR_NONE;
-
-  if (getMemoryMapIsValid() == false) return (Atams::ERROR_MEMORY_MAP); /* Early Return */
-
-  if (s_nvmRequired == false)         return (Atams::ERROR_NONE);       /* Early Return */
+  Atams::Error_t statusReturn = getMemoryMapIsValid();
 
   if (statusReturn == Atams::ERROR_NONE) statusReturn = initUniversalDefaults();
 
@@ -895,11 +904,7 @@ Atams::Error_t restoreAll(void)
 
 Atams::Error_t restoreUser(void)
 {
-  Atams::Error_t statusReturn = Atams::ERROR_NONE;
-
-  if (getMemoryMapIsValid() == false) return (Atams::ERROR_MEMORY_MAP); /* Early Return */
-
-  if (s_nvmRequired == false)         return (Atams::ERROR_NONE);       /* Early Return */
+  Atams::Error_t statusReturn = getMemoryMapIsValid();
 
   if (statusReturn == Atams::ERROR_NONE) statusReturn = s_memoryMap->initUserDefaults();
 
@@ -913,9 +918,7 @@ Atams::Error_t storeAll(void)
   Atams::Error_t statusReturn = Atams::ERROR_NONE;
   NVMHeader_t    nvmHeader;
 
-  if (getMemoryMapIsValid() == false) return (Atams::ERROR_MEMORY_MAP); /* Early Return */
-
-  if (s_nvmRequired == false)         return (Atams::ERROR_NONE);       /* Early Return */
+  if (getMemoryMapIsValid() != Atams::ERROR_NONE) return (Atams::ERROR_MEMORY_MAP); /* Early Return */
 
   const uint32_t requiredNVMVarSpace = getNVMVarSpaceRequirement();
   const uint32_t requiredNVMSpace    = sizeof(NVMHeader_t) + requiredNVMVarSpace + sizeof(NVMFooter_t);
@@ -932,7 +935,7 @@ Atams::Error_t storeAll(void)
 
   if (statusReturn == Atams::ERROR_NONE) statusReturn = storeNVMHeader(nvmHeader);
 
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = saveVarsToNVM(requiredNVMVarSpace);
+  if (statusReturn == Atams::ERROR_NONE) statusReturn = saveVarsToNVM(nvmFooterIndex);
 
   if (statusReturn == Atams::ERROR_NONE) statusReturn = constructAndStoreFooter(nvmFooterIndex);
 

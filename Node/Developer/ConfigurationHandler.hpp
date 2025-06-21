@@ -57,6 +57,9 @@ class ConfigurationHandler
   /* Constructor */
   ConfigurationHandler(WatchdogHandler &watchdogHandler);
 
+  /* Default Constructor */
+  ConfigurationHandler(void) = delete;
+
   /* Destructor */
   ~ConfigurationHandler(void) = default;
 
@@ -71,6 +74,8 @@ class ConfigurationHandler
 
   /* Move Assignment Operator */
   ConfigurationHandler & operator=(ConfigurationHandler &&other) = delete;
+
+  void initConfiguration(void);
 
   void update(void);
 

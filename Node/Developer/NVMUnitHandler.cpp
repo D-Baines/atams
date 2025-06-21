@@ -47,6 +47,8 @@ Atams::Error_t NVMUnitHandler::eraseNVM(void)
 {
   unitStartIndex_ = 0U;
 
+  nvmCRC_.beginRollingCRC();
+
   return (Platform::eraseNVM() ? Atams::ERROR_NONE : Atams::ERROR_PLATFORM);
 }
 

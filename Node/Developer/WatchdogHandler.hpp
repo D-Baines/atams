@@ -56,10 +56,10 @@ class WatchdogHandler
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Constructor */
-  WatchdogHandler(void);
+  WatchdogHandler(void) = default;
 
   /* Destructor */
-  ~WatchdogHandler(void);
+  ~WatchdogHandler(void) = default;
 
   /* Copy Constructor */
   WatchdogHandler(const WatchdogHandler &other) = delete;

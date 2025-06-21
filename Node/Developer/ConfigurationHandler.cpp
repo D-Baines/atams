@@ -84,6 +84,11 @@ m_configPasscodeCheckers
   /* Do Nothing */
 }
 
+void ConfigurationHandler::initConfiguration(void)
+{
+  applyUniversalConfiguration();
+}
+
 void ConfigurationHandler::update(void)
 {
   if (m_updateRequired == false)

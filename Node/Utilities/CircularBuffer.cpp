@@ -77,9 +77,9 @@ void CircularBuffer::reset(void)
   Platform::releaseCommsBufferLock(_lockArgument);
 }
 
-CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
+CircularBuffer::Error_t CircularBuffer::getPacket(uint8_t        *targetBuffer,
                                                   const uint16_t  maxOutputLength,
-                                                        uint16_t &outputLength)
+                                                  uint16_t       &outputLength)
 {
   CircularBuffer::Error_t statusReturn = CircularBuffer::ERROR_NONE;
 
@@ -132,8 +132,8 @@ CircularBuffer::Error_t CircularBuffer::getPacket(      uint8_t  *targetBuffer,
   return (CircularBuffer::ERROR_NONE);
 }
 
-CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
-                                                 const uint16_t inputLength)
+CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t          *inputBuffer,
+                                                 volatile const uint16_t inputLength)
 {
   if (inputBuffer == nullptr)
   {
@@ -142,13 +142,19 @@ CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
 
   Platform::acquireCommsBufferLock(_lockArgument);
 
-  if((_byteCount + inputLength) >= STATIC_BUFFER_SIZE)
+  if (inputLength > STATIC_BUFFER_SIZE)
+  {
+    Platform::releaseCommsBufferLock(_lockArgument);
+    return (CircularBuffer::ERROR_INPUT_BUFFER_LENGTH); /* Early Return */
+  }
+
+  if ((_byteCount + inputLength) >= STATIC_BUFFER_SIZE)
   {
     Platform::releaseCommsBufferLock(_lockArgument);
     return (CircularBuffer::ERROR_FULL); /* Early Return */
   }
 
-  uint16_t preWrapLength  = STATIC_BUFFER_SIZE - _headIndex;
+  uint16_t preWrapLength = STATIC_BUFFER_SIZE - _headIndex;
 
   if (inputLength < preWrapLength)
   {
@@ -174,14 +180,14 @@ CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t *inputBuffer,
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-inline void CircularBuffer::increaseHeadIndex(uint16_t length)
+inline void CircularBuffer::increaseHeadIndex(volatile const uint16_t length)
 {
   _headIndex  = (_headIndex + length) % STATIC_BUFFER_SIZE;
   _byteCount += length;
   _eolToHead += length;
 }
 
-inline void CircularBuffer::increaseTailIndex(uint16_t length)
+inline void CircularBuffer::increaseTailIndex(volatile const uint16_t length)
 {
   _tailIndex  = (_tailIndex + length) % STATIC_BUFFER_SIZE;
   _byteCount -= length;
@@ -213,7 +219,7 @@ inline CircularBuffer::Error_t CircularBuffer::eolSearch(void)
     if (eolFound) return (CircularBuffer::ERROR_NONE);
   }
 
-  if (_byteCount == STATIC_BUFFER_SIZE) return (CircularBuffer::ERROR_NO_EOL_BUFFER_FULL);
+  if (_byteCount >= STATIC_BUFFER_SIZE) return (CircularBuffer::ERROR_NO_EOL_BUFFER_FULL);
   else                                  return (CircularBuffer::ERROR_NO_EOL_FOUND);
 }
 

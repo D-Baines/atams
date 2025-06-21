@@ -58,10 +58,11 @@ class CircularBuffer
     ERROR_NONE                 = 0U,
     ERROR_FULL                 = 1U,
     ERROR_NO_NEW_DATA          = 2U,
-    ERROR_OUTPUT_BUFFER_LENGTH = 3U,
-    ERROR_NO_EOL_FOUND         = 4U,
-    ERROR_NO_EOL_BUFFER_FULL   = 5U,
-    ERROR_NULLPTR              = 6U,
+    ERROR_INPUT_BUFFER_LENGTH  = 3U,
+    ERROR_OUTPUT_BUFFER_LENGTH = 4U,
+    ERROR_NO_EOL_FOUND         = 5U,
+    ERROR_NO_EOL_BUFFER_FULL   = 6U,
+    ERROR_NULLPTR              = 7U,
 
   } Error_t;
 
@@ -89,12 +90,12 @@ class CircularBuffer
 
   void reset(void);
 
-  Error_t getPacket(      uint8_t  *targetBuffer,
+  Error_t getPacket(uint8_t        *targetBuffer,
                     const uint16_t  maxOutputLength,
-                          uint16_t &outputLength);
+                    uint16_t       &outputLength);
 
-  Error_t pushHead(const uint8_t *inputBuffer,
-                   const uint16_t inputLength);
+  Error_t pushHead(const uint8_t          *inputBuffer,
+                   volatile const uint16_t inputLength);
 
 
   private:
@@ -115,7 +116,7 @@ class CircularBuffer
   volatile uint16_t _headIndex       = 0U;
   volatile uint16_t _tailIndex       = 0U;
   volatile uint16_t _eolSearchIndex  = 0U;
-  volatile uint16_t _byteCount = 0U;
+  volatile uint16_t _byteCount       = 0U;
   volatile uint16_t _eolToHead       = 0U;
   volatile uint16_t _eolToTail       = 0U;
   volatile uint8_t  _newDataReady    = !CircularBuffer::NEW_DATA_READY; /* UINT8_T MUST BE ATOMIC ON TARGET PLATFORM */
@@ -129,9 +130,9 @@ class CircularBuffer
 
   inline void incrementEOLIndex(void);
 
-  inline void increaseHeadIndex(uint16_t length);
+  inline void increaseHeadIndex(volatile const uint16_t length);
 
-  inline void increaseTailIndex(uint16_t length);
+  inline void increaseTailIndex(volatile const uint16_t length);
 
   inline void resetEOLIndex(void);
 
