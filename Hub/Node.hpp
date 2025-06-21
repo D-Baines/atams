@@ -204,23 +204,22 @@ public NodeCallbackHandler
 
   /*-- Private Objects --------------------------------------------------------------*/
 
-  Platform::MemoryLock m_requestPacketLock;
-  Platform::MemoryLock m_varStorageLock;
-  Platform::MemoryLock m_busErrorLock;
-  NodeActions          m_nodeProcessHandler;
+  Platform::MemoryLock requestPacketLock_;
+  Platform::MemoryLock varStorageLock_;
+  Platform::MemoryLock busErrorLock_;
+  NodeActions          nodeProcessHandler_;
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  uint8_t                  _nodeID;
-  const SharedMemoryMap_t *m_memoryMap;
-  uint16_t                 m_validVarCount = 0U;
-  Var_t                    m_varStorage[Platform::NODE_NUMBER_OF_VARS];
-  Atams::Error_t           _busError = Atams::ERROR_NONE;
-  uint16_t                 _errorCounts[NUMBER_OF_ATAMS_ERRORS] = {0U};
-  RequestPacket_t          _requestPacket;
-  uint8_t                  _responseBuffer[Platform::MAX_BUS_PACKET_SIZE];
-  uint16_t                 _responseLength   = 0U;
-  bool                     _newResponseReady = false;
+  uint8_t                  nodeID_;
+  const SharedMemoryMap_t *memoryMap_;
+  uint16_t                 validVarCount_ = 0U;
+  Var_t                    varStorage_[Platform::NODE_NUMBER_OF_VARS];
+  Atams::Error_t           busError_ = Atams::ERROR_NONE;
+  RequestPacket_t          requestPacket_;
+  uint8_t                  responseBuffer_[Platform::MAX_BUS_PACKET_SIZE];
+  uint16_t                 responseLength_   = 0U;
+  bool                     newResponseReady_ = false;
   
   /*-- Private Constexpr Function Declarations --------------------------------------*/
 
@@ -289,6 +288,7 @@ public NodeCallbackHandler
   virtual void processResponseBuffer(void) final;
 
   virtual Atams::Error_t getEncodedRequestPacket(const Atams::MessageType_t requestType,
+                                                 const uint8_t              syncCount,
                                                  uint8_t * const            outputBuffer,
                                                  const uint16_t             outputBufferMaxLength, 
                                                  uint16_t                  &outputLength) final;

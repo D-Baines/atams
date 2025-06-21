@@ -5,7 +5,7 @@ from   CTkToolTip       import *
 from   PIL              import Image
 from   enum             import Enum
 from   AtamsFileAutogen import generateCppFiles
-from tkinter import PhotoImage
+from   tkinter          import PhotoImage
 
 FRAMEWORK_NAME = "Atams"
 
@@ -125,10 +125,11 @@ def generateButtonPressed(memoryMapName: str, memoryMapXlsxPath:str, nodeDir: st
     statusLabel.configure(text="Memory Map Name Unset")
     return # Early Return
 
-  memoryMapNameCamel = memoryMapName.lower().capitalize()
+  memoryMapNameCamel = memoryMapName.lower().title()
+  print(memoryMapName)
   memoryMapNameCamel = memoryMapNameCamel.replace(" ", "")
-  nodeMemoryMapDir   = os.path.join(nodeDir, 'Maps', 'MemoryMap' + memoryMapNameCamel)
-  hubMemoryMapDir    = os.path.join(hubDir,  'Maps', 'MemoryMap' + memoryMapNameCamel)
+  nodeMemoryMapDir   = os.path.join(nodeDir, 'Maps', 'Map' + memoryMapNameCamel)
+  hubMemoryMapDir    = os.path.join(hubDir,  'Maps', 'Map' + memoryMapNameCamel)
 
   if ((os.path.isdir(nodeMemoryMapDir)) or
       (os.path.isdir(hubMemoryMapDir)) ):

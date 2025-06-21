@@ -248,9 +248,7 @@ class NodeActions
     ProcessHandler(const ProcessHandler &other)             = delete;
     ProcessHandler & operator=(const ProcessHandler &other) = delete;
     ProcessHandler(ProcessHandler &&other)                  = delete;
-    ProcessHandler & operator=(ProcessHandler &&other)      = delete;
-
-    static inline constexpr uint32_t TIMEOUT = 5000U;
+    ProcessHandler & operator=(ProcessHandler &&other)      = delete;;
 
     Node               *nodePtr         = nullptr;
     Atams::ProcessState processState    = Atams::ProcessState::COMPLETE;

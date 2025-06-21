@@ -478,7 +478,7 @@ Atams::ProcessState NodeActions::updateStorageProcess(Atams::Error_t &error, con
         if (storageStatus == Atams::ERROR_NONE) process.specificState = StorageProcessState::BEGIN_EXIT_CONFIG;
         else                                    cancelConfigProcess(process, Atams::ERROR_STORAGE_PROCESS_FAILED);
       }
-      else if ((currentTime - process.prevEventTime) > NodeActions::STORAGE_TIMEOUT)
+      else if ((currentTime - process.prevEventTime) > Platform::NVM_STORAGE_TIMEOUT)
       {
         static_cast<void>(node.stopStream(BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE));
         static_cast<void>(node.stopStream(BlockUniversal::VAR_ID_STORAGE_STATUS));
@@ -807,12 +807,6 @@ template <typename T>
 bool NodeActions::ProcessHandler<T>::getProcessTerminated(void)
 {
   return (this->processState == Atams::ProcessState::ERROR);
-}
-
-template <typename T>
-void NodeActions::ProcessHandler<T>::updateTimeout(void)
-{
-  uint32_t currentTime = Platform::getMillis();
 }
 
 template <typename T>

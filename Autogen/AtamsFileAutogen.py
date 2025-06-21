@@ -132,7 +132,7 @@ def generateVarInfoList(dataBlockNamesCamel: List[str],
       accessString    = "READ"
       if (nvmStorage):     nvmStorageStr = "Atams::ATAMS_TRUE"
       if (access == "RW"): accessString = "WRITE"
-      targetFile.write("  /* [Block"+blockNameCamel+"::VAR_ID_"+varNameUpper+"] = */\n")
+      targetFile.write("  /* [Block"+blockNameCamel+"::VAR_"+varNameUpper+"] = */\n")
       targetFile.write("  {\n")
       targetFile.write("    /* .type           = */ Atams::TYPE_"+typeUpper+",\n")
       targetFile.write("    /* .externalAccess = */ Atams::ACCESS_"+accessString+",\n")
@@ -170,7 +170,7 @@ def generateInitUniversalMapInfo(targetFile: TextIO) -> None:
   varIterator = 0
   for varID in universalMembersToSet:
     variableName = variableNames[varIterator]
-    targetFile.write("  if (!error) error = Atams::write(BlockUniversal::VAR_ID_"+varID+", ")
+    targetFile.write("  if (!error) error = Atams::write(BlockUniversal::VAR_"+varID+", ")
     targetFile.write("s_genInfo."+variableName+");\n")
     varIterator += 1
   targetFile.seek(targetFile.tell()-1)
@@ -191,7 +191,7 @@ def generateInitDefaultsDefinition(dataBlockNamesCamel: List[str],
       varIndex += 1
     for varID in varsWithDefaults:
       varIDCaps = varID.replace(" ", "_").upper()
-      targetFile.write("  if (!error) error = Atams::write(Block"+blockNameCamel+"::VAR_ID_" +varIDCaps+", ")
+      targetFile.write("  if (!error) error = Atams::write(Block"+blockNameCamel+"::VAR_" +varIDCaps+", ")
       targetFile.write("Block"+blockNameCamel+"::DEFAULT_"+varIDCaps+");\n")
     blockIndex +=1
   targetFile.seek(targetFile.tell()-1)
@@ -316,7 +316,7 @@ def autogenCallBlock(autogenHint:        str,
     case "BLOCK_NAME_UPPER":
       targetFile.write(blockNameCamel.upper())
     case "VAR_ID_LIST":
-      generateEnum(cumulativeVarIndex, 0, "  VAR_ID_", memberIDsUpper, targetFile)
+      generateEnum(cumulativeVarIndex, 0, "  VAR_", memberIDsUpper, targetFile)
     case "NUMBER_OF_VARS":
       targetFile.write(str(len(dataBlock["Member ID"])))
     case "DEFAULTS":
@@ -367,8 +367,8 @@ def generateCppFiles(memMapNameCamel:   str,
   mapTemplateHppPathNode = os.path.join(os.path.dirname(__file__), 'MapTemplateHppNode.txt')
   mapTemplateCppPathHub  = os.path.join(os.path.dirname(__file__),   'MapTemplateCppHub.txt')
   mapTemplateCppPathNode = os.path.join(os.path.dirname(__file__),  'MapTemplateCppNode.txt')
-  memMapNodeDir = os.path.join(nodeDirectory, 'Maps', ('MemoryMap' + memMapNameCamel))
-  memMapHubDir  = os.path.join(hubDirectory,  'Maps', ('MemoryMap' + memMapNameCamel))
+  memMapNodeDir = os.path.join(nodeDirectory, 'Maps', ('Map' + memMapNameCamel))
+  memMapHubDir  = os.path.join(hubDirectory,  'Maps', ('Map' + memMapNameCamel))
 
   try:
     dataBlockNames = pandas.ExcelFile(memoryMapXlsxPath).sheet_names 

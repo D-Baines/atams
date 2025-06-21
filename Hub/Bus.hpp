@@ -88,7 +88,7 @@ private Platform::BusPeripheral
 
   Atams::ProcessState updateBusInitProcess(Atams::Error_t &error);
 
-  Atams::Error_t startUpdateCycle(void);
+  Atams::Error_t beginUpdateCycle(void);
 
   Atams::ProcessState runUpdateCycleSync(Atams::Error_t &error);
 
@@ -107,7 +107,7 @@ private Platform::BusPeripheral
   /*-- Private Constants ------------------------------------------------------------*/
 
   static inline constexpr uint32_t SET_CONFIG_BUS_TIMEOUT = 100U;
-  static inline constexpr uint32_t MAX_CONFIG_RETRIES = 10U;
+  static inline constexpr uint32_t MAX_CONFIG_RETRIES     = 10U;
 
   /*-- Private Typedefs -------------------------------------------------------------*/
 
@@ -117,7 +117,7 @@ private Platform::BusPeripheral
     VALIDATE_GEN_INFO   = 1U,
     VALIDATE_IDS_PRE    = 2U,
     SET_BUS_IDS         = 3U,
-    STORE_BUS_IDS        = 4U,
+    STORE_BUS_IDS       = 4U,
     VALIDATE_IDS_POST   = 5U,
     COMPLETE            = 6U,
     ERROR               = 7U,
@@ -218,6 +218,8 @@ private Platform::BusPeripheral
   Atams::BusIDs_t  busIDsToSet_;
 
   /*-- Private Function Declarations ------------------------------------------------*/
+
+  Atams::Error_t beginUpdateCyclePrivate(void);
 
   void clearAllBusError(void);
 

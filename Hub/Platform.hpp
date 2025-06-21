@@ -30,7 +30,6 @@
 
 #include <stdint.h>
 #include <mutex>
-#include "../Shared/AtamsTypedefs.hpp"
 #include "Platform/asio-1.30.2/include/asio.hpp"
 
 /*************************************************************************************/
@@ -53,7 +52,8 @@ inline constexpr uint16_t NUMBER_OF_NODES_PER_BUS = 10U;
 inline constexpr uint16_t NODE_NUMBER_OF_VARS     = 100U; 
 inline constexpr uint16_t MAX_BUS_PACKET_SIZE     = 64U;
 inline constexpr uint16_t CIRCULAR_BUFFER_SIZE    = 1024U;
-inline constexpr uint64_t BUS_RESPONSE_TIMEOUT    = 500U;
+inline constexpr uint64_t BUS_RESPONSE_TIMEOUT    = 300U;
+inline constexpr uint64_t NVM_STORAGE_TIMEOUT     = 5000U;
 
 /*************************************************************************************/
 /* PUBLIC CLASSES                                                                    */

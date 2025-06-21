@@ -96,6 +96,7 @@ class NodeCallbackHandler
   virtual void processResponseBuffer(void) = 0;
 
   virtual Atams::Error_t getEncodedRequestPacket(const Atams::MessageType_t requestType,
+                                                 const uint8_t              syncCount,
                                                  uint8_t * const            outputBuffer,
                                                  const uint16_t             outputBufferMaxLength, 
                                                  uint16_t                  &outputLength) = 0;
