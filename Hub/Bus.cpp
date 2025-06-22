@@ -81,12 +81,19 @@ void Bus::removeNodeFromBus(Node &node)
   }
 }
 
-void Bus::beginBusInitProcess(void)
+Atams::Error_t Bus::beginBusInitProcess(void)
 {
+  if (noOfNodesOnBus_ == 0U) 
+  {
+    return (Atams::ERROR_BUS_EMPTY); /* Early Return */
+  }
+
   initProcessHandler_.resetProcess();
   initProcessHandler_.specificState = Bus::InitState::START;
   initNodeIndex_                    = 0U;
   /* resetAllRequestPackets(); */
+
+  return (Atams::ERROR_NONE);
 }
 
 Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
@@ -104,13 +111,13 @@ Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
   Bus::InitState      &initState       = process.specificState;
   bool                 dataIsValid     = false;
   Atams::Node         *initNodePtr     = nodePtrs_[initNodeIndex_];
-  Atams::Node         *firstNodePtr    = nodePtrs_[0];
-  Atams::Node         *lastNodePtr     = nodePtrs_[noOfNodesOnBus_  - 1U];
   Atams::Node         *prevNodePtr     = (initNodeIndex_ == 0U) ? 
                                          initNodePtr            : 
                                          nodePtrs_[initNodeIndex_ - 1U];
 
-  busIDsToSet_ = {firstNodePtr->getNodeID(), lastNodePtr->getNodeID(), prevNodePtr->getNodeID()};  
+  busIDsToSet_.firstNodeID    = nodePtrs_[0]->getNodeID();
+  busIDsToSet_.lastNodeID     = nodePtrs_[noOfNodesOnBus_  - 1U]->getNodeID();
+  busIDsToSet_.previousNodeID = prevNodePtr->getNodeID();
 
   Atams::Node &node = *initNodePtr;
 
@@ -157,9 +164,18 @@ Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
       break;
   }
 
-  error = process.error;
+  if (!process.error) 
+  {
+    static_cast<void>(beginUpdateCyclePrivate());
+  }
+  else
+  {
+    updateProcessHandler_.processState     = Atams::ProcessState::ERROR;
+    updateProcessHandler_.subProcessState  = Atams::ProcessState::ERROR;
+    updateProcessHandler_.error            = Atams::ERROR_INIT_ORDER;
+  }
 
-  if (!process.error) beginUpdateCycle();
+  error = process.error;
 
   return (processState);
 }
@@ -168,7 +184,7 @@ Atams::Error_t Bus::beginUpdateCycle(void)
 {
   if (initProcessHandler_.processState != Atams::ProcessState::COMPLETE)
   {
-    return (Atams::ERROR_INIT_REQUIRED); /* Early Return */
+    return (Atams::ERROR_INIT_ORDER); /* Early Return */
   }
 
   return (beginUpdateCyclePrivate());
@@ -352,7 +368,7 @@ Atams::Error_t Bus::beginUpdateCyclePrivate(void)
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
   }
 
-  clearAllBusError();
+  clearAllBusErrors();
   circularBuffer_.reset();
   updateNodeIndex_ = 0U;
   activeSyncCount_++;
@@ -362,7 +378,7 @@ Atams::Error_t Bus::beginUpdateCyclePrivate(void)
   return (Atams::ERROR_NONE);
 }
 
-void Bus::clearAllBusError(void)
+void Bus::clearAllBusErrors(void)
 {
   for (Node *&nodePtr : nodePtrs_)
   {

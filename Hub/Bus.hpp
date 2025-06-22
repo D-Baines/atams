@@ -84,7 +84,7 @@ private Platform::BusPeripheral
 
   void removeNodeFromBus(Node &node);
 
-  void beginBusInitProcess(void);
+  Atams::Error_t beginBusInitProcess(void);
 
   Atams::ProcessState updateBusInitProcess(Atams::Error_t &error);
 
@@ -161,7 +161,7 @@ private Platform::BusPeripheral
 
     Atams::ProcessState processState     = Atams::ProcessState::ERROR;
     Atams::ProcessState subProcessState  = Atams::ProcessState::ERROR;
-    Atams::Error_t      error            = Atams::ERROR_INIT_REQUIRED;
+    Atams::Error_t      error            = Atams::ERROR_INIT_ORDER;
     uint32_t            prevEventTime    = 0U;
     bool                allNodesComplete = false;
   };
@@ -221,7 +221,7 @@ private Platform::BusPeripheral
 
   Atams::Error_t beginUpdateCyclePrivate(void);
 
-  void clearAllBusError(void);
+  void clearAllBusErrors(void);
 
   bool pollForRequestTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType);
   
