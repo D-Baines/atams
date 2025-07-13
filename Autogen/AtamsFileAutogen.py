@@ -102,13 +102,15 @@ def generateConstList(block:        pandas.DataFrame,
       targetFile.write((columnHeader.replace(' ', '_').upper()) + "_" + memberName)
       writeSpaces(postNameSpaces, targetFile)
       targetFile.write(" {" + valueAsString)
-      if (("." not in valueAsString) and 
-          (type == "float"         ) ):
-        targetFile.write(".0")
       listItemNoSignNoPoint = valueAsString.replace('.', '')
       listItemNoSignNoPoint = listItemNoSignNoPoint.replace('-', '')
-      if (listItemNoSignNoPoint.isnumeric() and (type == "float")):
-        targetFile.write("F")
+      if listItemNoSignNoPoint.isnumeric():
+        if (type == "float"):
+          if ("." not in valueAsString):
+            targetFile.write(".0")
+          targetFile.write("F")
+        if (type == "uint8_t" or type == "uint16_t" or type == "uint32_t"):
+          targetFile.write("U")
       targetFile.write("};\n")
     memberIterator += 1
 
@@ -318,7 +320,7 @@ def autogenCallBlock(autogenHint:        str,
     case "VAR_ID_LIST":
       generateEnum(cumulativeVarIndex, 0, "  VAR_", memberIDsUpper, targetFile)
     case "NUMBER_OF_VARS":
-      targetFile.write(str(len(dataBlock["Member ID"])))
+      targetFile.write(str(len(dataBlock["Member ID"])) + "U")
     case "DEFAULTS":
       generateConstList(dataBlock, memberIDsUpper, "Default", targetFile)
   

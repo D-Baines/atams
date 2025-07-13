@@ -50,7 +50,7 @@ nodeID_(nodeID)
 
 Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
 {
-  Atams::Error_t statusReturn = Atams::validateMemoryMap(memoryMap.sharedMemoryMap, Platform::NODE_NUMBER_OF_VARS);
+  Atams::Error_t statusReturn = Atams::validateMemoryMap(memoryMap, Platform::NODE_NUMBER_OF_VARS);
 
   if (statusReturn == Atams::ERROR_NONE)
   {
@@ -58,8 +58,8 @@ Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
         (requestPacketLock_.init()) &&
         (busErrorLock_.init()     ) )
     {
-      memoryMap_     = &memoryMap.sharedMemoryMap;
-      validVarCount_ = memoryMap.sharedMemoryMap.noOfVars;
+      memoryMap_     = &memoryMap;
+      validVarCount_ = memoryMap.noOfVars;
     }
     else 
     {
@@ -323,24 +323,6 @@ Atams::Error_t Node::stopStreamGetWriteAck(const uint16_t varID, bool &ackReceiv
   return (error);
 }
 
-DataStatusReturn_t<uint8_t> Node::getMemberLength(const uint16_t varID)
-{
-  DataStatusReturn_t<uint8_t> lengthReturn;
-
-  if (varID >= validVarCount_)
-  {
-    lengthReturn.status = Atams::ERROR_VAR_ID;
-    return (lengthReturn); /* Early Return */
-  }
-
-  const Atams::VarInfo_t &varInfo = memoryMap_->varInfoList[varID];
-
-  lengthReturn.data   = TYPE_LENGTHS[varInfo.type];
-  lengthReturn.status = Atams::ERROR_NONE;
-
-  return (lengthReturn);
-}
-
 /* RE-EVAULATE THIS AND ALL REQUEST PACKET HANDLING */
 Atams::Error_t Node::setRequestPattern(const uint16_t         varID,
                                        const Access_t         accessRequest,
@@ -399,9 +381,31 @@ void Node::resetRequestPacket(void)
   requestPacketLock_.releaseLock();
 }
 
+uint16_t Node::getRequestPacketLength(void)
+{
+  requestPacketLock_.acquireLock();
+
+  uint16_t requestPacketLength = requestPacket_.length;
+
+  requestPacketLock_.releaseLock();
+
+  return (requestPacketLength);
+}
+
 void Node::setNodeID(const uint8_t nodeID)
 {
   nodeID_ = nodeID;
+}
+
+Atams::Error_t Node::getVarLength(const uint16_t varID, uint8_t &length)
+{
+  if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
+
+  const Atams::VarInfo_t &varInfo = memoryMap_->varInfoList[varID];
+
+  length = TYPE_LENGTHS[varInfo.type];
+
+  return (Atams::ERROR_NONE);
 }
 
 uint8_t Node::getNodeID(void)
@@ -434,7 +438,7 @@ constexpr Atams::VarType_t Node::getAtamsType(void)
     else if constexpr (std::is_same<T, uint32_t>::value) return (Atams::TYPE_UINT32);
     else if constexpr (std::is_same<T, int32_t>::value)  return (Atams::TYPE_INT32);
     else if constexpr (std::is_same<T, float>::value)    return (Atams::TYPE_FLOAT);
-    else static_assert(!std::is_same<T, T>::value, "Invalid type passed to getAtamsType");
+    else    static_assert(!std::is_same<T, T>::value,   "Invalid type passed to Node::getAtamsType(void)");
     return (Atams::TYPE_NULL);
 }
 
@@ -600,22 +604,23 @@ Atams::Error_t Node::validateResponseBuffer(uint8_t * const responsePacket,
 {
   DatagramHeader_t datagramHeader;
   uint16_t         datagramStartIndex = MESH_INDEX_FIRST_DATAGRAM;
+  uint8_t          varLength          = 0U;
 
   while (datagramStartIndex + DATAGRAM_SIZE_HEADER <= responsePacketLength)
   {
     bufferToDatagramHeader(&responsePacket[datagramStartIndex], datagramHeader);
-    
-    DataStatusReturn_t<uint8_t> varLength = getMemberLength(datagramHeader.varID);
 
-    if (varLength.status != Atams::ERROR_NONE)
+    Atams::Error_t lengthStatus = getVarLength(datagramHeader.varID, varLength);
+
+    if (lengthStatus != Atams::ERROR_NONE)
     {
-      return (varLength.status); /* Early Return */
+      return (lengthStatus); /* Early Return */
     }
 
     switch (static_cast<AccessResponse_t>(datagramHeader.command))
     {
       case Atams::RESPONSE_ACK_READ:
-        datagramStartIndex += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + varLength.data);
+        datagramStartIndex += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + varLength);
         break;
       case Atams::RESPONSE_ACK_WRITE:
         datagramStartIndex += DATAGRAM_SIZE_HEADER;
@@ -700,6 +705,7 @@ DataStatusReturn_t<bool> Node::findDatagramMatchInPacket(RequestChangeConfig_t &
   DataStatusReturn_t<bool> statusReturn;
   statusReturn.status = Atams::ERROR_NONE;
   statusReturn.data   = false;
+  uint8_t varLength   = 0U;
 
   changeConfig.datagramStartIndex = MESH_INDEX_FIRST_DATAGRAM;
 
@@ -711,15 +717,15 @@ DataStatusReturn_t<bool> Node::findDatagramMatchInPacket(RequestChangeConfig_t &
 
     if (changeConfig.currentDatagramHeader.command == Atams::ACCESS_WRITE)
     {
-      DataStatusReturn_t<uint8_t> payloadLength = getMemberLength(changeConfig.currentDatagramHeader.varID);
+      Atams::Error_t lengthStatus = getVarLength(changeConfig.currentDatagramHeader.varID, varLength);
 
-      if (payloadLength.status != Atams::ERROR_NONE)
+      if (lengthStatus != Atams::ERROR_NONE)
       {
         statusReturn.status = Atams::ERROR_REQUEST_PACKET_FATAL;
         return (statusReturn); /* Early Return */
       }
 
-      changeConfig.currentDatagramLength += payloadLength.data;
+      changeConfig.currentDatagramLength += varLength;
     }
 
     if (changeConfig.currentDatagramHeader.varID == changeConfig.newDatagramHeader.varID)
@@ -885,6 +891,12 @@ void Node::resetRequestPacketNoLock(void)
 {
   requestPacket_.length = Atams::MESH_SIZE_HEADER;
   requestPacket_.writeList.reset();
+  for (uint16_t varID = 0U; varID < validVarCount_; varID++)
+  {
+    Node::Var_t &var = varStorage_[varID];
+    var.requestAccess  = Atams::ACCESS_NONE;
+    var.requestPattern = Atams::REQUEST_INACTIVE;
+  }
 }
 
 /* Warning - No OOR checks, should be completed by calling function */

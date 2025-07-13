@@ -95,7 +95,7 @@ $$$AUTOGEN$$$VAR_INFO_LIST$$$AUTOGEN$$$
 
 const Node::MemoryMap_t memoryMap =
 {
-  /* .sharedMemoryMap = */
+  /* SharedMemoryMap_t */
   {
     /* noOfVars         = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::s_genInfo.noOfVars,
     /* genInfo          = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::s_genInfo,

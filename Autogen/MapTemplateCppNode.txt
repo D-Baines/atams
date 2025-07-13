@@ -117,7 +117,7 @@ $$$AUTOGEN$$$INIT_USER_DEFAULTS_DEFINITION$$$AUTOGEN$$$
 
 const MemoryMap_t memoryMap =
 {
-  /* .sharedMemoryMap = */
+  /* SharedMemoryMap_t */
   {
     /* .noOfVars    = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::s_genInfo.noOfVars,
     /* .genInfo     = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::s_genInfo,

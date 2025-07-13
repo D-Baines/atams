@@ -47,30 +47,20 @@ namespace Atams {
 /*************************************************************************************/
 
 /*************************************************************************************/
-/* FORWARD DECLARATIONS                                                              */
-/*************************************************************************************/
-
-class Bus;
-
-/*************************************************************************************/
 /* CLASS DEFINITIONS                                                                 */
 /*************************************************************************************/
 
 class Node :
 public NodeCallbackHandler
 {
-  /*-- Friend Class Declarations ----------------------------------------------------*/
-
   public:
 
   /*-- Public Constants -------------------------------------------------------------*/
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
-  struct MemoryMap_t
-  {
-    SharedMemoryMap_t sharedMemoryMap;
-  };
+  struct MemoryMap_t :
+  public SharedMemoryMap_t {};
 
   /*-- Public Function Declarations -------------------------------------------------*/
 
@@ -139,8 +129,6 @@ public NodeCallbackHandler
   Atams::Error_t clearAckStartWrite(const uint16_t varID, const T writeData);
   
   Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
-  
-  DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t memberID);
 
   Atams::Error_t setRequestPattern(const uint16_t         varID,
                                    const Access_t         accessRequest,
@@ -151,6 +139,10 @@ public NodeCallbackHandler
                                    RequestPattern_t &requestPattern);
 
   void resetRequestPacket(void);
+
+  uint16_t getRequestPacketLength(void);
+
+  Atams::Error_t getVarLength(const uint16_t varID, uint8_t &length);
 
   void setNodeID(const uint8_t nodeID);
 

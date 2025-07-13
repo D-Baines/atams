@@ -68,10 +68,10 @@ class directorySearchBox:
       self.entry.insert(0, self.path)
 
 def runFileGeneration(memoryMapName, memoryMapXlsxPath, nodeDir, hubDir):
-  #try:
-  generationStatus = generateCppFiles(memoryMapName, memoryMapXlsxPath, nodeDir, hubDir)
-  #except:
-     #generationStatus = "Error: File Generation Failed - Invalid Memory Map"
+  try:
+    generationStatus = generateCppFiles(memoryMapName, memoryMapXlsxPath, nodeDir, hubDir)
+  except:
+    generationStatus = "Error: File Generation Failed - Invalid Memory Map"
   statusLabel.configure(text=generationStatus)
    
 def overwriteAccepted(window, memoryMapName: str, memoryMapXlsxPath:str, nodeDir: str, hubDir:str):
@@ -216,10 +216,10 @@ generateButton = customtkinter.CTkButton(generateFrame,
                                                                                memMapSearch.entry.get(),
                                                                                nodeDirSearch.entry.get(),
                                                                                hubDirSearch.entry.get())), 
-                                         width=100)
+                                                                               width=100)
 
 generateButton.pack(side='right', fill='y', pady=(10,0))
-memMapSearch.entry.insert(0, "/Users/dan/Desktop/Atams Workspace/TestKitSoftware/CM7/Core/Src/Libraries/Atams/Autogen/Example_Memory_Map.xlsx")
+memMapSearch.entry.insert(0, "/Users/dan/Desktop/Atams Workspace/TestKitSoftware/CM7/Core/Src/Libraries/Atams/Autogen/TestMemoryMap.xlsx")
 nodeDirSearch.entry.insert(0, "/Users/dan/Desktop/Atams Workspace/TestKitSoftware/CM7/Core/Src/Libraries/Atams/Node")
 hubDirSearch.entry.insert(0, "/Users/dan/Desktop/Atams Workspace/HubSoftware/src/Atams/Hub")
 
