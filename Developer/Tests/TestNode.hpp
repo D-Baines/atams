@@ -102,7 +102,7 @@ public Node
 
   const uint8_t nodeID_;
 
-  uint16_t expectedRequestPacketLength_ {0U};
+  uint16_t expectedRequestPacketLength_ {Atams::MESH_SIZE_HEADER};
 
   uint8_t  testUint8_  {0U};
   int8_t   testInt8_   {0};  
@@ -120,6 +120,8 @@ public Node
   int32_t  feedbackInt32_  {0}; 
   float    feedbackFloat_  {0.0F}; 
 
+
+  Atams::Access_t         prevAccess_[Atams::MapTest::BlockTest1::NUMBER_OF_VARS]          = {Atams::ACCESS_NONE};
   Atams::RequestPattern_t prevRequestPatterns_[Atams::MapTest::BlockTest1::NUMBER_OF_VARS] = {Atams::REQUEST_INACTIVE};
 
   char errorBuffer_[MAX_ERROR_MESSAGE_LENGTH];

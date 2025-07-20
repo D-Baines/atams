@@ -25,7 +25,7 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "HubTests.hpp"
+#include "HILTests.hpp"
 #include "../../Hub/Bus.hpp"
 #include "TestNode.hpp"
 
@@ -33,7 +33,7 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace HubTests {
+namespace Atams { namespace HILTests {
 
 /*************************************************************************************/
 /* PRIVATE CONSTANTS                                                                 */
@@ -49,7 +49,12 @@ namespace Atams { namespace HubTests {
 /* PRIVATE VARIABLES                                                                 */
 /*************************************************************************************/
 
-const Atams::Platform::BusPeripheral::UserData_t userData_;
+static asio::io_context ioContext_;
+
+static const Atams::Platform::BusPeripheral::UserData_t userData_ = 
+{
+  .ioContext {ioContext_}
+};
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DECLARATIONS                                                     */
@@ -61,9 +66,10 @@ static void errorHandler(const Atams::Error_t error, const char * errorMessage);
 /* PRIVATE OBJECTS                                                                   */
 /*************************************************************************************/
 
-Atams::Bus      testBus_(userData_);
-Atams::TestNode testNode1_(0U, errorHandler);
-Atams::TestNode testNode2_(1U, errorHandler);
+static Atams::Bus      testBus_(userData_);
+static Atams::TestNode testNode1_(0U, errorHandler);
+static Atams::TestNode testNode2_(1U, errorHandler);
+static Atams::TestNode testNode3_(2U, errorHandler);
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -78,10 +84,42 @@ static void errorHandler(const Atams::Error_t error, const char * errorMessage)
   while(true) {}; /* Infinite Loop */
 }
 
-static Atams::Error_t testBusInit(void)
+static void testBusInit(void)
 {
-  Atams::Error_t      error     = Atams::ERROR_NONE;
-  Atams::ProcessState initState = Atams::ProcessState::IN_PROGRESS;
+  Atams::Error_t      error         = Atams::ERROR_NONE;
+  Atams::Error_t      expectedError = Atams::ERROR_NONE;
+  Atams::ProcessState initState     = Atams::ProcessState::IN_PROGRESS;
+
+  expectedError = Atams::ERROR_BUS_EMPTY;
+  error         = testBus_.beginBusInitProcess();
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::beginBusInitProcess");
+
+  expectedError = Atams::ERROR_NONE;
+  error         = testBus_.addNodeToBus(testNode1_);
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+
+  expectedError = Atams::ERROR_NODE_ALREADY_ON_BUS;
+  error         = testBus_.addNodeToBus(testNode1_);
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+
+  expectedError = Atams::ERROR_NONE;
+  error         = testBus_.addNodeToBus(testNode2_);
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+
+  expectedError = Atams::ERROR_BUS_FULL;
+  error         = testBus_.addNodeToBus(testNode3_);
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+
+  expectedError = Atams::ERROR_INIT_ORDER;
+  initState     = testBus_.updateBusInitProcess(error);
+  if ((initState != Atams::ProcessState::ERROR) ||
+      (error     != expectedError             ) ) errorHandler(error, "Unexpected Return from Bus::updateBusInitProcess");
+
+  expectedError = Atams::ERROR_NONE;
+  error         = testBus_.beginBusInitProcess();
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::beginBusInitProcess");
+
+  initState = Atams::ProcessState::IN_PROGRESS;
 
   while (initState == Atams::ProcessState::IN_PROGRESS)
   {
@@ -91,7 +129,7 @@ static Atams::Error_t testBusInit(void)
   if ((initState == Atams::ProcessState::ERROR) || 
       (error     != Atams::ERROR_NONE         ) ) 
   {
-    errorHandler(error, "Bus Init Failed");
+    errorHandler(error, "Unexpected Return from Bus::updateBusInitProcess");
   }
 }
 
@@ -101,7 +139,7 @@ static Atams::Error_t runUpdateCycleTests(void)
 
   if (error) errorHandler(error, "Begin Update Cycle Failed");
 
-  while(true)
+  while (true)
   { 
     Atams::ProcessState updateState = testBus_.runUpdateCycleSync(error);
 
@@ -127,6 +165,12 @@ static Atams::Error_t runUpdateCycleTests(void)
 
 void runTests(void)
 {
+  Atams::Error_t error = testNode1_.initMemoryMap(Atams::MapTest::memoryMap);
+
+  if (!error) error = testNode2_.initMemoryMap(Atams::MapTest::memoryMap);
+
+  if (error) errorHandler(error, "Node Init Failed");
+
   testNode1_.runFunctionArgTests();
 
   testBusInit();

@@ -43,20 +43,20 @@ namespace Atams { namespace MapTest { namespace BlockTest2 {
 
 enum VarID_t: uint16_t
 {
-  VAR_WRITE_UINT8  = 42U,
-  VAR_WRITE_INT8   = 43U,
-  VAR_READ_UINT8   = 44U,
-  VAR_READ_INT8    = 45U,
-  VAR_WRITE_UINT16 = 46U,
-  VAR_WRITE_INT16  = 47U,
-  VAR_READ_UINT16  = 48U,
-  VAR_READ_INT16   = 49U,
-  VAR_WRITE_UINT32 = 50U,
-  VAR_WRITE_INT32  = 51U,
-  VAR_READ_UINT32  = 52U,
-  VAR_READ_INT32   = 53U,
-  VAR_WRITE_FLOAT  = 54U,
-  VAR_READ_FLOAT   = 55U,
+  VAR_READ_UINT8   = 42U,
+  VAR_READ_INT8    = 43U,
+  VAR_READ_UINT16  = 44U,
+  VAR_READ_INT16   = 45U,
+  VAR_READ_UINT32  = 46U,
+  VAR_READ_INT32   = 47U,
+  VAR_READ_FLOAT   = 48U,
+  VAR_WRITE_UINT8  = 49U,
+  VAR_WRITE_INT8   = 50U,
+  VAR_WRITE_UINT16 = 51U,
+  VAR_WRITE_INT16  = 52U,
+  VAR_WRITE_UINT32 = 53U,
+  VAR_WRITE_INT32  = 54U,
+  VAR_WRITE_FLOAT  = 55U,
 };
 
 /*************************************************************************************/
@@ -65,20 +65,19 @@ enum VarID_t: uint16_t
 
 inline constexpr uint16_t NUMBER_OF_VARS {14U};
 
-inline constexpr uint8_t  DEFAULT_WRITE_UINT8  {1U};
-inline constexpr int8_t   DEFAULT_WRITE_INT8   {2};
-inline constexpr uint8_t  DEFAULT_READ_UINT8   {3U};
-inline constexpr int8_t   DEFAULT_READ_INT8    {4};
-inline constexpr uint16_t DEFAULT_WRITE_UINT16 {5U};
-inline constexpr int16_t  DEFAULT_WRITE_INT16  {6};
-inline constexpr uint16_t DEFAULT_READ_UINT16  {7U};
-inline constexpr int16_t  DEFAULT_READ_INT16   {8};
-inline constexpr uint32_t DEFAULT_WRITE_UINT32 {9U};
-inline constexpr int32_t  DEFAULT_WRITE_INT32  {10};
-inline constexpr uint32_t DEFAULT_READ_UINT32  {11U};
-inline constexpr int32_t  DEFAULT_READ_INT32   {12};
+inline constexpr int8_t   DEFAULT_READ_INT8    {1};
+inline constexpr uint16_t DEFAULT_READ_UINT16  {2U};
+inline constexpr int16_t  DEFAULT_READ_INT16   {3};
+inline constexpr uint32_t DEFAULT_READ_UINT32  {4U};
+inline constexpr int32_t  DEFAULT_READ_INT32   {5};
+inline constexpr float    DEFAULT_READ_FLOAT   {6.0F};
+inline constexpr uint8_t  DEFAULT_WRITE_UINT8  {7U};
+inline constexpr int8_t   DEFAULT_WRITE_INT8   {8};
+inline constexpr uint16_t DEFAULT_WRITE_UINT16 {9U};
+inline constexpr int16_t  DEFAULT_WRITE_INT16  {10};
+inline constexpr uint32_t DEFAULT_WRITE_UINT32 {11U};
+inline constexpr int32_t  DEFAULT_WRITE_INT32  {12};
 inline constexpr float    DEFAULT_WRITE_FLOAT  {13.0F};
-inline constexpr float    DEFAULT_READ_FLOAT   {14.0F};
 
 
 } } } /* End Namespace - Atams::MapTest::BlockTest2 */

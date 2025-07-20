@@ -153,6 +153,13 @@ private Platform::BusPeripheral
     ERROR        = 4U
   }; 
 
+  enum class PollResult : uint8_t
+  {
+    WAITING = 0U,
+    READY   = 1U,
+    TIMEOUT = 2U,
+  };
+
   /*-- Private Helper Struct Declarations -----------------------------------------*/
 
   struct ProcessHandlerBase
@@ -206,18 +213,20 @@ private Platform::BusPeripheral
   uint8_t  encodedBuffer_[Platform::MAX_BUS_PACKET_SIZE];
   uint8_t  jogBuffer_[MESH_SIZE_HEADER];
 
-  uint16_t initNodeIndex_   = 0U;
-  uint16_t updateNodeIndex_ = 0U;
-  uint16_t noOfNodesOnBus_  = 0U;
-  uint16_t rxLength_        = 0U;
-  uint16_t decodedLength_   = 0U;
-  uint16_t encodedLength_   = 0U;
-  uint8_t  activeSyncCount_ = 0U;
+  uint16_t initNodeIndex_   {0U};
+  uint16_t updateNodeIndex_ {0U};
+  uint16_t noOfNodesOnBus_  {0U};
+  uint16_t rxLength_        {0U};
+  uint16_t decodedLength_   {0U};
+  uint16_t encodedLength_   {0U};
+  uint8_t  activeSyncCount_ {0U};
 
   NodeUserConfig_t userConfigToSet_;
   Atams::BusIDs_t  busIDsToSet_;
 
   /*-- Private Function Declarations ------------------------------------------------*/
+
+  bool findNodeOnBus(Node &node);
 
   Atams::Error_t beginUpdateCyclePrivate(void);
 
@@ -227,7 +236,7 @@ private Platform::BusPeripheral
   
   bool pollForJogTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process);
 
-  bool pollForResponse(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse);
+  Bus::PollResult pollForResponse(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse);
 
   virtual void rxCallback(uint8_t       *rxBufferPtr,
                           const uint16_t rxBufferLength) final;

@@ -49,14 +49,12 @@ namespace Atams { namespace Platform {
 /* PRIVATE VARIABLES                                                                 */
 /*************************************************************************************/
 
-static asio::io_context _ioContext;
-
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
 BusPeripheral::BusPeripheral(UserData_t userData) :
-asio::serial_port(_ioContext),
+asio::serial_port(userData.ioContext),
 _userData(userData)
 {
   
@@ -64,7 +62,7 @@ _userData(userData)
 
 void BusPeripheral::update(void)
 {
-  _ioContext.poll();
+  _userData.ioContext.poll();
 }
 
 /*************************************************************************************/

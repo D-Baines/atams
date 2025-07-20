@@ -41,13 +41,13 @@ static const GenInfo_t s_genInfo =
 {
   /* .atamsVersionMajor = */ 0U,
   /* .atamsVersionMinor = */ 1U,
-  /* .genDay            = */ 12U,
+  /* .genDay            = */ 18U,
   /* .genMonth          = */ 7U,
   /* .genYear           = */ 2025U,
-  /* .genHour           = */ 18U,
-  /* .genMinute         = */ 1U,
-  /* .genSecond         = */ 42U,
-  /* .genChecksum       = */ 2433352831U,
+  /* .genHour           = */ 17U,
+  /* .genMinute         = */ 34U,
+  /* .genSecond         = */ 59U,
+  /* .genChecksum       = */ 240391391U,
   /* .noOfVars          = */ 56U
 };
 
@@ -86,18 +86,6 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
 
   /*--------------------------- User Var Info ---------------------------*/
 
-  /* [BlockTest1::VAR_WRITE_UINT8] = */
-  {
-    /* .type           = */ Atams::TYPE_UINT8,
-    /* .externalAccess = */ Atams::ACCESS_WRITE,
-    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
-  },
-  /* [BlockTest1::VAR_WRITE_INT8] = */
-  {
-    /* .type           = */ Atams::TYPE_INT8,
-    /* .externalAccess = */ Atams::ACCESS_WRITE,
-    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
-  },
   /* [BlockTest1::VAR_READ_UINT8] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
@@ -108,18 +96,6 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
   {
     /* .type           = */ Atams::TYPE_INT8,
     /* .externalAccess = */ Atams::ACCESS_READ,
-    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
-  },
-  /* [BlockTest1::VAR_WRITE_UINT16] = */
-  {
-    /* .type           = */ Atams::TYPE_UINT16,
-    /* .externalAccess = */ Atams::ACCESS_WRITE,
-    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
-  },
-  /* [BlockTest1::VAR_WRITE_INT16] = */
-  {
-    /* .type           = */ Atams::TYPE_INT16,
-    /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
   /* [BlockTest1::VAR_READ_UINT16] = */
@@ -134,18 +110,6 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockTest1::VAR_WRITE_UINT32] = */
-  {
-    /* .type           = */ Atams::TYPE_UINT32,
-    /* .externalAccess = */ Atams::ACCESS_WRITE,
-    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
-  },
-  /* [BlockTest1::VAR_WRITE_INT32] = */
-  {
-    /* .type           = */ Atams::TYPE_INT32,
-    /* .externalAccess = */ Atams::ACCESS_WRITE,
-    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
-  },
   /* [BlockTest1::VAR_READ_UINT32] = */
   {
     /* .type           = */ Atams::TYPE_UINT32,
@@ -158,13 +122,91 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
+  /* [BlockTest1::VAR_READ_FLOAT] = */
+  {
+    /* .type           = */ Atams::TYPE_FLOAT,
+    /* .externalAccess = */ Atams::ACCESS_READ,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest1::VAR_WRITE_UINT8] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest1::VAR_WRITE_INT8] = */
+  {
+    /* .type           = */ Atams::TYPE_INT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest1::VAR_WRITE_UINT16] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT16,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest1::VAR_WRITE_INT16] = */
+  {
+    /* .type           = */ Atams::TYPE_INT16,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest1::VAR_WRITE_UINT32] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest1::VAR_WRITE_INT32] = */
+  {
+    /* .type           = */ Atams::TYPE_INT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
   /* [BlockTest1::VAR_WRITE_FLOAT] = */
   {
     /* .type           = */ Atams::TYPE_FLOAT,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockTest1::VAR_READ_FLOAT] = */
+  /* [BlockTest2::VAR_READ_UINT8] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_READ,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest2::VAR_READ_INT8] = */
+  {
+    /* .type           = */ Atams::TYPE_INT8,
+    /* .externalAccess = */ Atams::ACCESS_READ,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest2::VAR_READ_UINT16] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT16,
+    /* .externalAccess = */ Atams::ACCESS_READ,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest2::VAR_READ_INT16] = */
+  {
+    /* .type           = */ Atams::TYPE_INT16,
+    /* .externalAccess = */ Atams::ACCESS_READ,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest2::VAR_READ_UINT32] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_READ,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest2::VAR_READ_INT32] = */
+  {
+    /* .type           = */ Atams::TYPE_INT32,
+    /* .externalAccess = */ Atams::ACCESS_READ,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest2::VAR_READ_FLOAT] = */
   {
     /* .type           = */ Atams::TYPE_FLOAT,
     /* .externalAccess = */ Atams::ACCESS_READ,
@@ -182,18 +224,6 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockTest2::VAR_READ_UINT8] = */
-  {
-    /* .type           = */ Atams::TYPE_UINT8,
-    /* .externalAccess = */ Atams::ACCESS_READ,
-    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
-  },
-  /* [BlockTest2::VAR_READ_INT8] = */
-  {
-    /* .type           = */ Atams::TYPE_INT8,
-    /* .externalAccess = */ Atams::ACCESS_READ,
-    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
-  },
   /* [BlockTest2::VAR_WRITE_UINT16] = */
   {
     /* .type           = */ Atams::TYPE_UINT16,
@@ -204,18 +234,6 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
   {
     /* .type           = */ Atams::TYPE_INT16,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
-    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
-  },
-  /* [BlockTest2::VAR_READ_UINT16] = */
-  {
-    /* .type           = */ Atams::TYPE_UINT16,
-    /* .externalAccess = */ Atams::ACCESS_READ,
-    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
-  },
-  /* [BlockTest2::VAR_READ_INT16] = */
-  {
-    /* .type           = */ Atams::TYPE_INT16,
-    /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
   /* [BlockTest2::VAR_WRITE_UINT32] = */
@@ -230,28 +248,10 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockTest2::VAR_READ_UINT32] = */
-  {
-    /* .type           = */ Atams::TYPE_UINT32,
-    /* .externalAccess = */ Atams::ACCESS_READ,
-    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
-  },
-  /* [BlockTest2::VAR_READ_INT32] = */
-  {
-    /* .type           = */ Atams::TYPE_INT32,
-    /* .externalAccess = */ Atams::ACCESS_READ,
-    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
-  },
   /* [BlockTest2::VAR_WRITE_FLOAT] = */
   {
     /* .type           = */ Atams::TYPE_FLOAT,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
-    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
-  },
-  /* [BlockTest2::VAR_READ_FLOAT] = */
-  {
-    /* .type           = */ Atams::TYPE_FLOAT,
-    /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   }
 };

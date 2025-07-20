@@ -644,6 +644,11 @@ Atams::Error_t Node::validateResponseBuffer(uint8_t * const responsePacket,
 
 void Node::processResponseBuffer(void)
 {
+  if (getBusError() != Atams::ERROR_NONE)
+  {
+    return; /* Early Return */
+  }
+  
   if (!newResponseReady_)
   {
     reportBusError(Atams::ERROR_NO_RESPONSE);
