@@ -37,171 +37,171 @@ namespace Atams { namespace BlockUniversal {
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-const VarInfo_t varInfoList[BlockUniversal::NUMBER_OF_UNIVERSAL_VARS] =
+const VarInfo_t varInfoList[BlockUniversal::NUMBER_OF_VARS] =
 {
-  /* [BlockUniversal::VAR_ID_ATAMS_VERSION_MAJOR] = */
+  /* [BlockUniversal::VAR_ATAMS_VERSION_MAJOR] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_ATAMS_VERSION_MINOR] = */
+  /* [BlockUniversal::VAR_ATAMS_VERSION_MINOR] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_MAP_GEN_DAY] = */
+  /* [BlockUniversal::VAR_MAP_GEN_DAY] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_MAP_GEN_MONTH] = */
+  /* [BlockUniversal::VAR_MAP_GEN_MONTH] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_MAP_GEN_YEAR] = */
+  /* [BlockUniversal::VAR_MAP_GEN_YEAR] = */
   {
     /* .type           = */ Atams::TYPE_UINT16,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_MAP_GEN_HOUR] = */
+  /* [BlockUniversal::VAR_MAP_GEN_HOUR] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_MAP_GEN_MINUTE] = */
+  /* [BlockUniversal::VAR_MAP_GEN_MINUTE] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_MAP_GEN_SECOND] = */
+  /* [BlockUniversal::VAR_MAP_GEN_SECOND] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_MAP_CHECKSUM] = */
+  /* [BlockUniversal::VAR_MAP_CHECKSUM] = */
   {
     /* .type           = */ Atams::TYPE_UINT32,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_MAP_NUMBER_OF_VARS] = */
+  /* [BlockUniversal::VAR_MAP_NUMBER_OF_VARS] = */
   {
     /* .type           = */ Atams::TYPE_UINT16,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_CONFIGURATION_PASSKEY] = */
+  /* [BlockUniversal::VAR_CONFIGURATION_PASSKEY] = */
   {
     /* .type           = */ Atams::TYPE_UINT32,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_CONFIGURATION_STATUS] = */
+  /* [BlockUniversal::VAR_CONFIGURATION_STATUS] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_NODE_ID] = */
+  /* [BlockUniversal::VAR_NODE_ID] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_TRUE,
   },
-  /* [BlockUniversal::VAR_ID_FIRST_NODE_ID] = */
+  /* [BlockUniversal::VAR_FIRST_NODE_ID] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_TRUE,
   },
-  /* [BlockUniversal::VAR_ID_LAST_NODE_ID] = */
+  /* [BlockUniversal::VAR_LAST_NODE_ID] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_TRUE,
   },
-  /* [BlockUniversal::VAR_ID_PREVIOUS_NODE_ID] = */
+  /* [BlockUniversal::VAR_PREVIOUS_NODE_ID] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_TRUE,
   },
-  /* [BlockUniversal::VAR_ID_BITRATE] = */
+  /* [BlockUniversal::VAR_BITRATE] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_TRUE,
   },
-  /* [BlockUniversal::VAR_ID_WATCHDOG_PERIOD] = */
+  /* [BlockUniversal::VAR_WATCHDOG_PERIOD] = */
   {
     /* .type           = */ Atams::TYPE_UINT32,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_TRUE,
   },
-  /* [BlockUniversal::VAR_ID_STORE_ALL] = */
-  {
-    /* .type           = */ Atams::TYPE_UINT32,
-    /* .externalAccess = */ Atams::ACCESS_WRITE,
-    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
-  },
-  /* [BlockUniversal::VAR_ID_RESTORE_USER_BLOCKS] = */
+  /* [BlockUniversal::VAR_STORE_ALL] = */
   {
     /* .type           = */ Atams::TYPE_UINT32,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_RESTORE_ALL] = */
+  /* [BlockUniversal::VAR_RESTORE_USER_BLOCKS] = */
   {
     /* .type           = */ Atams::TYPE_UINT32,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_RESET_NODE] = */
+  /* [BlockUniversal::VAR_RESTORE_ALL] = */
   {
     /* .type           = */ Atams::TYPE_UINT32,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_STORAGE_STATUS] = */
+  /* [BlockUniversal::VAR_RESET_NODE] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockUniversal::VAR_STORAGE_STATUS] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_STORAGE_PROCESS_COMPLETE] = */
+  /* [BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE] = */
+  /* [BlockUniversal::VAR_WATCHDOG_FAULT_ACTIVE] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_WATCHDOG_RESET] = */
+  /* [BlockUniversal::VAR_WATCHDOG_RESET] = */
   {
     /* .type           = */ Atams::TYPE_UINT32,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_CRC_ERROR_COUNT] = */
+  /* [BlockUniversal::VAR_CRC_ERROR_COUNT] = */
   {
     /* .type           = */ Atams::TYPE_UINT32,
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
-  /* [BlockUniversal::VAR_ID_COBS_ERROR_COUNT] = */
+  /* [BlockUniversal::VAR_COBS_ERROR_COUNT] = */
   {
     /* .type           = */ Atams::TYPE_UINT32,
     /* .externalAccess = */ Atams::ACCESS_READ,

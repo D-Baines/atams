@@ -77,7 +77,7 @@ void WatchdogHandler::update(const uint32_t currentTime)
       {
         uint32_t watchdogReset{0U};
 
-        static_cast<void>(Atams::read(BlockUniversal::VAR_ID_WATCHDOG_RESET, watchdogReset));
+        static_cast<void>(Atams::read(BlockUniversal::VAR_WATCHDOG_RESET, watchdogReset));
 
         if ((watchdogReset       == Atams::WATCHDOG_RESET_PASSCODE) &&
             (m_prevWatchdogReset != Atams::WATCHDOG_RESET_PASSCODE) )
@@ -94,7 +94,7 @@ void WatchdogHandler::update(const uint32_t currentTime)
         break;
     }
 
-    Atams::write(BlockUniversal::VAR_ID_WATCHDOG_FAULT_ACTIVE, static_cast<uint8_t>(m_watchdogStatus));
+    Atams::write(BlockUniversal::VAR_WATCHDOG_FAULT_ACTIVE, static_cast<uint8_t>(m_watchdogStatus));
 
     m_prevWatchdogUpdateTime = currentTime;
   }

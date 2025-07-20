@@ -167,7 +167,7 @@ bool validateMapLength(const SharedMemoryMap_t &memoryMap, const uint32_t varSto
 
   if ((memoryMap.noOfVars > varStorageLength                        ) ||
       (memoryMap.noOfVars > Atams::MAX_NUMBER_OF_VARS               ) ||
-      (memoryMap.noOfVars < BlockUniversal::NUMBER_OF_UNIVERSAL_VARS) )
+      (memoryMap.noOfVars < BlockUniversal::NUMBER_OF_VARS) )
   {
     lengthValid = false;
   }
@@ -202,7 +202,7 @@ bool validateUniversalBlock(const SharedMemoryMap_t &memoryMap)
   bool     universalValid = true;
   uint16_t varIndex       = 0U;
 
-  if (memoryMap.noOfVars < BlockUniversal::NUMBER_OF_UNIVERSAL_VARS)
+  if (memoryMap.noOfVars < BlockUniversal::NUMBER_OF_VARS)
   {
     return (false); /* Early Return */
   }
@@ -225,7 +225,7 @@ bool validateMapChecksum(const SharedMemoryMap_t &memoryMap)
 
   atamsCRC_.beginRollingCRC();
 
-  for (uint16_t varID = BlockUniversal::NUMBER_OF_UNIVERSAL_VARS; varID < memoryMap.noOfVars; varID++)
+  for (uint16_t varID = BlockUniversal::NUMBER_OF_VARS; varID < memoryMap.noOfVars; varID++)
   {
     const VarInfo_t varInfo = memoryMap.varInfoList[varID];
     

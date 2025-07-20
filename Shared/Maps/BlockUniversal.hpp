@@ -43,36 +43,36 @@ namespace Atams { namespace BlockUniversal {
 
 enum VarID_t: uint16_t
 {
-  VAR_ID_ATAMS_VERSION_MAJOR      = 0U,
-  VAR_ID_ATAMS_VERSION_MINOR      = 1U,
-  VAR_ID_MAP_GEN_DAY              = 2U,
-  VAR_ID_MAP_GEN_MONTH            = 3U,
-  VAR_ID_MAP_GEN_YEAR             = 4U,
-  VAR_ID_MAP_GEN_HOUR             = 5U,
-  VAR_ID_MAP_GEN_MINUTE           = 6U,
-  VAR_ID_MAP_GEN_SECOND           = 7U,
-  VAR_ID_MAP_CHECKSUM             = 8U,
-  VAR_ID_MAP_NUMBER_OF_VARS       = 9U,
-  VAR_ID_CONFIGURATION_PASSKEY    = 10U,
-  VAR_ID_CONFIGURATION_STATUS     = 11U,
-  VAR_ID_NODE_ID                  = 12U,
-  VAR_ID_FIRST_NODE_ID            = 13U,
-  VAR_ID_LAST_NODE_ID             = 14U,
-  VAR_ID_PREVIOUS_NODE_ID         = 15U,
-  VAR_ID_BITRATE                  = 16U,
-  VAR_ID_WATCHDOG_PERIOD          = 17U,
-  VAR_ID_STORE_ALL                = 18U,
-  VAR_ID_RESTORE_USER_BLOCKS      = 19U,
-  VAR_ID_RESTORE_ALL              = 20U,
-  VAR_ID_RESET_NODE               = 21U,
-  VAR_ID_STORAGE_STATUS           = 22U,
-  VAR_ID_STORAGE_PROCESS_COMPLETE = 23U,
-  VAR_ID_WATCHDOG_FAULT_ACTIVE    = 24U,
-  VAR_ID_WATCHDOG_RESET           = 25U,
-  VAR_ID_CRC_ERROR_COUNT          = 26U,
-  VAR_ID_COBS_ERROR_COUNT         = 27U,
+  VAR_ATAMS_VERSION_MAJOR      = 0U,
+  VAR_ATAMS_VERSION_MINOR      = 1U,
+  VAR_MAP_GEN_DAY              = 2U,
+  VAR_MAP_GEN_MONTH            = 3U,
+  VAR_MAP_GEN_YEAR             = 4U,
+  VAR_MAP_GEN_HOUR             = 5U,
+  VAR_MAP_GEN_MINUTE           = 6U,
+  VAR_MAP_GEN_SECOND           = 7U,
+  VAR_MAP_CHECKSUM             = 8U,
+  VAR_MAP_NUMBER_OF_VARS       = 9U,
+  VAR_CONFIGURATION_PASSKEY    = 10U,
+  VAR_CONFIGURATION_STATUS     = 11U,
+  VAR_NODE_ID                  = 12U,
+  VAR_FIRST_NODE_ID            = 13U,
+  VAR_LAST_NODE_ID             = 14U,
+  VAR_PREVIOUS_NODE_ID         = 15U,
+  VAR_BITRATE                  = 16U,
+  VAR_WATCHDOG_PERIOD          = 17U,
+  VAR_STORE_ALL                = 18U,
+  VAR_RESTORE_USER_BLOCKS      = 19U,
+  VAR_RESTORE_ALL              = 20U,
+  VAR_RESET_NODE               = 21U,
+  VAR_STORAGE_STATUS           = 22U,
+  VAR_STORAGE_PROCESS_COMPLETE = 23U,
+  VAR_WATCHDOG_FAULT_ACTIVE    = 24U,
+  VAR_WATCHDOG_RESET           = 25U,
+  VAR_CRC_ERROR_COUNT          = 26U,
+  VAR_COBS_ERROR_COUNT         = 27U,
 
-  NUMBER_OF_UNIVERSAL_VARS
+  NUMBER_OF_VARS
 };
 
 /*************************************************************************************/
@@ -90,7 +90,7 @@ inline constexpr uint32_t DEFAULT_WATCHDOG_PERIOD  {0};
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-extern const VarInfo_t varInfoList[BlockUniversal::NUMBER_OF_UNIVERSAL_VARS];
+extern const VarInfo_t varInfoList[BlockUniversal::NUMBER_OF_VARS];
 
 
 } } /* End Namespace - Atams::BlockUniversal */

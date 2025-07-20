@@ -50,16 +50,16 @@ namespace Atams {
 typedef Atams::Error_t (&InitUniversalDataFn_t)(void);
 typedef Atams::Error_t (&InitDefaultsFn_t)(void);
 
-struct MemoryMap_t
+struct MemoryMap_t :
+public SharedMemoryMap_t
 {
-  const SharedMemoryMap_t     sharedMap;
   const InitUniversalDataFn_t initGenInfo;
   const InitDefaultsFn_t      initUserDefaults;
 
   MemoryMap_t(const SharedMemoryMap_t    &initSharedMemoryMap,
               const InitUniversalDataFn_t initGenInfoFn,
               const InitDefaultsFn_t      initUserDefaultsFn) :
-  sharedMap(initSharedMemoryMap),
+  SharedMemoryMap_t(initSharedMemoryMap),
   initGenInfo(initGenInfoFn),
   initUserDefaults(initUserDefaultsFn){};
 
