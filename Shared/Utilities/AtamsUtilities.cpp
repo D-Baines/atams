@@ -93,12 +93,12 @@ Atams::Error_t decodeMeshPacket(const uint8_t  * const inputBuffer,
 
   if (COBSDecodeResult.status != COBS::ERROR_NONE)
   {
-    return (Atams::ERROR_DECODE);
+    return (Atams::ERROR_DECODE_FRAMING);
   }
 
   if (COBSDecodeResult.outputLength < MESH_SIZE_HEADER)
   {
-    return (Atams::ERROR_DECODE);
+    return (Atams::ERROR_DECODE_FRAMING);
   }
 
   uint32_t packetCRC = bufferToUint32(&decodedBuffer[MESH_INDEX_CRC]);
@@ -107,7 +107,7 @@ Atams::Error_t decodeMeshPacket(const uint8_t  * const inputBuffer,
 
   if (packetCRC != atamsCRC_.calculateCRC(decodedBuffer, COBSDecodeResult.outputLength))
   {
-    return (Atams::ERROR_DECODE);
+    return (Atams::ERROR_DECODE_CHECKSUM);
   }
 
   decodedLength = COBSDecodeResult.outputLength;

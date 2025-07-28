@@ -29,6 +29,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include "../Platform.hpp"
 
 /***************************************************************************/
 /* NAMESPACE                                                               */
@@ -97,7 +98,7 @@ class WriteList
 
   /*-- PRIVATE CONSTANTS --------------*/
 
-  static const uint16_t LIST_MAX_LENGTH = 1024U;
+  static const uint16_t LIST_MAX_LENGTH = Platform::MAX_BUS_PACKET_SIZE / sizeof(WriteConfig_t);
 
   /*-- PRIVATE VARIABLES --------------*/
 

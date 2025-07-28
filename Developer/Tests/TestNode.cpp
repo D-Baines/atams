@@ -194,6 +194,11 @@ void TestNode::runUpdateCycleTests(void)
   Atams::RequestPattern_t currentRequestPattern = Atams::REQUEST_INACTIVE;
   uint8_t                 varLength             = 0U;
 
+  if (updateErrorInjection() != Atams::ERROR_NONE)
+  {
+    return; /* Early Return - Error has been injected */
+  }
+
   for (uint16_t varID = BlockTest1::VAR_WRITE_UINT8; varID <= BlockTest1::VAR_WRITE_FLOAT; varID++)
   {
     if (prevRequestPatterns_[varID] == Atams::REQUEST_UNTIL_ACK)
@@ -232,48 +237,45 @@ void TestNode::runUpdateCycleTests(void)
 
     if (prevAccess_[varID] == Atams::ACCESS_NONE)
     {
-      if (writeRequestPattern != Atams::REQUEST_INACTIVE)
+      switch (varID)
       {
-        switch (varID)
-        {
-          case BlockTest1::VAR_WRITE_UINT8:
-            testUint8_ = static_cast<uint8_t>(std::rand());
-            error      = Node::write(varID, testUint8_);
-            break;
-          case BlockTest1::VAR_WRITE_INT8:
-            testInt8_ = static_cast<int8_t>(std::rand());
-            error     = Node::write(varID, testInt8_);
-            break;
-          case BlockTest1::VAR_WRITE_UINT16:
-            testUint16_ = static_cast<uint16_t>(std::rand());
-            error       = Node::write(varID, testUint16_);
-            break;
-          case BlockTest1::VAR_WRITE_INT16:
-            testInt16_ = static_cast<int16_t>(std::rand());
-            error      = Node::write(varID, testInt16_);
-            break;
-          case BlockTest1::VAR_WRITE_UINT32:
-            testUint32_ = static_cast<uint32_t>(std::rand());
-            error       = Node::write(varID, testUint32_);
-            break;
-          case BlockTest1::VAR_WRITE_INT32:
-            testInt32_ = static_cast<int32_t>(std::rand());
-            error      = Node::write(varID, testInt32_);
-            break;
-          case BlockTest1::VAR_WRITE_FLOAT:
-            testFloat_ = static_cast<float>(std::rand());
-            error      = Node::write(varID, testFloat_);
-            break;
-        }
-
-        if (error) errorHandler(error, defaultUpdateErrorMessage_);
-  
-        error = Node::setRequestPattern(varID, Atams::ACCESS_WRITE, writeRequestPattern);
-
-        if (error) errorHandler(error, defaultUpdateErrorMessage_);
-
-        expectedRequestPacketLength_ += Atams::DATAGRAM_SIZE_HEADER + varLength;
+        case BlockTest1::VAR_WRITE_UINT8:
+          testUint8_ = static_cast<uint8_t>(std::rand());
+          error      = Node::write(varID, testUint8_);
+          break;
+        case BlockTest1::VAR_WRITE_INT8:
+          testInt8_ = static_cast<int8_t>(std::rand());
+          error     = Node::write(varID, testInt8_);
+          break;
+        case BlockTest1::VAR_WRITE_UINT16:
+          testUint16_ = static_cast<uint16_t>(std::rand());
+          error       = Node::write(varID, testUint16_);
+          break;
+        case BlockTest1::VAR_WRITE_INT16:
+          testInt16_ = static_cast<int16_t>(std::rand());
+          error      = Node::write(varID, testInt16_);
+          break;
+        case BlockTest1::VAR_WRITE_UINT32:
+          testUint32_ = static_cast<uint32_t>(std::rand());
+          error       = Node::write(varID, testUint32_);
+          break;
+        case BlockTest1::VAR_WRITE_INT32:
+          testInt32_ = static_cast<int32_t>(std::rand());
+          error      = Node::write(varID, testInt32_);
+          break;
+        case BlockTest1::VAR_WRITE_FLOAT:
+          testFloat_ = static_cast<float>(std::rand());
+          error      = Node::write(varID, testFloat_);
+          break;
       }
+
+      if (error) errorHandler(error, defaultUpdateErrorMessage_);
+
+      error = Node::setRequestPattern(varID, Atams::ACCESS_WRITE, writeRequestPattern);
+
+      if (error) errorHandler(error, defaultUpdateErrorMessage_);
+
+      expectedRequestPacketLength_ += Atams::DATAGRAM_SIZE_HEADER + varLength;
     }
     else if (prevAccess_[varID] == Atams::ACCESS_WRITE)
     {
@@ -337,18 +339,57 @@ void TestNode::runUpdateCycleTests(void)
     if (error) errorHandler(error, defaultUpdateErrorMessage_);
   }
 }
+
+Atams::Error_t TestNode::getExpectedBusError(void)
+{
+  return (expectedBusError_);
+}
  
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-  void TestNode::errorHandler(const Atams::Error_t error, const char * errorMessage)
+Atams::Error_t TestNode::updateErrorInjection(void)
+{
+  if (Node::getBusError() != expectedBusError_)
   {
-    static_cast<void>(snprintf(errorBuffer_, MAX_ERROR_MESSAGE_LENGTH, "%s%d", errorMessage, nodeID_));
-
-    hubErrorHandler_(error, errorBuffer_);
+    errorHandler(Node::getBusError(), "Unexpected Node Bus Error On Node ");
   }
+
+  if (expectedBusError_ != Atams::ERROR_NONE)
+  {
+    Node::clearBusError(expectedBusError_);
+  }
+
+  expectedBusError_ = Atams::ERROR_NONE;
+
+  if ((std::rand() % ERROR_INJECTION_PROBABILITY) == 0)
+  {
+    Node::injectBusError(errorsToInject_[errorInjectionIndex_]);
+  
+    errorInjectionIndex_++;
+
+    if (errorInjectionIndex_ >= NUMBER_OF_ERRORS_TO_INJECT) errorInjectionIndex_ = 0U;
+  }
+
+
+  return (expectedBusError_);
+
+  /* 
+  Errors to inject:
+  - invalid var ID,
+  - invalid access,
+  - invalid request packet length
+  */
+}
+
+void TestNode::errorHandler(const Atams::Error_t error, const char * errorMessage)
+{
+  static_cast<void>(snprintf(errorBuffer_, MAX_ERROR_MESSAGE_LENGTH, "%s%d", errorMessage, nodeID_));
+
+  hubErrorHandler_(error, errorBuffer_);
+}
 
 
 } /* End Namespace - Atams */

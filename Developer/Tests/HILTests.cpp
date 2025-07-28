@@ -71,6 +71,13 @@ static Atams::TestNode testNode1_(0U, errorHandler);
 static Atams::TestNode testNode2_(1U, errorHandler);
 static Atams::TestNode testNode3_(2U, errorHandler);
 
+static Atams::TestNode *testNodes[] = 
+{
+  &testNode1_,
+  &testNode2_,
+  &testNode3_
+};
+
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
@@ -81,7 +88,7 @@ static void errorHandler(const Atams::Error_t error, const char * errorMessage)
 
   if (errorMessage != nullptr) printf("Message: %s\n", errorMessage);
 
-  while(true) {}; /* Infinite Loop */
+  for(;;) {}; /* Infinite Loop */
 }
 
 static void testBusInit(void)
@@ -139,20 +146,30 @@ static Atams::Error_t runUpdateCycleTests(void)
 
   if (error) errorHandler(error, "Begin Update Cycle Failed");
 
-  while (true)
+  for(;;)
   { 
     Atams::ProcessState updateState = testBus_.runUpdateCycleSync(error);
 
     if (updateState != Atams::ProcessState::IN_PROGRESS)
     { 
-      if (updateState != Atams::ProcessState::COMPLETE) errorHandler(error, "Update Cycle Failed");
+      if (updateState != Atams::ProcessState::COMPLETE) errorHandler(error, "Unexpected Update Cycle Error");
 
       error = testBus_.processBuffers();
 
-      if (error != Atams::ERROR_NONE) errorHandler(error, "Process Buffers Failed");
+      for (TestNode *&testNodePtr : testNodes)
+      {
+        if (error == testNodePtr->getExpectedBusError())
+        {
+          error = Atams::ERROR_NONE;
+        }
+      }
 
-      testNode1_.runUpdateCycleTests();
-      testNode2_.runUpdateCycleTests();
+      if (error) errorHandler(error, "Unexpected Bus Error");
+
+      for (TestNode *&testNodePtr : testNodes)
+      {
+        testNodePtr->runUpdateCycleTests();
+      }
 
       testBus_.beginUpdateCycle();
     }

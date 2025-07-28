@@ -86,11 +86,15 @@ public Node
 
   void runUpdateCycleTests(void);
 
+  Atams::Error_t getExpectedBusError(void);
+
   private:
 
   /*-- Private Constants ------------------------------------------------------------*/
 
-  static inline constexpr uint8_t MAX_ERROR_MESSAGE_LENGTH = 100U;
+  static inline constexpr uint8_t MAX_ERROR_MESSAGE_LENGTH    = 100U;
+  static inline constexpr uint8_t ERROR_INJECTION_PROBABILITY = 20U;
+  static inline constexpr uint8_t NUMBER_OF_ERRORS_TO_INJECT  = 4U;
 
   /*-- Private Typedefs -------------------------------------------------------------*/
 
@@ -101,6 +105,8 @@ public Node
   /*-- Private Variables ------------------------------------------------------------*/
 
   const uint8_t nodeID_;
+
+  Atams::Error_t expectedBusError_ {Atams::ERROR_NONE};
 
   uint16_t expectedRequestPacketLength_ {Atams::MESH_SIZE_HEADER};
 
@@ -120,6 +126,16 @@ public Node
   int32_t  feedbackInt32_  {0}; 
   float    feedbackFloat_  {0.0F}; 
 
+  uint8_t errorInjectionIndex_ {0U};
+
+  Atams::Error_t errorsToInject_[NUMBER_OF_ERRORS_TO_INJECT] = 
+  {
+    Atams::ERROR_VAR_ID,
+    Atams::ERROR_ACCESS_INVALID,
+    Atams::ERROR_REQUEST_BUFFER_LENGTH,
+    Atams::ERROR_CONFIGURATION_STATE_INACTIVE,
+  };
+
 
   Atams::Access_t         prevAccess_[Atams::MapTest::BlockTest1::NUMBER_OF_VARS]          = {Atams::ACCESS_NONE};
   Atams::RequestPattern_t prevRequestPatterns_[Atams::MapTest::BlockTest1::NUMBER_OF_VARS] = {Atams::REQUEST_INACTIVE};
@@ -131,6 +147,8 @@ public Node
   const char * argTestErrorMessage_       {"Node Function Argument Test Failure on Node "};
 
   /*-- Private Function Declarations ------------------------------------------------*/
+
+  Atams::Error_t updateErrorInjection(void);
 
   void errorHandler(const Atams::Error_t error, const char * errorMessage);
 };

@@ -424,6 +424,10 @@ bool Bus::pollForRequestTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessH
         node.reportBusError(Atams::ERROR_PLATFORM);
         process.error = Atams::ERROR_PLATFORM;
       }
+      else 
+      {
+        lastSentMessageType_ = requestType;
+      }
     }
 
     messageSendAttempted  = true;
@@ -452,6 +456,10 @@ bool Bus::pollForJogTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessHandl
       {
         node.reportBusError(Atams::ERROR_PLATFORM);
       }
+      else 
+      {
+        lastSentMessageType_ = Atams::MESSAGE_SYNC_JOG;
+      }
     }
     messageSendAttempted  = true;
     process.prevEventTime = currentTime;
@@ -466,11 +474,12 @@ Bus::PollResult Bus::pollForResponse(Atams::NodeCallbackHandler &node, Bus::Proc
   Bus::PollResult result       = Bus::PollResult::WAITING;
 
   if ((circularBuffer_.getPacket(rxBuffer_, sizeof(rxBuffer_), rxLength_) == CircularBuffer::ERROR_NONE) &&
-      (validateAndStoreResponsePacket(node, expectedResponse)             != Atams::ERROR_DECODE       )  )
+      (validateAndStoreResponsePacket(node, expectedResponse)             == true                      ) )
   {
     result = Bus::PollResult::READY;
     process.prevEventTime = currentTime;
   }
+
   else if (currentTime - process.prevEventTime > Platform::BUS_RESPONSE_TIMEOUT)
   { 
     node.reportBusError(Atams::ERROR_RESPONSE_TIMEOUT);
@@ -486,35 +495,39 @@ void Bus::rxCallback(uint8_t *rxBufferPtr, const uint16_t rxBufferLength)
   static_cast<void>(circularBuffer_.pushHead(rxBufferPtr, rxBufferLength));
 }
 
-Atams::Error_t Bus::validateAndStoreResponsePacket(Atams::NodeCallbackHandler &node, const MessageType_t expectedResponse)
+bool Bus::validateAndStoreResponsePacket(Atams::NodeCallbackHandler &node, const MessageType_t expectedResponse)
 {
-  Atams::Error_t statusReturn = Atams::ERROR_NONE;
+  Atams::Error_t error       = Atams::ERROR_NONE;
+  bool           packetValid = true;
 
-  if (decodeMeshPacket(rxBuffer_, 
-                       rxLength_, 
-                       decodedBuffer_, 
-                       sizeof(decodedBuffer_), 
-                       decodedLength_) == Atams::ERROR_NONE)
+  error = decodeMeshPacket(rxBuffer_, 
+                           rxLength_, 
+                           decodedBuffer_, 
+                           sizeof(decodedBuffer_), 
+                           decodedLength_);
+
+  if (error == Atams::ERROR_NONE)
   {
     uint8_t              packetNodeID    = decodedBuffer_[MESH_INDEX_NODE_ID];
     uint8_t              packetSyncCount = decodedBuffer_[MESH_INDEX_SYNC];
     Atams::MessageType_t messageType     = static_cast<MessageType_t>(decodedBuffer_[MESH_INDEX_MSG_TYPE]);
 
-    if      (packetSyncCount != activeSyncCount_)              statusReturn = Atams::ERROR_SYNC_COUNT;
+    if      (messageType     == lastSentMessageType_)          packetValid = false;
+    else if (packetSyncCount != activeSyncCount_)              error = Atams::ERROR_SYNC_COUNT;
     else if ((messageType    != MESSAGE_BROADCAST_RESPONSE) &&
-             (packetNodeID   != node.getNodeID()          ) )  statusReturn = Atams::ERROR_SYNC_NODE;
+             (packetNodeID   != node.getNodeID()          ) )  error = Atams::ERROR_SYNC_NODE;
     else if ((messageType    != expectedResponse        ) &&
-             (messageType    != MESSAGE_ABORTED_RESPONSE) )    statusReturn = Atams::ERROR_MESSAGE_TYPE;
+             (messageType    != MESSAGE_ABORTED_RESPONSE) )    error = Atams::ERROR_MESSAGE_TYPE;
     else                                                       node.responseReceived(decodedBuffer_, decodedLength_);
 
-    if (statusReturn != Atams::ERROR_NONE) node.reportBusError(statusReturn);
+    if (error != Atams::ERROR_NONE) node.reportBusError(error);
   }
   else 
   {
-    statusReturn = Atams::ERROR_DECODE;
+    packetValid = false;
   }
-  
-  return (statusReturn);
+
+  return (packetValid);
 }
 
 Atams::Node * Bus::getUpdateNodePtr(void)
@@ -668,7 +681,7 @@ const Node::MemoryMap_t Bus::dummyMemoryMap_ =
 {
   /* .sharedMemoryMap = */
   {
-    /* .noOfVars    = */ BlockUniversal::NUMBER_OF_UNIVERSAL_VARS,
+    /* .noOfVars    = */ BlockUniversal::NUMBER_OF_VARS,
     /* .genInfo     = */ Bus::blankGenInfo_,
     /* .varInfoList = */ BlockUniversal::varInfoList
   }

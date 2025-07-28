@@ -151,10 +151,9 @@ public NodeCallbackHandler
   virtual Atams::Error_t getBusError(void) final;
 
   //#if DEVELOPER_TOOLS 
-  Atams::Error_t setRequestPatternNoChecks(const uint16_t         varID,
-                                           const Access_t         accessRequest,
-                                           const RequestPattern_t requestPattern);
-                                           
+  void injectBusError(const Atams::Error_t errorToInject);   
+  
+  void clearBusError(const Atams::Error_t errorToClear);
   //#endif
 
   private:

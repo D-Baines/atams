@@ -221,6 +221,8 @@ private Platform::BusPeripheral
   uint16_t encodedLength_   {0U};
   uint8_t  activeSyncCount_ {0U};
 
+  Atams::MessageType_t lastSentMessageType_;
+
   NodeUserConfig_t userConfigToSet_;
   Atams::BusIDs_t  busIDsToSet_;
 
@@ -241,7 +243,7 @@ private Platform::BusPeripheral
   virtual void rxCallback(uint8_t       *rxBufferPtr,
                           const uint16_t rxBufferLength) final;
 
-  Atams::Error_t validateAndStoreResponsePacket(Atams::NodeCallbackHandler &node, const MessageType_t responseType);
+  bool validateAndStoreResponsePacket(Atams::NodeCallbackHandler &node, const MessageType_t responseType);
 
   void startWriteConfigVars(void);
 
