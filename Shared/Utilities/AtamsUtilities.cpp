@@ -115,11 +115,11 @@ Atams::Error_t decodeMeshPacket(const uint8_t  * const inputBuffer,
   return (Atams::ERROR_NONE);
 }
 
-Error_t encodeMeshPacket(      uint8_t  * const inputBuffer,
-                         const uint16_t         inputLength,
-                               uint8_t  * const encodedBuffer,
-                         const uint16_t         encodedBufferMaxLength,
-                               uint16_t        &encodedLength)
+Atams::Error_t encodeMeshPacket(      uint8_t  * const inputBuffer,
+                                const uint16_t         inputLength,
+                                      uint8_t  * const encodedBuffer,
+                                const uint16_t         encodedBufferMaxLength,
+                                      uint16_t        &encodedLength)
 {
   if (inputLength < MESH_SIZE_HEADER)
   {

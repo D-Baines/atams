@@ -33,6 +33,7 @@
 #include "../../../Shared/Maps/BlockUniversal.hpp"
 #include "BlockTest1.hpp"
 #include "BlockTest2.hpp"
+#include "BlockTest3.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */

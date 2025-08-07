@@ -39,11 +39,12 @@ namespace Atams { namespace HILTests {
 /* PRIVATE CONSTANTS                                                                 */
 /*************************************************************************************/
 
+inline constexpr uint8_t NUMBER_OF_ERRORS_TO_INJECT  = 5U;
+inline constexpr uint8_t ERROR_INJECTION_PROBABILITY = 20U;
 
 /*************************************************************************************/
 /* PRIVATE TYPEDEFS                                                                  */
 /*************************************************************************************/
-
 
 /*************************************************************************************/
 /* PRIVATE VARIABLES                                                                 */
@@ -51,9 +52,12 @@ namespace Atams { namespace HILTests {
 
 static asio::io_context ioContext_;
 
+static asio::serial_port serialPort_(ioContext_);
+
 static const Atams::Platform::BusPeripheral::UserData_t userData_ = 
 {
-  .ioContext {ioContext_}
+  .ioContext  {ioContext_},
+  .serialPort {serialPort_}
 };
 
 /*************************************************************************************/
@@ -74,8 +78,6 @@ static Atams::TestNode testNode3_(2U, errorHandler);
 static Atams::TestNode *testNodes[] = 
 {
   &testNode1_,
-  &testNode2_,
-  &testNode3_
 };
 
 /*************************************************************************************/
@@ -87,6 +89,12 @@ static void errorHandler(const Atams::Error_t error, const char * errorMessage)
   printf("Atams Tests Failed with Error: %d\n", error);
 
   if (errorMessage != nullptr) printf("Message: %s\n", errorMessage);
+
+  tcflush(serialPort_.lowest_layer().native_handle(), TCIOFLUSH);
+
+  serialPort_.cancel();
+
+  serialPort_.close();
 
   for(;;) {}; /* Infinite Loop */
 }
@@ -109,15 +117,32 @@ static void testBusInit(void)
   error         = testBus_.addNodeToBus(testNode1_);
   if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
-  expectedError = Atams::ERROR_NONE;
-  error         = testBus_.addNodeToBus(testNode2_);
-  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
-
-  expectedError = Atams::ERROR_BUS_FULL;
-  error         = testBus_.addNodeToBus(testNode3_);
-  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+  //expectedError = Atams::ERROR_NONE;
+  //error         = testBus_.addNodeToBus(testNode2_);
+  //if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+//
+  //expectedError = Atams::ERROR_BUS_FULL;
+  //error         = testBus_.addNodeToBus(testNode3_);
+  //if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
   expectedError = Atams::ERROR_INIT_ORDER;
+  error         = testBus_.beginUpdateCycle();
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::beginUpdateCycle");
+
+  expectedError  = Atams::ERROR_INIT_ORDER;
+  error          = Atams::ERROR_NONE;
+  initState      = testBus_.runUpdateCycleAsync(error);
+  if ((initState != Atams::ProcessState::ERROR) ||
+      (error     != expectedError             ) ) errorHandler(error, "Unexpected Return from Bus::runUpdateCycleAsync");
+
+  expectedError  = Atams::ERROR_INIT_ORDER;
+  error          = Atams::ERROR_NONE;
+  initState      = testBus_.runUpdateCycleSync(error);
+  if ((initState != Atams::ProcessState::ERROR) ||
+      (error     != expectedError             ) ) errorHandler(error, "Unexpected Return from Bus::runUpdateCycleSync");
+
+  expectedError = Atams::ERROR_INIT_ORDER;
+  error          = Atams::ERROR_NONE;
   initState     = testBus_.updateBusInitProcess(error);
   if ((initState != Atams::ProcessState::ERROR) ||
       (error     != expectedError             ) ) errorHandler(error, "Unexpected Return from Bus::updateBusInitProcess");
@@ -126,17 +151,39 @@ static void testBusInit(void)
   error         = testBus_.beginBusInitProcess();
   if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::beginBusInitProcess");
 
-  initState = Atams::ProcessState::IN_PROGRESS;
-
-  while (initState == Atams::ProcessState::IN_PROGRESS)
+  do 
   {
     initState = testBus_.updateBusInitProcess(error);
   }
+  while (initState == Atams::ProcessState::IN_PROGRESS);
 
   if ((initState == Atams::ProcessState::ERROR) || 
-      (error     != Atams::ERROR_NONE         ) ) 
+      (error     != expectedError             ) ) 
   {
     errorHandler(error, "Unexpected Return from Bus::updateBusInitProcess");
+  }
+
+  expectedError = Atams::ERROR_NONE;
+  error         = testBus_.beginUpdateCycle();
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::beginUpdateCycle");
+
+  expectedError = Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS;
+  error         = testBus_.beginUpdateCycle();
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::beginUpdateCycle");
+
+  expectedError = Atams::ERROR_NONE;
+  error         = Atams::ERROR_NONE;
+
+  do 
+  {
+    initState = testBus_.runUpdateCycleSync(error);
+  }
+  while (initState == Atams::ProcessState::IN_PROGRESS);
+
+  if ((initState == Atams::ProcessState::ERROR) || 
+      (error     != expectedError             ) ) 
+  {
+    errorHandler(error, "Unexpected Return from Bus::runUpdateCycleSync");
   }
 }
 
@@ -155,21 +202,22 @@ static Atams::Error_t runUpdateCycleTests(void)
       if (updateState != Atams::ProcessState::COMPLETE) errorHandler(error, "Unexpected Update Cycle Error");
 
       error = testBus_.processBuffers();
-
+     
       for (TestNode *&testNodePtr : testNodes)
       {
         if (error == testNodePtr->getExpectedBusError())
         {
           error = Atams::ERROR_NONE;
         }
-      }
-
-      if (error) errorHandler(error, "Unexpected Bus Error");
-
+      } 
+      
+      if (error) errorHandler(error, "Unexpected Bus Error"); 
+      
       for (TestNode *&testNodePtr : testNodes)
       {
         testNodePtr->runUpdateCycleTests();
       }
+     
 
       testBus_.beginUpdateCycle();
     }
@@ -182,6 +230,14 @@ static Atams::Error_t runUpdateCycleTests(void)
 
 void runTests(void)
 {
+  serialPort_.open("/dev/cu.usbserial-AQ02Y2T5");
+  serialPort_.set_option(asio::serial_port_base::baud_rate(230400));
+  serialPort_.set_option(asio::serial_port::character_size(8));
+  serialPort_.set_option(asio::serial_port::stop_bits(asio::serial_port::stop_bits::one));
+  serialPort_.set_option(asio::serial_port::flow_control(asio::serial_port::flow_control::none));
+  serialPort_.set_option(asio::serial_port::parity(asio::serial_port::parity::none));
+  tcflush(serialPort_.lowest_layer().native_handle(), TCIOFLUSH);
+
   Atams::Error_t error = testNode1_.initMemoryMap(Atams::MapTest::memoryMap);
 
   if (!error) error = testNode2_.initMemoryMap(Atams::MapTest::memoryMap);

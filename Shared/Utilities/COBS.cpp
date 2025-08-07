@@ -43,16 +43,16 @@ constexpr uint8_t MAX_UINT8_DECIMAL  = 255U;
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-Result_t encode(const uint8_t *sourceBufferPtr,
-                const uint16_t sourceBufferLength,
-                      uint8_t *destBufferPtr,
-                const uint16_t destBufferLength)
+COBS::Result_t encode(const uint8_t *sourceBufferPtr,
+                      const uint16_t sourceBufferLength,
+                            uint8_t *destBufferPtr,
+                      const uint16_t destBufferLength)
 {
 
-  Result_t encodeResult;
-  uint16_t destIndex        = 1U;
-  uint16_t blockStartIndex  = 0U;
-  uint8_t  zeroSearchLength = 1U;
+  COBS::Result_t encodeResult;
+  uint16_t       destIndex        = 1U;
+  uint16_t       blockStartIndex  = 0U;
+  uint8_t        zeroSearchLength = 1U;
 
   /* Buffer pointer NULL checks */
   if ((sourceBufferPtr == nullptr) || (destBufferPtr == nullptr))
@@ -113,10 +113,10 @@ Result_t encode(const uint8_t *sourceBufferPtr,
 }
 
 
-Result_t decode(const uint8_t *sourceBufferPtr,
-                const uint16_t sourceBufferLength,
-                      uint8_t *destBufferPtr,
-                const uint16_t destBufferLength)
+COBS::Result_t decode(const uint8_t *sourceBufferPtr,
+                      const uint16_t sourceBufferLength,
+                            uint8_t *destBufferPtr,
+                      const uint16_t destBufferLength)
 {
   Result_t decodeResult;
 

@@ -59,16 +59,16 @@ struct Result_t
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-Result_t encode(const uint8_t *sourceBufferPtr,
-                const uint16_t sourceBufferLength,
-                      uint8_t *destBufferPtr,
-                const uint16_t destBufferLength);
+COBS::Result_t encode(const uint8_t *sourceBufferPtr,
+                      const uint16_t sourceBufferLength,
+                            uint8_t *destBufferPtr,
+                      const uint16_t destBufferLength);
 
 
-Result_t decode(const uint8_t *sourceBufferPtr,
-                const uint16_t sourceBufferLength,
-                      uint8_t *destBufferPtr,
-                const uint16_t destBufferLength);
+COBS::Result_t decode(const uint8_t *sourceBufferPtr,
+                      const uint16_t sourceBufferLength,
+                            uint8_t *destBufferPtr,
+                      const uint16_t destBufferLength);
 
 } } /* End Namespace - Atams::COBS */
 

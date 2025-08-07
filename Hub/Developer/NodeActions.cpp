@@ -535,7 +535,7 @@ Atams::ProcessState NodeActions::updateValidateMultipleConfig(Atams::Error_t    
       break;
     case ValidateMultiConfigState::VALIDATE:
       process.error = specificFunctions.checkFunction(*this, node, allVarsValid);
-      if (process.error) process.terminate(error);
+      if (process.error) process.terminate(process.error);
       else               process.setProcessComplete();
       break; 
     case ValidateMultiConfigState::COMPLETE:

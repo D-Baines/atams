@@ -27,7 +27,6 @@
 /*************************************************************************************/
 
 #include "TestNode.hpp"
-#include <cstdio>
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -66,7 +65,7 @@ void TestNode::runFunctionArgTests(void)
 
   /* Node::write Var ID Error Checks - Invalid Var ID */
   expectedError = Atams::ERROR_VAR_ID;
-  error         = Node::write((BlockTest2::VAR_WRITE_FLOAT+1U),  testUint8_); 
+  error         = Node::write((BlockTest3::VAR_WRITE_UINT32_20+1U),  testUint8_); 
   if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
   /* Node::write Var Type Error Checks - Valid and Invalid Var Types */
@@ -113,7 +112,7 @@ void TestNode::runFunctionArgTests(void)
 
   /* Node::read Var ID Error Checks - Invalid Var ID */
   expectedError = Atams::ERROR_VAR_ID;
-  error         = Node::read((BlockTest2::VAR_WRITE_FLOAT+1U),  testUint8_); 
+  error         = Node::read((BlockTest3::VAR_WRITE_UINT32_20+1U),  testUint8_); 
   if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
   /* Node::read Var Type Error Checks - Valid and Invalid Var Types */
@@ -170,7 +169,7 @@ void TestNode::runFunctionArgTests(void)
 
   /* Set Request Pattern w/ Invalid Var ID */
   expectedError = Atams::ERROR_VAR_ID;
-  error         = Node::setRequestPattern((BlockTest2::VAR_WRITE_FLOAT+1U), Atams::ACCESS_READ, Atams::REQUEST_STREAM);
+  error         = Node::setRequestPattern((BlockTest3::VAR_WRITE_UINT32_20+1U), Atams::ACCESS_READ, Atams::REQUEST_STREAM);
   if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
   /* Set Request Pattern w/ Invalid Access */
@@ -185,6 +184,58 @@ void TestNode::runFunctionArgTests(void)
 
   /* Clear Request Pattern All Vars */
   Node::resetRequestPacket();
+
+  /* Request Packet and Write List Duplicate Tests */
+  expectedError = Atams::ERROR_NONE;
+
+  for (uint8_t setCount = 0U; setCount <= Atams::WriteList::LIST_MAX_LENGTH; setCount++)
+  {
+    error = Node::setRequestPattern(BlockTest1::VAR_WRITE_UINT8, Atams::ACCESS_WRITE, Atams::REQUEST_STREAM);
+
+    if (Node::getRequestPacketLength() != Atams::MESH_SIZE_HEADER + Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t))
+    {
+      errorHandler(Atams::ERROR_NONE, "Request Packet Duplication Test Failure On Node ");
+    }
+
+    if (Node::getWriteListLength() != 1U)
+    {
+      errorHandler(Atams::ERROR_NONE, "Write List Duplication Test Failure On Node ");
+    }
+
+    if (error != expectedError) errorHandler(error, argTestErrorMessage_);
+  }
+
+  Node::resetRequestPacket();
+
+  /* Request Packet and Write List Overflow Test */
+  uint16_t      expectedWriteListLength     = 0U;
+  uint16_t      expectedRequestPacketLength = Atams::MESH_SIZE_HEADER;
+  const uint8_t writeDatagramLength         = Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t);
+  
+  for (uint16_t varID = BlockTest3::VAR_WRITE_UINT8_1; varID <= BlockTest3::VAR_WRITE_UINT8_20; varID++)
+  {
+    if ((expectedRequestPacketLength + writeDatagramLength) > Platform::MAX_BUS_PACKET_SIZE)
+    {
+      expectedError = Atams::ERROR_REQUEST_BUFFER_LENGTH;
+    }
+    else 
+    {
+      expectedError = Atams::ERROR_NONE;
+      expectedWriteListLength++;
+      expectedRequestPacketLength += writeDatagramLength;
+    }
+
+    error = Node::setRequestPattern(varID, Atams::ACCESS_WRITE, Atams::REQUEST_STREAM);
+
+    if ((error                          != expectedError              ) ||
+        (Node::getWriteListLength()     != expectedWriteListLength    ) ||
+        (Node::getRequestPacketLength() != expectedRequestPacketLength) )
+    {
+      errorHandler(error, "Request Packet Overflow Test Failure on Node ");
+    }
+  }
+
+  Node::resetRequestPacket();
 }
 
 void TestNode::runUpdateCycleTests(void)
@@ -194,7 +245,9 @@ void TestNode::runUpdateCycleTests(void)
   Atams::RequestPattern_t currentRequestPattern = Atams::REQUEST_INACTIVE;
   uint8_t                 varLength             = 0U;
 
-  if (updateErrorInjection() != Atams::ERROR_NONE)
+  updateErrorInjection();
+
+  if (expectedBusError_ != Atams::ERROR_NONE)
   {
     return; /* Early Return - Error has been injected */
   }
@@ -235,7 +288,8 @@ void TestNode::runUpdateCycleTests(void)
 
     if (error) errorHandler(error, defaultUpdateErrorMessage_);
 
-    if (prevAccess_[varID] == Atams::ACCESS_NONE)
+    if ((prevAccess_[varID]  == Atams::ACCESS_NONE     ) &&
+        (writeRequestPattern != Atams::REQUEST_INACTIVE) )
     {
       switch (varID)
       {
@@ -271,31 +325,74 @@ void TestNode::runUpdateCycleTests(void)
 
       if (error) errorHandler(error, defaultUpdateErrorMessage_);
 
+      /* Check acknowledgement flag is false before starting write */
+      bool ackReceived = true;
+
+      static_cast<void>(Node::getAckFlag(varID, ackReceived));
+
+      if (ackReceived == true) errorHandler(error, "Write Acknowledgement Not Cleared On Node ");
+
       error = Node::setRequestPattern(varID, Atams::ACCESS_WRITE, writeRequestPattern);
 
       if (error) errorHandler(error, defaultUpdateErrorMessage_);
 
       expectedRequestPacketLength_ += Atams::DATAGRAM_SIZE_HEADER + varLength;
+
+      if (writeRequestPattern == Atams::REQUEST_STREAM) expectedWriteListLength_++;
     }
     else if (prevAccess_[varID] == Atams::ACCESS_WRITE)
     {
-      Node::setRequestPattern(varID, Atams::ACCESS_READ, Atams::REQUEST_UNTIL_ACK);
+      bool ackReceived = false;
 
-      if      (prevRequestPatterns_[varID] == Atams::REQUEST_STREAM)    expectedRequestPacketLength_ -= varLength;
-      else if (prevRequestPatterns_[varID] == Atams::REQUEST_UNTIL_ACK) expectedRequestPacketLength_ += Atams::DATAGRAM_SIZE_HEADER;
-      else                                                              errorHandler(Atams::ERROR_NONE, defaultUpdateErrorMessage_);
+      static_cast<void>(Node::getAckFlag(varID, ackReceived));
+
+      if (ackReceived == false) errorHandler(Atams::ERROR_NONE, "Write Acknowledgement Not Received On Node ");
+
+      static_cast<void>(Node::clearAckFlag(varID));
+
+      bool newDataReady = true;
+
+      static_cast<void>(Node::getDataReadyFlag(varID, newDataReady));
+
+      if (newDataReady == true) errorHandler(Atams::ERROR_NONE, "Data Ready Flag Not Cleared On Node ");
+
+      Atams::RequestPattern_t readRequestPattern = (std::rand() % 2 == 0) ? Atams::REQUEST_STREAM : Atams::REQUEST_UNTIL_ACK;
+
+      Node::setRequestPattern(varID, Atams::ACCESS_READ, readRequestPattern);
+
+      if (prevRequestPatterns_[varID] == Atams::REQUEST_STREAM)    
+      {
+        expectedRequestPacketLength_ -= varLength;
+        expectedWriteListLength_--;
+      }
+      else if (prevRequestPatterns_[varID] == Atams::REQUEST_UNTIL_ACK) 
+      {
+        expectedRequestPacketLength_ += Atams::DATAGRAM_SIZE_HEADER;
+      }
+      else                                                              
+      {
+        errorHandler(Atams::ERROR_NONE, defaultUpdateErrorMessage_);
+      }
     }
     else if (prevAccess_[varID] == Atams::ACCESS_READ)
     {
+      bool newDataReady = false;
+
+      static_cast<void>(Node::getDataReadyFlag(varID, newDataReady));
+
+      if (newDataReady == false) errorHandler(Atams::ERROR_NONE, "Data Ready Flag Not Set On Node ");
+
+      static_cast<void>(Node::clearDataReadyFlag(varID));
+
       switch (varID)
       {
         case BlockTest1::VAR_WRITE_UINT8:
           error = Node::read(varID, feedbackUint8_);
-          if (testUint8_ != feedbackUint8_) errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
+          if (testUint8_ != feedbackUint8_)   errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
           break;
         case BlockTest1::VAR_WRITE_INT8:
           error = Node::read(varID, feedbackInt8_);
-          if (testInt8_ != feedbackInt8_) errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
+          if (testInt8_ != feedbackInt8_)     errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
           break;
         case BlockTest1::VAR_WRITE_UINT16:
           error = Node::read(varID, feedbackUint16_);
@@ -303,7 +400,7 @@ void TestNode::runUpdateCycleTests(void)
           break;
         case BlockTest1::VAR_WRITE_INT16:
           error = Node::read(varID, feedbackInt16_);
-          if (testInt16_ != feedbackInt16_) errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
+          if (testInt16_ != feedbackInt16_)   errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
           break;
         case BlockTest1::VAR_WRITE_UINT32:
           error = Node::read(varID, feedbackUint32_);
@@ -311,11 +408,11 @@ void TestNode::runUpdateCycleTests(void)
           break;
         case BlockTest1::VAR_WRITE_INT32:
           error = Node::read(varID, feedbackInt32_);
-          if (testInt32_ != feedbackInt32_) errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
+          if (testInt32_ != feedbackInt32_)   errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
           break;
         case BlockTest1::VAR_WRITE_FLOAT:
           error = Node::read(varID, feedbackFloat_);
-          if (testFloat_ != feedbackFloat_) errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
+          if (testFloat_ != feedbackFloat_)   errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
           break;
       }
     
@@ -324,11 +421,21 @@ void TestNode::runUpdateCycleTests(void)
       error = Node::setRequestPattern(varID, Atams::ACCESS_NONE, Atams::REQUEST_INACTIVE);
 
       if (error != Atams::ERROR_NONE) errorHandler(error, defaultUpdateErrorMessage_);
+
+      if (prevRequestPatterns_[varID] == Atams::REQUEST_STREAM)
+      {
+        expectedRequestPacketLength_ -= Atams::DATAGRAM_SIZE_HEADER;
+      }
     }
 
     if (expectedRequestPacketLength_ != Node::getRequestPacketLength())
     {
       errorHandler(Atams::ERROR_NONE, "Request Packet Length Mismatch on Node ");
+    }
+
+    if (expectedWriteListLength_ != Node::getWriteListLength())
+    {
+      errorHandler(Atams::ERROR_NONE, "Write List Length Mismatch on Node ");
     }
   }
 
@@ -350,38 +457,47 @@ Atams::Error_t TestNode::getExpectedBusError(void)
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-Atams::Error_t TestNode::updateErrorInjection(void)
+void TestNode::updateErrorInjection(void)
 {
-  if (Node::getBusError() != expectedBusError_)
+  uint16_t varIDUsed = VAR_ID_NULL;
+
+  if ((Node::getBusError()               != expectedBusError_    ) ||
+      (Node::getAbortedResponseDetails() != expectedAbortDetails_) )
   {
     errorHandler(Node::getBusError(), "Unexpected Node Bus Error On Node ");
   }
 
   if (expectedBusError_ != Atams::ERROR_NONE)
   {
-    Node::clearBusError(expectedBusError_);
-  }
+    if (expectedBusError_ == Atams::ERROR_ABORTED_RESPONSE) expectedBusError_ = expectedAbortDetails_.error;
+    Node::clearInjectedBusError(expectedBusError_, BlockTest1::VAR_READ_UINT8);
+    expectedBusError_     = Atams::ERROR_NONE;
+    expectedAbortDetails_ = {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
 
-  expectedBusError_ = Atams::ERROR_NONE;
+    if (Node::getRequestPacketLength() == 0U)
+    {
+      for (Atams::RequestPattern_t &pattern : prevRequestPatterns_) pattern = Atams::REQUEST_INACTIVE;
+      for (Atams::Access_t         &access  : prevAccess_         ) access  = Atams::ACCESS_NONE;
+    }
+  }
 
   if ((std::rand() % ERROR_INJECTION_PROBABILITY) == 0)
   {
-    Node::injectBusError(errorsToInject_[errorInjectionIndex_]);
-  
+    expectedBusError_ = errorsToInject_[errorInjectionIndex_];
+
+    Node::injectBusError(expectedBusError_, BlockTest1::VAR_READ_UINT8, varIDUsed);
+
+    if (expectedBusError_ != Atams::ERROR_CONFIGURATION_STATE_INACTIVE)
+    {
+      expectedAbortDetails_.varID = varIDUsed;
+      expectedAbortDetails_.error = expectedBusError_;
+      expectedBusError_   = Atams::ERROR_ABORTED_RESPONSE;
+    }
+
     errorInjectionIndex_++;
 
     if (errorInjectionIndex_ >= NUMBER_OF_ERRORS_TO_INJECT) errorInjectionIndex_ = 0U;
   }
-
-
-  return (expectedBusError_);
-
-  /* 
-  Errors to inject:
-  - invalid var ID,
-  - invalid access,
-  - invalid request packet length
-  */
 }
 
 void TestNode::errorHandler(const Atams::Error_t error, const char * errorMessage)

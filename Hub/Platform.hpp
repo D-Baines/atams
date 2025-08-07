@@ -52,25 +52,32 @@ inline constexpr uint16_t NUMBER_OF_NODES_PER_BUS = 2U;
 inline constexpr uint16_t NODE_NUMBER_OF_VARS     = 100U; 
 inline constexpr uint16_t MAX_BUS_PACKET_SIZE     = 64U;
 inline constexpr uint16_t CIRCULAR_BUFFER_SIZE    = 1024U;
-inline constexpr uint64_t BUS_RESPONSE_TIMEOUT    = 300U;
+inline constexpr uint64_t BUS_RESPONSE_TIMEOUT    = 500U;
 inline constexpr uint64_t NVM_STORAGE_TIMEOUT     = 5000U;
 
 /*************************************************************************************/
 /* PUBLIC CLASSES                                                                    */
 /*************************************************************************************/
 
-class BusPeripheral :
-private asio::serial_port
+class BusPeripheral
 {
   public:
   
   struct UserData_t
   {
-    asio::io_context &ioContext;
+    asio::io_context  &ioContext;
+    asio::serial_port &serialPort;
   };
 
+  /* Default Constructor */
+  BusPeripheral(void) = delete;
+
   /* Constructor */
-  BusPeripheral(UserData_t userData);
+  BusPeripheral(UserData_t userData) :
+  userData_(userData) {};
+
+  /* Default Destructor */
+  ~BusPeripheral(void) = default;
 
   /* Copy Constructor */
   BusPeripheral(const BusPeripheral &other) = delete;
@@ -78,49 +85,73 @@ private asio::serial_port
   /* Copy Assignment Operator */
   BusPeripheral & operator=(const BusPeripheral &other) = delete;
 
-  bool startPeripheral(void)
+  /* Move Constructor */
+  BusPeripheral(BusPeripheral &&other) = delete;
+
+  /* Move Assignment Operator */
+  BusPeripheral & operator=(BusPeripheral &&other) = delete;
+
+  bool startReceive(void)
   {
-    asio::serial_port::open("/dev/cu.usbserial-AQ02Y2T5");
-    asio::serial_port::set_option(asio::serial_port_base::baud_rate(230400));
-    asio::serial_port::set_option(asio::serial_port::character_size(8));
-    asio::serial_port::set_option(asio::serial_port::stop_bits(asio::serial_port::stop_bits::one));
-    asio::serial_port::set_option(asio::serial_port::flow_control(asio::serial_port::flow_control::none));
-    asio::serial_port::set_option(asio::serial_port::parity(asio::serial_port::parity::none));
-    asio::serial_port::async_read_some(asio::buffer(_rxBuffer), std::bind(&BusPeripheral::handler, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
+    userData_.serialPort.async_read_some(asio::buffer(rxBuffer_), std::bind(&BusPeripheral::rxHandler, 
+                                                                            this, 
+                                                                            asio::placeholders::error, 
+                                                                            asio::placeholders::bytes_transferred));
+
     return (true);
   }
 
-  void handler(asio::error_code ec, size_t xfr) 
+  void rxHandler(asio::error_code ec, size_t xfr) 
   {
     static_cast<void>(ec);
 
     if (xfr > 0)
     {
-      rxCallback(_rxBuffer, xfr);
+      rxCallback(rxBuffer_, xfr);
     }
-    asio::serial_port::async_read_some(asio::buffer(_rxBuffer), std::bind(&BusPeripheral::handler, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
+
+    userData_.serialPort.async_read_some(asio::buffer(rxBuffer_), std::bind(&BusPeripheral::rxHandler, 
+                                                                            this, 
+                                                                            asio::placeholders::error, 
+                                                                            asio::placeholders::bytes_transferred));
+  }
+
+  void txHandler(asio::error_code ec, size_t xfr) 
+  {
+    static_cast<void>(ec);
+    static_cast<void>(xfr);
+
+    transmitReady_.store(true);
   }
 
   bool transmitReady(void)
   {
-    return (true);
+    return (transmitReady_.load());
   }
 
-  bool transmit(uint8_t *buffer, uint16_t length)
+  bool transmit(uint8_t *buffer, const uint16_t length)
   {
     /* Transmit Buffer */
-    asio::write(static_cast<asio::serial_port&>(*this), asio::buffer(buffer, length));
+    asio::async_write(userData_.serialPort, asio::buffer(buffer, length), std::bind(&BusPeripheral::txHandler, 
+                                                                                    this, 
+                                                                                    asio::placeholders::error, 
+                                                                                    asio::placeholders::bytes_transferred));
 
     return (true);
   }
 
-  void update(void);
+  void update(void)
+  {
+    userData_.ioContext.poll();
+  }
   
   private:
 
-  const UserData_t _userData;
+  const UserData_t userData_;
 
-  uint8_t _rxBuffer[MAX_BUS_PACKET_SIZE];
+  uint8_t rxBuffer_[MAX_BUS_PACKET_SIZE];
+
+  std::atomic<bool> transmitReady_ {true};
 
   virtual void rxCallback(      uint8_t  *rxBufferPtr,
                           const uint16_t  rxBufferLength)
@@ -183,10 +214,13 @@ class CommsLock
 };
 
 /*************************************************************************************/
-/* PUBLIC FUNCTION DECLARATIONS                                                      */
+/* PUBLIC INLINE FUNCTION DEFINITIONS                                                */
 /*************************************************************************************/
 
-uint64_t getMillis(void);
+inline uint32_t getMillis(void)
+{
+  return (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+}
 
 } } /* End Namespace - Atams::Platform */
 

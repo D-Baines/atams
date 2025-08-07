@@ -106,9 +106,11 @@ public Node
 
   const uint8_t nodeID_;
 
-  Atams::Error_t expectedBusError_ {Atams::ERROR_NONE};
+  Atams::Error_t                  expectedBusError_    {Atams::ERROR_NONE};
+  Atams::AbortedResponseDetails_t expectedAbortDetails_ {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
 
   uint16_t expectedRequestPacketLength_ {Atams::MESH_SIZE_HEADER};
+  uint16_t expectedWriteListLength_     {0U};
 
   uint8_t  testUint8_  {0U};
   int8_t   testInt8_   {0};  
@@ -148,7 +150,7 @@ public Node
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
-  Atams::Error_t updateErrorInjection(void);
+  void updateErrorInjection(void);
 
   void errorHandler(const Atams::Error_t error, const char * errorMessage);
 };

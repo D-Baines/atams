@@ -175,50 +175,51 @@ enum Error_t: uint8_t
   ERROR_VAR_ID                       = 1U,
   ERROR_VAR_TYPE                     = 2U,
   ERROR_ACCESS_INVALID               = 3U,
-  ERROR_REQUEST_BUFFER_LENGTH        = 4U,  //
-  ERROR_RESPONSE_BUFFER_LENGTH       = 5U,  //--
+  ERROR_REQUEST_BUFFER_LENGTH        = 4U,  
+  ERROR_RESPONSE_BUFFER_LENGTH       = 5U,  
   ERROR_NULLPTR                      = 6U,
   ERROR_REQUEST_PATTERN_INVALID      = 7U, 
   ERROR_MEMORY_MAP                   = 8U,
-  ERROR_WRITE_LIST_FULL              = 9U,  //
-  ERROR_ABORT_FAILURE                = 10U,
-  ERROR_ENCODE                       = 11U, 
-  ERROR_DECODE_FRAMING               = 12U, //
-  ERROR_DECODE_CHECKSUM              = 13U, //
-  ERROR_MESSAGE_TYPE                 = 14U, //
-  ERROR_SYNC_COUNT                   = 15U, //
-  ERROR_SYNC_NODE                    = 16U, // 
-  ERROR_ACCESS_RESPONSE_INVALID      = 17U, 
-  ERROR_PATTERN_AUTO_UPDATE          = 18U, 
-  ERROR_DATAGRAM_SEARCH              = 19U,
-  ERROR_ERROR_MANAGEMENT             = 20U,
-  ERROR_PLATFORM                     = 21U,
-  ERROR_BUS_FULL                     = 22U,
-  ERROR_BUS_EMPTY                    = 23U,
-  ERROR_UPDATE_CYCLE_IN_PROGRESS     = 24U, //--
-  ERROR_NEW_DATA_NOT_READY           = 25U, 
-  ERROR_ACK_NOT_RECEIVED             = 26U, 
-  ERROR_RESPONSE_TIMEOUT             = 27U, 
-  ERROR_NO_RESPONSE                  = 28U,
-  ERROR_INIT_ORDER                   = 29U,
-  ERROR_NVM_CHECKSUM                 = 30U,
-  ERROR_GEN_INFO_MISMATCH            = 31U,
-  ERROR_NVM_HEADER_LENGTH            = 32U,
-  ERROR_NVM_HEADER_VALIDITY          = 33U,
-  ERROR_NVM_PLATFORM_SIZE            = 34U,
-  ERROR_NVM_WRITE_ORDER              = 35U,
-  ERROR_INVALID_NACK                 = 36U,
-  ERROR_CONFIGURATION_STATE_DENIED   = 37U,
-  ERROR_CONFIGURATION_STATE_INACTIVE = 38U,
-  ERROR_REQUEST_PACKET_FATAL         = 39U,
-  ERROR_INVALID_CASE                 = 40U,
-  ERROR_SET_CONFIG_VAR_FAILED        = 41U,
-  ERROR_STORAGE_PROCESS_FAILED       = 42U,
-  ERROR_PROCESS_TIMEOUT              = 43U,
-  ERROR_INITIALISATION_REQUIRED      = 44U,
-  ERROR_ID_ASSIGNMENT_FAILED         = 45U,
-  ERROR_CONFIGURATION_EXIT           = 46U,
-  ERROR_NODE_ALREADY_ON_BUS          = 47U,
+  ERROR_WRITE_LIST_FULL              = 9U,  
+  ERROR_ABORTED_RESPONSE             = 10U, 
+  ERROR_ABORT_FAILURE                = 11U,
+  ERROR_ENCODE                       = 12U, 
+  ERROR_DECODE_FRAMING               = 13U,
+  ERROR_DECODE_CHECKSUM              = 14U, 
+  ERROR_MESSAGE_TYPE                 = 15U, 
+  ERROR_SYNC_COUNT                   = 16U, 
+  ERROR_SYNC_NODE                    = 17U,
+  ERROR_ACCESS_RESPONSE_INVALID      = 18U, 
+  ERROR_PATTERN_AUTO_UPDATE          = 19U, 
+  ERROR_DATAGRAM_SEARCH              = 20U,
+  ERROR_ERROR_MANAGEMENT             = 21U,
+  ERROR_PLATFORM                     = 22U,
+  ERROR_BUS_FULL                     = 23U,
+  ERROR_BUS_EMPTY                    = 24U,
+  ERROR_UPDATE_CYCLE_IN_PROGRESS     = 25U, 
+  ERROR_NEW_DATA_NOT_READY           = 26U, 
+  ERROR_ACK_NOT_RECEIVED             = 27U, 
+  ERROR_RESPONSE_TIMEOUT             = 28U, 
+  ERROR_NO_RESPONSE                  = 29U,
+  ERROR_INIT_ORDER                   = 30U,
+  ERROR_NVM_CHECKSUM                 = 31U,
+  ERROR_GEN_INFO_MISMATCH            = 32U,
+  ERROR_NVM_HEADER_LENGTH            = 33U,
+  ERROR_NVM_HEADER_VALIDITY          = 34U,
+  ERROR_NVM_PLATFORM_SIZE            = 35U,
+  ERROR_NVM_WRITE_ORDER              = 36U,
+  ERROR_INVALID_NACK                 = 37U,
+  ERROR_CONFIGURATION_STATE_DENIED   = 38U,
+  ERROR_CONFIGURATION_STATE_INACTIVE = 39U,
+  ERROR_REQUEST_PACKET_FATAL         = 40U,
+  ERROR_INVALID_CASE                 = 41U,
+  ERROR_SET_CONFIG_VAR_FAILED        = 42U,
+  ERROR_STORAGE_PROCESS_FAILED       = 43U,
+  ERROR_PROCESS_TIMEOUT              = 44U,
+  ERROR_INITIALISATION_REQUIRED      = 45U,
+  ERROR_ID_ASSIGNMENT_FAILED         = 46U,
+  ERROR_CONFIGURATION_EXIT           = 47U,
+  ERROR_NODE_ALREADY_ON_BUS          = 48U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
@@ -420,6 +421,17 @@ struct NodeUserConfig_t
     return ((nodeID         == other.nodeID        ) &&
             (bitrateOption  == other.bitrateOption ) &&
             (watchdogPeriod == other.watchdogPeriod) );
+  }
+};
+
+struct AbortedResponseDetails_t
+{
+  uint16_t       varID;
+  Atams::Error_t error;
+
+  bool operator!=(const AbortedResponseDetails_t &other)
+  {
+    return ((varID != other.varID) || (error != other.error));
   }
 };
 

@@ -69,7 +69,7 @@ public NodeCallbackHandler
   /* Default Constructor */
   Node(void) = delete;
 
-  /* Default Constructor */
+  /* Default Destructor */
   ~Node(void) = default;
 
   /* Copy Constructor */
@@ -120,8 +120,6 @@ public NodeCallbackHandler
 
   Atams::Error_t stopStreamGetDataReady(const uint16_t varID, bool &newDataReady);
 
-  Atams::Error_t stopStreamGetAckFlag(const uint16_t varID, bool &ackReceived);
-
   template<typename T>
   Atams::Error_t stopStreamReadIfDataReady(const uint16_t varID, T &readData);
 
@@ -142,6 +140,8 @@ public NodeCallbackHandler
 
   uint16_t getRequestPacketLength(void);
 
+  uint16_t getWriteListLength(void);
+
   Atams::Error_t getVarLength(const uint16_t varID, uint8_t &length);
 
   void setNodeID(const uint8_t nodeID);
@@ -150,10 +150,14 @@ public NodeCallbackHandler
 
   virtual Atams::Error_t getBusError(void) final;
 
+  Atams::AbortedResponseDetails_t getAbortedResponseDetails(void);
+
   //#if DEVELOPER_TOOLS 
-  void injectBusError(const Atams::Error_t errorToInject);   
+  void injectBusError(const Atams::Error_t errorToInject, 
+                      const uint16_t       readOnlyVarID,
+                      uint16_t            &varIDUsed);   
   
-  void clearBusError(const Atams::Error_t errorToClear);
+  void clearInjectedBusError(const Atams::Error_t errorToClear, const uint16_t readOnlyVarID);
   //#endif
 
   private:
@@ -204,13 +208,14 @@ public NodeCallbackHandler
 
   uint8_t                  nodeID_;
   const SharedMemoryMap_t *memoryMap_;
-  uint16_t                 validVarCount_ = 0U;
+  Atams::Error_t           busError_      {Atams::ERROR_NONE};
+  uint16_t                 validVarCount_ {0U};
   Var_t                    varStorage_[Platform::NODE_NUMBER_OF_VARS];
-  Atams::Error_t           busError_ = Atams::ERROR_NONE;
   RequestPacket_t          requestPacket_;
   uint8_t                  responseBuffer_[Platform::MAX_BUS_PACKET_SIZE];
-  uint16_t                 responseLength_   = 0U;
-  bool                     newResponseReady_ = false;
+  uint16_t                 responseLength_         {0U};
+  bool                     newResponseReady_       {false};
+  AbortedResponseDetails_t abortedResponseDetails_ {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
   
   /*-- Private Constexpr Function Declarations --------------------------------------*/
 
@@ -235,6 +240,8 @@ public NodeCallbackHandler
   Atams::Error_t initUniversalData(const MemoryMap_t &memoryMap);
 
   void processAbortedResponse(void);
+
+  void reportAbortedResponse(const uint16_t varID, const Atams::Error_t error);
 
   bool processDatagramRead(const DatagramHeader_t datagramHeader,
                            uint16_t              &datagramStartIndex,
@@ -273,6 +280,8 @@ public NodeCallbackHandler
   virtual void reportBusError(Atams::Error_t busError) final;
   
   virtual void clearBusError(void) final;
+
+  virtual void clearAbortDetails(void) final;
 
   virtual void responseReceived(uint8_t *inputBuffer, uint16_t inputLength) final;
 

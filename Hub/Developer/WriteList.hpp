@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "../Platform.hpp"
+#include "../../Shared/AtamsTypedefs.hpp"
 
 /***************************************************************************/
 /* NAMESPACE                                                               */
@@ -46,6 +47,10 @@ class WriteList
 {
 
   public:
+
+  /*-- PUBLIC CONSTANTS ---------------*/
+
+  static constexpr uint16_t LIST_MAX_LENGTH = Platform::MAX_BUS_PACKET_SIZE / Atams::MINIMUM_SIZE_WRITE_DATAGRAM;
 
   /*-- PUBLIC TYPEDEFS ----------------*/
 
@@ -97,8 +102,6 @@ class WriteList
   private:
 
   /*-- PRIVATE CONSTANTS --------------*/
-
-  static const uint16_t LIST_MAX_LENGTH = Platform::MAX_BUS_PACKET_SIZE / sizeof(WriteConfig_t);
 
   /*-- PRIVATE VARIABLES --------------*/
 

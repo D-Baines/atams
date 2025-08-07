@@ -89,6 +89,8 @@ class NodeCallbackHandler
 
   virtual void clearBusError(void) = 0;
 
+  virtual void clearAbortDetails(void) = 0;
+
   virtual Atams::Error_t getBusError(void) = 0;
 
   virtual void responseReceived(uint8_t *inputBuffer, uint16_t inputLength) = 0;

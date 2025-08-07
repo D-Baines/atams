@@ -91,6 +91,7 @@ Atams::Error_t Bus::beginBusInitProcess(void)
 
   initProcessHandler_.resetProcess();
   initProcessHandler_.specificState = Bus::InitState::START;
+  initProcessHandler_.error         = Atams::ERROR_NONE;
   initNodeIndex_                    = 0U;
   
   for (Node *&nodePtr : nodePtrs_)
@@ -103,9 +104,9 @@ Atams::Error_t Bus::beginBusInitProcess(void)
 
 Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
 {
-  Bus::ProcessHandler<Bus::InitState> &process      = initProcessHandler_;
-  Atams::ProcessState                 &processState = process.processState;
-  Atams::Error_t                       cycleError   = Atams::ERROR_NONE;
+  Bus::ProcessHandler<Bus::InitState> &process         = initProcessHandler_;
+  Atams::ProcessState                 &processState    = process.processState;
+  Atams::Error_t                       cycleError      = Atams::ERROR_NONE;
 
   if ((runUpdateCycleAsync(cycleError) == Atams::ProcessState::IN_PROGRESS) ||
       (processState                    != Atams::ProcessState::IN_PROGRESS) )
@@ -131,8 +132,8 @@ Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
   switch (initState)
   {
     case Bus::InitState::START:
-      if (BusPeripheral::startPeripheral() == false) process.terminate(Atams::ERROR_PLATFORM);
-      else                                           beginInitValidateGenInfo(node);
+      if (BusPeripheral::startReceive() == false) process.terminate(Atams::ERROR_PLATFORM);
+      else                                        beginInitValidateGenInfo(node);
       break;
     case Bus::InitState::VALIDATE_GEN_INFO:
       subProcessState = nodeProcessHandler_.updateValidateGenInfo(process.error, dataIsValid);
@@ -325,8 +326,8 @@ Atams::ProcessState Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
   switch (configUpdateState)
   { 
     case Bus::ConfigUpdateState::START:
-      if (!Platform::BusPeripheral::startPeripheral()) process.terminate(Atams::ERROR_PLATFORM);
-      else                                             configUpdateState = Bus::ConfigUpdateState::INIT_NODE;
+      if (!Platform::BusPeripheral::startReceive()) process.terminate(Atams::ERROR_PLATFORM);
+      else                                          configUpdateState = Bus::ConfigUpdateState::INIT_NODE;
       break;
     case Bus::ConfigUpdateState::INIT_NODE:
       process.error = dummyNode_.init(dummyMemoryMap_);
@@ -402,7 +403,11 @@ void Bus::clearAllBusErrors(void)
 {
   for (Node *&nodePtr : nodePtrs_)
   {
-    if (nodePtr != nullptr) static_cast<NodeCallbackHandler*>(nodePtr)->clearBusError();
+    if (nodePtr != nullptr) 
+    {
+      static_cast<NodeCallbackHandler*>(nodePtr)->clearBusError();
+      static_cast<NodeCallbackHandler*>(nodePtr)->clearAbortDetails();
+    }
   }
 }
 
