@@ -41,14 +41,14 @@ static const GenInfo_t s_genInfo =
 {
   /* .atamsVersionMajor = */ 0U,
   /* .atamsVersionMinor = */ 1U,
-  /* .genDay            = */ 18U,
-  /* .genMonth          = */ 7U,
+  /* .genDay            = */ 7U,
+  /* .genMonth          = */ 8U,
   /* .genYear           = */ 2025U,
-  /* .genHour           = */ 17U,
-  /* .genMinute         = */ 34U,
-  /* .genSecond         = */ 59U,
-  /* .genChecksum       = */ 240391391U,
-  /* .noOfVars          = */ 56U
+  /* .genHour           = */ 19U,
+  /* .genMinute         = */ 40U,
+  /* .genSecond         = */ 33U,
+  /* .genChecksum       = */ 495011647U,
+  /* .noOfVars          = */ 96U
 };
 
 static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
@@ -253,6 +253,246 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
     /* .type           = */ Atams::TYPE_FLOAT,
     /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_1] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_2] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_3] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_4] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_5] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_6] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_7] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_8] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_9] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_10] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_11] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_12] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_13] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_14] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_15] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_16] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_17] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_18] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_19] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT8_20] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_1] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_2] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_3] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_4] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_5] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_6] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_7] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_8] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_9] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_10] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_11] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_12] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_13] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_14] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_15] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_16] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_17] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_18] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_19] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockTest3::VAR_WRITE_UINT32_20] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT32,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   }
 };
 
@@ -307,7 +547,46 @@ Atams::Error_t initUserDefaults(void)
   if (!error) error = Atams::write(BlockTest2::VAR_WRITE_INT16, BlockTest2::DEFAULT_WRITE_INT16);
   if (!error) error = Atams::write(BlockTest2::VAR_WRITE_UINT32, BlockTest2::DEFAULT_WRITE_UINT32);
   if (!error) error = Atams::write(BlockTest2::VAR_WRITE_INT32, BlockTest2::DEFAULT_WRITE_INT32);
-  if (!error) error = Atams::write(BlockTest2::VAR_WRITE_FLOAT, BlockTest2::DEFAULT_WRITE_FLOAT);  
+  if (!error) error = Atams::write(BlockTest2::VAR_WRITE_FLOAT, BlockTest2::DEFAULT_WRITE_FLOAT);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_2, BlockTest3::DEFAULT_WRITE_UINT8_2);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_3, BlockTest3::DEFAULT_WRITE_UINT8_3);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_4, BlockTest3::DEFAULT_WRITE_UINT8_4);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_5, BlockTest3::DEFAULT_WRITE_UINT8_5);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_6, BlockTest3::DEFAULT_WRITE_UINT8_6);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_7, BlockTest3::DEFAULT_WRITE_UINT8_7);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_8, BlockTest3::DEFAULT_WRITE_UINT8_8);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_9, BlockTest3::DEFAULT_WRITE_UINT8_9);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_10, BlockTest3::DEFAULT_WRITE_UINT8_10);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_11, BlockTest3::DEFAULT_WRITE_UINT8_11);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_12, BlockTest3::DEFAULT_WRITE_UINT8_12);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_13, BlockTest3::DEFAULT_WRITE_UINT8_13);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_14, BlockTest3::DEFAULT_WRITE_UINT8_14);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_15, BlockTest3::DEFAULT_WRITE_UINT8_15);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_16, BlockTest3::DEFAULT_WRITE_UINT8_16);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_17, BlockTest3::DEFAULT_WRITE_UINT8_17);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_18, BlockTest3::DEFAULT_WRITE_UINT8_18);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_19, BlockTest3::DEFAULT_WRITE_UINT8_19);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_20, BlockTest3::DEFAULT_WRITE_UINT8_20);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_1, BlockTest3::DEFAULT_WRITE_UINT32_1);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_2, BlockTest3::DEFAULT_WRITE_UINT32_2);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_3, BlockTest3::DEFAULT_WRITE_UINT32_3);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_4, BlockTest3::DEFAULT_WRITE_UINT32_4);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_5, BlockTest3::DEFAULT_WRITE_UINT32_5);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_6, BlockTest3::DEFAULT_WRITE_UINT32_6);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_7, BlockTest3::DEFAULT_WRITE_UINT32_7);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_8, BlockTest3::DEFAULT_WRITE_UINT32_8);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_9, BlockTest3::DEFAULT_WRITE_UINT32_9);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_10, BlockTest3::DEFAULT_WRITE_UINT32_10);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_11, BlockTest3::DEFAULT_WRITE_UINT32_11);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_12, BlockTest3::DEFAULT_WRITE_UINT32_12);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_13, BlockTest3::DEFAULT_WRITE_UINT32_13);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_14, BlockTest3::DEFAULT_WRITE_UINT32_14);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_15, BlockTest3::DEFAULT_WRITE_UINT32_15);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_16, BlockTest3::DEFAULT_WRITE_UINT32_16);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_17, BlockTest3::DEFAULT_WRITE_UINT32_17);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_18, BlockTest3::DEFAULT_WRITE_UINT32_18);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_19, BlockTest3::DEFAULT_WRITE_UINT32_19);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_20, BlockTest3::DEFAULT_WRITE_UINT32_20);  
 
   return (error); 
 }

@@ -47,7 +47,6 @@ namespace Atams {
 /* PRIVATE CONSTANTS                                                                 */
 /*************************************************************************************/
 
-static constexpr uint8_t  ABORT_RESPONSE_SIZE      = Atams::MESH_SIZE_HEADER + sizeof(Atams::Error_t);
 static constexpr uint32_t CORE_STATUS_CHECK_PERIOD = 10U;
 
 /*************************************************************************************/
@@ -156,7 +155,7 @@ static inline void resetResponse(ChannelResponse_t &response, uint8_t syncCount)
 {
   s_activeSyncCount = syncCount;
   response.aborted                     = false;
-  response.buffer[MESH_INDEX_MSG_TYPE] = Atams::MESSAGE_UNKNOWN;
+  response.buffer[MESH_INDEX_MSG_TYPE] = MESSAGE_UNKNOWN;
   response.buffer[MESH_INDEX_SYNC]     = s_activeSyncCount;
   response.buffer[MESH_INDEX_NODE_ID]  = s_ConfigurationHandler.getLocalNodeID();
   response.index                       = MESH_INDEX_FIRST_DATAGRAM;
@@ -164,14 +163,13 @@ static inline void resetResponse(ChannelResponse_t &response, uint8_t syncCount)
 
 static inline void abortResponse(ChannelResponse_t &response, const Atams::Error_t error, const uint16_t varID)
 {
-  response.buffer[MESH_INDEX_NODE_ID]  = s_ConfigurationHandler.getLocalNodeID();
-  response.buffer[MESH_INDEX_MSG_TYPE] = MESSAGE_ABORTED_RESPONSE;
-  response.buffer[ABORT_INDEX_ERROR]   = error;
-  response.buffer[ABORT_INDEX_VAR_ID_HI]  = static_cast<uint8_t>((varID >> Atams::ABORT_SHIFT_VAR_ID_HI) & Atams::ABORT_MASK_VAR_ID_HI);
-  response.buffer[ABORT_INDEX_VAR_ID_LO]  = static_cast<uint8_t>((varID >> Atams::ABORT_SHIFT_VAR_ID_LO) & Atams::ABORT_MASK_VAR_ID_LO);
-
-  response.index                       = ABORT_SIZE_PACKET;
-  response.aborted                     = true;
+  response.buffer[MESH_INDEX_NODE_ID]    = s_ConfigurationHandler.getLocalNodeID();
+  response.buffer[MESH_INDEX_MSG_TYPE]   = MESSAGE_ABORTED_RESPONSE;
+  response.buffer[ABORT_INDEX_ERROR]     = error;
+  response.buffer[ABORT_INDEX_VAR_ID_HI] = static_cast<uint8_t>((varID >> ABORT_SHIFT_VAR_ID_HI) & ABORT_MASK_VAR_ID_HI);
+  response.buffer[ABORT_INDEX_VAR_ID_LO] = static_cast<uint8_t>((varID >> ABORT_SHIFT_VAR_ID_LO) & ABORT_MASK_VAR_ID_LO);
+  response.index                         = ABORT_SIZE_PACKET;
+  response.aborted                       = true;
 }
 
 static void sendResponsePacket(Platform::CommsChannel_t commsChannel,
@@ -184,7 +182,7 @@ static void sendResponsePacket(Platform::CommsChannel_t commsChannel,
   if (response.aborted)
   {
     if ((response.buffer[MESH_INDEX_MSG_TYPE] != MESSAGE_ABORTED_RESPONSE) ||
-        (response.index                       != ABORT_RESPONSE_SIZE     ) )
+        (response.index                       != ABORT_SIZE_PACKET       ) )
     {
       abortResponse(response, Atams::ERROR_ABORT_FAILURE, Atams::VAR_ID_NULL);
     }
@@ -301,6 +299,7 @@ static void processDatagramWrite(ChannelResponse_t &response,
   else
   {
     datagramHeader.command      = Atams::RESPONSE_NACK;
+    datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
     response.index             += Atams::DATAGRAM_SIZE_HEADER;
     requestPacketDatagramIndex += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + payloadLength);
     datagramHeaderToBuffer(datagramHeader, &response.buffer[response.index]);
@@ -321,7 +320,7 @@ static void validateRequestPacket(ChannelResponse_t &response,
   {
     bufferToDatagramHeader(&requestPacket[datagramStartIndex], datagramHeader);
 
-    if ((universalBroadcast                                              ) &&
+    if ((universalBroadcast                                    ) &&
         (datagramHeader.varID >= BlockUniversal::NUMBER_OF_VARS) )
     {
       abortResponse(response, Atams::ERROR_VAR_ID, datagramHeader.varID);
@@ -1075,7 +1074,7 @@ Atams::Error_t externalTransfer(const Access_t  accessRequest,
 
   const Atams::VarInfo_t &varInfo = s_memoryMap->varInfoList[varID];
 
-  if (TYPE_LENGTHS[varInfo.type] != length)              return (Atams::ERROR_VAR_LENGTH);     /* Early Return */
+  if (TYPE_LENGTHS[varInfo.type] != length)              return (Atams::ERROR_VAR_TYPE);       /* Early Return */
   if (bytesPtr                   == nullptr)             return (Atams::ERROR_NULLPTR);        /* Early Return */
   if (accessRequest              >  varInfo.accessLevel) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
 
