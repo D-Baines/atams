@@ -54,6 +54,10 @@ inline constexpr uint16_t CIRCULAR_BUFFER_SIZE = 1024U;
 inline constexpr uint32_t NVM_STORAGE_SIZE     = 1024U;
 inline constexpr uint8_t  NVM_UNIT_SIZE        = 32U;
 
+inline constexpr uint16_t COBS_MAX_DATA_PER_CODE          = 254U;
+inline constexpr uint16_t COBS_MAX_OVERHEAD               = (MAX_BUS_PACKET_SIZE + (COBS_MAX_DATA_PER_CODE - 1U)) / COBS_MAX_DATA_PER_CODE;
+inline constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING = MAX_BUS_PACKET_SIZE - COBS_MAX_OVERHEAD;
+
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/

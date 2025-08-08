@@ -74,19 +74,19 @@ enum NVMTransfer_t : uint8_t
 
 struct Var_t
 {
-  uint8_t storage[MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
+  uint8_t storage[Atams::MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
 };
 
 struct ChannelResponse_t
 {
-  uint8_t  buffer[Platform::MAX_BUS_PACKET_SIZE];
+  uint8_t  buffer[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   uint16_t index     = 0U;
   bool     aborted   = false;
 };
 
 struct ChannelSyncPacket_t
 {
-  uint8_t  buffer[Platform::MAX_BUS_PACKET_SIZE];
+  uint8_t  buffer[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   uint16_t length    = 0U;
 };
 
@@ -421,7 +421,7 @@ static void processEncodedMeshPacket(const Platform::CommsChannel_t commsChannel
                                      const uint8_t          * const packetBuffer,
                                      const uint16_t                 packetLength)
 {
-  static uint8_t             decodedPacket[Platform::MAX_BUS_PACKET_SIZE];
+  static uint8_t             decodedPacket[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   static uint16_t            decodedLength = 0U;
   static ChannelSyncPacket_t commsChannelSyncPackets[Platform::NUMBER_OF_COMMS_CHANNELS];
   static ChannelResponse_t   commsChannelResponses[Platform::NUMBER_OF_COMMS_CHANNELS];
