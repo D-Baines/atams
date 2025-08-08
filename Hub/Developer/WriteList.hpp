@@ -50,7 +50,7 @@ class WriteList
 
   /*-- PUBLIC CONSTANTS ---------------*/
 
-  static constexpr uint16_t LIST_MAX_LENGTH = Platform::MAX_BUS_PACKET_SIZE / Atams::MINIMUM_SIZE_WRITE_DATAGRAM;
+  static constexpr uint16_t LIST_MAX_LENGTH = Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING / Atams::MINIMUM_SIZE_WRITE_DATAGRAM;
 
   /*-- PUBLIC TYPEDEFS ----------------*/
 

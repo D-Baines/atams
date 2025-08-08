@@ -208,10 +208,10 @@ private Platform::BusPeripheral
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  uint8_t  rxBuffer_[Platform::MAX_BUS_PACKET_SIZE];
-  uint8_t  decodedBuffer_[Platform::MAX_BUS_PACKET_SIZE];
+  uint8_t  rxBuffer_     [Platform::MAX_BUS_PACKET_SIZE];
+  uint8_t  decodedBuffer_[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   uint8_t  encodedBuffer_[Platform::MAX_BUS_PACKET_SIZE];
-  uint8_t  jogBuffer_[MESH_SIZE_HEADER];
+  uint8_t  jogBuffer_    [MESH_SIZE_HEADER];
 
   uint16_t initNodeIndex_   {0U};
   uint16_t updateNodeIndex_ {0U};

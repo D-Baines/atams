@@ -214,7 +214,7 @@ void TestNode::runFunctionArgTests(void)
   
   for (uint16_t varID = BlockTest3::VAR_WRITE_UINT8_1; varID <= BlockTest3::VAR_WRITE_UINT8_20; varID++)
   {
-    if ((expectedRequestPacketLength + writeDatagramLength) > Platform::MAX_BUS_PACKET_SIZE)
+    if ((expectedRequestPacketLength + writeDatagramLength) > Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING)
     {
       expectedError = Atams::ERROR_REQUEST_BUFFER_LENGTH;
     }

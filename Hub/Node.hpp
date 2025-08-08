@@ -166,8 +166,8 @@ public NodeCallbackHandler
 
   struct RequestPacket_t 
   {
-    uint8_t   buffer[Platform::MAX_BUS_PACKET_SIZE] = {0U};
-    uint16_t  length                                = MESH_SIZE_HEADER;
+    uint8_t   buffer[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING] {0U};
+    uint16_t  length                                            {MESH_SIZE_HEADER};
     WriteList writeList;
   };
 
@@ -177,20 +177,20 @@ public NodeCallbackHandler
     RequestPattern_t requestPattern;
     DatagramHeader_t newDatagramHeader;
     uint8_t          newDatagramBuffer[DATAGRAM_SIZE_HEADER + MAX_TYPE_SIZE];
-    uint8_t          newDatagramLength      = 0U;
+    uint8_t          newDatagramLength      {0U};
     DatagramHeader_t currentDatagramHeader;
-    uint8_t          currentDatagramLength  = 0U;
-    uint16_t         datagramStartIndex     = 0U;
-    uint8_t          writePayloadLength     = 0U;
+    uint8_t          currentDatagramLength  {0U};
+    uint16_t         datagramStartIndex     {0U};
+    uint8_t          writePayloadLength     {0U};
   };
 
   struct Var_t
   {
-    uint8_t                 storage[MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
-    Atams::Access_t         requestAccess          = Atams::ACCESS_NONE;
-    Atams::RequestPattern_t requestPattern         = Atams::REQUEST_INACTIVE;
-    bool                    newDataReady           = false;
-    bool                    ackReceived            = false;
+    uint8_t                 storage[MAX_TYPE_SIZE] {0U, 0U, 0U, 0U};
+    Atams::Access_t         requestAccess          {Atams::ACCESS_NONE};
+    Atams::RequestPattern_t requestPattern         {Atams::REQUEST_INACTIVE};
+    bool                    newDataReady           {false};
+    bool                    ackReceived            {false};
   };
 
   /*-- Static Private Objects -------------------------------------------------------*/
@@ -208,14 +208,16 @@ public NodeCallbackHandler
 
   uint8_t                  nodeID_;
   const SharedMemoryMap_t *memoryMap_;
-  Atams::Error_t           busError_      {Atams::ERROR_NONE};
-  uint16_t                 validVarCount_ {0U};
-  Var_t                    varStorage_[Platform::NODE_NUMBER_OF_VARS];
-  RequestPacket_t          requestPacket_;
-  uint8_t                  responseBuffer_[Platform::MAX_BUS_PACKET_SIZE];
+
+  Atams::Error_t           busError_               {Atams::ERROR_NONE};
+  uint16_t                 validVarCount_          {0U};
   uint16_t                 responseLength_         {0U};
   bool                     newResponseReady_       {false};
   AbortedResponseDetails_t abortedResponseDetails_ {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
+
+  RequestPacket_t          requestPacket_;
+  uint8_t                  responseBuffer_[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
+  Var_t                    varStorage_[Platform::NODE_NUMBER_OF_VARS];
   
   /*-- Private Constexpr Function Declarations --------------------------------------*/
 

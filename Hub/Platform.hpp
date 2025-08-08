@@ -55,6 +55,10 @@ inline constexpr uint16_t CIRCULAR_BUFFER_SIZE    = 1024U;
 inline constexpr uint64_t BUS_RESPONSE_TIMEOUT    = 500U;
 inline constexpr uint64_t NVM_STORAGE_TIMEOUT     = 5000U;
 
+inline constexpr uint16_t COBS_MAX_DATA_PER_CODE          = 254U; 
+inline constexpr uint16_t COBS_MAX_OVERHEAD               = (MAX_BUS_PACKET_SIZE + (COBS_MAX_DATA_PER_CODE - 1U)) / COBS_MAX_DATA_PER_CODE;
+inline constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING = MAX_BUS_PACKET_SIZE - COBS_MAX_OVERHEAD;
+
 /*************************************************************************************/
 /* PUBLIC CLASSES                                                                    */
 /*************************************************************************************/

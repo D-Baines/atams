@@ -27,7 +27,6 @@
 #include "Bus.hpp"
 #include "Node.hpp"
 #include "../Shared/Utilities/AtamsUtilities.hpp"
-#include "Platform.hpp"
 #include "../Shared/Maps/BlockUniversal.hpp"
 
 /*************************************************************************************/
