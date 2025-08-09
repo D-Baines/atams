@@ -261,10 +261,13 @@ Atams::Error_t validateMemoryMap(const SharedMemoryMap_t &memoryMap, const uint3
   {
     statusReturn = Atams::ERROR_MEMORY_MAP;
   }
-  if ((validateAtamsVersion(memoryMap)                == false) ||
-      (validateMapLength(memoryMap, varStorageLength) == false) ||
-      (validateUniversalBlock(memoryMap)              == false) ||
-      (validateMapChecksum(memoryMap)                 == false) )
+  else if (validateAtamsVersion(memoryMap) == false)
+  {
+    statusReturn = Atams::ERROR_ATAMS_VERSION_MISMATCH;
+  }
+  else if ((validateMapLength(memoryMap, varStorageLength) == false) ||
+           (validateUniversalBlock(memoryMap)              == false) ||
+           (validateMapChecksum(memoryMap)                 == false) )
   {
     statusReturn = Atams::ERROR_MEMORY_MAP;
   }

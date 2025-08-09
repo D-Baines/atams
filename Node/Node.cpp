@@ -603,7 +603,7 @@ static void signalCoreInitComplete(CoreID_t coreID)
 
 static Atams::Error_t validateNVMChecksum(const NVMHeader_t &nvmHeader, const NVMFooter_t &nvmFooter)
 {
-  Atams::Error_t statusReturn    = Atams::ERROR_NONE;
+  Atams::Error_t error           = Atams::ERROR_NONE;
   uint32_t       endOfVarStorage = nvmHeader.length - sizeof(nvmFooter);
 
   s_nodeCRC.beginRollingCRC();
@@ -624,10 +624,10 @@ static Atams::Error_t validateNVMChecksum(const NVMHeader_t &nvmHeader, const NV
 
   if (nvmFooter.checksum != nvmChecksum)
   {
-    statusReturn = Atams::ERROR_NVM_CHECKSUM;
+    error = Atams::ERROR_NVM_CHECKSUM;
   }
 
-  return (statusReturn);
+  return (error);
 }
 
 static uint32_t getNVMVarSpaceRequirement(void)
@@ -646,15 +646,12 @@ static uint32_t getNVMVarSpaceRequirement(void)
 
 static Atams::Error_t constructAndStoreFooter(const uint32_t nvmSpaceUsed)
 {
-  Atams::Error_t statusReturn = Atams::ERROR_NONE;
-  NVMFooter_t    nvmFooter;
+  NVMFooter_t nvmFooter;
 
   nvmFooter.identifier = Atams::NVM_HEADER_IDENTIFIER_VALID;
   nvmFooter.checksum   = s_nodeCRC.getRollingCRC();
 
-  statusReturn = s_nvmUnitHandler.writeToNVM(nvmSpaceUsed, reinterpret_cast<uint8_t*>(&nvmFooter), sizeof(NVMFooter_t));
-
-  return (statusReturn);
+  return (s_nvmUnitHandler.writeToNVM(nvmSpaceUsed, reinterpret_cast<uint8_t*>(&nvmFooter), sizeof(NVMFooter_t)));
 }
 
 static Atams::Error_t nvmTransferVars(const uint32_t      maxIndex,
@@ -803,44 +800,50 @@ static Atams::Error_t validateNVMHeaderFooter(NVMHeader_t &nvmHeader, NVMFooter_
 
 static Atams::Error_t validateNVMGenInfo(const NVMHeader_t &nvmHeader)
 {
-  Atams::Error_t   statusReturn = Atams::ERROR_NONE;
+  Atams::Error_t   error        = Atams::ERROR_NONE;
   Atams::GenInfo_t nvmGenInfo   = nvmHeader.genInfo;
   Atams::GenInfo_t mapGenInfo   = s_memoryMap->genInfo;
 
   if ((nvmGenInfo.atamsVersionMajor != mapGenInfo.atamsVersionMajor) &&
       (nvmGenInfo.atamsVersionMinor != mapGenInfo.atamsVersionMinor) )
   {
-    statusReturn = Atams::ERROR_GEN_INFO_MISMATCH;
+    error = Atams::ERROR_GEN_INFO_MISMATCH;
   }
   else if (nvmGenInfo != mapGenInfo)
   {
-    statusReturn = Atams::ERROR_NVM_USER_BLOCKS_INVALID;
+    error = Atams::ERROR_NVM_USER_BLOCKS_INVALID;
   }
 
-  return (statusReturn);
+  return (error);
 }
 
 static Atams::Error_t initNVM(void)
 {
-  Atams::Error_t statusReturn = getMemoryMapIsValid();
   NVMHeader_t    nvmHeader;
   NVMFooter_t    nvmFooter;
 
-  statusReturn = validateNVMHeaderFooter(nvmHeader, nvmFooter);
+  Atams::Error_t error = getMemoryMapIsValid();
 
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = validateNVMGenInfo(nvmHeader);
+  if (!error) error = validateNVMHeaderFooter(nvmHeader, nvmFooter);
 
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = loadNVMAllBlocks(nvmHeader);
+  if (!error) error = validateNVMGenInfo(nvmHeader);
 
-  else if (statusReturn == Atams::ERROR_NVM_USER_BLOCKS_INVALID) statusReturn = loadNVMUniversalBlock(nvmHeader);
+  if (!error) error = loadNVMAllBlocks(nvmHeader);
 
-  s_ConfigurationHandler.notifyStorageProcessComplete(statusReturn);
+  else if (error == Atams::ERROR_NVM_USER_BLOCKS_INVALID)
+  {
+    error = loadNVMUniversalBlock(nvmHeader);
+
+    if (!error) error = Atams::ERROR_NVM_USER_BLOCKS_INVALID;
+  }
+
+  s_ConfigurationHandler.notifyStorageProcessComplete(error);
 
   /* Messages may have been received while storage was in progress -
    * request buffer reset to clear old data */
   s_bufferResetRequired = true;
 
-  return (statusReturn);
+  return (error);
 }
 
 /*************************************************************************************/
@@ -858,26 +861,30 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
 {
   waitForCoreInit(CORE_CONTROL);
 
-  Atams::Error_t initStatus = Atams::validateMemoryMap(memoryMap, Platform::NODE_NUMBER_OF_VARS);
+  Atams::Error_t error = Atams::validateMemoryMap(memoryMap, Platform::NODE_NUMBER_OF_VARS);
 
-  if (initStatus == Atams::ERROR_NONE)
+  if (!error)
   {
     s_memoryMap     = &memoryMap;
     s_validVarCount =  memoryMap.noOfVars;
   }
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = initAllDefaults();
+  if (!error) error = initAllDefaults();
 
-  if ((initStatus == Atams::ERROR_NONE) &&
-      (initNVM()  != Atams::ERROR_NONE) )
+  if (!error) error = initNVM();
+
+  /* Invalid user blocks will not be loaded in initNVM and user has been notified through BlockUniversal::VAR_STORAGE_STATUS */
+  if (error == Atams::ERROR_NVM_USER_BLOCKS_INVALID) error = Atams::ERROR_NONE;
+
+  if (error != Atams::ERROR_NONE)
   {
     resetVars();
-    initStatus = initAllDefaults();
+    error = initAllDefaults();
   }
 
-  if (initStatus == Atams::ERROR_NONE) initStatus = memoryMap.initGenInfo();
+  if (!error) error = memoryMap.initGenInfo();
 
-  if (initStatus == Atams::ERROR_NONE)
+  if (!error)
   {
     s_ConfigurationHandler.initConfiguration();
 
@@ -894,7 +901,7 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
     invalidateMemoryMap();
   }
 
-  return (initStatus);
+  return (error);
 }
 
 Atams::Error_t initControlCore(const MemoryMap_t &memoryMap)
@@ -920,32 +927,27 @@ Atams::Error_t initControlCore(const MemoryMap_t &memoryMap)
 
 Atams::Error_t restoreAll(void)
 {
-  Atams::Error_t statusReturn = getMemoryMapIsValid();
+  Atams::Error_t error = initAllDefaults();
 
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = initUniversalDefaults();
+  if (!error) error = storeAll();
 
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = s_memoryMap->initUserDefaults();
-
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = storeAll();
-
-  return (statusReturn);
+  return (error);
 }
 
 Atams::Error_t restoreUser(void)
 {
-  Atams::Error_t statusReturn = getMemoryMapIsValid();
+  Atams::Error_t error = getMemoryMapIsValid();
 
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = s_memoryMap->initUserDefaults();
+  if (!error) error = s_memoryMap->initUserDefaults();
 
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = storeAll();
+  if (!error) error = storeAll();
 
-  return (statusReturn);
+  return (error);
 }
 
 Atams::Error_t storeAll(void)
 {
-  Atams::Error_t statusReturn = Atams::ERROR_NONE;
-  NVMHeader_t    nvmHeader;
+  NVMHeader_t nvmHeader;
 
   if (getMemoryMapIsValid() != Atams::ERROR_NONE) return (Atams::ERROR_MEMORY_MAP); /* Early Return */
 
@@ -960,21 +962,21 @@ Atams::Error_t storeAll(void)
   nvmHeader.genInfo    = s_memoryMap->genInfo;
 
   /* Erase NVM to invalidate */
-  statusReturn = s_nvmUnitHandler.eraseNVM();
+  Atams::Error_t error = s_nvmUnitHandler.eraseNVM();
 
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = storeNVMHeader(nvmHeader);
+  if (!error) error = storeNVMHeader(nvmHeader);
 
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = saveVarsToNVM(nvmFooterIndex);
+  if (!error) error = saveVarsToNVM(nvmFooterIndex);
 
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = constructAndStoreFooter(nvmFooterIndex);
+  if (!error) error = constructAndStoreFooter(nvmFooterIndex);
 
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = s_nvmUnitHandler.flushPendingUnit();
+  if (!error) error = s_nvmUnitHandler.flushPendingUnit();
 
   /* Messages may have been received while storage was in progress -
    * request buffer reset to clear old data */
   s_bufferResetRequired = true;
 
-  return (statusReturn);
+  return (error);
 }
 
 void updateCommsPolling(void)
