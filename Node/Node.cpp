@@ -79,9 +79,10 @@ struct Var_t
 
 struct ChannelResponse_t
 {
-  uint8_t  buffer[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
-  uint16_t index     = 0U;
-  bool     aborted   = false;
+  uint8_t              buffer[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
+  uint16_t             index            = 0U;
+  bool                 aborted          = false;
+  Atams::MessageType_t abortMessageType = Atams::MESSAGE_ABORTED_RESPONSE;
 };
 
 struct ChannelSyncPacket_t
@@ -164,7 +165,7 @@ static inline void resetResponse(ChannelResponse_t &response, uint8_t syncCount)
 static inline void abortResponse(ChannelResponse_t &response, const Atams::Error_t error, const uint16_t varID)
 {
   response.buffer[MESH_INDEX_NODE_ID]    = s_ConfigurationHandler.getLocalNodeID();
-  response.buffer[MESH_INDEX_MSG_TYPE]   = MESSAGE_ABORTED_RESPONSE;
+  response.buffer[MESH_INDEX_MSG_TYPE]   = response.abortMessageType;
   response.buffer[ABORT_INDEX_ERROR]     = error;
   response.buffer[ABORT_INDEX_VAR_ID_HI] = static_cast<uint8_t>((varID >> ABORT_SHIFT_VAR_ID_HI) & ABORT_MASK_VAR_ID_HI);
   response.buffer[ABORT_INDEX_VAR_ID_LO] = static_cast<uint8_t>((varID >> ABORT_SHIFT_VAR_ID_LO) & ABORT_MASK_VAR_ID_LO);
@@ -179,15 +180,7 @@ static void sendResponsePacket(Platform::CommsChannel_t commsChannel,
   static uint8_t  encodedResponseBuffer[Platform::MAX_BUS_PACKET_SIZE] = {0U};
   static uint16_t encodedLength = 0U;
 
-  if (response.aborted)
-  {
-    if ((response.buffer[MESH_INDEX_MSG_TYPE] != MESSAGE_ABORTED_RESPONSE) ||
-        (response.index                       != ABORT_SIZE_PACKET       ) )
-    {
-      abortResponse(response, Atams::ERROR_ABORT_FAILURE, Atams::VAR_ID_NULL);
-    }
-  }
-  else
+  if (response.aborted == false)
   {
     response.buffer[MESH_INDEX_MSG_TYPE] = messageType;
   }
@@ -417,6 +410,22 @@ static inline void copyRequestToSyncPacket(ChannelSyncPacket_t  &syncPacket,
   syncPacket.length = requestLength;
 }
 
+static void setAbortMessageType(ChannelResponse_t &response, const MessageType_t messageType)
+{
+  switch (messageType)
+  {
+    case MESSAGE_REQUEST_SYNCED:
+    case MESSAGE_RESPONSE_SYNCED:
+    case MESSAGE_ABORT_RESPONSE_SYNCED:
+    case MESSAGE_SYNC_JOG:
+      response.abortMessageType = MESSAGE_ABORT_RESPONSE_SYNCED;
+      break;
+    default:
+      response.abortMessageType = MESSAGE_ABORTED_RESPONSE;
+      break;
+  }
+}
+
 static void processEncodedMeshPacket(const Platform::CommsChannel_t commsChannel,
                                      const uint8_t          * const packetBuffer,
                                      const uint16_t                 packetLength)
@@ -441,6 +450,8 @@ static void processEncodedMeshPacket(const Platform::CommsChannel_t commsChannel
     uint8_t              finalSyncNodeID = s_ConfigurationHandler.getFinalSyncNodeID();
     uint8_t              prevSyncNodeID  = s_ConfigurationHandler.getPrevSyncNodeID();
     uint8_t              packetSyncCount = decodedPacket[MESH_INDEX_SYNC];
+
+    setAbortMessageType(response, messageType);
 
     switch (messageType)
     {
@@ -475,6 +486,7 @@ static void processEncodedMeshPacket(const Platform::CommsChannel_t commsChannel
         }
         break;
       case MESSAGE_RESPONSE_SYNCED:
+      case MESSAGE_ABORT_RESPONSE_SYNCED:
         if ((packetNodeID == prevSyncNodeID) &&
             (packetNodeID != localNodeID   ) )
         {
