@@ -516,12 +516,15 @@ bool Bus::validateAndStoreResponsePacket(Atams::NodeCallbackHandler &node, const
     uint8_t              packetSyncCount = decodedBuffer_[MESH_INDEX_SYNC];
     Atams::MessageType_t messageType     = static_cast<MessageType_t>(decodedBuffer_[MESH_INDEX_MSG_TYPE]);
 
+     bool messageIsAbort = ((messageType == Atams::MESSAGE_ABORTED_RESPONSE       ) ||
+                            (messageType == Atams::MESSAGE_ABORTED_RESPONSE_SYNCED) );
+
     if      (messageType     == lastSentMessageType_)          packetValid = false;
     else if (packetSyncCount != activeSyncCount_)              error = Atams::ERROR_SYNC_COUNT;
     else if ((messageType    != MESSAGE_BROADCAST_RESPONSE) &&
              (packetNodeID   != node.getNodeID()          ) )  error = Atams::ERROR_SYNC_NODE;
-    else if ((messageType    != expectedResponse        ) &&
-             (messageType    != MESSAGE_ABORTED_RESPONSE) )    error = Atams::ERROR_MESSAGE_TYPE;
+    else if ((messageType    != expectedResponse          ) &&
+             (messageIsAbort == false                     ) )  error = Atams::ERROR_MESSAGE_TYPE;
     else                                                       node.responseReceived(decodedBuffer_, decodedLength_);
 
     if (error != Atams::ERROR_NONE) node.reportBusError(error);

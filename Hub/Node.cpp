@@ -780,7 +780,8 @@ void Node::processResponseBuffer(void)
 
   newResponseReady_ = false;
 
-  if (responseBuffer_[MESH_INDEX_MSG_TYPE] == Atams::MESSAGE_ABORTED_RESPONSE)
+  if ((responseBuffer_[MESH_INDEX_MSG_TYPE] == Atams::MESSAGE_ABORTED_RESPONSE       ) ||
+      (responseBuffer_[MESH_INDEX_MSG_TYPE] == Atams::MESSAGE_ABORTED_RESPONSE_SYNCED) )
   {
     processAbortedResponse();
     return; /* Early Return */
