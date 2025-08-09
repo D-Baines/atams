@@ -88,12 +88,6 @@ void datagramHeaderToBuffer(const DatagramHeader_t &datagramHeader, uint8_t* buf
 
 void bufferToDatagramHeader(const uint8_t *buffer, DatagramHeader_t &datagramHeader);
 
-bool validateMapLength(const SharedMemoryMap_t &memoryMap, const uint16_t varStorageLength);
-  
-bool validateUniversalBlock(const SharedMemoryMap_t &memoryMap);
-
-bool validateMapChecksum(const SharedMemoryMap_t &memoryMap);
-
 Atams::Error_t validateMemoryMap(const SharedMemoryMap_t &memoryMap, const uint32_t varStorageLength);
 
 } /* End Namespace - Atams */

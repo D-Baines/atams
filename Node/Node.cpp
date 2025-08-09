@@ -659,9 +659,14 @@ static Atams::Error_t constructAndStoreFooter(const uint32_t nvmSpaceUsed)
 
 static Atams::Error_t nvmTransferVars(const uint32_t      maxIndex,
                                       uint32_t           &nvmIndex,
-                                      const NVMTransfer_t transferType)
+                                      const NVMTransfer_t transferType,
+                                      const bool          universalBlockOnly)
 {
-  for (uint16_t varID = 0U; varID < s_memoryMap->noOfVars; varID++)
+  uint16_t numberOfVarsToTransfer = universalBlockOnly == true                            ?
+                                    static_cast<uint16_t>(BlockUniversal::NUMBER_OF_VARS) :
+                                    s_memoryMap->noOfVars;
+
+  for (uint16_t varID = 0U; varID < numberOfVarsToTransfer; varID++)
   {
     const VarInfo_t &varInfo = s_memoryMap->varInfoList[varID];
 
@@ -700,12 +705,22 @@ static Atams::Error_t nvmTransferVars(const uint32_t      maxIndex,
   return (Atams::ERROR_NONE);
 }
 
-static Atams::Error_t loadNVMAllVars(const NVMHeader_t &nvmHeader)
+static Atams::Error_t loadNVMAllBlocks(const NVMHeader_t &nvmHeader)
 {
   Atams::Error_t nvmStatus = Atams::ERROR_NONE;
-  uint32_t       nvmIndex  = sizeof(NVMHeader_t);;
+  uint32_t       nvmIndex  = sizeof(NVMHeader_t);
 
-  nvmStatus = nvmTransferVars(nvmHeader.length, nvmIndex, TRANSFER_LOAD);
+  nvmStatus = nvmTransferVars(nvmHeader.length, nvmIndex, TRANSFER_LOAD, false);
+
+  return (nvmStatus);
+}
+
+static Atams::Error_t loadNVMUniversalBlock(const NVMHeader_t &nvmHeader)
+{
+  Atams::Error_t nvmStatus = Atams::ERROR_NONE;
+  uint32_t       nvmIndex  = sizeof(NVMHeader_t);
+
+  nvmStatus = nvmTransferVars(nvmHeader.length, nvmIndex, TRANSFER_LOAD, true);
 
   return (nvmStatus);
 }
@@ -715,7 +730,7 @@ static Atams::Error_t saveVarsToNVM(const uint32_t availableNVMSpace)
   Atams::Error_t nvmStatus = Atams::ERROR_NONE;
   uint32_t       nvmIndex  = sizeof(NVMHeader_t);
 
-  nvmStatus = nvmTransferVars(availableNVMSpace, nvmIndex, TRANSFER_SAVE);
+  nvmStatus = nvmTransferVars(availableNVMSpace, nvmIndex, TRANSFER_SAVE, false);
 
   return (nvmStatus);
 }
@@ -788,10 +803,21 @@ static Atams::Error_t validateNVMHeaderFooter(NVMHeader_t &nvmHeader, NVMFooter_
 
 static Atams::Error_t validateNVMGenInfo(const NVMHeader_t &nvmHeader)
 {
-  GenInfo_t nvmGenInfo = nvmHeader.genInfo;
-  GenInfo_t mapGenInfo = s_memoryMap->genInfo;
+  Atams::Error_t   statusReturn = Atams::ERROR_NONE;
+  Atams::GenInfo_t nvmGenInfo   = nvmHeader.genInfo;
+  Atams::GenInfo_t mapGenInfo   = s_memoryMap->genInfo;
 
-  return ((nvmGenInfo == mapGenInfo) ? Atams::ERROR_NONE : Atams::ERROR_GEN_INFO_MISMATCH);
+  if ((nvmGenInfo.atamsVersionMajor != mapGenInfo.atamsVersionMajor) &&
+      (nvmGenInfo.atamsVersionMinor != mapGenInfo.atamsVersionMinor) )
+  {
+    statusReturn = Atams::ERROR_GEN_INFO_MISMATCH;
+  }
+  else if (nvmGenInfo != mapGenInfo)
+  {
+    statusReturn = Atams::ERROR_NVM_USER_BLOCKS_INVALID;
+  }
+
+  return (statusReturn);
 }
 
 static Atams::Error_t initNVM(void)
@@ -804,12 +830,9 @@ static Atams::Error_t initNVM(void)
 
   if (statusReturn == Atams::ERROR_NONE) statusReturn = validateNVMGenInfo(nvmHeader);
 
-  if (statusReturn == Atams::ERROR_NONE) statusReturn = loadNVMAllVars(nvmHeader);
+  if (statusReturn == Atams::ERROR_NONE) statusReturn = loadNVMAllBlocks(nvmHeader);
 
-  if (statusReturn != Atams::ERROR_NONE)
-  {
-    resetVars();
-  }
+  else if (statusReturn == Atams::ERROR_NVM_USER_BLOCKS_INVALID) statusReturn = loadNVMUniversalBlock(nvmHeader);
 
   s_ConfigurationHandler.notifyStorageProcessComplete(statusReturn);
 
@@ -848,6 +871,7 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
   if ((initStatus == Atams::ERROR_NONE) &&
       (initNVM()  != Atams::ERROR_NONE) )
   {
+    resetVars();
     initStatus = initAllDefaults();
   }
 
