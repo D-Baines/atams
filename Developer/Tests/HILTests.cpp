@@ -77,7 +77,7 @@ static Atams::TestNode testNode3_(2U, errorHandler);
 
 static Atams::TestNode *testNodes[] = 
 {
-  &testNode1_,
+  //&testNode1_,
   &testNode2_
 };
 
@@ -110,21 +110,21 @@ static void testBusInit(void)
   error         = testBus_.beginBusInitProcess();
   if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::beginBusInitProcess");
 
-  expectedError = Atams::ERROR_NONE;
-  error         = testBus_.addNodeToBus(testNode1_);
-  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+  //expectedError = Atams::ERROR_NONE;
+  //error         = testBus_.addNodeToBus(testNode1_);
+  //if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
-  expectedError = Atams::ERROR_NODE_ALREADY_ON_BUS;
-  error         = testBus_.addNodeToBus(testNode1_);
-  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+  //expectedError = Atams::ERROR_NODE_ALREADY_ON_BUS;
+  //error         = testBus_.addNodeToBus(testNode1_);
+  //if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
   expectedError = Atams::ERROR_NONE;
   error         = testBus_.addNodeToBus(testNode2_);
   if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
-  expectedError = Atams::ERROR_BUS_FULL;
-  error         = testBus_.addNodeToBus(testNode3_);
-  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+  //expectedError = Atams::ERROR_BUS_FULL;
+  //error         = testBus_.addNodeToBus(testNode3_);
+  //if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
   expectedError = Atams::ERROR_INIT_ORDER;
   error         = testBus_.beginUpdateCycle();

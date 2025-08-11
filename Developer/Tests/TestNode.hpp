@@ -145,7 +145,6 @@ public Node
   char errorBuffer_[MAX_ERROR_MESSAGE_LENGTH];
 
   const char * defaultUpdateErrorMessage_ {"Update Cycle Test Failure on Node "};
-  const char * feedbackErrorMessage_      {"Feedback Mismatch on Node "};
   const char * argTestErrorMessage_       {"Node Function Argument Test Failure on Node "};
 
   /*-- Private Function Declarations ------------------------------------------------*/
@@ -153,6 +152,12 @@ public Node
   void updateErrorInjection(void);
 
   void errorHandler(const Atams::Error_t error, const char * errorMessage);
+
+  template<typename T>
+  void updateWriteValue(const uint16_t varID, T &feedbackVar, T &writeVar);
+
+  template<typename T>
+  void checkReadValue(const uint16_t varID, T &feedbackVar, T &writtenVar);
 };
 
 

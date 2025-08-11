@@ -446,8 +446,10 @@ bool Bus::pollForJogTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessHandl
   uint32_t currentTime          = Platform::getMillis();
   bool     messageSendAttempted = false;
 
-  jogBuffer_[MESH_INDEX_NODE_ID] = node.getNodeID();
-  
+  jogBuffer_[MESH_INDEX_NODE_ID]  = node.getNodeID();
+  jogBuffer_[MESH_INDEX_MSG_TYPE] = Atams::MESSAGE_SYNC_JOG;
+  jogBuffer_[MESH_INDEX_SYNC]     = activeSyncCount_;
+
   if (Platform::BusPeripheral::transmitReady())
   {
     if (encodeMeshPacket(jogBuffer_, 
@@ -516,8 +518,8 @@ bool Bus::validateAndStoreResponsePacket(Atams::NodeCallbackHandler &node, const
     uint8_t              packetSyncCount = decodedBuffer_[MESH_INDEX_SYNC];
     Atams::MessageType_t messageType     = static_cast<MessageType_t>(decodedBuffer_[MESH_INDEX_MSG_TYPE]);
 
-     bool messageIsAbort = ((messageType == Atams::MESSAGE_ABORTED_RESPONSE       ) ||
-                            (messageType == Atams::MESSAGE_ABORTED_RESPONSE_SYNCED) );
+     bool messageIsAbort = ((messageType == Atams::MESSAGE_ABORT_RESPONSE       ) ||
+                            (messageType == Atams::MESSAGE_ABORT_RESPONSE_SYNCED) );
 
     if      (messageType     == lastSentMessageType_)          packetValid = false;
     else if (packetSyncCount != activeSyncCount_)              error = Atams::ERROR_SYNC_COUNT;
@@ -653,8 +655,15 @@ void Bus::updateSetConfigSendRequest(void)
 
   if (pollForRequestTransmit(dummyNode_, process, MESSAGE_BROADCAST_UNIVERSAL) == true)
   {
-    if (process.error) process.terminate(process.error);
-    else               configUpdateState = Bus::ConfigUpdateState::GET_RESPONSE;               
+    if (process.error) 
+    {
+      process.terminate(process.error);
+    }
+    else               
+    {
+      static_cast<NodeCallbackHandler&>(dummyNode_).clearBusError();
+      configUpdateState = Bus::ConfigUpdateState::GET_RESPONSE;     
+    }          
   }
 }
 

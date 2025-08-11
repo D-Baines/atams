@@ -72,7 +72,7 @@ Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
 }
 
 template <typename T>
-Atams::Error_t Node::write(const uint16_t varID, const T writeData)
+Atams::Error_t Node::write(const uint16_t varID, const T writeValue)
 {
   if (varID >= validVarCount_) return (Atams:: ERROR_VAR_ID); /* Early Return */
 
@@ -85,23 +85,23 @@ Atams::Error_t Node::write(const uint16_t varID, const T writeData)
 
   varStorageLock_.acquireLock();
 
-  memcpy(var.storage, &writeData, sizeof(writeData));
+  writeToVarStorage(writeValue, var);
 
   varStorageLock_.releaseLock();
 
   return (Atams::ERROR_NONE);
 }
 
-template Atams::Error_t Node::write<uint8_t >(const uint16_t varID, const uint8_t  writeData);
-template Atams::Error_t Node::write<int8_t  >(const uint16_t varID, const int8_t   writeData);
-template Atams::Error_t Node::write<uint16_t>(const uint16_t varID, const uint16_t writeData);
-template Atams::Error_t Node::write<int16_t >(const uint16_t varID, const int16_t  writeData);
-template Atams::Error_t Node::write<uint32_t>(const uint16_t varID, const uint32_t writeData);
-template Atams::Error_t Node::write<int32_t >(const uint16_t varID, const int32_t  writeData);
-template Atams::Error_t Node::write<float   >(const uint16_t varID, const float    writeData);
+template Atams::Error_t Node::write<uint8_t >(const uint16_t varID, const uint8_t  writeValue);
+template Atams::Error_t Node::write<int8_t  >(const uint16_t varID, const int8_t   writeValue);
+template Atams::Error_t Node::write<uint16_t>(const uint16_t varID, const uint16_t writeValue);
+template Atams::Error_t Node::write<int16_t >(const uint16_t varID, const int16_t  writeValue);
+template Atams::Error_t Node::write<uint32_t>(const uint16_t varID, const uint32_t writeValue);
+template Atams::Error_t Node::write<int32_t >(const uint16_t varID, const int32_t  writeValue);
+template Atams::Error_t Node::write<float   >(const uint16_t varID, const float    writeValue);
 
 template <typename T>
-Atams::Error_t Node::read(const uint16_t varID, T &readData)
+Atams::Error_t Node::read(const uint16_t varID, T &outputRef)
 {
   if (varID >= validVarCount_) return (Atams:: ERROR_VAR_ID); /* Early Return */
 
@@ -114,23 +114,23 @@ Atams::Error_t Node::read(const uint16_t varID, T &readData)
 
   varStorageLock_.acquireLock();
 
-  memcpy(&readData, var.storage, sizeof(readData));
+  readFromVarStorage(outputRef, var);
 
   varStorageLock_.releaseLock();
 
   return (Atams::ERROR_NONE);
 }
 
-template Atams::Error_t Node::read<uint8_t >(const uint16_t varID, uint8_t  &readData);
-template Atams::Error_t Node::read<int8_t  >(const uint16_t varID, int8_t   &readData);
-template Atams::Error_t Node::read<uint16_t>(const uint16_t varID, uint16_t &readData);
-template Atams::Error_t Node::read<int16_t >(const uint16_t varID, int16_t  &readData);
-template Atams::Error_t Node::read<uint32_t>(const uint16_t varID, uint32_t &readData);
-template Atams::Error_t Node::read<int32_t >(const uint16_t varID, int32_t  &readData);
-template Atams::Error_t Node::read<float   >(const uint16_t varID, float    &readData);
+template Atams::Error_t Node::read<uint8_t >(const uint16_t varID, uint8_t  &outputRef);
+template Atams::Error_t Node::read<int8_t  >(const uint16_t varID, int8_t   &outputRef);
+template Atams::Error_t Node::read<uint16_t>(const uint16_t varID, uint16_t &outputRef);
+template Atams::Error_t Node::read<int16_t >(const uint16_t varID, int16_t  &outputRef);
+template Atams::Error_t Node::read<uint32_t>(const uint16_t varID, uint32_t &outputRef);
+template Atams::Error_t Node::read<int32_t >(const uint16_t varID, int32_t  &outputRef);
+template Atams::Error_t Node::read<float   >(const uint16_t varID, float    &outputRef);
 
 template <typename T>
-Atams::Error_t Node::readIfDataReady(const uint16_t varID, T &readData)
+Atams::Error_t Node::readIfDataReady(const uint16_t varID, T &outputRef)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -144,7 +144,7 @@ Atams::Error_t Node::readIfDataReady(const uint16_t varID, T &readData)
 
   varStorageLock_.acquireLock();
 
-  if (var.newDataReady) memcpy(&readData, &var.storage, sizeof(readData));
+  if (var.newDataReady) readFromVarStorage(outputRef, var);
   else                  statusReturn = Atams::ERROR_NEW_DATA_NOT_READY;
 
   var.newDataReady = false;
@@ -154,18 +154,18 @@ Atams::Error_t Node::readIfDataReady(const uint16_t varID, T &readData)
   return (statusReturn);
 }
 
-template Atams::Error_t Node::readIfDataReady<uint8_t >(const uint16_t varID, uint8_t  &readData);
-template Atams::Error_t Node::readIfDataReady<int8_t  >(const uint16_t varID, int8_t   &readData);
-template Atams::Error_t Node::readIfDataReady<uint16_t>(const uint16_t varID, uint16_t &readData);
-template Atams::Error_t Node::readIfDataReady<int16_t >(const uint16_t varID, int16_t  &readData);
-template Atams::Error_t Node::readIfDataReady<uint32_t>(const uint16_t varID, uint32_t &readData);
-template Atams::Error_t Node::readIfDataReady<int32_t >(const uint16_t varID, int32_t  &readData);
-template Atams::Error_t Node::readIfDataReady<float   >(const uint16_t varID, float    &readData);
+template Atams::Error_t Node::readIfDataReady<uint8_t >(const uint16_t varID, uint8_t  &outputRef);
+template Atams::Error_t Node::readIfDataReady<int8_t  >(const uint16_t varID, int8_t   &outputRef);
+template Atams::Error_t Node::readIfDataReady<uint16_t>(const uint16_t varID, uint16_t &outputRef);
+template Atams::Error_t Node::readIfDataReady<int16_t >(const uint16_t varID, int16_t  &outputRef);
+template Atams::Error_t Node::readIfDataReady<uint32_t>(const uint16_t varID, uint32_t &outputRef);
+template Atams::Error_t Node::readIfDataReady<int32_t >(const uint16_t varID, int32_t  &outputRef);
+template Atams::Error_t Node::readIfDataReady<float   >(const uint16_t varID, float    &outputRef);
 
 template <typename T>
-Atams::Error_t Node::writeRequestUntilAck(const uint16_t varID, const T writeData)
+Atams::Error_t Node::writeRequestUntilAck(const uint16_t varID, const T writeValue)
 {
-  Atams::Error_t statusReturn = Node::write(varID, writeData);
+  Atams::Error_t statusReturn = Node::write(varID, writeValue);
 
   if (statusReturn == Atams::ERROR_NONE) 
   {
@@ -175,13 +175,13 @@ Atams::Error_t Node::writeRequestUntilAck(const uint16_t varID, const T writeDat
   return (statusReturn);
 }
 
-template Atams::Error_t Node::writeRequestUntilAck<uint8_t >(const uint16_t varID, const uint8_t  writeData);
-template Atams::Error_t Node::writeRequestUntilAck<int8_t  >(const uint16_t varID, const int8_t   writeData);
-template Atams::Error_t Node::writeRequestUntilAck<uint16_t>(const uint16_t varID, const uint16_t writeData);
-template Atams::Error_t Node::writeRequestUntilAck<int16_t >(const uint16_t varID, const int16_t  writeData);
-template Atams::Error_t Node::writeRequestUntilAck<uint32_t>(const uint16_t varID, const uint32_t writeData);
-template Atams::Error_t Node::writeRequestUntilAck<int32_t >(const uint16_t varID, const int32_t  writeData);
-template Atams::Error_t Node::writeRequestUntilAck<float   >(const uint16_t varID, const float    writeData);
+template Atams::Error_t Node::writeRequestUntilAck<uint8_t >(const uint16_t varID, const uint8_t  writeValue);
+template Atams::Error_t Node::writeRequestUntilAck<int8_t  >(const uint16_t varID, const int8_t   writeValue);
+template Atams::Error_t Node::writeRequestUntilAck<uint16_t>(const uint16_t varID, const uint16_t writeValue);
+template Atams::Error_t Node::writeRequestUntilAck<int16_t >(const uint16_t varID, const int16_t  writeValue);
+template Atams::Error_t Node::writeRequestUntilAck<uint32_t>(const uint16_t varID, const uint32_t writeValue);
+template Atams::Error_t Node::writeRequestUntilAck<int32_t >(const uint16_t varID, const int32_t  writeValue);
+template Atams::Error_t Node::writeRequestUntilAck<float   >(const uint16_t varID, const float    writeValue);
 
 Atams::Error_t Node::readRequestUntilAck(const uint16_t varID)
 {
@@ -548,53 +548,55 @@ void Node::clearInjectedBusError(const Atams::Error_t errorToClear, const uint16
 // #endif /* DEVELOPER_TOOLS */
 
 /*************************************************************************************/
-/* PRIVATE CONSTEXPR FUNCTION DEFINITIONS                                            */
+/* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
 template <typename T>
 constexpr Atams::VarType_t Node::getAtamsType(void)
 {
-    if      constexpr (std::is_same<T, uint8_t>::value)  return (Atams::TYPE_UINT8);
-    else if constexpr (std::is_same<T, int8_t>::value)   return (Atams::TYPE_INT8);
-    else if constexpr (std::is_same<T, uint16_t>::value) return (Atams::TYPE_UINT16);
-    else if constexpr (std::is_same<T, int16_t>::value)  return (Atams::TYPE_INT16);
-    else if constexpr (std::is_same<T, uint32_t>::value) return (Atams::TYPE_UINT32);
-    else if constexpr (std::is_same<T, int32_t>::value)  return (Atams::TYPE_INT32);
-    else if constexpr (std::is_same<T, float>::value)    return (Atams::TYPE_FLOAT);
-    else    static_assert(!std::is_same<T, T>::value,   "Invalid type passed to Node::getAtamsType(void)");
-    return (Atams::TYPE_NULL);
+  if      constexpr (std::is_same<T, uint8_t>::value)  return (Atams::TYPE_UINT8);
+  else if constexpr (std::is_same<T, int8_t>::value)   return (Atams::TYPE_INT8);
+  else if constexpr (std::is_same<T, uint16_t>::value) return (Atams::TYPE_UINT16);
+  else if constexpr (std::is_same<T, int16_t>::value)  return (Atams::TYPE_INT16);
+  else if constexpr (std::is_same<T, uint32_t>::value) return (Atams::TYPE_UINT32);
+  else if constexpr (std::is_same<T, int32_t>::value)  return (Atams::TYPE_INT32);
+  else if constexpr (std::is_same<T, float>::value)    return (Atams::TYPE_FLOAT);
+  else    static_assert(!std::is_same<T, T>::value,   "Invalid type passed to Node::getAtamsType(void)");
+  return (Atams::TYPE_NULL);
 }
 
-/*************************************************************************************/
-/* PRIVATE FUNCTION DEFINITIONS                                                      */
-/*************************************************************************************/
-
-bool Node::validateGenInfo(void)
+template<typename T>
+inline void Node::writeToVarStorage(const T inputVar, Node::Var_t &nodeVar)
 {
-  if (getMemoryMapIsValid() == false) return (false); /* Early Return */
-  
-  const GenInfo_t nullGenInfo;
-  bool            genInfoMatch = false;
-  GenInfo_t       genInfo;
-  
-  static_cast<void>(read(BlockUniversal::VAR_ATAMS_VERSION_MAJOR, genInfo.atamsVersionMajor));
-  static_cast<void>(read(BlockUniversal::VAR_ATAMS_VERSION_MINOR, genInfo.atamsVersionMinor));
-  static_cast<void>(read(BlockUniversal::VAR_MAP_GEN_DAY,         genInfo.genDay));
-  static_cast<void>(read(BlockUniversal::VAR_MAP_GEN_MONTH,       genInfo.genMonth));
-  static_cast<void>(read(BlockUniversal::VAR_MAP_GEN_YEAR,        genInfo.genYear));
-  static_cast<void>(read(BlockUniversal::VAR_MAP_GEN_HOUR,        genInfo.genHour));
-  static_cast<void>(read(BlockUniversal::VAR_MAP_GEN_MINUTE,      genInfo.genMinute));
-  static_cast<void>(read(BlockUniversal::VAR_MAP_GEN_SECOND,      genInfo.genSecond));
-  static_cast<void>(read(BlockUniversal::VAR_MAP_CHECKSUM,        genInfo.genChecksum));
-  static_cast<void>(read(BlockUniversal::VAR_MAP_NUMBER_OF_VARS,  genInfo.noOfVars));
+  static_assert(sizeof(T) <= Atams::MAX_TYPE_SIZE, "Incompatible type size used in writeToVarStorage");
 
-  if ((genInfo != nullGenInfo         ) &&
-      (genInfo == memoryMap_->genInfo) )
-  {
-    genInfoMatch = true;
-  }
+  uint32_t tempVar;
 
-  return (genInfoMatch);
+  if constexpr (std::is_same<T, float>::value) memcpy(&tempVar, &inputVar, sizeof(tempVar));
+  else                                         tempVar = static_cast<uint32_t>(inputVar);
+
+  /* Little endian: LSB first */
+  nodeVar.storage[0U] = static_cast<uint8_t>((tempVar                     ) & SINGLE_BYTE_MASK);
+  nodeVar.storage[1U] = static_cast<uint8_t>((tempVar >> SINGLE_BYTE_SHIFT) & SINGLE_BYTE_MASK);
+  nodeVar.storage[2U] = static_cast<uint8_t>((tempVar >> TWO_BYTE_SHIFT   ) & SINGLE_BYTE_MASK);
+  nodeVar.storage[3U] = static_cast<uint8_t>((tempVar >> THREE_BYTE_SHIFT ) & SINGLE_BYTE_MASK);
+}
+
+template<typename T>
+inline void Node::readFromVarStorage(T &outputVar, const Node::Var_t &nodeVar)
+{
+  static_assert(sizeof(T) <= Atams::MAX_TYPE_SIZE, "Incompatible type size used in readFromVarStorage");
+
+  uint32_t tempVar;
+
+  /* Little endian: LSB first */
+  tempVar = ((static_cast<uint32_t>(nodeVar.storage[0U])                     ) |
+             (static_cast<uint32_t>(nodeVar.storage[1U]) << SINGLE_BYTE_SHIFT) |
+             (static_cast<uint32_t>(nodeVar.storage[2U]) << TWO_BYTE_SHIFT   ) |
+             (static_cast<uint32_t>(nodeVar.storage[3U]) << THREE_BYTE_SHIFT ) );
+
+  if constexpr (std::is_same<T, float>::value) memcpy(&outputVar, &tempVar, sizeof(outputVar));
+  else                                         outputVar = static_cast<T>(tempVar);
 }
 
 Atams::Error_t Node::externalTransfer(const Access_t  accessRequest,
@@ -618,11 +620,9 @@ Atams::Error_t Node::externalTransfer(const Access_t  accessRequest,
   {
     case ACCESS_READ:
       memcpy(bytesPtr, var.storage, TYPE_LENGTHS[varInfo.type]);
-      if (systemIsBigEndian()) swapEndiannessRaw(bytesPtr, TYPE_LENGTHS[varInfo.type]);
       break;
 
     case ACCESS_WRITE:
-      if (systemIsBigEndian()) swapEndiannessRaw(bytesPtr, TYPE_LENGTHS[varInfo.type]);
       memcpy(var.storage, bytesPtr, TYPE_LENGTHS[varInfo.type]);
       var.newDataReady = true;
       break;
@@ -668,9 +668,9 @@ bool Node::processDatagramRead(const DatagramHeader_t datagramHeader,
   Atams::Error_t status = updateRequestPatternOnReceive(datagramHeader.varID);
 
   if (status == Atams::ERROR_NONE) status = externalTransfer(Atams::ACCESS_WRITE,
-                                                           datagramHeader.varID,
-                                                           &responseBuffer_[datagramStartIndex + DATAGRAM_INDEX_PAYLOAD],
-                                                           payloadLength); 
+                                                             datagramHeader.varID,
+                                                             &responseBuffer_[datagramStartIndex + DATAGRAM_INDEX_PAYLOAD],
+                                                             payloadLength); 
 
   if (status == Atams::ERROR_NONE) datagramStartIndex += (DATAGRAM_SIZE_HEADER + payloadLength);
   else                             reportBusError(status);
@@ -780,8 +780,8 @@ void Node::processResponseBuffer(void)
 
   newResponseReady_ = false;
 
-  if ((responseBuffer_[MESH_INDEX_MSG_TYPE] == Atams::MESSAGE_ABORTED_RESPONSE       ) ||
-      (responseBuffer_[MESH_INDEX_MSG_TYPE] == Atams::MESSAGE_ABORTED_RESPONSE_SYNCED) )
+  if ((responseBuffer_[MESH_INDEX_MSG_TYPE] == Atams::MESSAGE_ABORT_RESPONSE       ) ||
+      (responseBuffer_[MESH_INDEX_MSG_TYPE] == Atams::MESSAGE_ABORT_RESPONSE_SYNCED) )
   {
     processAbortedResponse();
     return; /* Early Return */
@@ -1141,6 +1141,34 @@ Atams::Error_t Node::updateRequestPacketWriteData(void)
   }
 
   return (Atams::ERROR_NONE);
+}
+
+bool Node::validateGenInfo(void)
+{
+  if (getMemoryMapIsValid() == false) return (false); /* Early Return */
+  
+  const GenInfo_t nullGenInfo;
+  bool            genInfoMatch = false;
+  GenInfo_t       genInfo;
+  
+  static_cast<void>(read(BlockUniversal::VAR_ATAMS_VERSION_MAJOR, genInfo.atamsVersionMajor));
+  static_cast<void>(read(BlockUniversal::VAR_ATAMS_VERSION_MINOR, genInfo.atamsVersionMinor));
+  static_cast<void>(read(BlockUniversal::VAR_MAP_GEN_DAY,         genInfo.genDay));
+  static_cast<void>(read(BlockUniversal::VAR_MAP_GEN_MONTH,       genInfo.genMonth));
+  static_cast<void>(read(BlockUniversal::VAR_MAP_GEN_YEAR,        genInfo.genYear));
+  static_cast<void>(read(BlockUniversal::VAR_MAP_GEN_HOUR,        genInfo.genHour));
+  static_cast<void>(read(BlockUniversal::VAR_MAP_GEN_MINUTE,      genInfo.genMinute));
+  static_cast<void>(read(BlockUniversal::VAR_MAP_GEN_SECOND,      genInfo.genSecond));
+  static_cast<void>(read(BlockUniversal::VAR_MAP_CHECKSUM,        genInfo.genChecksum));
+  static_cast<void>(read(BlockUniversal::VAR_MAP_NUMBER_OF_VARS,  genInfo.noOfVars));
+
+  if ((genInfo != nullGenInfo         ) &&
+      (genInfo == memoryMap_->genInfo) )
+  {
+    genInfoMatch = true;
+  }
+
+  return (genInfoMatch);
 }
 
 void Node::reportBusError(Atams::Error_t busError)

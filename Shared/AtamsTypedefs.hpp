@@ -339,8 +339,8 @@ struct DatagramHeader_t
 
 struct GenInfo_t
 {
-  uint8_t  atamsVersionMajor  = 0U;
-  uint8_t  atamsVersionMinor  = 0U;
+  uint8_t  atamsVersionMajor  = ATAMS_VERSION_MAJOR;
+  uint8_t  atamsVersionMinor  = ATAMS_VERSION_MINOR;
   uint8_t  genDay             = 0U;
   uint8_t  genMonth           = 0U;
   uint16_t genYear            = 0U;

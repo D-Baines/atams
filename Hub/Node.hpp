@@ -89,16 +89,16 @@ public NodeCallbackHandler
   Atams::Error_t initDefaults(void);
      
   template <typename T>
-  Atams::Error_t write(const uint16_t varID, const T writeData);
+  Atams::Error_t write(const uint16_t varID, const T writeValue);
   
   template <typename T>
   Atams::Error_t read(const uint16_t varID, T &readData);
 
   template <typename T>
-  Atams::Error_t readIfDataReady(const uint16_t varID, T &readData);
+  Atams::Error_t readIfDataReady(const uint16_t varID, T &outputRef);
 
   template <typename T>
-  Atams::Error_t writeRequestUntilAck(const uint16_t varID, const T writeData);
+  Atams::Error_t writeRequestUntilAck(const uint16_t varID, const T writeValue);
 
   Atams::Error_t readRequestUntilAck(const uint16_t varID);
 
@@ -218,13 +218,17 @@ public NodeCallbackHandler
   RequestPacket_t          requestPacket_;
   uint8_t                  responseBuffer_[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   Var_t                    varStorage_[Platform::NODE_NUMBER_OF_VARS];
-  
-  /*-- Private Constexpr Function Declarations --------------------------------------*/
+
+  /*-- Private Function Declarations ------------------------------------------------*/
 
   template <typename T>
   constexpr Atams::VarType_t getAtamsType(void);
 
-  /*-- Private Function Declarations ------------------------------------------------*/
+  template<typename T>
+  inline void writeToVarStorage(const T inputVar, Node::Var_t &nodeVar);
+
+  template<typename T>
+  inline void readFromVarStorage(T &outputVar, const Node::Var_t &nodeVar);
 
   Atams::Error_t externalTransfer(const Access_t  accessRequest,
                                   const uint16_t  memberID,

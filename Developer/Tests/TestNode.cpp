@@ -293,37 +293,14 @@ void TestNode::runUpdateCycleTests(void)
     {
       switch (varID)
       {
-        case BlockTest1::VAR_WRITE_UINT8:
-          testUint8_ = static_cast<uint8_t>(std::rand());
-          error      = Node::write(varID, testUint8_);
-          break;
-        case BlockTest1::VAR_WRITE_INT8:
-          testInt8_ = static_cast<int8_t>(std::rand());
-          error     = Node::write(varID, testInt8_);
-          break;
-        case BlockTest1::VAR_WRITE_UINT16:
-          testUint16_ = static_cast<uint16_t>(std::rand());
-          error       = Node::write(varID, testUint16_);
-          break;
-        case BlockTest1::VAR_WRITE_INT16:
-          testInt16_ = static_cast<int16_t>(std::rand());
-          error      = Node::write(varID, testInt16_);
-          break;
-        case BlockTest1::VAR_WRITE_UINT32:
-          testUint32_ = static_cast<uint32_t>(std::rand());
-          error       = Node::write(varID, testUint32_);
-          break;
-        case BlockTest1::VAR_WRITE_INT32:
-          testInt32_ = static_cast<int32_t>(std::rand());
-          error      = Node::write(varID, testInt32_);
-          break;
-        case BlockTest1::VAR_WRITE_FLOAT:
-          testFloat_ = static_cast<float>(std::rand());
-          error      = Node::write(varID, testFloat_);
-          break;
+        case BlockTest1::VAR_WRITE_UINT8:  updateWriteValue(varID, feedbackUint8_,  testUint8_);  break;
+        case BlockTest1::VAR_WRITE_INT8:   updateWriteValue(varID, feedbackInt8_,   testInt8_);   break;
+        case BlockTest1::VAR_WRITE_UINT16: updateWriteValue(varID, feedbackUint16_, testUint16_); break;
+        case BlockTest1::VAR_WRITE_INT16:  updateWriteValue(varID, feedbackInt16_,  testInt16_);  break;
+        case BlockTest1::VAR_WRITE_UINT32: updateWriteValue(varID, feedbackUint32_, testUint32_); break;
+        case BlockTest1::VAR_WRITE_INT32:  updateWriteValue(varID, feedbackInt32_,  testInt32_);  break;
+        case BlockTest1::VAR_WRITE_FLOAT:  updateWriteValue(varID, feedbackFloat_,  testFloat_);  break;
       }
-
-      if (error) errorHandler(error, defaultUpdateErrorMessage_);
 
       /* Check acknowledgement flag is false before starting write */
       bool ackReceived = true;
@@ -386,37 +363,14 @@ void TestNode::runUpdateCycleTests(void)
 
       switch (varID)
       {
-        case BlockTest1::VAR_WRITE_UINT8:
-          error = Node::read(varID, feedbackUint8_);
-          if (testUint8_ != feedbackUint8_)   errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
-          break;
-        case BlockTest1::VAR_WRITE_INT8:
-          error = Node::read(varID, feedbackInt8_);
-          if (testInt8_ != feedbackInt8_)     errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
-          break;
-        case BlockTest1::VAR_WRITE_UINT16:
-          error = Node::read(varID, feedbackUint16_);
-          if (testUint16_ != feedbackUint16_) errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
-          break;
-        case BlockTest1::VAR_WRITE_INT16:
-          error = Node::read(varID, feedbackInt16_);
-          if (testInt16_ != feedbackInt16_)   errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
-          break;
-        case BlockTest1::VAR_WRITE_UINT32:
-          error = Node::read(varID, feedbackUint32_);
-          if (testUint32_ != feedbackUint32_) errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
-          break;
-        case BlockTest1::VAR_WRITE_INT32:
-          error = Node::read(varID, feedbackInt32_);
-          if (testInt32_ != feedbackInt32_)   errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
-          break;
-        case BlockTest1::VAR_WRITE_FLOAT:
-          error = Node::read(varID, feedbackFloat_);
-          if (testFloat_ != feedbackFloat_)   errorHandler(Atams::ERROR_NONE, feedbackErrorMessage_);
-          break;
+        case BlockTest1::VAR_WRITE_UINT8:  checkReadValue(varID, feedbackUint8_,  testUint8_);  break;
+        case BlockTest1::VAR_WRITE_INT8:   checkReadValue(varID, feedbackInt8_,   testInt8_);   break;
+        case BlockTest1::VAR_WRITE_UINT16: checkReadValue(varID, feedbackUint16_, testUint16_); break;
+        case BlockTest1::VAR_WRITE_INT16:  checkReadValue(varID, feedbackInt16_,  testInt16_);  break;
+        case BlockTest1::VAR_WRITE_UINT32: checkReadValue(varID, feedbackUint32_, testUint32_); break;
+        case BlockTest1::VAR_WRITE_INT32:  checkReadValue(varID, feedbackInt32_,  testInt32_);  break;
+        case BlockTest1::VAR_WRITE_FLOAT:  checkReadValue(varID, feedbackFloat_,  testFloat_);  break;
       }
-    
-      if (error != Atams::ERROR_NONE) errorHandler(error, defaultUpdateErrorMessage_);
 
       error = Node::setRequestPattern(varID, Atams::ACCESS_NONE, Atams::REQUEST_INACTIVE);
 
@@ -507,6 +461,34 @@ void TestNode::errorHandler(const Atams::Error_t error, const char * errorMessag
   hubErrorHandler_(error, errorBuffer_);
 }
 
+template<typename T>
+void TestNode::updateWriteValue(const uint16_t varID, T &feedbackVar, T &writeVar)
+{
+  Atams::Error_t error = Atams::ERROR_NONE;
+
+  error = Node::read(varID, feedbackVar);
+
+  if (error) errorHandler(error, "Node::read error in TestNode::updateWriteValue On Node ");
+
+  writeVar = static_cast<T>(std::rand());
+  if (writeVar == feedbackVar) writeVar++;
+  error = Node::write(varID, writeVar);
+
+  if (error) errorHandler(error, "Node::write error in TestNode::updateWriteValue On Node ");
+}
+
+template<typename T>
+void TestNode::checkReadValue(const uint16_t varID, T &feedbackVar, T &writtenVar)
+{
+  Atams::Error_t error = Atams::ERROR_NONE;
+
+  writtenVar++;
+
+  error = Node::read(varID, feedbackVar);
+
+  if (error)                     errorHandler(error, "Node::read error in TestNode::checkReadValue On Node ");
+  if (feedbackVar != writtenVar) errorHandler(Atams::ERROR_NONE, "Feedback Mismatch on Node ");
+}
 
 } /* End Namespace - Atams */
 
