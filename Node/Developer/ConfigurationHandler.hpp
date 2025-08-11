@@ -124,23 +124,23 @@ class ConfigurationHandler
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  WatchdogHandler             &m_watchdogHandler;
-  PasscodeChecker_t            m_configPasscodeCheckers[ConfigurationHandler::NUMBER_OF_PASSCODES];
-  bool                         m_updateRequired     = false;
-  Atams::ConfigurationStatus_t m_configurationState = Atams::CONFIGURATION_STATUS_INACTIVE;
+  WatchdogHandler             &watchdogHandler_;
+  PasscodeChecker_t            configPasscodeCheckers_[ConfigurationHandler::NUMBER_OF_PASSCODES];
+  bool                         updateRequired_     = false;
+  Atams::ConfigurationStatus_t configurationState_ = Atams::CONFIGURATION_STATUS_INACTIVE;
 
   /* Configuration Parameters */
-  uint8_t m_localNodeID     = 0U;
-  uint8_t m_prevSyncNodeID  = 0U;
-  uint8_t m_finalSyncNodeID = 0U;
-  uint8_t m_firstSyncNodeID = 0U;
-  uint8_t m_bitrateOption   = static_cast<uint8_t>(Atams::BITRATE_OPTION_0);
+  uint8_t localNodeID_     = 0U;
+  uint8_t prevSyncNodeID_  = 0U;
+  uint8_t finalSyncNodeID_ = 0U;
+  uint8_t firstSyncNodeID_ = 0U;
+  uint8_t bitrateOption_   = static_cast<uint8_t>(Atams::BITRATE_OPTION_0);
 
   /*-- Private Function Declarations -------------------------------------------------*/
 
-  void checkConfigurationStateEntry(ConfigurationStatus_t &configurationState);
+  void checkConfigurationStateEntry(void);
 
-  void checkConfigurationStateExit(ConfigurationStatus_t &configurationState);
+  void checkConfigurationStateExit(void);
 
   void checkConfigurationPasscodes(void);
 

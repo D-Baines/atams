@@ -72,17 +72,12 @@ enum NVMTransfer_t : uint8_t
   TRANSFER_SAVE = 1U
 };
 
-struct Var_t
-{
-  uint8_t storage[Atams::MAX_TYPE_SIZE] = {0U, 0U, 0U, 0U};
-};
-
 struct ChannelResponse_t
 {
   uint8_t              buffer[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   uint16_t             index            = 0U;
   bool                 aborted          = false;
-  Atams::MessageType_t abortMessageType = Atams::MESSAGE_ABORTED_RESPONSE;
+  Atams::MessageType_t abortMessageType = Atams::MESSAGE_ABORT_RESPONSE;
 };
 
 struct ChannelSyncPacket_t
@@ -91,11 +86,13 @@ struct ChannelSyncPacket_t
   uint16_t length    = 0U;
 };
 
+using VarStorage_t = uint8_t[Atams::MAX_TYPE_SIZE];
+
 /*************************************************************************************/
 /* PRIVATE CLASS OBJECTS                                                             */
 /*************************************************************************************/
 
-static const MemoryMap_t   *s_memoryMap;
+static const MemoryMap_t   *s_memoryMapPtr;
 static CRC32                s_nodeCRC(Atams::CRC32_POLYNOMIAL);
 static CircularBuffer       s_circularBuffers[Platform::NUMBER_OF_COMMS_CHANNELS];
 
@@ -118,10 +115,10 @@ static CoreInitStatus_t s_coreInitComplete[Atams::NUMBER_OF_CORES] = {CORE_INIT_
                                                                       CORE_INIT_IN_PROGRESS};
 
 ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
-Var_t s_varStorage[Platform::NODE_NUMBER_OF_VARS];
+Atams::VarStorage_t s_varStorage[Platform::NODE_NUMBER_OF_VARS];
 
 /*************************************************************************************/
-/* PRIVATE CONSTEXPR FUNCTION DEFINITIONS                                            */
+/* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
 template <typename T>
@@ -137,9 +134,39 @@ constexpr Atams::VarType_t getAtamsType(void)
     return (Atams::TYPE_NULL);
 }
 
-/*************************************************************************************/
-/* PRIVATE FUNCTION DEFINITIONS                                                      */
-/*************************************************************************************/
+template<typename T>
+inline void writeToVarStorage(const T inputVar, Atams::VarStorage_t &varStorage)
+{
+  static_assert(sizeof(T) <= Atams::MAX_TYPE_SIZE, "Incompatible type size used in writeToVarStorage");
+
+  uint32_t tempVar;
+
+  if constexpr (std::is_same<T, float>::value) memcpy(&tempVar, &inputVar, sizeof(tempVar));
+  else                                         tempVar = static_cast<uint32_t>(inputVar);
+
+  /* Little endian: LSB first */
+  varStorage[0U] = static_cast<uint8_t>((tempVar                     ) & SINGLE_BYTE_MASK);
+  varStorage[1U] = static_cast<uint8_t>((tempVar >> SINGLE_BYTE_SHIFT) & SINGLE_BYTE_MASK);
+  varStorage[2U] = static_cast<uint8_t>((tempVar >> TWO_BYTE_SHIFT   ) & SINGLE_BYTE_MASK);
+  varStorage[3U] = static_cast<uint8_t>((tempVar >> THREE_BYTE_SHIFT ) & SINGLE_BYTE_MASK);
+}
+
+template<typename T>
+inline void readFromVarStorage(T &outputVar, const Atams::VarStorage_t &varStorage)
+{
+  static_assert(sizeof(T) <= Atams::MAX_TYPE_SIZE, "Incompatible type size used in readFromVarStorage");
+
+  uint32_t tempVar;
+
+  /* Little endian: LSB first */
+  tempVar = ((static_cast<uint32_t>(varStorage[0U])                     ) |
+             (static_cast<uint32_t>(varStorage[1U]) << SINGLE_BYTE_SHIFT) |
+             (static_cast<uint32_t>(varStorage[2U]) << TWO_BYTE_SHIFT   ) |
+             (static_cast<uint32_t>(varStorage[3U]) << THREE_BYTE_SHIFT ) );
+
+  if constexpr (std::is_same<T, float>::value) memcpy(&outputVar, &tempVar, sizeof(outputVar));
+  else                                         outputVar = static_cast<T>(tempVar);
+}
 
 static void receiveCallback(const Platform::CommsChannel_t commsChannel,
                                   uint8_t                 *rxBufferPtr,
@@ -152,7 +179,7 @@ static void receiveCallback(const Platform::CommsChannel_t commsChannel,
   }
 }
 
-static inline void resetResponse(ChannelResponse_t &response, uint8_t syncCount)
+static void resetResponse(ChannelResponse_t &response, uint8_t syncCount)
 {
   s_activeSyncCount = syncCount;
   response.aborted                     = false;
@@ -162,7 +189,7 @@ static inline void resetResponse(ChannelResponse_t &response, uint8_t syncCount)
   response.index                       = MESH_INDEX_FIRST_DATAGRAM;
 }
 
-static inline void abortResponse(ChannelResponse_t &response, const Atams::Error_t error, const uint16_t varID)
+static void abortResponse(ChannelResponse_t &response, const Atams::Error_t error, const uint16_t varID)
 {
   response.buffer[MESH_INDEX_NODE_ID]    = s_ConfigurationHandler.getLocalNodeID();
   response.buffer[MESH_INDEX_MSG_TYPE]   = response.abortMessageType;
@@ -373,7 +400,7 @@ static void processRequestPacket(ChannelResponse_t &response,
     bufferToDatagramHeader(&requestPacket[datagramStartIndex], datagramHeader);
 
     /* Var ID and Memory Map validity confirmed in validateRequestPacket */
-    uint8_t varLength = TYPE_LENGTHS[s_memoryMap->varInfoList[datagramHeader.varID].type];
+    uint8_t varLength = TYPE_LENGTHS[s_memoryMapPtr->varInfoList[datagramHeader.varID].type];
 
     switch (static_cast<Access_t>(datagramHeader.command))
     {
@@ -421,7 +448,7 @@ static void setAbortMessageType(ChannelResponse_t &response, const MessageType_t
       response.abortMessageType = MESSAGE_ABORT_RESPONSE_SYNCED;
       break;
     default:
-      response.abortMessageType = MESSAGE_ABORTED_RESPONSE;
+      response.abortMessageType = MESSAGE_ABORT_RESPONSE;
       break;
   }
 }
@@ -556,9 +583,9 @@ static void resetVars(void)
 {
   Platform::acquireVarStorageLock();
 
-  for (Var_t &var : s_varStorage)
+  for (VarStorage_t &varStroage : s_varStorage)
   {
-    memset(var.storage, 0U, sizeof(var.storage));
+    memset(varStroage, 0U, sizeof(varStroage));
   }
 
   Platform::releaseVarStorageLock();
@@ -567,13 +594,13 @@ static void resetVars(void)
 static void invalidateMemoryMap(void)
 {
   s_validVarCount = 0U;
-  s_memoryMap     = nullptr;
+  s_memoryMapPtr  = nullptr;
   resetVars();
 }
 
 static Atams::Error_t getMemoryMapIsValid(void)
 {
-  if ((s_memoryMap    != nullptr) &&
+  if ((s_memoryMapPtr != nullptr) &&
       (s_validVarCount > 0U     ) )
   {
     return (Atams::ERROR_NONE);
@@ -646,9 +673,9 @@ static uint32_t getNVMVarSpaceRequirement(void)
 {
   uint32_t requiredVarSpace = 0U;
 
-  for (uint16_t varID = 0U; varID < s_memoryMap->noOfVars; varID++)
+  for (uint16_t varID = 0U; varID < s_memoryMapPtr->noOfVars; varID++)
   {
-    const VarInfo_t &varInfo = s_memoryMap->varInfoList[varID];
+    const VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
 
     if (varInfo.NVMStorage) requiredVarSpace += Atams::TYPE_LENGTHS[varInfo.type];
   }
@@ -673,11 +700,11 @@ static Atams::Error_t nvmTransferVars(const uint32_t      maxIndex,
 {
   uint16_t numberOfVarsToTransfer = universalBlockOnly == true                            ?
                                     static_cast<uint16_t>(BlockUniversal::NUMBER_OF_VARS) :
-                                    s_memoryMap->noOfVars;
+                                    s_memoryMapPtr->noOfVars;
 
   for (uint16_t varID = 0U; varID < numberOfVarsToTransfer; varID++)
   {
-    const VarInfo_t &varInfo = s_memoryMap->varInfoList[varID];
+    const VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
 
     if (varInfo.NVMStorage)
     {
@@ -691,13 +718,13 @@ static Atams::Error_t nvmTransferVars(const uint32_t      maxIndex,
       switch (transferType)
       {
         case TRANSFER_LOAD:
-          if (s_nvmUnitHandler.readFromNVM(nvmIndex, s_varStorage[varID].storage, varLength) != Atams::ERROR_NONE)
+          if (s_nvmUnitHandler.readFromNVM(nvmIndex, s_varStorage[varID], varLength) != Atams::ERROR_NONE)
           {
             return (Atams::ERROR_PLATFORM);      /* Early Return */
           }
           break;
         case TRANSFER_SAVE:
-          if (s_nvmUnitHandler.writeToNVM(nvmIndex, s_varStorage[varID].storage, varLength) != Atams::ERROR_NONE)
+          if (s_nvmUnitHandler.writeToNVM(nvmIndex, s_varStorage[varID], varLength) != Atams::ERROR_NONE)
           {
             return (Atams::ERROR_PLATFORM);      /* Early Return */
           }
@@ -771,7 +798,7 @@ static Atams::Error_t initAllDefaults(void)
 {
   Atams::Error_t error = getMemoryMapIsValid();
   if (!error)    error = initUniversalDefaults();
-  if (!error)    error = s_memoryMap->initUserDefaults();
+  if (!error)    error = s_memoryMapPtr->initUserDefaults();
 
   return (error);
 }
@@ -814,7 +841,7 @@ static Atams::Error_t validateNVMGenInfo(const NVMHeader_t &nvmHeader)
 {
   Atams::Error_t   error        = Atams::ERROR_NONE;
   Atams::GenInfo_t nvmGenInfo   = nvmHeader.genInfo;
-  Atams::GenInfo_t mapGenInfo   = s_memoryMap->genInfo;
+  Atams::GenInfo_t mapGenInfo   = s_memoryMapPtr->genInfo;
 
   if ((nvmGenInfo.atamsVersionMajor != mapGenInfo.atamsVersionMajor) &&
       (nvmGenInfo.atamsVersionMinor != mapGenInfo.atamsVersionMinor) )
@@ -877,7 +904,7 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
 
   if (!error)
   {
-    s_memoryMap     = &memoryMap;
+    s_memoryMapPtr  = &memoryMap;
     s_validVarCount =  memoryMap.noOfVars;
   }
 
@@ -922,7 +949,7 @@ Atams::Error_t initControlCore(const MemoryMap_t &memoryMap)
 
   if (initStatus == Atams::ERROR_NONE)
   {
-    s_memoryMap     = &memoryMap;
+    s_memoryMapPtr  = &memoryMap;
     s_validVarCount =  memoryMap.noOfVars;
 
     signalCoreInitComplete(CORE_CONTROL);
@@ -950,7 +977,7 @@ Atams::Error_t restoreUser(void)
 {
   Atams::Error_t error = getMemoryMapIsValid();
 
-  if (!error) error = s_memoryMap->initUserDefaults();
+  if (!error) error = s_memoryMapPtr->initUserDefaults();
 
   if (!error) error = storeAll();
 
@@ -971,7 +998,7 @@ Atams::Error_t storeAll(void)
 
   nvmHeader.identifier = Atams::NVM_HEADER_IDENTIFIER_VALID;
   nvmHeader.length     = requiredNVMSpace;
-  nvmHeader.genInfo    = s_memoryMap->genInfo;
+  nvmHeader.genInfo    = s_memoryMapPtr->genInfo;
 
   /* Erase NVM to invalidate */
   Atams::Error_t error = s_nvmUnitHandler.eraseNVM();
@@ -1046,62 +1073,60 @@ void updateCommsBlocking(void)
 }
 
 template <typename T>
-Atams::Error_t write(const uint16_t varID,
-                     const T        writeData)
+Atams::Error_t write(const uint16_t varID, const T writeValue)
 {
   if (varID >= s_validVarCount) return (Atams:: ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo = s_memoryMap->varInfoList[varID];
+  const Atams::VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
 
   if (getAtamsType<T>() != varInfo.type) return (Atams::ERROR_VAR_TYPE); /* Early Return */
 
-  Atams::Var_t &var = s_varStorage[varID];
+  Atams::VarStorage_t &varStorage = s_varStorage[varID];
 
   Platform::acquireVarStorageLock();
 
-  memcpy(var.storage, &writeData, sizeof(writeData));
+  writeToVarStorage(writeValue, varStorage);
 
   Platform::releaseVarStorageLock();
 
   return (Atams::ERROR_NONE);
 }
 
-template Atams::Error_t write<uint8_t >(const uint16_t varID, const uint8_t  writeData);
-template Atams::Error_t write<int8_t  >(const uint16_t varID, const int8_t   writeData);
-template Atams::Error_t write<uint16_t>(const uint16_t varID, const uint16_t writeData);
-template Atams::Error_t write<int16_t >(const uint16_t varID, const int16_t  writeData);
-template Atams::Error_t write<uint32_t>(const uint16_t varID, const uint32_t writeData);
-template Atams::Error_t write<int32_t >(const uint16_t varID, const int32_t  writeData);
-template Atams::Error_t write<float   >(const uint16_t varID, const float    writeData);
+template Atams::Error_t write<uint8_t >(const uint16_t varID, const uint8_t  writeValue);
+template Atams::Error_t write<int8_t  >(const uint16_t varID, const int8_t   writeValue);
+template Atams::Error_t write<uint16_t>(const uint16_t varID, const uint16_t writeValue);
+template Atams::Error_t write<int16_t >(const uint16_t varID, const int16_t  writeValue);
+template Atams::Error_t write<uint32_t>(const uint16_t varID, const uint32_t writeValue);
+template Atams::Error_t write<int32_t >(const uint16_t varID, const int32_t  writeValue);
+template Atams::Error_t write<float   >(const uint16_t varID, const float    writeValue);
 
 template <typename T>
-Atams::Error_t read(const uint16_t  varID,
-                          T        &readData)
+Atams::Error_t read(const uint16_t  varID, T &outputRef)
 {
   if (varID >= s_validVarCount) return (Atams:: ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo = s_memoryMap->varInfoList[varID];
+  const Atams::VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
 
   if (getAtamsType<T>() != varInfo.type) return (Atams::ERROR_VAR_TYPE); /* Early Return */
 
-  Atams::Var_t &var = s_varStorage[varID];
+  Atams::VarStorage_t &var = s_varStorage[varID];
 
   Platform::acquireVarStorageLock();
 
-  memcpy(&readData, var.storage, sizeof(readData));
+  readFromVarStorage(outputRef, var);
 
   Platform::releaseVarStorageLock();
 
   return (Atams::ERROR_NONE);
 }
 
-template Atams::Error_t read<uint8_t >(const uint16_t varID, uint8_t  &readData);
-template Atams::Error_t read<int8_t  >(const uint16_t varID, int8_t   &readData);
-template Atams::Error_t read<uint16_t>(const uint16_t varID, uint16_t &readData);
-template Atams::Error_t read<int16_t >(const uint16_t varID, int16_t  &readData);
-template Atams::Error_t read<uint32_t>(const uint16_t varID, uint32_t &readData);
-template Atams::Error_t read<int32_t >(const uint16_t varID, int32_t  &readData);
-template Atams::Error_t read<float   >(const uint16_t varID, float    &readData);
+template Atams::Error_t read<uint8_t >(const uint16_t varID, uint8_t  &outputRef);
+template Atams::Error_t read<int8_t  >(const uint16_t varID, int8_t   &outputRef);
+template Atams::Error_t read<uint16_t>(const uint16_t varID, uint16_t &outputRef);
+template Atams::Error_t read<int16_t >(const uint16_t varID, int16_t  &outputRef);
+template Atams::Error_t read<uint32_t>(const uint16_t varID, uint32_t &outputRef);
+template Atams::Error_t read<int32_t >(const uint16_t varID, int32_t  &outputRef);
+template Atams::Error_t read<float   >(const uint16_t varID, float    &outputRef);
 
 Atams::Error_t externalTransfer(const Access_t  accessRequest,
                                 const uint16_t  varID,
@@ -1110,27 +1135,25 @@ Atams::Error_t externalTransfer(const Access_t  accessRequest,
 {
   if (varID >= s_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo = s_memoryMap->varInfoList[varID];
+  const Atams::VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
 
   if (TYPE_LENGTHS[varInfo.type] != length)              return (Atams::ERROR_VAR_TYPE);       /* Early Return */
   if (bytesPtr                   == nullptr)             return (Atams::ERROR_NULLPTR);        /* Early Return */
   if (accessRequest              >  varInfo.accessLevel) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
 
-  Atams::Var_t   &var        = s_varStorage[varID];
-  Atams::Error_t accessError = Atams::ERROR_NONE;
+  Atams::VarStorage_t &varStorage = s_varStorage[varID];
+  Atams::Error_t      accessError = Atams::ERROR_NONE;
 
   Platform::acquireVarStorageLock();
 
   switch (accessRequest)
   {
     case ACCESS_READ:
-      memcpy(bytesPtr, var.storage, TYPE_LENGTHS[varInfo.type]);
-      if (systemIsBigEndian()) swapEndiannessRaw(bytesPtr, TYPE_LENGTHS[varInfo.type]);
+      memcpy(bytesPtr, varStorage, TYPE_LENGTHS[varInfo.type]);
       break;
 
     case ACCESS_WRITE:
-      if (systemIsBigEndian()) swapEndiannessRaw(bytesPtr, TYPE_LENGTHS[varInfo.type]);
-      memcpy(var.storage, bytesPtr, TYPE_LENGTHS[varInfo.type]);
+      memcpy(varStorage, bytesPtr, TYPE_LENGTHS[varInfo.type]);
       break;
 
     default:
@@ -1153,7 +1176,7 @@ DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t varID)
     return (lengthReturn); /* Early Return */
   }
 
-  const VarInfo_t &varInfo = s_memoryMap->varInfoList[varID];
+  const VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
 
   lengthReturn.data   = TYPE_LENGTHS[varInfo.type];
   lengthReturn.status = ERROR_NONE;

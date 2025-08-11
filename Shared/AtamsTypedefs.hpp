@@ -95,7 +95,7 @@ enum MessageType_t: uint8_t
   MESSAGE_REQUEST_SYNCED        = 5U,
   MESSAGE_RESPONSE_SYNCED       = 6U,
   MESSAGE_SYNC_JOG              = 7U,
-  MESSAGE_ABORTED_RESPONSE      = 8U,
+  MESSAGE_ABORT_RESPONSE        = 8U,
   MESSAGE_ABORT_RESPONSE_SYNCED = 9U,
 };
 static_assert(sizeof(Atams::MessageType_t) == 1U, "Atams::MessageType_t size invalid");
@@ -365,17 +365,13 @@ struct GenInfo_t
     {
       return (true);
     }
+
     return (false);
   }
 
   bool operator!=(const GenInfo_t &other)
   {
-    if (*this == other)
-    {
-      return (false);
-    }
-
-    return (true);
+    return (!(*this == other));
   }
 
   void invalidate(void)

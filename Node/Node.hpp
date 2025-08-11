@@ -103,10 +103,10 @@ void updateCommsPolling(void);
 void updateCommsBlocking(void);
 
 template <typename T>
-Atams::Error_t write(const uint16_t varID, const T writeData);
+Atams::Error_t write(const uint16_t varID, const T writeValue);
 
 template <typename T>
-Atams::Error_t read(const uint16_t varID, T &readData);
+Atams::Error_t read(const uint16_t varID, T &outputRef);
 
 Atams::Error_t externalTransfer(const Access_t  accessRequest,
                                 const uint16_t  varID,

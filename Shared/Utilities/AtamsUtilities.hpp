@@ -58,19 +58,9 @@ inline constexpr uint8_t SINGLE_BYTE_MASK  = 0xFFU;
 
 const char* getErrorString(Atams::Error_t errorID);
 
-inline bool systemIsBigEndian(void)
-{
-  uint32_t asUINT32 = 0x0001;
-  uint8_t *asPtr    = reinterpret_cast<uint8_t*>(&asUINT32);
+uint32_t bufferToUint32(const uint8_t * const buffer);
 
-  return (asPtr[3U] == 1U);
-}
-
-void swapEndiannessRaw(uint8_t* buffer, uint8_t bufferLength);
-
-uint32_t bufferToUint32(const uint8_t* buffer);
-
-void uint32ToBuffer(const uint32_t value, uint8_t* buffer);
+void uint32ToBuffer(const uint32_t value, uint8_t * const buffer);
 
 Atams::Error_t decodeMeshPacket(const uint8_t  *inputBuffer,
                                 const uint16_t  inputBufferLength,
@@ -84,11 +74,12 @@ Atams::Error_t encodeMeshPacket(      uint8_t  *inputBuffer,
                                 const uint16_t  encodedBufferMaxLength,
                                       uint16_t &encodedLength);
 
-void datagramHeaderToBuffer(const DatagramHeader_t &datagramHeader, uint8_t* buffer);
+void datagramHeaderToBuffer(const DatagramHeader_t &datagramHeader, uint8_t * const buffer);
 
-void bufferToDatagramHeader(const uint8_t *buffer, DatagramHeader_t &datagramHeader);
+void bufferToDatagramHeader(const uint8_t * const buffer, DatagramHeader_t &datagramHeader);
 
 Atams::Error_t validateMemoryMap(const SharedMemoryMap_t &memoryMap, const uint32_t varStorageLength);
+
 
 } /* End Namespace - Atams */
 

@@ -150,30 +150,22 @@ const char* getErrorString(Error_t errorID)
   return (nullptr);
 }
 
-void swapEndiannessRaw(uint8_t* buffer, uint8_t bufferLength)
-{ 
-  for (uint8_t i = 0U; i < bufferLength / 2U; ++i)
-  {
-    uint8_t temp                  = buffer[i];
-    buffer[i]                     = buffer[bufferLength - i - 1U];
-    buffer[bufferLength - i - 1U] = temp;
-  }
+uint32_t bufferToUint32(const uint8_t * const buffer)
+{
+  /* Little endian: LSB first */
+  return ((static_cast<uint32_t>(buffer[0U])                     ) |
+          (static_cast<uint32_t>(buffer[1U]) << SINGLE_BYTE_SHIFT) |
+          (static_cast<uint32_t>(buffer[2U]) << TWO_BYTE_SHIFT   ) |
+          (static_cast<uint32_t>(buffer[3U]) << THREE_BYTE_SHIFT ) );
 }
 
-uint32_t bufferToUint32(const uint8_t* buffer)
+void uint32ToBuffer(const uint32_t value, uint8_t * const buffer)
 {
-  return ((static_cast<uint32_t>(buffer[0U]) << THREE_BYTE_SHIFT ) |
-          (static_cast<uint32_t>(buffer[1U]) << TWO_BYTE_SHIFT   ) |
-          (static_cast<uint32_t>(buffer[2U]) << SINGLE_BYTE_SHIFT) |
-          (static_cast<uint32_t>(buffer[3U])                     ) );
-}
-
-void uint32ToBuffer(const uint32_t value, uint8_t* buffer)
-{
-  buffer[0U] = static_cast<uint8_t>((value >> THREE_BYTE_SHIFT ) & SINGLE_BYTE_MASK);
-  buffer[1U] = static_cast<uint8_t>((value >> TWO_BYTE_SHIFT   ) & SINGLE_BYTE_MASK);
-  buffer[2U] = static_cast<uint8_t>((value >> SINGLE_BYTE_SHIFT) & SINGLE_BYTE_MASK);
-  buffer[3U] = static_cast<uint8_t>((value                     ) & SINGLE_BYTE_MASK);
+  /* Little endian: LSB first */
+  buffer[0U] = static_cast<uint8_t>((value                     ) & SINGLE_BYTE_MASK);
+  buffer[1U] = static_cast<uint8_t>((value >> SINGLE_BYTE_SHIFT) & SINGLE_BYTE_MASK);
+  buffer[2U] = static_cast<uint8_t>((value >> TWO_BYTE_SHIFT   ) & SINGLE_BYTE_MASK);
+  buffer[3U] = static_cast<uint8_t>((value >> THREE_BYTE_SHIFT ) & SINGLE_BYTE_MASK);
 }
 
 Atams::Error_t decodeMeshPacket(const uint8_t  * const inputBuffer,
@@ -237,7 +229,7 @@ Atams::Error_t encodeMeshPacket(      uint8_t  * const inputBuffer,
   return (Atams::ERROR_NONE);
 }
 
-void datagramHeaderToBuffer(const DatagramHeader_t &datagramHeader, uint8_t *buffer)
+void datagramHeaderToBuffer(const DatagramHeader_t &datagramHeader, uint8_t * const buffer)
 {
   buffer[0U] = static_cast<uint8_t>(((datagramHeader.command << DATAGRAM_HEADER_SHIFT_COMMAND  ) & DATAGRAM_HEADER_MASK_COMMAND  ) |
                                     ((datagramHeader.varID   >> DATAGRAM_HEADER_SHIFT_VAR_ID_HI) & DATAGRAM_HEADER_MASK_VAR_ID_HI) );
@@ -245,7 +237,7 @@ void datagramHeaderToBuffer(const DatagramHeader_t &datagramHeader, uint8_t *buf
   buffer[1U] = static_cast<uint8_t>((datagramHeader.varID    << DATAGRAM_HEADER_SHIFT_VAR_ID_LO) & DATAGRAM_HEADER_MASK_VAR_ID_LO);
 }
 
-void bufferToDatagramHeader(const uint8_t *buffer, DatagramHeader_t &datagramHeader)
+void bufferToDatagramHeader(const uint8_t * const buffer, DatagramHeader_t &datagramHeader)
 {
   datagramHeader.command = static_cast<uint8_t>(buffer[0U] & DATAGRAM_HEADER_MASK_COMMAND) >> DATAGRAM_HEADER_SHIFT_COMMAND;
 

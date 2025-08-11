@@ -40,8 +40,8 @@ namespace Atams {
 /*************************************************************************************/
 
 ConfigurationHandler::ConfigurationHandler(WatchdogHandler &watchdogHandler) :
-m_watchdogHandler(watchdogHandler),
-m_configPasscodeCheckers
+watchdogHandler_(watchdogHandler),
+configPasscodeCheckers_
 {
   /* [PASSCODE_ID_STORE_ALL] = */
   {
@@ -91,24 +91,24 @@ void ConfigurationHandler::initConfiguration(void)
 
 void ConfigurationHandler::update(void)
 {
-  if (m_updateRequired == false)
+  if (updateRequired_ == false)
   {
     return; /* Early Return */
   }
 
-  m_updateRequired = false;
+  updateRequired_ = false;
 
-  switch (m_configurationState)
+  switch (configurationState_)
   {
     case CONFIGURATION_STATUS_INACTIVE:
     case CONFIGURATION_STATUS_DENIED:
     case CONFIGURATION_STATUS_APPLIED:
-      checkConfigurationStateEntry(m_configurationState);
+      checkConfigurationStateEntry();
       break;
 
     case CONFIGURATION_STATUS_ACTIVE:
       checkConfigurationPasscodes();
-      checkConfigurationStateExit(m_configurationState);
+      checkConfigurationStateExit();
       break;
 
     default:
@@ -116,49 +116,49 @@ void ConfigurationHandler::update(void)
       break;
   }
 
-  Atams::write(BlockUniversal::VAR_CONFIGURATION_STATUS, static_cast<uint8_t>(m_configurationState));
+  Atams::write(BlockUniversal::VAR_CONFIGURATION_STATUS, static_cast<uint8_t>(configurationState_));
 }
 
 void ConfigurationHandler::setUpdateRequired(void)
 {
-  m_updateRequired = true;
+  updateRequired_ = true;
 }
 
 bool ConfigurationHandler::getConfigurationActive(void)
 {
-  return (m_configurationState == CONFIGURATION_STATUS_ACTIVE);
+  return (configurationState_ == CONFIGURATION_STATUS_ACTIVE);
 }
 
 uint8_t ConfigurationHandler::getLocalNodeID(void)
 {
-  return (m_localNodeID);
+  return (localNodeID_);
 }
 
 uint8_t ConfigurationHandler::getPrevSyncNodeID(void)
 {
-  return (m_prevSyncNodeID);
+  return (prevSyncNodeID_);
 }
 
 uint8_t ConfigurationHandler::getFirstSyncNodeID(void)
 {
-  return (m_firstSyncNodeID);
+  return (firstSyncNodeID_);
 }
 
 uint8_t ConfigurationHandler::getFinalSyncNodeID(void)
 {
-  return (m_finalSyncNodeID);
+  return (finalSyncNodeID_);
 }
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-void ConfigurationHandler::checkConfigurationStateEntry(Atams::ConfigurationStatus_t &configurationState)
+void ConfigurationHandler::checkConfigurationStateEntry(void)
 {
   static uint32_t prevConfigStatePasskey = 0U;
   uint32_t        configStatePasskey     = 0U;
 
-  if (configurationState == Atams::CONFIGURATION_STATUS_ACTIVE)
+  if (configurationState_ == Atams::CONFIGURATION_STATUS_ACTIVE)
   {
     return; /* Early Return */
   }
@@ -170,20 +170,20 @@ void ConfigurationHandler::checkConfigurationStateEntry(Atams::ConfigurationStat
   {
     if (Platform::enterConfigurationState() == true)
     {
-      configurationState = Atams::CONFIGURATION_STATUS_ACTIVE;
+      configurationState_ = Atams::CONFIGURATION_STATUS_ACTIVE;
     }
     else
     {
-      configurationState = Atams::CONFIGURATION_STATUS_DENIED;
+      configurationState_ = Atams::CONFIGURATION_STATUS_DENIED;
     }
   }
 }
 
-void ConfigurationHandler::checkConfigurationStateExit(Atams::ConfigurationStatus_t &configurationState)
+void ConfigurationHandler::checkConfigurationStateExit(void)
 {
   uint32_t configStatePasskey = 0U;
 
-  if (configurationState != Atams::CONFIGURATION_STATUS_ACTIVE)
+  if (configurationState_ != Atams::CONFIGURATION_STATUS_ACTIVE)
   {
     return; /* Early Return */
   }
@@ -194,19 +194,19 @@ void ConfigurationHandler::checkConfigurationStateExit(Atams::ConfigurationStatu
   {
     applyUniversalConfiguration();
     Platform::exitConfigurationState();
-    configurationState = Atams::CONFIGURATION_STATUS_APPLIED;
+    configurationState_ = Atams::CONFIGURATION_STATUS_APPLIED;
   }
   else if (configStatePasskey != Atams::CONFIGURATION_PASSKEY_ACCESS)
   {
     cancelConfigurationValueChange();
     Platform::exitConfigurationState();
-    configurationState = Atams::CONFIGURATION_STATUS_INACTIVE;
+    configurationState_ = Atams::CONFIGURATION_STATUS_INACTIVE;
   }
 }
 
 void ConfigurationHandler::checkConfigurationPasscodes(void)
 {
-  for (PasscodeChecker_t &checker : m_configPasscodeCheckers)
+  for (PasscodeChecker_t &checker : configPasscodeCheckers_)
   {
     static_cast<void>(Atams::read(checker.passcodeVarID, checker.passcode));
 
@@ -229,27 +229,27 @@ void ConfigurationHandler::applyUniversalConfiguration(void)
 {
   uint32_t watchdogPeriod = WatchdogHandler::MINIMUM_VALID_WATCHDOG_PERIOD;
 
-  static_cast<void>(Atams::read(BlockUniversal::VAR_NODE_ID,          m_localNodeID));
-  static_cast<void>(Atams::read(BlockUniversal::VAR_FIRST_NODE_ID,    m_firstSyncNodeID));
-  static_cast<void>(Atams::read(BlockUniversal::VAR_PREVIOUS_NODE_ID, m_prevSyncNodeID));
-  static_cast<void>(Atams::read(BlockUniversal::VAR_LAST_NODE_ID,     m_finalSyncNodeID));
-  static_cast<void>(Atams::read(BlockUniversal::VAR_BITRATE,          m_bitrateOption));
+  static_cast<void>(Atams::read(BlockUniversal::VAR_NODE_ID,          localNodeID_));
+  static_cast<void>(Atams::read(BlockUniversal::VAR_FIRST_NODE_ID,    firstSyncNodeID_));
+  static_cast<void>(Atams::read(BlockUniversal::VAR_PREVIOUS_NODE_ID, prevSyncNodeID_));
+  static_cast<void>(Atams::read(BlockUniversal::VAR_LAST_NODE_ID,     finalSyncNodeID_));
+  static_cast<void>(Atams::read(BlockUniversal::VAR_BITRATE,          bitrateOption_));
   static_cast<void>(Atams::read(BlockUniversal::VAR_WATCHDOG_PERIOD,  watchdogPeriod));
 
-  Platform::setBitrate(static_cast<Atams::BitrateOption_t>(m_bitrateOption));
+  Platform::setBitrate(static_cast<Atams::BitrateOption_t>(bitrateOption_));
 
-  m_watchdogHandler.setWatchdogPeriod(watchdogPeriod);
+  watchdogHandler_.setWatchdogPeriod(watchdogPeriod);
 }
 
 void ConfigurationHandler::cancelConfigurationValueChange(void)
 {
-  uint32_t watchdogPeriod = m_watchdogHandler.getWatchdogPeriod();
+  uint32_t watchdogPeriod = watchdogHandler_.getWatchdogPeriod();
 
-  static_cast<void>(Atams::write(BlockUniversal::VAR_NODE_ID,          m_localNodeID));
-  static_cast<void>(Atams::write(BlockUniversal::VAR_FIRST_NODE_ID,    m_firstSyncNodeID));
-  static_cast<void>(Atams::write(BlockUniversal::VAR_PREVIOUS_NODE_ID, m_prevSyncNodeID));
-  static_cast<void>(Atams::write(BlockUniversal::VAR_LAST_NODE_ID,     m_finalSyncNodeID));
-  static_cast<void>(Atams::write(BlockUniversal::VAR_BITRATE,          m_bitrateOption));
+  static_cast<void>(Atams::write(BlockUniversal::VAR_NODE_ID,          localNodeID_));
+  static_cast<void>(Atams::write(BlockUniversal::VAR_FIRST_NODE_ID,    firstSyncNodeID_));
+  static_cast<void>(Atams::write(BlockUniversal::VAR_PREVIOUS_NODE_ID, prevSyncNodeID_));
+  static_cast<void>(Atams::write(BlockUniversal::VAR_LAST_NODE_ID,     finalSyncNodeID_));
+  static_cast<void>(Atams::write(BlockUniversal::VAR_BITRATE,          bitrateOption_));
   static_cast<void>(Atams::write(BlockUniversal::VAR_WATCHDOG_PERIOD,  watchdogPeriod));
 }
 
