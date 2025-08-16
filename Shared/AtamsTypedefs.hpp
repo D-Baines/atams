@@ -308,27 +308,27 @@ enum CoreID_t: uint8_t
 
 struct VarInfo_t
 {
-  VarType_t type        = Atams::TYPE_NULL;
-  Access_t  accessLevel = Atams::ACCESS_NONE;
-  uint8_t   NVMStorage  = Atams::ATAMS_FALSE;
+  VarType_t type           = Atams::TYPE_NULL;
+  Access_t  externalAccess = Atams::ACCESS_NONE;
+  uint8_t   NVMStorage     = Atams::ATAMS_FALSE;
 
   bool operator==(const VarInfo_t &other)
   {
-    return ((type        == other.type       ) &&
-            (accessLevel == other.accessLevel) &&
-            (NVMStorage  == other.NVMStorage ) );
+    return ((type           == other.type          ) &&
+            (externalAccess == other.externalAccess) &&
+            (NVMStorage     == other.NVMStorage    ) );
   }
 
   bool operator!=(const VarInfo_t &other)
   {
-    return ((type        != other.type       ) ||
-            (accessLevel != other.accessLevel) ||
-            (NVMStorage  != other.NVMStorage ) );
+    return ((type           != other.type          ) ||
+            (externalAccess != other.externalAccess) ||
+            (NVMStorage     != other.NVMStorage    ) );
   }
 
-  static_assert(sizeof(type)        == 1U, "VarInfo_t member type size invalid");
-  static_assert(sizeof(accessLevel) == 1U, "VarInfo_t member type size invalid");
-  static_assert(sizeof(NVMStorage)  == 1U, "VarInfo_t member type size invalid");
+  static_assert(sizeof(type)           == 1U, "VarInfo_t type size invalid");
+  static_assert(sizeof(externalAccess) == 1U, "VarInfo_t accessLevel size invalid");
+  static_assert(sizeof(NVMStorage)     == 1U, "VarInfo_t NVMStorage size invalid");
 };
 
 struct DatagramHeader_t

@@ -71,16 +71,16 @@ static bool validateMapLength(const SharedMemoryMap_t &memoryMap, const uint32_t
   {
     const VarInfo_t varInfo = memoryMap.varInfoList[varID];
 
-    if ((varInfo.type        > Atams::NUMBER_OF_VAR_TYPES) ||
-        (varInfo.accessLevel > Atams::ACCESS_WRITE       ) ||
-        (varInfo.NVMStorage  > Atams::ATAMS_TRUE         ) )
+    if ((varInfo.type           > Atams::NUMBER_OF_VAR_TYPES) ||
+        (varInfo.externalAccess > Atams::ACCESS_WRITE       ) ||
+        (varInfo.NVMStorage     > Atams::ATAMS_TRUE         ) )
     {
       lengthValid = false;
       break;
     }
 
-    if ((varInfo.type        == Atams::TYPE_NULL  ) ||
-        (varInfo.accessLevel == Atams::ACCESS_NONE) )
+    if ((varInfo.type           == Atams::TYPE_NULL  ) ||
+        (varInfo.externalAccess == Atams::ACCESS_NONE) )
     {
       if (varIndex != memoryMap.noOfVars) lengthValid = false;
       break;
@@ -127,7 +127,7 @@ static bool validateMapChecksum(const SharedMemoryMap_t &memoryMap)
     if (varIndex == memoryMap.noOfVars) break;
 
     atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.type));
-    atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.accessLevel));
+    atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.externalAccess));
     atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.NVMStorage));
 
     varIndex++;

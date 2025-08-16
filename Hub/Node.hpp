@@ -231,7 +231,7 @@ public NodeCallbackHandler
   inline void readFromVarStorage(T &outputVar, const Node::Var_t &nodeVar);
 
   Atams::Error_t externalTransfer(const Access_t  accessRequest,
-                                  const uint16_t  memberID,
+                                  const uint16_t  varID,
                                   uint8_t * const bytesPtr,
                                   const uint8_t   length);
                               

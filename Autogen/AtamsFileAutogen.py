@@ -78,31 +78,31 @@ def generateEnum(iteratorStartValue: int,
   targetFile.seek(targetFile.tell()-1)
 
 def generateConstList(block:        pandas.DataFrame, 
-                      memberNames:  List[str], 
+                      varNames:     List[str], 
                       columnHeader: str, 
                       targetFile:   TextIO) -> None:
-  memberIterator          = 0
-  memberNamesWithValue    = []
+  varIterator          = 0
+  varNamesWithValue    = []
   types                   = block["Data Type"]
   values                  = block[columnHeader]
   preStringRequiredSpace  = getLongestString(types)
-  for memberName in memberNames:
-    value = values[memberIterator]
+  for varName in varNames:
+    value = values[varIterator]
     if ((not pandas.isnull(value)) and (value != "-")): 
-      memberNamesWithValue.append(memberName)
-    memberIterator += 1
-  memberIterator = 0
-  postStringRequiredSpace = getLongestString(memberNamesWithValue)
-  for memberName in memberNames:
-    type           = types[memberIterator]
-    value          = values[memberIterator]
+      varNamesWithValue.append(varName)
+    varIterator += 1
+  varIterator = 0
+  postStringRequiredSpace = getLongestString(varNamesWithValue)
+  for varName in varNames:
+    type           = types[varIterator]
+    value          = values[varIterator]
     preNameSpaces  = preStringRequiredSpace  - len(type)
-    postNameSpaces = postStringRequiredSpace - len(memberName)
+    postNameSpaces = postStringRequiredSpace - len(varName)
     if ((not pandas.isnull(value)) and (value != "-")):
       valueAsString = str(value)
       targetFile.write("inline constexpr " + type + " ")
       writeSpaces(preNameSpaces, targetFile)
-      targetFile.write((columnHeader.replace(' ', '_').upper()) + "_" + memberName)
+      targetFile.write((columnHeader.replace(' ', '_').upper()) + "_" + varName)
       writeSpaces(postNameSpaces, targetFile)
       targetFile.write(" {" + valueAsString)
       listItemNoSignNoPoint = valueAsString.replace('.', '')
@@ -115,7 +115,7 @@ def generateConstList(block:        pandas.DataFrame,
         if (type == "uint8_t" or type == "uint16_t" or type == "uint32_t"):
           targetFile.write("U")
       targetFile.write("};\n")
-    memberIterator += 1
+    varIterator += 1
 
 def generateVarInfoList(dataBlockNamesCamel: List[str],
                         dataBlocks:          pandas.DataFrame,
@@ -127,12 +127,12 @@ def generateVarInfoList(dataBlockNamesCamel: List[str],
     types          = block["Data Type"]
     accessLevels   = block["External Access"]
     nvmStorages    = block["NVM Storage"]
-    memberIndex    = 0
+    varIndex    = 0
     for varID in varIDs:
       varNameUpper    = varID.replace(" ", "_").upper()
-      typeUpper       = types[memberIndex].replace("_t", "").upper()
-      access          = accessLevels[memberIndex]
-      nvmStorage      = nvmStorages[memberIndex]
+      typeUpper       = types[varIndex].replace("_t", "").upper()
+      access          = accessLevels[varIndex]
+      nvmStorage      = nvmStorages[varIndex]
       nvmStorageStr   = "Atams::ATAMS_FALSE"
       accessString    = "READ"
       if (nvmStorage == "YES"): nvmStorageStr = "Atams::ATAMS_TRUE"
@@ -142,38 +142,36 @@ def generateVarInfoList(dataBlockNamesCamel: List[str],
       targetFile.write("    /* .type           = */ Atams::TYPE_"+typeUpper+",\n")
       targetFile.write("    /* .externalAccess = */ Atams::ACCESS_"+accessString+",\n")
       targetFile.write("    /* .NVMStorage     = */ "+nvmStorageStr+",\n")
-      if ((memberIndex == (len(varIDs)     - 1) ) and 
+      if ((varIndex    == (len(varIDs)     - 1) ) and 
           (blockIndex  == (len(dataBlocks) - 1) ) ): targetFile.write("  }")
       else:                                   targetFile.write("  },\n")
-      memberIndex += 1
+      varIndex += 1
     blockIndex += 1
 
 def generateInitUniversalMapInfo(targetFile: TextIO) -> None:
 
-  universalMembersToSet = ["ATAMS_VERSION_MAJOR",
-                           "ATAMS_VERSION_MINOR",
-                           "MAP_GEN_DAY",    
-                           "MAP_GEN_MONTH",
-                           "MAP_GEN_YEAR",  
-                           "MAP_GEN_HOUR", 
-                           "MAP_GEN_MINUTE", 
-                           "MAP_GEN_SECOND",
-                           "MAP_CHECKSUM",
-                           "MAP_NUMBER_OF_VARS"]  
-  
-  variableNames = ["atamsVersionMajor",
-                   "atamsVersionMinor",
-                   "genDay",    
-                   "genMonth",
-                   "genYear",  
-                   "genHour", 
-                   "genMinute", 
-                   "genSecond",
-                   "genChecksum",
-                   "noOfVars"]  
-
+  universalvarsToSet = ["ATAMS_VERSION_MAJOR",
+                        "ATAMS_VERSION_MINOR",
+                        "MAP_GEN_DAY",    
+                        "MAP_GEN_MONTH",
+                        "MAP_GEN_YEAR",  
+                        "MAP_GEN_HOUR", 
+                        "MAP_GEN_MINUTE", 
+                        "MAP_GEN_SECOND",
+                        "MAP_CHECKSUM",
+                        "MAP_NUMBER_OF_VARS"]  
+  variableNames      = ["atamsVersionMajor",
+                        "atamsVersionMinor",
+                        "genDay",    
+                        "genMonth",
+                        "genYear",  
+                        "genHour", 
+                        "genMinute", 
+                        "genSecond",
+                        "genChecksum",
+                        "noOfVars"]  
   varIterator = 0
-  for varID in universalMembersToSet:
+  for varID in universalvarsToSet:
     variableName = variableNames[varIterator]
     targetFile.write("  if (!error) error = Atams::write(BlockUniversal::VAR_"+varID+", ")
     targetFile.write("s_genInfo."+variableName+");\n")
@@ -308,9 +306,9 @@ def autogenCallBlock(autogenHint:        str,
                      dataBlock:          pandas.DataFrame,
                      cumulativeVarIndex: int,
                      targetFile:         TextIO) -> None:
-  memberIDsUpper = []
-  for memberID in dataBlock["Var ID"]:
-    memberIDsUpper.append(memberID.replace(" ", "_").upper())
+  varIDsUpper = []
+  for varID in dataBlock["Var ID"]:
+    varIDsUpper.append(varID.replace(" ", "_").upper())
 
   match (autogenHint):
     case "MAP_NAME_CAMEL":
@@ -322,11 +320,11 @@ def autogenCallBlock(autogenHint:        str,
     case "BLOCK_NAME_UPPER":
       targetFile.write(blockNameCamel.upper())
     case "VAR_ID_LIST":
-      generateEnum(cumulativeVarIndex, 0, "  VAR_", memberIDsUpper, targetFile)
+      generateEnum(cumulativeVarIndex, 0, "  VAR_", varIDsUpper, targetFile)
     case "NUMBER_OF_VARS":
       targetFile.write(str(len(dataBlock["Var ID"])) + "U")
     case "DEFAULTS":
-      generateConstList(dataBlock, memberIDsUpper, "Default", targetFile)
+      generateConstList(dataBlock, varIDsUpper, "Default", targetFile)
   
 def generateDataBlockFile(memMapNameCamel:    str,
                           blockNameCamel:     str,

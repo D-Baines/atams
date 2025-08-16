@@ -78,8 +78,8 @@ Atams::Error_t Node::write(const uint16_t varID, const T writeValue)
 
   const Atams::VarInfo_t &varInfo = memoryMap_->varInfoList[varID];
 
-  if (getAtamsType<T>() != varInfo.type)        return (Atams::ERROR_VAR_TYPE);       /* Early Return */
-  if (ACCESS_WRITE       > varInfo.accessLevel) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
+  if (getAtamsType<T>() != varInfo.type)           return (Atams::ERROR_VAR_TYPE);       /* Early Return */
+  if (ACCESS_WRITE       > varInfo.externalAccess) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
 
   Node::Var_t &var = varStorage_[varID];
 
@@ -107,8 +107,8 @@ Atams::Error_t Node::read(const uint16_t varID, T &outputRef)
 
   const Atams::VarInfo_t &varInfo = memoryMap_->varInfoList[varID];
 
-  if (getAtamsType<T>() != varInfo.type)        return (Atams::ERROR_VAR_TYPE);       /* Early Return */
-  if (ACCESS_READ        > varInfo.accessLevel) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
+  if (getAtamsType<T>() != varInfo.type)           return (Atams::ERROR_VAR_TYPE);       /* Early Return */
+  if (ACCESS_READ        > varInfo.externalAccess) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
 
   Node::Var_t &var = varStorage_[varID];
 
@@ -136,8 +136,8 @@ Atams::Error_t Node::readIfDataReady(const uint16_t varID, T &outputRef)
 
   const Atams::VarInfo_t &varInfo = memoryMap_->varInfoList[varID];
 
-  if (getAtamsType<T>() != varInfo.type)        return (Atams::ERROR_VAR_TYPE);       /* Early Return */
-  if (ACCESS_READ        > varInfo.accessLevel) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
+  if (getAtamsType<T>() != varInfo.type)           return (Atams::ERROR_VAR_TYPE);       /* Early Return */
+  if (ACCESS_READ        > varInfo.externalAccess) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
 
   Node::Var_t   &var          = varStorage_[varID];
   Atams::Error_t statusReturn = Atams::ERROR_NONE;
@@ -324,7 +324,7 @@ Atams::Error_t Node::setRequestPattern(const uint16_t         varID,
   Node::Var_t     &var     = varStorage_[varID];
   const VarInfo_t &varInfo = memoryMap_->varInfoList[varID];
 
-  if (accessRequest > varInfo.accessLevel)
+  if (accessRequest > varInfo.externalAccess)
   {
     return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
   }
