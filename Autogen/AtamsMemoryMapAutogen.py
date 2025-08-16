@@ -1,13 +1,21 @@
 import customtkinter
 import os
+import appdirs
+from   pathlib          import Path
 from   tkinter          import filedialog
 from   CTkToolTip       import *
 from   PIL              import Image
 from   enum             import Enum
-from   AtamsFileAutogen import generateCppFiles
+from   AtamsFileAutogen import Error, OpenMethods, generateCppFiles
 from   tkinter          import PhotoImage
 
-FRAMEWORK_NAME = "Atams"
+FRAMEWORK_NAME         = "Atams"
+AUTOGEN_PATH_SAVE_FILE = "AutogenFilePaths.txt"
+APP_NAME               = "AtamsAutogen"
+APP_AUTHOR             = "Atams"
+
+saveFileDir  = Path(appdirs.user_data_dir(APP_NAME, APP_AUTHOR))
+saveFilePath = os.path.join(saveFileDir, AUTOGEN_PATH_SAVE_FILE)
 
 class SearchType(Enum):
   DIRECTORY = 1
@@ -60,7 +68,6 @@ class directorySearchBox:
     self.path = ""
     self.tooltip = CTkToolTip(self.tooltipButton, delay=0.5, message=tipMessage)
 
-    
   def buttonPress(self):
       app.update_idletasks()
       self.path = self.searchFunction()
@@ -73,7 +80,13 @@ def runFileGeneration(memoryMapName, memoryMapXlsxPath, nodeDir, hubDir):
   except:
     generationStatus = "Error: File Generation Failed - Invalid Memory Map"
   statusLabel.configure(text=generationStatus)
-   
+  
+  if (generationStatus == Error.NONE):
+    saveFileDir.mkdir(parents=True, exist_ok=True)
+    saveFile = open(saveFilePath, OpenMethods.WRITE_FORCE)
+    saveFile.write(f"{memoryMapXlsxPath}\n{nodeDir}\n{hubDir}")
+    saveFile.close()
+
 def overwriteAccepted(window, memoryMapName: str, memoryMapXlsxPath:str, nodeDir: str, hubDir:str):
    closeWindow(window)
    runFileGeneration(memoryMapName, memoryMapXlsxPath, nodeDir, hubDir)
@@ -217,10 +230,16 @@ generateButton = customtkinter.CTkButton(generateFrame,
                                                                                nodeDirSearch.entry.get(),
                                                                                hubDirSearch.entry.get())), 
                                                                                width=100)
-
+  
 generateButton.pack(side='right', fill='y', pady=(10,0))
-memMapSearch.entry.insert(0, "/Users/dan/Desktop/Atams Workspace/TestKitSoftware/CM7/Core/Src/Libraries/Atams/Autogen/TestMemoryMap.xlsx")
-nodeDirSearch.entry.insert(0, "/Users/dan/Desktop/Atams Workspace/TestKitSoftware/CM7/Core/Src/Libraries/Atams/Node")
-hubDirSearch.entry.insert(0, "/Users/dan/Desktop/Atams Workspace/HubSoftware/src/Atams/Hub")
+saveFileDir.mkdir(parents=True, exist_ok=True)
+if (os.path.isfile(saveFilePath)):
+  saveFile     = open(saveFilePath, OpenMethods.READ_ONLY)
+  savedStrings = saveFile.read().splitlines()
+  if (len(savedStrings) == 3):
+      memMapSearch.entry.insert(0,  savedStrings[0])
+      nodeDirSearch.entry.insert(0, savedStrings[1])
+      hubDirSearch.entry.insert(0,  savedStrings[2])
+  saveFile.close()
 
 app.mainloop()

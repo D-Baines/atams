@@ -21,9 +21,12 @@ class OpenMethods(StrEnum):
 
 class Error(StrEnum):
   NONE                  = "File Generation Successful!"
-  MAKE_DIRECTORY_FAILED = "Generation Error: Failed to Make Directory"
-  FILE_OPEN_FAILED      = "Generation Error: Failed to Open Files"
-  INAVLID_FILE_FORMAT   = "Generation Error: Invalid Memory Map Xlsx Format"
+  MAKE_DIRECTORY_FAILED = "Generation Error: Failed to make directory"
+  FILE_OPEN_FAILED      = "Generation Error: Failed to open files"
+  EMPTY_VAR_ID_CELL     = "Generation Error: Empty cells in the 'Var ID' column"
+  EMPTY_DATA_TYPE_CELL  = "Generation Error: Empty cells in the 'Data Type' column"
+  EMPTY_ACCESS_CELL     = "Generation Error: Empty cells in the 'External Access' column"
+  EMPTY_NVM_STORAGE_CELL= "Generation Error: Empty cells in the 'NVM Storage' column"
 
 class Access(Enum):
   ACCESS_NONE  = 0
@@ -85,7 +88,7 @@ def generateConstList(block:        pandas.DataFrame,
   preStringRequiredSpace  = getLongestString(types)
   for memberName in memberNames:
     value = values[memberIterator]
-    if (value and (value != "-")):
+    if ((not pandas.isnull(value)) and (value != "-")): 
       memberNamesWithValue.append(memberName)
     memberIterator += 1
   memberIterator = 0
@@ -95,7 +98,7 @@ def generateConstList(block:        pandas.DataFrame,
     value          = values[memberIterator]
     preNameSpaces  = preStringRequiredSpace  - len(type)
     postNameSpaces = postStringRequiredSpace - len(memberName)
-    if (value and (value != "-")):
+    if ((not pandas.isnull(value)) and (value != "-")):
       valueAsString = str(value)
       targetFile.write("inline constexpr " + type + " ")
       writeSpaces(preNameSpaces, targetFile)
@@ -120,7 +123,7 @@ def generateVarInfoList(dataBlockNamesCamel: List[str],
   blockIndex = 0
   for block in dataBlocks:
     blockNameCamel = dataBlockNamesCamel[blockIndex]
-    varIDs         = block["Member ID"]
+    varIDs         = block["Var ID"]
     types          = block["Data Type"]
     accessLevels   = block["External Access"]
     nvmStorages    = block["NVM Storage"]
@@ -132,8 +135,8 @@ def generateVarInfoList(dataBlockNamesCamel: List[str],
       nvmStorage      = nvmStorages[memberIndex]
       nvmStorageStr   = "Atams::ATAMS_FALSE"
       accessString    = "READ"
-      if (nvmStorage):     nvmStorageStr = "Atams::ATAMS_TRUE"
-      if (access == "RW"): accessString = "WRITE"
+      if (nvmStorage == "YES"): nvmStorageStr = "Atams::ATAMS_TRUE"
+      if (access     == "RW"):  accessString  = "WRITE"
       targetFile.write("  /* [Block"+blockNameCamel+"::VAR_"+varNameUpper+"] = */\n")
       targetFile.write("  {\n")
       targetFile.write("    /* .type           = */ Atams::TYPE_"+typeUpper+",\n")
@@ -183,13 +186,14 @@ def generateInitDefaultsDefinition(dataBlockNamesCamel: List[str],
   blockIndex = 0
   for block in dataBlocks:
     blockNameCamel   = dataBlockNamesCamel[blockIndex]
-    varIDs           = block["Member ID"]
+    varIDs           = block["Var ID"]
     defaults         = block["Default"]
     varsWithDefaults = []
     varIndex         = 0
     for varID in varIDs:
       default = defaults[varIndex]
-      if (default and (default != "-")): varsWithDefaults.append(varID)
+      if ((not pandas.isnull(default)) and (default != "-")): 
+        varsWithDefaults.append(varID)
       varIndex += 1
     for varID in varsWithDefaults:
       varIDCaps = varID.replace(" ", "_").upper()
@@ -202,7 +206,7 @@ def generateMapChecksum(dataBlocks: List[pandas.DataFrame]) -> int:
   crcCalculator = CRC32()
   crcCalculator.beginRollingCrc()
   for block in dataBlocks:
-    IDs            = block["Member ID"]
+    IDs            = block["Var ID"]
     types          = block["Data Type"]
     accessLevels   = block["External Access"]
     NVMStorages    = block["NVM Storage"]
@@ -305,7 +309,7 @@ def autogenCallBlock(autogenHint:        str,
                      cumulativeVarIndex: int,
                      targetFile:         TextIO) -> None:
   memberIDsUpper = []
-  for memberID in dataBlock["Member ID"]:
+  for memberID in dataBlock["Var ID"]:
     memberIDsUpper.append(memberID.replace(" ", "_").upper())
 
   match (autogenHint):
@@ -320,7 +324,7 @@ def autogenCallBlock(autogenHint:        str,
     case "VAR_ID_LIST":
       generateEnum(cumulativeVarIndex, 0, "  VAR_", memberIDsUpper, targetFile)
     case "NUMBER_OF_VARS":
-      targetFile.write(str(len(dataBlock["Member ID"])) + "U")
+      targetFile.write(str(len(dataBlock["Var ID"])) + "U")
     case "DEFAULTS":
       generateConstList(dataBlock, memberIDsUpper, "Default", targetFile)
   
@@ -364,11 +368,11 @@ def generateCppFiles(memMapNameCamel:   str,
   memMapCppName = "Map" + memMapNameCamel + ".cpp"
   dataBlocks          = []
   dataBlockNamesCamel = []
-  blockHppTemplatePath   = os.path.join(os.path.dirname(__file__),    'BlockTemplateHpp.txt')
-  mapTemplateHppPathHub  = os.path.join(os.path.dirname(__file__),  'MapTemplateHppHub.txt')
+  blockHppTemplatePath   = os.path.join(os.path.dirname(__file__), 'BlockTemplateHpp.txt')
+  mapTemplateHppPathHub  = os.path.join(os.path.dirname(__file__), 'MapTemplateHppHub.txt')
   mapTemplateHppPathNode = os.path.join(os.path.dirname(__file__), 'MapTemplateHppNode.txt')
-  mapTemplateCppPathHub  = os.path.join(os.path.dirname(__file__),   'MapTemplateCppHub.txt')
-  mapTemplateCppPathNode = os.path.join(os.path.dirname(__file__),  'MapTemplateCppNode.txt')
+  mapTemplateCppPathHub  = os.path.join(os.path.dirname(__file__), 'MapTemplateCppHub.txt')
+  mapTemplateCppPathNode = os.path.join(os.path.dirname(__file__), 'MapTemplateCppNode.txt')
   memMapNodeDir = os.path.join(nodeDirectory, 'Maps', ('Map' + memMapNameCamel))
   memMapHubDir  = os.path.join(hubDirectory,  'Maps', ('Map' + memMapNameCamel))
 
@@ -388,10 +392,24 @@ def generateCppFiles(memMapNameCamel:   str,
   except:
     return (Error.MAKE_DIRECTORY_FAILED)
   
+  for block in dataBlocks:
+    varIDs     = block["Var ID"]
+    types      = block["Data Type"]
+    access     = block["External Access"]
+    nvmStorage = block["NVM Storage"]
+    if varIDs.isnull().any():
+       return (Error.EMPTY_VAR_ID_CELL)
+    if types.isnull().any():
+       return (Error.EMPTY_DATA_TYPE_CELL)
+    if access.isnull().any():
+       return (Error.EMPTY_ACCESS_CELL)
+    if nvmStorage.isnull().any():
+       return (Error.EMPTY_NVM_STORAGE_CELL)
+
   mapNumberOfVars = NUMBER_OF_UNIVERSAL_VARS
 
   for block in dataBlocks:
-    blockNumberOfVars = len(block["Member ID"])
+    blockNumberOfVars = len(block["Var ID"])
     mapNumberOfVars += blockNumberOfVars
 
   mapHppPathNode = os.path.join(memMapNodeDir, memMapHppName)
@@ -478,7 +496,7 @@ def generateCppFiles(memMapNameCamel:   str,
     blockHppHub.close()
 
     blockIterator      += 1
-    cumulativeVarIndex += len(dataBlock["Member ID"])
+    cumulativeVarIndex += len(dataBlock["Var ID"])
 
   return (Error.NONE)
 
