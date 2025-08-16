@@ -113,7 +113,7 @@ Atams::Error_t externalTransfer(const Access_t  accessRequest,
                                 uint8_t * const bytesPtr,
                                 const uint8_t   length);
 
-DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t memberID); /* Does this need to be public? */
+DataStatusReturn_t<uint8_t> getVarLength(const uint16_t varID);
 
 bool getWatchdogFault(void);
 

@@ -235,7 +235,6 @@ static void processUniversalRead(const uint16_t varID)
   }
 }
 
-/* WARNING - No checks done on datagramHeader subsystemID or memberIndex. */
 static void processDatagramRead(ChannelResponse_t &response,
                                 DatagramHeader_t   datagramHeader,
                                 uint16_t          &requestPacketDatagramIndex,
@@ -279,7 +278,6 @@ static bool checkUniversalAccess(const uint16_t varID)
   return (accessPermitted);
 }
 
-/* WARNING - No checks done on datagramHeader subsystemID or memberIndex. */
 static void processDatagramWrite(ChannelResponse_t &response,
                                  DatagramHeader_t   datagramHeader,
                                  uint16_t          &requestPacketDatagramIndex,
@@ -347,7 +345,7 @@ static void validateRequestPacket(ChannelResponse_t &response,
     }
     else
     {
-      DataStatusReturn_t<uint8_t> varLength = getMemberLength(datagramHeader.varID);
+      DataStatusReturn_t<uint8_t> varLength = getVarLength(datagramHeader.varID);
 
       if (varLength.status != Atams::ERROR_NONE)
       {
@@ -1166,7 +1164,7 @@ Atams::Error_t externalTransfer(const Access_t  accessRequest,
   return (accessError);
 }
 
-DataStatusReturn_t<uint8_t> getMemberLength(const uint16_t varID)
+DataStatusReturn_t<uint8_t> getVarLength(const uint16_t varID)
 {
   DataStatusReturn_t<uint8_t> lengthReturn;
 
