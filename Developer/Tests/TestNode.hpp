@@ -109,7 +109,7 @@ public Node
   Atams::Error_t                  expectedBusError_    {Atams::ERROR_NONE};
   Atams::AbortedResponseDetails_t expectedAbortDetails_ {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
 
-  uint16_t expectedRequestPacketLength_ {Atams::MESH_SIZE_HEADER};
+  uint16_t expectedRequestPacketLength_ {Atams::HEADER_SIZE_HEADER};
   uint16_t expectedWriteListLength_     {0U};
 
   uint8_t  testUint8_  {0U};

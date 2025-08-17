@@ -167,7 +167,7 @@ public NodeCallbackHandler
   struct RequestPacket_t 
   {
     uint8_t   buffer[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING] {0U};
-    uint16_t  length                                            {MESH_SIZE_HEADER};
+    uint16_t  length                                            {HEADER_SIZE_HEADER};
     WriteList writeList;
   };
 

@@ -192,7 +192,7 @@ void TestNode::runFunctionArgTests(void)
   {
     error = Node::setRequestPattern(BlockTest1::VAR_WRITE_UINT8, Atams::ACCESS_WRITE, Atams::REQUEST_STREAM);
 
-    if (Node::getRequestPacketLength() != Atams::MESH_SIZE_HEADER + Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t))
+    if (Node::getRequestPacketLength() != Atams::HEADER_SIZE_HEADER + Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t))
     {
       errorHandler(Atams::ERROR_NONE, "Request Packet Duplication Test Failure On Node ");
     }
@@ -209,7 +209,7 @@ void TestNode::runFunctionArgTests(void)
 
   /* Request Packet and Write List Overflow Test */
   uint16_t      expectedWriteListLength     = 0U;
-  uint16_t      expectedRequestPacketLength = Atams::MESH_SIZE_HEADER;
+  uint16_t      expectedRequestPacketLength = Atams::HEADER_SIZE_HEADER;
   const uint8_t writeDatagramLength         = Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t);
   
   for (uint16_t varID = BlockTest3::VAR_WRITE_UINT8_1; varID <= BlockTest3::VAR_WRITE_UINT8_20; varID++)

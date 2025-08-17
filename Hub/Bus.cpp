@@ -446,17 +446,17 @@ bool Bus::pollForJogTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessHandl
   uint32_t currentTime          = Platform::getMillis();
   bool     messageSendAttempted = false;
 
-  jogBuffer_[MESH_INDEX_NODE_ID]  = node.getNodeID();
-  jogBuffer_[MESH_INDEX_MSG_TYPE] = Atams::MESSAGE_SYNC_JOG;
-  jogBuffer_[MESH_INDEX_SYNC]     = activeSyncCount_;
+  jogBuffer_[HEADER_INDEX_NODE_ID]  = node.getNodeID();
+  jogBuffer_[HEADER_INDEX_MSG_TYPE] = Atams::MESSAGE_SYNC_JOG;
+  jogBuffer_[HEADER_INDEX_SYNC]     = activeSyncCount_;
 
   if (Platform::BusPeripheral::transmitReady())
   {
-    if (encodeMeshPacket(jogBuffer_, 
-                         MESH_SIZE_HEADER, 
-                         encodedBuffer_, 
-                         sizeof(encodedBuffer_), 
-                         encodedLength_) == Atams::ERROR_NONE)
+    if (encodeBusPacket(jogBuffer_, 
+                        HEADER_SIZE_HEADER, 
+                        encodedBuffer_, 
+                        sizeof(encodedBuffer_), 
+                        encodedLength_) == Atams::ERROR_NONE)
     {
       if (Platform::BusPeripheral::transmit(encodedBuffer_, encodedLength_) == false)
       {
@@ -506,17 +506,17 @@ bool Bus::validateAndStoreResponsePacket(Atams::NodeCallbackHandler &node, const
   Atams::Error_t error       = Atams::ERROR_NONE;
   bool           packetValid = true;
 
-  error = decodeMeshPacket(rxBuffer_, 
-                           rxLength_, 
-                           decodedBuffer_, 
-                           sizeof(decodedBuffer_), 
-                           decodedLength_);
+  error = decodeBusPacket(rxBuffer_, 
+                          rxLength_, 
+                          decodedBuffer_, 
+                          sizeof(decodedBuffer_), 
+                          decodedLength_);
 
   if (error == Atams::ERROR_NONE)
   {
-    uint8_t              packetNodeID    = decodedBuffer_[MESH_INDEX_NODE_ID];
-    uint8_t              packetSyncCount = decodedBuffer_[MESH_INDEX_SYNC];
-    Atams::MessageType_t messageType     = static_cast<MessageType_t>(decodedBuffer_[MESH_INDEX_MSG_TYPE]);
+    uint8_t              packetNodeID    = decodedBuffer_[HEADER_INDEX_NODE_ID];
+    uint8_t              packetSyncCount = decodedBuffer_[HEADER_INDEX_SYNC];
+    Atams::MessageType_t messageType     = static_cast<MessageType_t>(decodedBuffer_[HEADER_INDEX_MSG_TYPE]);
 
      bool messageIsAbort = ((messageType == Atams::MESSAGE_ABORT_RESPONSE       ) ||
                             (messageType == Atams::MESSAGE_ABORT_RESPONSE_SYNCED) );

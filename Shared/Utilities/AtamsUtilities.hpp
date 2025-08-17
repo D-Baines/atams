@@ -56,23 +56,23 @@ inline constexpr uint8_t SINGLE_BYTE_MASK  = 0xFFU;
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-const char* getErrorString(Atams::Error_t errorID);
+const char* getErrorString(const Atams::Error_t errorID);
 
 uint32_t bufferToUint32(const uint8_t * const buffer);
 
 void uint32ToBuffer(const uint32_t value, uint8_t * const buffer);
 
-Atams::Error_t decodeMeshPacket(const uint8_t  *inputBuffer,
-                                const uint16_t  inputBufferLength,
-                                      uint8_t  *decodedBuffer,
-                                const uint16_t  decodedBufferMaxLength,
-                                      uint16_t &decodedLength);
+Atams::Error_t decodeBusPacket(const uint8_t  *inputBuffer,
+                               const uint16_t  inputBufferLength,
+                                     uint8_t  *decodedBuffer,
+                               const uint16_t  decodedBufferMaxLength,
+                                     uint16_t &decodedLength);
 
-Atams::Error_t encodeMeshPacket(      uint8_t  *inputBuffer,
-                                const uint16_t  inputLength,
-                                      uint8_t  *encodedBuffer,
-                                const uint16_t  encodedBufferMaxLength,
-                                      uint16_t &encodedLength);
+Atams::Error_t encodeBusPacket(      uint8_t  *inputBuffer,
+                               const uint16_t  inputLength,
+                                     uint8_t  *encodedBuffer,
+                               const uint16_t  encodedBufferMaxLength,
+                                     uint16_t &encodedLength);
 
 void datagramHeaderToBuffer(const DatagramHeader_t &datagramHeader, uint8_t * const buffer);
 

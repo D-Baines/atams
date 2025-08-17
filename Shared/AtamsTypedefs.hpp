@@ -100,22 +100,22 @@ enum MessageType_t: uint8_t
 };
 static_assert(sizeof(Atams::MessageType_t) == 1U, "Atams::MessageType_t size invalid");
 
-enum MeshSize_t: uint8_t
+enum HeaderSize_t: uint8_t
 {
-  MESH_SIZE_MSG_TYPE = sizeof(MessageType_t),
-  MESH_SIZE_SYNC     = sizeof(uint8_t),
-  MESH_SIZE_CRC      = sizeof(uint32_t),
-  MESH_SIZE_NODE_ID  = sizeof(uint8_t),
-  MESH_SIZE_HEADER   = MESH_SIZE_MSG_TYPE + MESH_SIZE_SYNC + MESH_SIZE_CRC + MESH_SIZE_NODE_ID,
+  HEADER_SIZE_MSG_TYPE = sizeof(MessageType_t),
+  HEADER_SIZE_SYNC     = sizeof(uint8_t),
+  HEADER_SIZE_CRC      = sizeof(uint32_t),
+  HEADER_SIZE_NODE_ID  = sizeof(uint8_t),
+  HEADER_SIZE_HEADER   = HEADER_SIZE_MSG_TYPE + HEADER_SIZE_SYNC + HEADER_SIZE_CRC + HEADER_SIZE_NODE_ID,
 };
 
-enum MeshIndex_t: uint8_t
+enum HeaderIndex_t: uint8_t
 {
-  MESH_INDEX_MSG_TYPE       = 0U,
-  MESH_INDEX_SYNC           = MESH_INDEX_MSG_TYPE + MESH_SIZE_MSG_TYPE,
-  MESH_INDEX_CRC            = MESH_INDEX_SYNC     + MESH_SIZE_SYNC,
-  MESH_INDEX_NODE_ID        = MESH_INDEX_CRC      + MESH_SIZE_CRC,
-  MESH_INDEX_FIRST_DATAGRAM = MESH_SIZE_HEADER,
+  HEADER_INDEX_MSG_TYPE       = 0U,
+  HEADER_INDEX_SYNC           = HEADER_INDEX_MSG_TYPE + HEADER_SIZE_MSG_TYPE,
+  HEADER_INDEX_CRC            = HEADER_INDEX_SYNC     + HEADER_SIZE_SYNC,
+  HEADER_INDEX_NODE_ID        = HEADER_INDEX_CRC      + HEADER_SIZE_CRC,
+  HEADER_INDEX_FIRST_DATAGRAM = HEADER_SIZE_HEADER,
 };
 
 enum DatagramSize_t: uint8_t
@@ -148,12 +148,12 @@ enum AbortSize_t: uint8_t
   ABORT_SIZE_ERROR     = sizeof(uint8_t),
   ABORT_SIZE_VAR_ID_HI = sizeof(uint8_t),
   ABORT_SIZE_VAR_ID_LO = sizeof(uint8_t),
-  ABORT_SIZE_PACKET    = MESH_SIZE_HEADER + ABORT_SIZE_ERROR + ABORT_SIZE_VAR_ID_HI + ABORT_SIZE_VAR_ID_LO
+  ABORT_SIZE_PACKET    = HEADER_SIZE_HEADER + ABORT_SIZE_ERROR + ABORT_SIZE_VAR_ID_HI + ABORT_SIZE_VAR_ID_LO
 };
 
 enum AbortIndex_t: uint8_t
 {
-  ABORT_INDEX_ERROR     = MESH_SIZE_HEADER,
+  ABORT_INDEX_ERROR     = HEADER_SIZE_HEADER,
   ABORT_INDEX_VAR_ID_HI = ABORT_INDEX_ERROR     + ABORT_SIZE_ERROR,
   ABORT_INDEX_VAR_ID_LO = ABORT_INDEX_VAR_ID_HI + ABORT_SIZE_VAR_ID_HI
 };

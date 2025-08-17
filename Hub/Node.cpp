@@ -726,7 +726,7 @@ Atams::Error_t Node::validateResponseBuffer(uint8_t * const responsePacket,
                                             const uint16_t  responsePacketLength)
 {
   DatagramHeader_t datagramHeader;
-  uint16_t         datagramStartIndex = MESH_INDEX_FIRST_DATAGRAM;
+  uint16_t         datagramStartIndex = HEADER_INDEX_FIRST_DATAGRAM;
   uint8_t          varLength          = 0U;
 
   while (datagramStartIndex + DATAGRAM_SIZE_HEADER <= responsePacketLength)
@@ -780,8 +780,8 @@ void Node::processResponseBuffer(void)
 
   newResponseReady_ = false;
 
-  if ((responseBuffer_[MESH_INDEX_MSG_TYPE] == Atams::MESSAGE_ABORT_RESPONSE       ) ||
-      (responseBuffer_[MESH_INDEX_MSG_TYPE] == Atams::MESSAGE_ABORT_RESPONSE_SYNCED) )
+  if ((responseBuffer_[HEADER_INDEX_MSG_TYPE] == Atams::MESSAGE_ABORT_RESPONSE       ) ||
+      (responseBuffer_[HEADER_INDEX_MSG_TYPE] == Atams::MESSAGE_ABORT_RESPONSE_SYNCED) )
   {
     processAbortedResponse();
     return; /* Early Return */
@@ -796,7 +796,7 @@ void Node::processResponseBuffer(void)
   }
 
   bool     cancelProcessing   = false;
-  uint16_t datagramStartIndex = MESH_INDEX_FIRST_DATAGRAM;
+  uint16_t datagramStartIndex = HEADER_INDEX_FIRST_DATAGRAM;
 
   while ((datagramStartIndex + DATAGRAM_SIZE_HEADER <= responseLength_) &&
          (cancelProcessing                          == false          ) )
@@ -836,7 +836,7 @@ DataStatusReturn_t<bool> Node::findDatagramMatchInPacket(RequestChangeConfig_t &
   statusReturn.data   = false;
   uint8_t varLength   = 0U;
 
-  changeConfig.datagramStartIndex = MESH_INDEX_FIRST_DATAGRAM;
+  changeConfig.datagramStartIndex = HEADER_INDEX_FIRST_DATAGRAM;
 
   while (changeConfig.datagramStartIndex + DATAGRAM_SIZE_HEADER <= requestPacket_.length)    
   {
@@ -873,7 +873,7 @@ DataStatusReturn_t<bool> Node::findDatagramMatchInPacket(RequestChangeConfig_t &
 
 Atams::Error_t Node::requestPacketShift(const uint16_t shiftIndex, const int16_t shiftLength)
 {  
-  if (static_cast<uint16_t>(requestPacket_.length + shiftLength) < Atams::MESH_SIZE_HEADER)
+  if (static_cast<uint16_t>(requestPacket_.length + shiftLength) < Atams::HEADER_SIZE_HEADER)
   {
     return (Atams::ERROR_REQUEST_PACKET_FATAL); /* Early Return */
   }
@@ -1018,7 +1018,7 @@ Atams::Error_t Node::constructDatagramBuffer(RequestChangeConfig_t &changeConfig
 
 void Node::resetRequestPacketNoLock(void)
 {
-  requestPacket_.length = Atams::MESH_SIZE_HEADER;
+  requestPacket_.length = Atams::HEADER_SIZE_HEADER;
   requestPacket_.writeList.reset();
   for (uint16_t varID = 0U; varID < validVarCount_; varID++)
   {
@@ -1116,7 +1116,7 @@ Atams::Error_t Node::updateRequestPatternOnReceive(const uint16_t varID)
   return (statusReturn);
 }
 
-/* Mesh Packet access must be properly locked before using this function */
+/* requestPacketLock_ must be acquired before using this function */
 Atams::Error_t Node::updateRequestPacketWriteData(void)
 {
   WriteList::Return_t listReturn;
@@ -1251,15 +1251,15 @@ Atams::Error_t Node::getEncodedRequestPacket(const Atams::MessageType_t requestT
   }
   else 
   {
-    requestPacket_.buffer[MESH_INDEX_MSG_TYPE] = requestType;
-    requestPacket_.buffer[MESH_INDEX_NODE_ID ] = nodeID_;
-    requestPacket_.buffer[MESH_INDEX_SYNC]     = syncCount;
+    requestPacket_.buffer[HEADER_INDEX_MSG_TYPE] = requestType;
+    requestPacket_.buffer[HEADER_INDEX_NODE_ID ] = nodeID_;
+    requestPacket_.buffer[HEADER_INDEX_SYNC]     = syncCount;
   
-    statusReturn = encodeMeshPacket(requestPacket_.buffer, 
-                                    requestPacket_.length, 
-                                    outputBuffer, 
-                                    outputBufferMaxLength, 
-                                    outputLength);
+    statusReturn = encodeBusPacket(requestPacket_.buffer, 
+                                   requestPacket_.length, 
+                                   outputBuffer, 
+                                   outputBufferMaxLength, 
+                                   outputLength);
   }
 
   requestPacketLock_.releaseLock();
