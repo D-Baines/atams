@@ -152,13 +152,13 @@ public NodeCallbackHandler
 
   Atams::AbortedResponseDetails_t getAbortedResponseDetails(void);
 
-  //#if DEVELOPER_TOOLS 
+  #if (DEVELOPER_TOOLS == true)
   void injectBusError(const Atams::Error_t errorToInject, 
                       const uint16_t       readOnlyVarID,
                       uint16_t            &varIDUsed);   
   
   void clearInjectedBusError(const Atams::Error_t errorToClear, const uint16_t readOnlyVarID);
-  //#endif
+  #endif
 
   private:
 

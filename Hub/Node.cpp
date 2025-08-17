@@ -443,7 +443,7 @@ Atams::AbortedResponseDetails_t Node::getAbortedResponseDetails(void)
   return (abortedResponseDetails);
 }
 
-//#if DEVELOPER_TOOLS
+#if (DEVELOPER_TOOLS == true)
 
 void Node::injectBusError(const Atams::Error_t errorToInject, 
                           const uint16_t       readOnlyVarID,
@@ -545,7 +545,7 @@ void Node::clearInjectedBusError(const Atams::Error_t errorToClear, const uint16
   }
 }
 
-// #endif /* DEVELOPER_TOOLS */
+#endif /* DEVELOPER_TOOLS */
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
