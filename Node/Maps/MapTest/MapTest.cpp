@@ -41,13 +41,13 @@ static const GenInfo_t s_genInfo =
 {
   /* .atamsVersionMajor = */ 0U,
   /* .atamsVersionMinor = */ 1U,
-  /* .genDay            = */ 7U,
+  /* .genDay            = */ 17U,
   /* .genMonth          = */ 8U,
   /* .genYear           = */ 2025U,
-  /* .genHour           = */ 19U,
-  /* .genMinute         = */ 40U,
-  /* .genSecond         = */ 33U,
-  /* .genChecksum       = */ 495011647U,
+  /* .genHour           = */ 18U,
+  /* .genMinute         = */ 29U,
+  /* .genSecond         = */ 46U,
+  /* .genChecksum       = */ 3507504991U,
   /* .noOfVars          = */ 96U
 };
 
@@ -137,7 +137,7 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
   /* [BlockTest1::VAR_WRITE_INT8] = */
   {
     /* .type           = */ Atams::TYPE_INT8,
-    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
   /* [BlockTest1::VAR_WRITE_UINT16] = */
@@ -221,7 +221,7 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
   /* [BlockTest2::VAR_WRITE_INT8] = */
   {
     /* .type           = */ Atams::TYPE_INT8,
-    /* .externalAccess = */ Atams::ACCESS_WRITE,
+    /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
   /* [BlockTest2::VAR_WRITE_UINT16] = */
@@ -522,6 +522,7 @@ Atams::Error_t initUserDefaults(void)
 {
   Atams::Error_t error = Atams::ERROR_NONE;
 
+  if (!error) error = Atams::write(BlockTest1::VAR_READ_UINT8, BlockTest1::DEFAULT_READ_UINT8);
   if (!error) error = Atams::write(BlockTest1::VAR_READ_INT8, BlockTest1::DEFAULT_READ_INT8);
   if (!error) error = Atams::write(BlockTest1::VAR_READ_UINT16, BlockTest1::DEFAULT_READ_UINT16);
   if (!error) error = Atams::write(BlockTest1::VAR_READ_INT16, BlockTest1::DEFAULT_READ_INT16);
@@ -535,6 +536,7 @@ Atams::Error_t initUserDefaults(void)
   if (!error) error = Atams::write(BlockTest1::VAR_WRITE_UINT32, BlockTest1::DEFAULT_WRITE_UINT32);
   if (!error) error = Atams::write(BlockTest1::VAR_WRITE_INT32, BlockTest1::DEFAULT_WRITE_INT32);
   if (!error) error = Atams::write(BlockTest1::VAR_WRITE_FLOAT, BlockTest1::DEFAULT_WRITE_FLOAT);
+  if (!error) error = Atams::write(BlockTest2::VAR_READ_UINT8, BlockTest2::DEFAULT_READ_UINT8);
   if (!error) error = Atams::write(BlockTest2::VAR_READ_INT8, BlockTest2::DEFAULT_READ_INT8);
   if (!error) error = Atams::write(BlockTest2::VAR_READ_UINT16, BlockTest2::DEFAULT_READ_UINT16);
   if (!error) error = Atams::write(BlockTest2::VAR_READ_INT16, BlockTest2::DEFAULT_READ_INT16);
@@ -548,6 +550,7 @@ Atams::Error_t initUserDefaults(void)
   if (!error) error = Atams::write(BlockTest2::VAR_WRITE_UINT32, BlockTest2::DEFAULT_WRITE_UINT32);
   if (!error) error = Atams::write(BlockTest2::VAR_WRITE_INT32, BlockTest2::DEFAULT_WRITE_INT32);
   if (!error) error = Atams::write(BlockTest2::VAR_WRITE_FLOAT, BlockTest2::DEFAULT_WRITE_FLOAT);
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_1, BlockTest3::DEFAULT_WRITE_UINT8_1);
   if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_2, BlockTest3::DEFAULT_WRITE_UINT8_2);
   if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_3, BlockTest3::DEFAULT_WRITE_UINT8_3);
   if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT8_4, BlockTest3::DEFAULT_WRITE_UINT8_4);
