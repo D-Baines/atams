@@ -182,17 +182,17 @@ static void receiveCallback(const Platform::CommsChannel_t commsChannel,
 static void resetResponse(ChannelResponse_t &response, uint8_t syncCount)
 {
   s_activeSyncCount = syncCount;
-  response.aborted                     = false;
-  response.buffer[MESH_INDEX_MSG_TYPE] = MESSAGE_UNKNOWN;
-  response.buffer[MESH_INDEX_SYNC]     = s_activeSyncCount;
-  response.buffer[MESH_INDEX_NODE_ID]  = s_ConfigurationHandler.getLocalNodeID();
-  response.index                       = MESH_INDEX_FIRST_DATAGRAM;
+  response.aborted                       = false;
+  response.buffer[HEADER_INDEX_MSG_TYPE] = MESSAGE_UNKNOWN;
+  response.buffer[HEADER_INDEX_SYNC]     = s_activeSyncCount;
+  response.buffer[HEADER_INDEX_NODE_ID]  = s_ConfigurationHandler.getLocalNodeID();
+  response.index                         = HEADER_INDEX_FIRST_DATAGRAM;
 }
 
 static void abortResponse(ChannelResponse_t &response, const Atams::Error_t error, const uint16_t varID)
 {
-  response.buffer[MESH_INDEX_NODE_ID]    = s_ConfigurationHandler.getLocalNodeID();
-  response.buffer[MESH_INDEX_MSG_TYPE]   = response.abortMessageType;
+  response.buffer[HEADER_INDEX_NODE_ID]  = s_ConfigurationHandler.getLocalNodeID();
+  response.buffer[HEADER_INDEX_MSG_TYPE] = response.abortMessageType;
   response.buffer[ABORT_INDEX_ERROR]     = error;
   response.buffer[ABORT_INDEX_VAR_ID_HI] = static_cast<uint8_t>((varID >> ABORT_SHIFT_VAR_ID_HI) & ABORT_MASK_VAR_ID_HI);
   response.buffer[ABORT_INDEX_VAR_ID_LO] = static_cast<uint8_t>((varID >> ABORT_SHIFT_VAR_ID_LO) & ABORT_MASK_VAR_ID_LO);
@@ -209,14 +209,14 @@ static void sendResponsePacket(Platform::CommsChannel_t commsChannel,
 
   if (response.aborted == false)
   {
-    response.buffer[MESH_INDEX_MSG_TYPE] = messageType;
+    response.buffer[HEADER_INDEX_MSG_TYPE] = messageType;
   }
 
-  if (encodeMeshPacket(response.buffer,
-                       response.index,
-                       encodedResponseBuffer,
-                       sizeof(encodedResponseBuffer),
-                       encodedLength                 ) == Atams::ERROR_NONE)
+  if (encodeBusPacket(response.buffer,
+                      response.index,
+                      encodedResponseBuffer,
+                      sizeof(encodedResponseBuffer),
+                      encodedLength                ) == Atams::ERROR_NONE)
   {
     Platform::transmitBuffer(commsChannel, encodedResponseBuffer, encodedLength);
   }
@@ -330,8 +330,8 @@ static void validateRequestPacket(ChannelResponse_t &response,
                                   const bool         universalBroadcast)
 {
   DatagramHeader_t datagramHeader;
-  uint16_t         datagramStartIndex     = MESH_INDEX_FIRST_DATAGRAM;
-  uint16_t         requiredResponseLength = MESH_SIZE_HEADER;
+  uint16_t         datagramStartIndex     = HEADER_INDEX_FIRST_DATAGRAM;
+  uint16_t         requiredResponseLength = HEADER_SIZE_HEADER;
 
   while ((datagramStartIndex + DATAGRAM_SIZE_HEADER <= requestPacketLength) &&
          (response.aborted                          == false              ) )
@@ -386,9 +386,9 @@ static void processRequestPacket(ChannelResponse_t &response,
                                  const bool         universalBroadcast)
 {
   DatagramHeader_t datagramHeader;
-  uint16_t         datagramStartIndex = MESH_INDEX_FIRST_DATAGRAM;
+  uint16_t         datagramStartIndex = HEADER_INDEX_FIRST_DATAGRAM;
 
-  resetResponse(response, requestPacket[MESH_INDEX_SYNC]);
+  resetResponse(response, requestPacket[HEADER_INDEX_SYNC]);
 
   validateRequestPacket(response, requestPacket, requestPacketLength, universalBroadcast);
 
@@ -460,21 +460,21 @@ static void processEncodedMeshPacket(const Platform::CommsChannel_t commsChannel
   static ChannelSyncPacket_t commsChannelSyncPackets[Platform::NUMBER_OF_COMMS_CHANNELS];
   static ChannelResponse_t   commsChannelResponses[Platform::NUMBER_OF_COMMS_CHANNELS];
 
-  if (decodeMeshPacket(packetBuffer,
-                       packetLength,
-                       &decodedPacket[0U],
-                       sizeof(decodedPacket),
-                       decodedLength         ) == Atams::ERROR_NONE)
+  if (decodeBusPacket(packetBuffer,
+                      packetLength,
+                      &decodedPacket[0U],
+                      sizeof(decodedPacket),
+                      decodedLength         ) == Atams::ERROR_NONE)
   {
-    MessageType_t        messageType     = static_cast<MessageType_t>(decodedPacket[MESH_INDEX_MSG_TYPE]);
-    uint8_t              packetNodeID    = decodedPacket[MESH_INDEX_NODE_ID];
+    MessageType_t        messageType     = static_cast<MessageType_t>(decodedPacket[HEADER_INDEX_MSG_TYPE]);
+    uint8_t              packetNodeID    = decodedPacket[HEADER_INDEX_NODE_ID];
     ChannelSyncPacket_t &syncPacket      = commsChannelSyncPackets[commsChannel];
     ChannelResponse_t   &response        = commsChannelResponses[commsChannel];
     uint8_t              localNodeID     = s_ConfigurationHandler.getLocalNodeID();
     uint8_t              firstSyncNodeID = s_ConfigurationHandler.getFirstSyncNodeID();
     uint8_t              finalSyncNodeID = s_ConfigurationHandler.getFinalSyncNodeID();
     uint8_t              prevSyncNodeID  = s_ConfigurationHandler.getPrevSyncNodeID();
-    uint8_t              packetSyncCount = decodedPacket[MESH_INDEX_SYNC];
+    uint8_t              packetSyncCount = decodedPacket[HEADER_INDEX_SYNC];
 
     setAbortMessageType(response, messageType);
 
@@ -1135,9 +1135,9 @@ Atams::Error_t externalTransfer(const Access_t  accessRequest,
 
   const Atams::VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
 
-  if (TYPE_LENGTHS[varInfo.type] != length)              return (Atams::ERROR_VAR_TYPE);       /* Early Return */
-  if (bytesPtr                   == nullptr)             return (Atams::ERROR_NULLPTR);        /* Early Return */
-  if (accessRequest              >  varInfo.accessLevel) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
+  if (TYPE_LENGTHS[varInfo.type] != length)                 return (Atams::ERROR_VAR_TYPE);       /* Early Return */
+  if (bytesPtr                   == nullptr)                return (Atams::ERROR_NULLPTR);        /* Early Return */
+  if (accessRequest              >  varInfo.externalAccess) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
 
   Atams::VarStorage_t &varStorage = s_varStorage[varID];
   Atams::Error_t      accessError = Atams::ERROR_NONE;
