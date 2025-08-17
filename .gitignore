@@ -3,6 +3,11 @@
 # Learn more about .gitignore:
 #     https://www.atlassian.com/git/tutorials/saving-changes/gitignore
 
+Autogen/build/
+Autogen/dist/
+
+*.pyc
+
 #Development Implementation
 Implementation/
 

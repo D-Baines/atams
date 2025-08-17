@@ -1,11 +1,13 @@
 import os
+import sys
 import pathlib
 import pandas
-from   enum       import Enum
-from   enum       import StrEnum
-from   typing     import List, TextIO
-from   datetime   import datetime
-from   AtamsCRC32 import *
+from   enum               import Enum
+from   enum               import StrEnum
+from   typing             import List, TextIO
+from   datetime           import datetime
+from   Modules.AtamsCRC32 import *
+from   pathlib            import Path
 
 FRAMEWORK_NAME           = "Atams"
 NUMBER_OF_UNIVERSAL_VARS = 28
@@ -46,6 +48,12 @@ class VarType(Enum):
 class NVMStorageFlag(Enum):
   STORAGE_FALSE = 0
   STORAGE_TRUE  = 1
+
+def resourcePath(relativePath: str) -> Path:
+  """Get absolute path to resource, works for dev and PyInstaller"""
+  if hasattr(sys, "_MEIPASS"): basePath = os.path.join(sys._MEIPASS, 'Modules')      # PyInstaller temp folder
+  else:                        basePath = os.path.dirname(os.path.abspath(__file__)) # Folder of this script
+  return os.path.join(basePath, relativePath)
 
 def getLongestString(strings: List[str]) -> int:
   maxStringLength = 0
@@ -218,7 +226,6 @@ def generateMapChecksum(dataBlocks: List[pandas.DataFrame]) -> int:
         case "uint32_t": crcCalculator.updateRollingCrc(VarType.TYPE_UINT32.value)
         case "int32_t":  crcCalculator.updateRollingCrc(VarType.TYPE_INT32.value)
         case "float":    crcCalculator.updateRollingCrc(VarType.TYPE_FLOAT.value)
-      print(crcCalculator.getRollingCrc())
       if (accessLevels[varID] == "RW"):  crcCalculator.updateRollingCrc(Access.ACCESS_WRITE.value)
       else:                              crcCalculator.updateRollingCrc(Access.ACCESS_READ.value)
       if (NVMStorages[varID] == "true"): crcCalculator.updateRollingCrc(NVMStorageFlag.STORAGE_TRUE.value)
@@ -366,11 +373,11 @@ def generateCppFiles(memMapNameCamel:   str,
   memMapCppName = "Map" + memMapNameCamel + ".cpp"
   dataBlocks          = []
   dataBlockNamesCamel = []
-  blockHppTemplatePath   = os.path.join(os.path.dirname(__file__), 'BlockTemplateHpp.txt')
-  mapTemplateHppPathHub  = os.path.join(os.path.dirname(__file__), 'MapTemplateHppHub.txt')
-  mapTemplateHppPathNode = os.path.join(os.path.dirname(__file__), 'MapTemplateHppNode.txt')
-  mapTemplateCppPathHub  = os.path.join(os.path.dirname(__file__), 'MapTemplateCppHub.txt')
-  mapTemplateCppPathNode = os.path.join(os.path.dirname(__file__), 'MapTemplateCppNode.txt')
+  blockHppTemplatePath   = resourcePath(os.path.join('Templates', 'BlockTemplateHpp.txt'))
+  mapTemplateHppPathHub  = resourcePath(os.path.join('Templates', 'MapTemplateHppHub.txt'))
+  mapTemplateHppPathNode = resourcePath(os.path.join('Templates', 'MapTemplateHppNode.txt'))
+  mapTemplateCppPathHub  = resourcePath(os.path.join('Templates', 'MapTemplateCppHub.txt'))
+  mapTemplateCppPathNode = resourcePath(os.path.join('Templates', 'MapTemplateCppNode.txt'))
   memMapNodeDir = os.path.join(nodeDirectory, 'Maps', ('Map' + memMapNameCamel))
   memMapHubDir  = os.path.join(hubDirectory,  'Maps', ('Map' + memMapNameCamel))
 
