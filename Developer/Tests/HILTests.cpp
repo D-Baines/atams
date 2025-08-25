@@ -74,11 +74,13 @@ static Atams::Bus      testBus_(userData_);
 static Atams::TestNode testNode1_(0U, errorHandler);
 static Atams::TestNode testNode2_(1U, errorHandler);
 static Atams::TestNode testNode3_(2U, errorHandler);
+static Atams::TestNode testNode4_(3U, errorHandler);
 
-static Atams::TestNode *testNodes[] = 
+static Atams::TestNode *testNodes_[] = 
 {
-  //&testNode1_,
-  &testNode2_
+  &testNode1_,
+  &testNode2_,
+  &testNode3_
 };
 
 /*************************************************************************************/
@@ -110,21 +112,25 @@ static void testBusInit(void)
   error         = testBus_.beginBusInitProcess();
   if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::beginBusInitProcess");
 
-  //expectedError = Atams::ERROR_NONE;
-  //error         = testBus_.addNodeToBus(testNode1_);
-  //if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+  expectedError = Atams::ERROR_NONE;
+  error         = testBus_.addNodeToBus(testNode1_);
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
-  //expectedError = Atams::ERROR_NODE_ALREADY_ON_BUS;
-  //error         = testBus_.addNodeToBus(testNode1_);
-  //if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+  expectedError = Atams::ERROR_NODE_ALREADY_ON_BUS;
+  error         = testBus_.addNodeToBus(testNode1_);
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
   expectedError = Atams::ERROR_NONE;
   error         = testBus_.addNodeToBus(testNode2_);
   if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
-  //expectedError = Atams::ERROR_BUS_FULL;
-  //error         = testBus_.addNodeToBus(testNode3_);
-  //if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+  expectedError = Atams::ERROR_NONE;
+  error         = testBus_.addNodeToBus(testNode3_);
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+
+  expectedError = Atams::ERROR_BUS_FULL;
+  error         = testBus_.addNodeToBus(testNode4_);
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
   expectedError = Atams::ERROR_INIT_ORDER;
   error         = testBus_.beginUpdateCycle();
@@ -143,7 +149,7 @@ static void testBusInit(void)
       (error     != expectedError             ) ) errorHandler(error, "Unexpected Return from Bus::runUpdateCycleSync");
 
   expectedError = Atams::ERROR_INIT_ORDER;
-  error          = Atams::ERROR_NONE;
+  error         = Atams::ERROR_NONE;
   initState     = testBus_.updateBusInitProcess(error);
   if ((initState != Atams::ProcessState::ERROR) ||
       (error     != expectedError             ) ) errorHandler(error, "Unexpected Return from Bus::updateBusInitProcess");
@@ -204,7 +210,7 @@ static Atams::Error_t runUpdateCycleTests(void)
 
       error = testBus_.processBuffers();
      
-      for (TestNode *&testNodePtr : testNodes)
+      for (TestNode *&testNodePtr : testNodes_)
       {
         if (error == testNodePtr->getExpectedBusError())
         {
@@ -214,7 +220,7 @@ static Atams::Error_t runUpdateCycleTests(void)
       
       if (error) errorHandler(error, "Unexpected Bus Error"); 
       
-      for (TestNode *&testNodePtr : testNodes)
+      for (TestNode *&testNodePtr : testNodes_)
       {
         testNodePtr->runUpdateCycleTests();
       }
@@ -241,7 +247,9 @@ void runTests(void)
 
   Atams::Error_t error = testNode1_.initMemoryMap(Atams::MapTest::memoryMap);
 
-  if (!error) error = testNode2_.initMemoryMap(Atams::MapTest::memoryMap);
+  if (!error)    error = testNode2_.initMemoryMap(Atams::MapTest::memoryMap);
+
+  if (!error)    error = testNode3_.initMemoryMap(Atams::MapTest::memoryMap);
 
   if (error) errorHandler(error, "Node Init Failed");
 
@@ -249,6 +257,7 @@ void runTests(void)
 
   testBusInit();
 
+ 
   runUpdateCycleTests();
 }
 

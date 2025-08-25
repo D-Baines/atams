@@ -91,6 +91,7 @@ enum VarID_t: uint16_t
 
 inline constexpr uint16_t NUMBER_OF_VARS {40U};
 
+inline constexpr uint8_t  DEFAULT_WRITE_UINT8_1   {0U};
 inline constexpr uint8_t  DEFAULT_WRITE_UINT8_2   {1U};
 inline constexpr uint8_t  DEFAULT_WRITE_UINT8_3   {2U};
 inline constexpr uint8_t  DEFAULT_WRITE_UINT8_4   {3U};

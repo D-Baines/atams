@@ -8,8 +8,5 @@ Autogen/dist/
 
 *.pyc
 
-#Development Implementation
-Implementation/
-
 #Eclipse Workspace
 .metadata/

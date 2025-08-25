@@ -65,6 +65,7 @@ enum VarID_t: uint16_t
 
 inline constexpr uint16_t NUMBER_OF_VARS {14U};
 
+inline constexpr uint8_t  DEFAULT_READ_UINT8   {0U};
 inline constexpr int8_t   DEFAULT_READ_INT8    {1};
 inline constexpr uint16_t DEFAULT_READ_UINT16  {2U};
 inline constexpr int16_t  DEFAULT_READ_INT16   {3};

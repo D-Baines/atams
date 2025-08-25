@@ -48,7 +48,7 @@ namespace Atams { namespace Platform {
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-inline constexpr uint16_t NUMBER_OF_NODES_PER_BUS = 2U;
+inline constexpr uint16_t NUMBER_OF_NODES_PER_BUS = 3U;
 inline constexpr uint16_t NODE_NUMBER_OF_VARS     = 100U; 
 inline constexpr uint16_t MAX_BUS_PACKET_SIZE     = 64U;
 inline constexpr uint16_t CIRCULAR_BUFFER_SIZE    = 1024U;
