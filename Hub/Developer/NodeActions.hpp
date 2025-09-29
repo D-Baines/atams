@@ -123,7 +123,7 @@ class NodeActions
 
   /*-- Private Static Constants -----------------------------------------------------*/
 
-  static inline constexpr uint32_t STORAGE_TIMEOUT = 5000U;
+  static constexpr uint32_t STORAGE_TIMEOUT = 5000U;
 
   /*-- Private Typedefs -------------------------------------------------------------*/
 

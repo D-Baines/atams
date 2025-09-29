@@ -496,7 +496,7 @@ Bus::PollResult Bus::pollForResponse(Atams::NodeCallbackHandler &node, Bus::Proc
   return (result);
 }
 
-void Bus::rxCallback(uint8_t *rxBufferPtr, const uint16_t rxBufferLength)
+void Bus::rxCallback(uint8_t *rxBufferPtr, const uint16_t rxBufferLength) 
 {
   static_cast<void>(circularBuffer_.pushHead(rxBufferPtr, rxBufferLength));
 }

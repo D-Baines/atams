@@ -241,8 +241,8 @@ void bufferToDatagramHeader(const uint8_t * const buffer, DatagramHeader_t &data
 {
   datagramHeader.command = static_cast<uint8_t>(buffer[0U] & DATAGRAM_HEADER_MASK_COMMAND) >> DATAGRAM_HEADER_SHIFT_COMMAND;
 
-  datagramHeader.varID   = ((static_cast<uint16_t>(buffer[0U] & DATAGRAM_HEADER_MASK_VAR_ID_HI) << DATAGRAM_HEADER_SHIFT_VAR_ID_HI) |
-                            (static_cast<uint16_t>(buffer[1U] & DATAGRAM_HEADER_MASK_VAR_ID_LO) >> DATAGRAM_HEADER_SHIFT_VAR_ID_LO) );
+  datagramHeader.varID   = static_cast<uint16_t>((static_cast<uint16_t>(buffer[0U] & DATAGRAM_HEADER_MASK_VAR_ID_HI) << DATAGRAM_HEADER_SHIFT_VAR_ID_HI) |
+                                                 (static_cast<uint16_t>(buffer[1U] & DATAGRAM_HEADER_MASK_VAR_ID_LO) >> DATAGRAM_HEADER_SHIFT_VAR_ID_LO) );
 }
 
 Atams::Error_t validateMemoryMap(const SharedMemoryMap_t &memoryMap, const uint32_t varStorageLength)

@@ -241,7 +241,7 @@ private Platform::BusPeripheral
   Bus::PollResult pollForResponse(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse);
 
   virtual void rxCallback(uint8_t       *rxBufferPtr,
-                          const uint16_t rxBufferLength) final;
+                          const uint16_t rxBufferLength) override final;
 
   bool validateAndStoreResponsePacket(Atams::NodeCallbackHandler &node, const MessageType_t responseType);
 

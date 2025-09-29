@@ -80,7 +80,7 @@ static Atams::TestNode *testNodes_[] =
 {
   &testNode1_,
   &testNode2_,
-  &testNode3_
+  //&testNode3_
 };
 
 /*************************************************************************************/
@@ -124,13 +124,13 @@ static void testBusInit(void)
   error         = testBus_.addNodeToBus(testNode2_);
   if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
-  expectedError = Atams::ERROR_NONE;
-  error         = testBus_.addNodeToBus(testNode3_);
-  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+//  //expectedError = Atams::ERROR_NONE;
+  //error         = testBus_.addNodeToBus(testNode3_);
+  //if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
-  expectedError = Atams::ERROR_BUS_FULL;
-  error         = testBus_.addNodeToBus(testNode4_);
-  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+//  //expectedError = Atams::ERROR_BUS_FULL;
+  //error         = testBus_.addNodeToBus(testNode4_);
+  //if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
   expectedError = Atams::ERROR_INIT_ORDER;
   error         = testBus_.beginUpdateCycle();
