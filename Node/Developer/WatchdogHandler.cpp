@@ -26,7 +26,7 @@
 /*************************************************************************************/
 
 #include "WatchdogHandler.hpp"
-#include "../Node.hpp"
+#include "../CommsCore/CommsCore.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"
 
 /*************************************************************************************/

@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
-  * @file    MemoryMapTest.hpp
+  * @file    AppCore.hpp
   *
   * @author  D. Baines
   *
-  * @brief   Auto-generated file containing typedefs, constants, and function
-  *          declarations for an Atams Memory Map with name: Test.
+  * @brief
+  *
   *
   * @version v1.0
   ******************************************************************************
@@ -21,7 +21,7 @@
   ******************************************************************************
   */
 
-/* Pragma to prevent recursive inclusion --------------------------------------------*/
+/* Define to prevent recursive inclusion --------------------------------------------*/
 #pragma once
 
 /*************************************************************************************/
@@ -29,27 +29,43 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../../Developer/NodeUtilities.hpp"
-#include "../../../Shared/Maps/BlockUniversal.hpp"
-#include "BlockTest1.hpp"
-#include "BlockTest2.hpp"
-#include "BlockTest3.hpp"
+#include "../../Shared/AtamsTypedefs.hpp"
+#include "../Developer/NodeUtilities.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace MapTest {
+namespace Atams {
 
 /*************************************************************************************/
-/* CONST EXTERNS                                                                     */
+/* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-extern const MemoryMap_t memoryMap;
 
+/*************************************************************************************/
+/* PUBLIC TYPEDEFS                                                                   */
+/*************************************************************************************/
 
-} } /* End Namespace - Atams::MapTest */
+/*************************************************************************************/
+/* PUBLIC FUNCTION DECLARATIONS                                                      */
+/*************************************************************************************/
+
+Atams::Error_t initAppCore(const MemoryMap_t &memoryMap);
+
+template <typename T>
+Atams::Error_t write(const uint16_t varID, const T writeValue);
+
+template <typename T>
+Atams::Error_t read(const uint16_t varID, T &outputRef);
+
+bool getWatchdogFault(void);
+
+} /* End Namespace - Atams */
+
 
 /**
   * @}End of File
   */
+
+

@@ -25,7 +25,10 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
+#include "stm32h7xx.h"
 #include "MapTest.hpp"
+#include "../../AppCore/AppCore.hpp"
+#include "../../AppCore/AppPlatform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -44,10 +47,10 @@ static const GenInfo_t s_genInfo =
   /* .genDay            = */ 17U,
   /* .genMonth          = */ 8U,
   /* .genYear           = */ 2025U,
-  /* .genHour           = */ 18U,
-  /* .genMinute         = */ 29U,
-  /* .genSecond         = */ 46U,
-  /* .genChecksum       = */ 3507504991U,
+  /* .genHour           = */ 21U,
+  /* .genMinute         = */ 54U,
+  /* .genSecond         = */ 22U,
+  /* .genChecksum       = */ 495011647U,
   /* .noOfVars          = */ 96U
 };
 
@@ -137,7 +140,7 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
   /* [BlockTest1::VAR_WRITE_INT8] = */
   {
     /* .type           = */ Atams::TYPE_INT8,
-    /* .externalAccess = */ Atams::ACCESS_READ,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
   /* [BlockTest1::VAR_WRITE_UINT16] = */
@@ -221,7 +224,7 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
   /* [BlockTest2::VAR_WRITE_INT8] = */
   {
     /* .type           = */ Atams::TYPE_INT8,
-    /* .externalAccess = */ Atams::ACCESS_READ,
+    /* .externalAccess = */ Atams::ACCESS_WRITE,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
   /* [BlockTest2::VAR_WRITE_UINT16] = */
@@ -513,7 +516,7 @@ Atams::Error_t initGenInfo(void)
   if (!error) error = Atams::write(BlockUniversal::VAR_MAP_GEN_MINUTE, s_genInfo.genMinute);
   if (!error) error = Atams::write(BlockUniversal::VAR_MAP_GEN_SECOND, s_genInfo.genSecond);
   if (!error) error = Atams::write(BlockUniversal::VAR_MAP_CHECKSUM, s_genInfo.genChecksum);
-  if (!error) error = Atams::write(BlockUniversal::VAR_MAP_NUMBER_OF_VARS, s_genInfo.noOfVars);  
+  if (!error) error = Atams::write(BlockUniversal::VAR_MAP_NUMBER_OF_VARS, s_genInfo.noOfVars);
 
   return (error); 
 }
@@ -589,7 +592,7 @@ Atams::Error_t initUserDefaults(void)
   if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_17, BlockTest3::DEFAULT_WRITE_UINT32_17);
   if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_18, BlockTest3::DEFAULT_WRITE_UINT32_18);
   if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_19, BlockTest3::DEFAULT_WRITE_UINT32_19);
-  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_20, BlockTest3::DEFAULT_WRITE_UINT32_20);  
+  if (!error) error = Atams::write(BlockTest3::VAR_WRITE_UINT32_20, BlockTest3::DEFAULT_WRITE_UINT32_20);
 
   return (error); 
 }

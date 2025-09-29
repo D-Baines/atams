@@ -307,8 +307,8 @@ static_assert(sizeof(Atams::BitrateOption_t) == 1U, "Atams::BitrateOption_t size
 
 enum CoreID_t: uint8_t
 {
-  CORE_CONTROL = 0U,
-  CORE_COMMS   = 1U,
+  CORE_APP   = 0U,
+  CORE_COMMS = 1U,
   NUMBER_OF_CORES
 };
 
@@ -538,7 +538,7 @@ struct SharedMemoryMap_t
 
 inline constexpr uint8_t MINIMUM_SIZE_WRITE_DATAGRAM = Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t);
 
-static constexpr uint8_t TYPE_LENGTHS[Atams::NUMBER_OF_VAR_TYPES] =
+inline constexpr uint8_t TYPE_LENGTHS[Atams::NUMBER_OF_VAR_TYPES] =
 {
   /* [TYPE_NULL  ] = */ 0U,
   /* [TYPE_UINT8 ] = */ 1U,

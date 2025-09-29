@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
-  * @file    MemoryMapTest.hpp
+  * @file    AppPlatform.hpp
   *
   * @author  D. Baines
   *
-  * @brief   Auto-generated file containing typedefs, constants, and function
-  *          declarations for an Atams Memory Map with name: Test.
+  * @brief
+  *
   *
   * @version v1.0
   ******************************************************************************
@@ -21,34 +21,46 @@
   ******************************************************************************
   */
 
-/* Pragma to prevent recursive inclusion --------------------------------------------*/
-#pragma once
-
 /*************************************************************************************/
-/* INCLUDES                                                                          */
+/* ATAMS INCLUDES                                                                    */
 /*************************************************************************************/
 
-#include <stdint.h>
-#include "../../Developer/NodeUtilities.hpp"
-#include "../../../Shared/Maps/BlockUniversal.hpp"
-#include "BlockTest1.hpp"
-#include "BlockTest2.hpp"
-#include "BlockTest3.hpp"
+#include "AppPlatform.hpp"
+
+/*************************************************************************************/
+/* USER INCLUDES                                                                     */
+/*************************************************************************************/
+
+#include "main.h"
+#include "stm32h7xx_hal.h"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace MapTest {
+namespace Atams { namespace Platform {
 
 /*************************************************************************************/
-/* CONST EXTERNS                                                                     */
+/* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-extern const MemoryMap_t memoryMap;
+uint32_t getMillis(void)
+{
+  return (HAL_GetTick());
+}
 
+void acquireVarStorageLock(void)
+{
+  HAL_HSEM_FastTake(0U);
+}
 
-} } /* End Namespace - Atams::MapTest */
+void releaseVarStorageLock(void)
+{
+  HAL_HSEM_Release(0U, 0);
+}
+
+} } /* End Namespace - Atams::Platform */
+
 
 /**
   * @}End of File

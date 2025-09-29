@@ -26,7 +26,8 @@
 /*************************************************************************************/
 
 #include "ConfigurationHandler.hpp"
-#include "../Node.hpp"
+#include "../CommsCore/CommsCore.hpp"
+#include "../CommsCore/CommsPlatform.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"
 
 /*************************************************************************************/

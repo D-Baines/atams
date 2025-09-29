@@ -31,7 +31,7 @@
 #include <stdint.h>
 #include "../../Shared/AtamsTypedefs.hpp"
 #include "../../Shared/Utilities/CRC32.hpp"
-#include "../Platform.hpp"
+#include "../CommsCore/CommsPlatform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */

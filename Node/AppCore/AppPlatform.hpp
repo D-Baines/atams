@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
-  * @file    MemoryMapTest.hpp
+  * @file    AppPlatform.hpp
   *
   * @author  D. Baines
   *
-  * @brief   Auto-generated file containing typedefs, constants, and function
-  *          declarations for an Atams Memory Map with name: Test.
+  * @brief
+  *
   *
   * @version v1.0
   ******************************************************************************
@@ -29,26 +29,40 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../../Developer/NodeUtilities.hpp"
-#include "../../../Shared/Maps/BlockUniversal.hpp"
-#include "BlockTest1.hpp"
-#include "BlockTest2.hpp"
-#include "BlockTest3.hpp"
+#include "../../Shared/AtamsTypedefs.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace MapTest {
+namespace Atams { namespace Platform {
 
 /*************************************************************************************/
-/* CONST EXTERNS                                                                     */
+/* PUBLIC MACROS                                                                     */
 /*************************************************************************************/
 
-extern const MemoryMap_t memoryMap;
+/* Dual core shared memory space requirement: 2 + (4 * Platform::NODE_NUMBER_OF_VARS) */
+#define ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE __attribute__((section(".atamsSharedRAM")))
+
+/*************************************************************************************/
+/* PUBLIC CONSTANTS                                                                  */
+/*************************************************************************************/
+
+inline constexpr uint16_t NODE_NUMBER_OF_VARS = 100U;  /* Must be <= Atams::MAX_NUMBER_OF_VARS */
+
+/*************************************************************************************/
+/* PUBLIC FUNCTION DECLARATIONS                                                      */
+/*************************************************************************************/
+
+uint32_t getMillis(void);
+
+void acquireVarStorageLock(void);
+
+void releaseVarStorageLock(void);
 
 
-} } /* End Namespace - Atams::MapTest */
+} } /* End Namespace - Atams::Platform */
+
 
 /**
   * @}End of File

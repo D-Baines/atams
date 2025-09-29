@@ -122,10 +122,10 @@ COBS::Result_t decode(const uint8_t *sourceBufferPtr,
 
   uint16_t srcIndex    = 0U;
   uint16_t destIndex   = 0U;
-  uint8_t  blockLength = 0U;
+  uint16_t blockLength = 0U;
 
   /* -1U implemented as destIndex can be incremented twice after check */
-  uint16_t destEndCheckLength = destBufferLength - 1U;
+  uint16_t destEndCheckLength = static_cast<uint16_t>(destBufferLength - 1U);
 
   /* Buffer pointer NULL checks */
   if ((sourceBufferPtr == nullptr) || (destBufferPtr == nullptr))
@@ -136,7 +136,7 @@ COBS::Result_t decode(const uint8_t *sourceBufferPtr,
 
   while (srcIndex < sourceBufferLength)
   {
-    blockLength = (sourceBufferPtr[srcIndex] - 1U);
+    blockLength = static_cast<uint16_t>(sourceBufferPtr[srcIndex] - 1U);
     srcIndex++;
 
     /* Iterate over block elements */
