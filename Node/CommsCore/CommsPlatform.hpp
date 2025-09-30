@@ -48,16 +48,16 @@ namespace Atams { namespace Platform {
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-inline constexpr uint16_t NODE_NUMBER_OF_VARS  = 100U;  /* Must be <= Atams::MAX_NUMBER_OF_VARS */
+inline constexpr uint16_t NODE_NUMBER_OF_VARS  {100U};  /* Must be <= Atams::MAX_NUMBER_OF_VARS */
 
-inline constexpr uint16_t MAX_BUS_PACKET_SIZE  = 64U;
-inline constexpr uint16_t CIRCULAR_BUFFER_SIZE = 1024U;
-inline constexpr uint32_t NVM_STORAGE_SIZE     = 1024U;
-inline constexpr uint8_t  NVM_UNIT_SIZE        = 32U;
+inline constexpr uint16_t MAX_BUS_PACKET_SIZE  {64U};
+inline constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};
+inline constexpr uint32_t NVM_STORAGE_SIZE     {1024U};
+inline constexpr uint8_t  NVM_UNIT_SIZE        {32U};
 
-inline constexpr uint16_t COBS_MAX_DATA_PER_CODE          = 254U;
-inline constexpr uint16_t COBS_MAX_OVERHEAD               = (MAX_BUS_PACKET_SIZE + (COBS_MAX_DATA_PER_CODE - 1U)) / COBS_MAX_DATA_PER_CODE;
-inline constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING = MAX_BUS_PACKET_SIZE - COBS_MAX_OVERHEAD;
+inline constexpr uint16_t COBS_MAX_DATA_PER_CODE          {254U};
+inline constexpr uint16_t COBS_MAX_OVERHEAD               {(MAX_BUS_PACKET_SIZE + (COBS_MAX_DATA_PER_CODE - 1U)) / COBS_MAX_DATA_PER_CODE};
+inline constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING {MAX_BUS_PACKET_SIZE - COBS_MAX_OVERHEAD};
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
@@ -65,20 +65,28 @@ inline constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING = MAX_BUS_PACKET_SIZE 
 
 typedef enum: uint8_t
 {
-  COMMS_CHANNEL_DEFAULT = 0,
+  COMMS_DEFAULT = 0,
 
-  NUMBER_OF_COMMS_CHANNELS
-} CommsChannel_t;
+  NUMBER_OF_COMMS_PERIPHERALS
+} CommsPeripheralID_t;
 
-typedef void (*CommsReceiveCallback_t)(const Platform::CommsChannel_t commsChannel,
-                                             uint8_t                 *rxBufferPtr,
-                                       const uint16_t                 rxBufferLength);
+typedef void (*CommsReceiveCallback_t)(const Platform::CommsPeripheralID_t commsChannel,
+                                             uint8_t                      *rxBufferPtr,
+                                       const uint16_t                      rxBufferLength);
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
+/**
+ * @brief  Get system time in milliseconds since startup.
+ *
+ * @return System time in milliseconds since startup.
+ *
+ * @note   ATAMS PLATFORM REQUIREMENT - ALL
+ */
 uint32_t getMillis(void);
+
 
 void acquireVarStorageLock(void);
 
@@ -88,11 +96,11 @@ void setReceiveCallback(CommsReceiveCallback_t receiveCallback);
 
 void update(void);
 
-bool transmitBuffer(CommsChannel_t commsChannel, uint8_t *buffer, uint16_t length);
+bool transmitBuffer(CommsPeripheralID_t peripheralID, uint8_t *buffer, uint16_t length);
 
-void acquireCommsBufferLock(CommsChannel_t channelToLock);
+void acquireCommsBufferLock(CommsPeripheralID_t peripheralToLock);
 
-void releaseCommsBufferLock(CommsChannel_t channelToUnlock);
+void releaseCommsBufferLock(CommsPeripheralID_t peripheralToUnlock);
 
 void waitOnCommsBufferSemaphore(uint32_t timeoutMilliseconds);
 

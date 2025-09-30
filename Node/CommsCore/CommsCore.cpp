@@ -97,7 +97,7 @@ using VarStorage_t = uint8_t[Atams::MAX_TYPE_SIZE];
 
 static const MemoryMap_t   *s_memoryMapPtr;
 static CRC32                s_nodeCRC(Atams::CRC32_POLYNOMIAL);
-static CircularBuffer       s_circularBuffers[Platform::NUMBER_OF_COMMS_CHANNELS];
+static CircularBuffer       s_circularBuffers[Platform::NUMBER_OF_COMMS_PERIPHERALS];
 
 static WatchdogHandler      s_watchdogHandler;
 static ConfigurationHandler s_ConfigurationHandler(s_watchdogHandler);
@@ -246,11 +246,11 @@ static DataStatusReturn_t<uint8_t> getVarLength(const uint16_t varID)
   return (lengthReturn);
 }
 
-static void receiveCallback(const Platform::CommsChannel_t commsChannel,
+static void receiveCallback(const Platform::CommsPeripheralID_t commsChannel,
                                   uint8_t                 *rxBufferPtr,
                             const uint16_t                 rxBufferLength)
 {
-  if (commsChannel < Platform::NUMBER_OF_COMMS_CHANNELS)
+  if (commsChannel < Platform::NUMBER_OF_COMMS_PERIPHERALS)
   {
     s_circularBuffers[commsChannel].pushHead(rxBufferPtr, rxBufferLength);
     Platform::signalCommsBufferSemaphore();
@@ -278,7 +278,7 @@ static void abortResponse(ChannelResponse_t &response, const Atams::Error_t erro
   response.aborted                       = true;
 }
 
-static void sendResponsePacket(Platform::CommsChannel_t commsChannel,
+static void sendResponsePacket(Platform::CommsPeripheralID_t commsChannel,
                                ChannelResponse_t       &response,
                                Atams::MessageType_t     messageType)
 {
@@ -529,14 +529,14 @@ static void setAbortMessageType(ChannelResponse_t &response, const MessageType_t
   }
 }
 
-static void processEncodedMeshPacket(const Platform::CommsChannel_t commsChannel,
+static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsChannel,
                                      const uint8_t          * const packetBuffer,
                                      const uint16_t                 packetLength)
 {
   static uint8_t             decodedPacket[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   static uint16_t            decodedLength = 0U;
-  static ChannelSyncPacket_t commsChannelSyncPackets[Platform::NUMBER_OF_COMMS_CHANNELS];
-  static ChannelResponse_t   commsChannelResponses[Platform::NUMBER_OF_COMMS_CHANNELS];
+  static ChannelSyncPacket_t commsChannelSyncPackets[Platform::NUMBER_OF_COMMS_PERIPHERALS];
+  static ChannelResponse_t   commsChannelResponses[Platform::NUMBER_OF_COMMS_PERIPHERALS];
 
   if (decodeBusPacket(packetBuffer,
                       packetLength,
@@ -628,7 +628,7 @@ static void processRawMeshData(void)
     for (CircularBuffer &circularBuffer : s_circularBuffers) circularBuffer.reset();
   }
 
-  for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_CHANNELS; commsChannel++)
+  for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_PERIPHERALS; commsChannel++)
   {
     CircularBuffer::Error_t bufferStatus = s_circularBuffers[commsChannel].getPacket(meshPacketRXBuffer,
                                                                                      sizeof(meshPacketRXBuffer),
@@ -648,7 +648,7 @@ static void processRawMeshData(void)
     else
     {
       /* Process the packet that has been copied into the request packet buffer */
-      processEncodedMeshPacket(static_cast<Platform::CommsChannel_t>(commsChannel),
+      processEncodedMeshPacket(static_cast<Platform::CommsPeripheralID_t>(commsChannel),
                                meshPacketRXBuffer,
                                meshPacketRXLength);
     }
@@ -834,10 +834,10 @@ static Atams::Error_t saveVarsToNVM(const uint32_t availableNVMSpace)
 
 static void initCommsBuffers(void)
 {
-  for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_CHANNELS; commsChannel++)
+  for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_PERIPHERALS; commsChannel++)
   {
     s_circularBuffers[commsChannel].setEOLChar(Atams::EOL_BYTE);
-    s_circularBuffers[commsChannel].setLockArgument(static_cast<Platform::CommsChannel_t>(commsChannel));
+    s_circularBuffers[commsChannel].setLockArgument(static_cast<Platform::CommsPeripheralID_t>(commsChannel));
   }
 }
 

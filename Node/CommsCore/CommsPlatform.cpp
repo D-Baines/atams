@@ -66,28 +66,6 @@ static SerialPort _meshPort(SerialPort::PORT_ID_MESH);
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-/*
-*  @brief Solves non-linear equation with Newton method.
-*
-*  @details
-*   Solves a non-linear equation using the Newton method which uses the
-*   function and its derivate function for finding a suitable approximation
-*   to the equation root.
-*
-*  @warning  Throws NonCoverge exception when the root is not found.
-*
-*  @param fun  Non-linear function f(x)
-*  @param dfun Derivative of non-linear function df(x) = d/dx f(x)
-*  @param x0   Initial guess
-*  @param eps  Tolerance for stopping criteria.
-*
-*  @return     Equation result object containing result and error code.
-*
-*  @todo  Implement unit test with lots of test cases.
-*
-*  @note     The function f(x) must be continues and differentiable.
-*/
-
 /**
  * @brief  Get system time in milliseconds since startup.
  *
@@ -101,9 +79,7 @@ uint32_t getMillis(void)
 }
 
 /**
- * @brief
- *
- * @details
+ * @brief   Acquire the lock protecting variable storage from concurrent access
  *
  * @return  None
  *
@@ -116,7 +92,7 @@ void acquireVarStorageLock(void)
 }
 
 /**
- * @brief
+ * @brief   Release the lock protecting variable storage from concurrent access
  *
  * @details
  *
@@ -151,7 +127,7 @@ void setReceiveCallback(CommsReceiveCallback_t receiveCallback)
 }
 
 /**
- * @brief
+ * @brief   User update function called at regular intervals from Atams::updateCommsPolling()
  *
  * @details Users can use this function to poll communications peripherals, check for
  *          peripheral errors, and/or restart peripheral reception if required.
@@ -166,11 +142,14 @@ void update(void)
 }
 
 /**
- * @brief
+ * @brief   Transmit a buffer of bytes via the specified communications peripheral
  *
- * @details
+ * @details Users can choose to implement this function as a blocking or non-blocking.
+ *          If implemented as non-blocking for event-driven comms, the function must ensure that
+ *          the transmission is started before returning. If implemented as blocking for polling
+ *          comms, the function must ensure that all bytes are transmitted before returning.
  *
- * @param   commsChannel The ID of the communications peripheral to use for transmission
+ * @param   peripheralID The ID of the communications peripheral to use for transmission
  * @param   buffer       Pointer to the buffer holding the bytes to be transmitted
  * @param   length       Number of bytes to be transmitted
  *
@@ -180,9 +159,9 @@ void update(void)
  *
  * @note    ATAMS PLATFORM REQUIREMENT - ALL
  */
-bool transmitBuffer(CommsChannel_t commsChannel, uint8_t *buffer, uint16_t length)
+bool transmitBuffer(CommsPeripheralID_t peripheralID, uint8_t *buffer, uint16_t length)
 {
-  static_cast<void>(commsChannel);
+  static_cast<void>(peripheralID);
 
   HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_SET);               // @suppress("C-Style cast instead of C++ cast")
   HAL_GPIO_WritePin(LED_RS485_GREEN_GPIO_Port, LED_RS485_GREEN_Pin, GPIO_PIN_SET); // @suppress("C-Style cast instead of C++ cast")
@@ -195,47 +174,55 @@ bool transmitBuffer(CommsChannel_t commsChannel, uint8_t *buffer, uint16_t lengt
 }
 
 /**
- * @brief
+ * @brief   Acquire the lock protecting the circular buffer from concurrent access.
  *
- * @details
+ * @details This function will be called before Atams circular buffer access. The circular buffers
+ *          are accessed from the Atams comms update functions and from the Platform::receiveCallback()
+ *          function. The user must ensure that the lock is held until Platform::releaseCommsBufferLock()
+ *          is called. If Platform::receiveCallback() is called from an interrupt, the user should
+ *          disable the interrupt associated with the provided communications peripheral ID.
  *
- * @param   channelToLock The ID of the communications peripheral to lock
+ * @param   peripheralToLock The ID of the communications peripheral to lock
  *
  * @return  None
  *
  * @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
  */
-void acquireCommsBufferLock(CommsChannel_t channelToLock)
+void acquireCommsBufferLock(CommsPeripheralID_t peripheralToLock)
 {
-  static_cast<void>(channelToLock);
+  static_cast<void>(peripheralToLock);
   //HAL_NVIC_DisableIRQ(USART2_IRQn);
   HAL_NVIC_DisableIRQ(DMA1_Stream0_IRQn);
 }
 
 /**
- * @brief
+ * @brief   Release the lock protecting the circular buffer from concurrent access.
  *
- * @details
+ * @details This function will be called after Atams circular buffer access. The circular buffers
+ *          are accessed from the Atams comms update functions and from the Platform::receiveCallback()
+ *          function. If an interrupt was disabled in Platform::acquireCommsBufferLock(), the user should
+ *          re-enable the same interrupt here.
  *
- * @param   channelToUnlock The ID of the communications peripheral to unlock
+ * @param   peripheralToUnlock The ID of the communications peripheral to unlock
  *
  * @return  None
  *
  * @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
  */
-void releaseCommsBufferLock(CommsChannel_t channelToUnlock)
+void releaseCommsBufferLock(CommsPeripheralID_t peripheralToUnlock)
 {
-  static_cast<void>(channelToLock);
+  static_cast<void>(peripheralToUnlock);
   //HAL_NVIC_EnableIRQ(USART2_IRQn);
   HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
 }
 
 /**
- * @brief
+ * @brief   Block the calling thread using a semaphore or similar mechanism.
  *
  * @details If Atams::updateCommsBlocking() is used, this function will be called to
- *          block the update thread while waiting to receive new bytes. A timeout is required to ensure that
- *          the Atams communications watchdog continues to be updated.
+ *          block the update thread while waiting to receive new bytes. A timeout is required
+ *          to ensure that the Atams communications watchdog can safely detect a communications
+ *          dropout.
  *
  * @param   timeoutInMilliseconds Maximum time to wait while attempting to acquire
  *
@@ -249,7 +236,7 @@ void waitOnCommsBufferSemaphore(uint32_t timeoutMilliseconds)
 }
 
 /**
- * @brief
+ * @brief   Wake up the thread blocked in Platform::waitOnCommsBufferSemaphore().
  *
  * @details If Atams::updateCommsBlocking() is used, this function will be called to
  *          wake up the thread on reception of new bytes.
@@ -264,10 +251,9 @@ void signalCommsBufferSemaphore(void)
 }
 
 /**
- * @brief
+ * @brief   Erase the full non-volatile memory space dedicated to Atams.
  *
- * @details Erases the non-volatile memory space dedicated to Atams.
- *          Must erase at least the number of bytes equal to Platform::NVM_STORAGE_SIZE
+ * @details Must erase at least the number of bytes equal to Platform::NVM_STORAGE_SIZE.
  *
  * @see     CommsPlatform.hpp -> PUBLIC CONSTANTS -> NVM_STORAGE_SIZE
  *
@@ -305,13 +291,11 @@ bool eraseNVM(void)
 }
 
 /**
- * @brief
+ * @brief  Copy bytes from non-volatile memory into a provided buffer.
  *
- * @details
- *
- * @param  readIndex  Index into the non-volatile memory space dedicated to Atams to be read from.
- * @param  outputPtr  Pointer to the buffer to transfer the read bytes to from non-volatile memory.
- * @param  readLength Number of bytes to transfer to the buffer from non-volatile memory.
+ * @param  readIndex  The index into the non-volatile memory from which to start reading.
+ * @param  outputPtr  Pointer to the buffer the bytes will be copied into.
+ * @param  readLength Number of bytes to copy to the buffer from non-volatile memory.
  *
  * @return Read status.
  *         true:  Read completed successfully.
@@ -329,17 +313,21 @@ bool readFromNVM(const uint32_t readIndex, uint8_t * outputPtr, const uint32_t r
 }
 
 /**
- *  @brief
+ *  @brief   Write a unit of data to non-volatile memory.
  *
- *  @details
+ *  @details Some platforms can only write to non-volatile memory in fixed size units.
+ *           The size of a unit is defined by Platform::NVM_UNIT_SIZE. The user should set
+ *           this to an appropriate value for their platform. The provided data buffer will
+ *           always be of size Platform::NVM_UNIT_SIZE.
  *
- *  @param  writeIndex Index into the non-volatile memory space dedicated to Atams.
- *  @param  nvmUnit    Reference to an array of size Platform::NVM_UNIT_SIZE to be written to
- *                     non-volatile memory at the writeIndex.
+ *  @param  writeIndex Index into non-voltatile memory at which to write the provided data.
+ *  @param  nvmUnit    Reference to an array of size Platform::NVM_UNIT_SIZE holding the data to write.
  *
  *  @return Write status.
  *          true:  Write completed successfully.
  *          false: Write failure.
+ *
+ *  @see    CommsPlatform.hpp -> PUBLIC CONSTANTS -> NVM_UNIT_SIZE
  *
  *  @note   ATAMS PLATFORM REQUIREMENT - ALL
  */

@@ -48,8 +48,8 @@ class CircularBuffer
 
   /*-- Public Constants -------------------------------------------------------------*/
 
-  static inline constexpr uint8_t                  DEFAULT_EOL_CHAR      = 0U;
-  static inline constexpr Platform::CommsChannel_t DEFAULT_LOCK_ARGUMENT = static_cast<Platform::CommsChannel_t>(0U);
+  static inline constexpr uint8_t                  DEFAULT_EOL_CHAR      {0U};
+  static inline constexpr Platform::CommsPeripheralID_t DEFAULT_LOCK_ARGUMENT {static_cast<Platform::CommsPeripheralID_t>(0U)};
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
@@ -73,11 +73,11 @@ class CircularBuffer
 
   /* Constructor */
   CircularBuffer(const uint8_t                  endOfLineChar,
-                 const Platform::CommsChannel_t channelToLock);
+                 const Platform::CommsPeripheralID_t channelToLock);
 
   void setEOLChar(const uint8_t endOfLineChar);
 
-  void setLockArgument(const Platform::CommsChannel_t channelToLock);
+  void setLockArgument(const Platform::CommsPeripheralID_t channelToLock);
 
   /* Copy Constructor */
   CircularBuffer(const CircularBuffer &other) = delete;
@@ -102,8 +102,8 @@ class CircularBuffer
 
   /*-- Private Static Constants -----------------------------------------------------*/
 
-  static inline constexpr uint16_t STATIC_BUFFER_SIZE = Platform::CIRCULAR_BUFFER_SIZE;
-  static inline constexpr uint8_t  NEW_DATA_READY     = 1U;
+  static inline constexpr uint16_t STATIC_BUFFER_SIZE {Platform::CIRCULAR_BUFFER_SIZE};
+  static inline constexpr uint8_t  NEW_DATA_READY     {1U};
 
   /*-- Private Constants ------------------------------------------------------------*/
 
@@ -113,18 +113,18 @@ class CircularBuffer
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  volatile uint16_t _headIndex       = 0U;
-  volatile uint16_t _tailIndex       = 0U;
-  volatile uint16_t _eolSearchIndex  = 0U;
-  volatile uint16_t _byteCount       = 0U;
-  volatile uint16_t _eolToHead       = 0U;
-  volatile uint16_t _eolToTail       = 0U;
-  volatile uint8_t  _newDataReady    = !CircularBuffer::NEW_DATA_READY; /* UINT8_T MUST BE ATOMIC ON TARGET PLATFORM */
+  volatile uint16_t headIndex_       {0U};
+  volatile uint16_t tailIndex_       {0U};
+  volatile uint16_t eolSearchIndex_  {0U};
+  volatile uint16_t byteCount_       {0U};
+  volatile uint16_t eolToHead_       {0U};
+  volatile uint16_t eolToTail_       {0U};
+  volatile uint8_t  newDataReady_    {!CircularBuffer::NEW_DATA_READY}; /* UINT8_T MUST BE ATOMIC ON TARGET PLATFORM */
 
-  uint8_t _buffer[STATIC_BUFFER_SIZE];
+  uint8_t buffer_[STATIC_BUFFER_SIZE];
 
-  uint8_t                  _eolChar      = DEFAULT_EOL_CHAR;
-  Platform::CommsChannel_t _lockArgument = DEFAULT_LOCK_ARGUMENT;
+  uint8_t                  eolChar_      {DEFAULT_EOL_CHAR};
+  Platform::CommsPeripheralID_t lockArgument_ {DEFAULT_LOCK_ARGUMENT};
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
