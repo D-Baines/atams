@@ -22,7 +22,6 @@
   */
 
 /* Pragma to prevent recursive inclusion --------------------------------------------*/
-#pragma once
 
 /*************************************************************************************/
 /* INCLUDES                                                                          */
@@ -61,6 +60,7 @@ bool BusPeripheral::startReceive(void)
   userData_.serialPort.async_read_some(asio::buffer(rxBuffer_), 
                                        std::bind(&BusPeripheral::rxHandler, 
                                                  this, 
+                                                 asio::placeholders::error, 
                                                  asio::placeholders::bytes_transferred));
   return (true);
 }
@@ -115,10 +115,11 @@ void BusPeripheral::rxHandler(asio::error_code ec, size_t xfr)
     rxCallback(rxBuffer_, xfr);
   }
 
-  userData_.serialPort.async_read_some(asio::buffer(rxBuffer_), std::bind(&BusPeripheral::rxHandler, 
-                                                                          this, 
-                                                                          asio::placeholders::error, 
-                                                                          asio::placeholders::bytes_transferred));
+  userData_.serialPort.async_read_some(asio::buffer(rxBuffer_), 
+                                       std::bind(&BusPeripheral::rxHandler, 
+                                                 this, 
+                                                 asio::placeholders::error, 
+                                                 asio::placeholders::bytes_transferred));
 }
 
 void BusPeripheral::txHandler(asio::error_code ec, size_t xfr)

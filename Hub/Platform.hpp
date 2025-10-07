@@ -33,12 +33,6 @@
 #include "Platform/asio-1.30.2/include/asio.hpp"
 
 /*************************************************************************************/
-/* PUBLIC MACROS                                                                     */
-/*************************************************************************************/
-
-#define ATAMS_DEBUG 0
-
-/*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
@@ -96,7 +90,7 @@ class BusPeripheral
   * @details The user must populate this structure with any data required for
   *          the platform comms peripheral to operate. This structure is passed
   *          to the Atams::Bus constructor.
-  * @note  ATAMS PLATFORM REQUIREMENT - OPTIONAL
+  * @note    ATAMS PLATFORM REQUIREMENT - OPTIONAL
   */
   struct UserData_t
   {
@@ -104,26 +98,8 @@ class BusPeripheral
     asio::serial_port &serialPort;
   };
 
-  /** @brief Deleted default constructor. */
-  BusPeripheral(void) = delete;
-
   /** @brief Constructor. */
   BusPeripheral(UserData_t userData);
-
-  /** @brief Default destructor. */
-  ~BusPeripheral(void) = default;
-
-  /** @brief Deleted copy constructor. */
-  BusPeripheral(const BusPeripheral &other) = delete;
-
-  /** @brief Deleted copy assignment operator. */
-  BusPeripheral & operator=(const BusPeripheral &other) = delete;
-
-  /** @brief Deleted move constructor. */
-  BusPeripheral(BusPeripheral &&other) = delete;
-
-  /** @brief Deleted move assignment operator. */
-  BusPeripheral & operator=(BusPeripheral &&other) = delete;
 
   /** @brief   Start receiving data on the user comms peripheral. 
    *  @details This function is called from the Atams::Bus class when a bus init or config update process is started.
@@ -159,9 +135,9 @@ class BusPeripheral
    */
   void update(void);
 
-  private:
+  private: 
 
-  /** @brief User data passed to the BusPeripheral constructor. */
+  /** @brief User data object initialised in the bus constructor */
   const UserData_t userData_;
 
   /** @brief Receive buffer for the user comms peripheral to store incoming bytes. */
@@ -175,7 +151,8 @@ class BusPeripheral
    * @param   rxBufferLength Length of the received data buffer.
    * @details The user must call this function when new bytes have been received.
    *          This function is overridden by the Atams::Bus class. Bytes will be copied
-   *          from rxBufferPtr into an Atams::Bus circular buffer.
+   *          from rxBufferPtr into an Atams::Bus circular buffer in the overidden function.
+   * @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
    */
   virtual void rxCallback(      uint8_t  *rxBufferPtr,
                           const uint16_t  rxBufferLength) = 0;
@@ -186,9 +163,10 @@ class BusPeripheral
 };
 
 /** 
- *  @brief 
+ *  @brief   Memory lock class for multi-threaded applications.
  *
- *  @details
+ *  @details This class provides a lock mechanism for protecting access to
+ *           variable storage resources in a multi-threaded environment.
  *
  *  @note    ATAMS PLATFORM REQUIREMENT - MULTI-THREADED
  */
@@ -213,9 +191,10 @@ class MemoryLock
 };
 
 /**
- *  @brief
+ *  @brief   Comms lock class for event-driven comms.
  *
- *  @details
+ *  @details This class provides a lock mechanism for protecting access to
+ *           communications resources in an event-driven comms environment.
  *
  *  @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
  */

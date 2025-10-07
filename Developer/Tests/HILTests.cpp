@@ -80,7 +80,7 @@ static Atams::TestNode *testNodes_[] =
 {
   &testNode1_,
   &testNode2_,
-  //&testNode3_
+  &testNode3_
 };
 
 /*************************************************************************************/
@@ -92,7 +92,7 @@ static void errorHandler(const Atams::Error_t error, const char * errorMessage)
   printf("Atams Tests Failed with Error: %d\n", error);
 
   if (errorMessage != nullptr) printf("Message: %s\n", errorMessage);
-
+  
   tcflush(serialPort_.lowest_layer().native_handle(), TCIOFLUSH);
 
   serialPort_.cancel();
@@ -124,13 +124,13 @@ static void testBusInit(void)
   error         = testBus_.addNodeToBus(testNode2_);
   if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
-//  //expectedError = Atams::ERROR_NONE;
-  //error         = testBus_.addNodeToBus(testNode3_);
-  //if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+  expectedError = Atams::ERROR_NONE;
+  error         = testBus_.addNodeToBus(testNode3_);
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
-//  //expectedError = Atams::ERROR_BUS_FULL;
-  //error         = testBus_.addNodeToBus(testNode4_);
-  //if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+  expectedError = Atams::ERROR_BUS_FULL;
+  error         = testBus_.addNodeToBus(testNode4_);
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
   expectedError = Atams::ERROR_INIT_ORDER;
   error         = testBus_.beginUpdateCycle();
@@ -167,6 +167,20 @@ static void testBusInit(void)
   if ((initState == Atams::ProcessState::ERROR) || 
       (error     != expectedError             ) ) 
   {
+    for (TestNode *&testNodePtr : testNodes_)
+    {
+      Atams::Error_t nodeError = testNodePtr->getBusError();
+
+      if (nodeError != Atams::ERROR_NONE)
+      {
+        char errorBuffer[100];
+
+        std::snprintf (errorBuffer, sizeof(errorBuffer), "Node %d Bus Error during Init: %d", testNodePtr->getNodeID(), nodeError);
+
+        errorHandler(nodeError, errorBuffer);
+      }
+    }
+
     errorHandler(error, "Unexpected Return from Bus::updateBusInitProcess");
   }
 
@@ -256,7 +270,6 @@ void runTests(void)
   testNode1_.runFunctionArgTests();
 
   testBusInit();
-
  
   runUpdateCycleTests();
 }

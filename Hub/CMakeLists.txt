@@ -11,7 +11,7 @@ set(ATAMS_HUB_LIB_SOURCES
     Node.hpp
     Node.cpp
     Platform.hpp
-    #Platform.cpp
+    Platform.cpp
     Developer/CircularBuffer.hpp
     Developer/CircularBuffer.cpp
     Developer/NodeActions.hpp

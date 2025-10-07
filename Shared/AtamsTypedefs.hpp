@@ -41,7 +41,7 @@ namespace Atams
 /* PRE-PROCESSOR MACROS                                                              */
 /*************************************************************************************/
 
-#define DEVELOPER_TOOLS false
+#define DEVELOPER_TOOLS true
 
 /*************************************************************************************/
 /* PRE-TYPEDEF CONSTANTS                                                             */

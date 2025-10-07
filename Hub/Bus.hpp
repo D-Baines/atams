@@ -164,13 +164,11 @@ private Platform::BusPeripheral
 
   struct ProcessHandlerBase
   {
-    ProcessHandlerBase(void) = default;
-
-    Atams::ProcessState processState     = Atams::ProcessState::ERROR;
-    Atams::ProcessState subProcessState  = Atams::ProcessState::ERROR;
-    Atams::Error_t      error            = Atams::ERROR_INIT_ORDER;
-    uint32_t            prevEventTime    = 0U;
-    bool                allNodesComplete = false;
+    Atams::ProcessState processState     {Atams::ProcessState::ERROR};
+    Atams::ProcessState subProcessState  {Atams::ProcessState::ERROR};
+    Atams::Error_t      error            {Atams::ERROR_INIT_ORDER};
+    uint32_t            prevEventTime    {0U};
+    bool                allNodesComplete {false};
   };
   
   template <typename T>
@@ -178,9 +176,9 @@ private Platform::BusPeripheral
   public ProcessHandlerBase
   {
     ProcessHandler(void) = default;
-    
-    T specificState      = T::COMPLETE;
-    T nextSpecificState  = T::COMPLETE;
+
+    T specificState     {T::COMPLETE};
+    T nextSpecificState {T::COMPLETE};
 
     void terminate(Atams::Error_t error);
     void setProcessComplete(void);

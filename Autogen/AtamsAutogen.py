@@ -34,16 +34,6 @@ def closeWindow(window):
    window.update_idletasks()
    window.destroy()
 
-def center(window):
-    window.update_idletasks()
-    screen_width  = window.winfo_screenwidth()
-    screen_height = window.winfo_screenheight()
-    size = tuple(int(_) for _ in window.geometry().split('+')[0].split('x'))
-    x = screen_width/2  - size[0]/2
-    y = screen_height/2 - size[1]/2
-    window.geometry("+%d+%d" % (x, y))
-    window.update()
-
 tooltipImageDir = resourcePath(os.path.join('Images', 'tooltip.png'))
 tooltipImage    = customtkinter.CTkImage(light_image=Image.open(tooltipImageDir), 
                                          dark_image=Image.open(tooltipImageDir), 
@@ -197,30 +187,32 @@ def main():
                                       "Memory Map Excel File Path:",                    
                                       SearchType.FILE,      
                                       8,
-                                      """\nBrowse and select the Memory Map ".xlsx" file used to \n"""
-                                      "define the memory layout of your Node device. \n\n" 
+                                      """\nBrowse and select the Memory Map table ".xlsx" file used to \n"""
+                                      "define the variable configuration of your Node device. \n\n" 
                                       "An example template can be found here: \n"
-                                      +FRAMEWORK_NAME+os.path.join("Templates", "MemoryMapTemplate.xlsx")+"\n")
+                                      +os.path.join(FRAMEWORK_NAME, "Autogen", "MapTemplate.xlsx")+"\n")
   nodeDirSearch = directorySearchBox(entryFrame, 
                                       "Node Device Directory Path ("+FRAMEWORK_NAME+"/Node):", 
                                       SearchType.DIRECTORY, 
                                       23,
                                       "\nBrowse and select the "+FRAMEWORK_NAME+"/Node folder located \n"
-                                      "in your Node device software workspace. \n"
-                                      "\n\nMemory Map C++ files will be generated in this\n"
-                                      "directory.\n\nEnsure access is permitted to all \n"
+                                      "in your Node device software workspace. \n\n"
+                                      "Memory Map C++ files will be generated in\n"
+                                      "the 'Maps' folder found at this directory.\n\n"
+                                      "Ensure access is permitted to all \n"
                                       "sub-directories.\n")
   hubDirSearch  = directorySearchBox(entryFrame, 
                                       "\nHub Device Directory Path ("+FRAMEWORK_NAME+"/Hub):",   
                                       SearchType.DIRECTORY, 
                                       23,
                                       "\nBrowse and select the "+FRAMEWORK_NAME+"/Hub folder located \n"
-                                      "in your Hub device software workspace. \n"
-                                      "\n\nMemory Map C++ files will be generated in this \n"
-                                      "directory.\n\nEnsure access is permitted to all \n"
+                                      "in your Hub device software workspace. \n\n"
+                                      "Memory Map C++ files will be generated in\n"
+                                      "the 'Maps' folder found at this directory.\n\n"
+                                      "Ensure access is permitted to all \n"
                                       "sub-directories.\n")
 
-  statusLabel = customtkinter.CTkLabel(fullFrame, text="Confirm file paths, input map name, then click to generate C++ Files")
+  statusLabel = customtkinter.CTkLabel(fullFrame, text="Confirm file paths, input map name, then click 'Generate' to generate C++ Files")
   statusLabel.pack(side='bottom')
 
   generateFrame = customtkinter.CTkFrame(fullFrame, width=800, height=100, fg_color="transparent")
