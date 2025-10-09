@@ -1,4 +1,15 @@
 
+# Table of Contents
+- [Introduction](#introduction)
+- [Communications Hardware Requirements](#communications-hardware-requirements)
+- [Platform Requirements](#platform-requirements)
+- [Language Standard](#language-standard)
+- [Memory Maps](#memory-maps)
+- [Auto-generation](#auto-generation)
+- [Memory Map Access](#memory-map-access)
+- [Node Library](#node-library)
+- [Hub Library](#hub-library)
+
 # Introduction
 
 Atams is a C++ framework designed for use in embedded systems where a single central device ("Hub") communicates with and manages multiple distributed devices ("Nodes"). It simplifies variable sharing, synchronisation, and non-volatile storage, making it ideal for robotics, automation, and control applications. 
@@ -70,7 +81,7 @@ The following columns of information are provided. Only the required columns are
 
 | Column Name     | Requirement  | Description    |
 | :-------------: | :----------: | :------------: |
-| Var ID          | Required     | Name of the device variable. This can be provided with any formatting, but will be converted to `SCREAMING_SNAKE_CASE` with a `VAR_` prefix in the Data Block C++ file `VarID_t` enum list. This ID will be used as an input argument for Atams functions so it is worth keeping naming concise where possible. |
+| Var ID          | Required     | Name of the device variable. This can be provided in any format, but will be converted to `SCREAMING_SNAKE_CASE` with a `VAR_` prefix in the Data Block C++ file `VarID_t` enum list. This ID will be used as an input argument for Atams functions so it is worth keeping naming concise where possible. |
 | Data Type       | Required     | Pick from the dropdown list of variable types to define the variable type. Interacting with this variable with any other type will return errors from Atams functions. Atams is compatible with the provided types only. |
 | External Access | Required     | Pick from RO (Read Only), or RW (Read/Write). RO means a Hub device can only read from the selected Node variable. RW means the Hub device can read from and write to the selected Node variable. |
 | Units           | Optional     | Provided only for user documentation purposes. |
@@ -96,10 +107,10 @@ Follow these steps to start auto-generating Memory Maps with the Atams Memory Ma
 > The application will remember any selected paths when restarted.
 
 > [!TIP]  
-> If the Hub and Node are not being developed on the same device, consider generating to local repositories and using version control to efficiently synchronise Memory Map files between development environments. Atams Bus initialisation functions will effectively catch and return errors if the Hub and Node Memory Maps are not synchronised.
+> If the Hub and Node are not being developed on the same device, consider generating to local repositories and using version control to efficiently synchronise Memory Map files between development environments. The Atams Bus initialisation process will effectively catch and return errors if the Hub and Node Memory Maps are not synchronised.
 
 
-# Using the Generated Memory Map Files
+# Memory Map Access
 Once the Memory Map C++ have been generated, they are ready to be used in the Node and Hub libraries.
 
 - **Variable IDs:** Each of the generated Data Block `.hpp` files includes an enum list of the variable IDs associated with that Block. These variable IDs are used as input arguments to Atams functions to specify variable access. An example list might look like this:
@@ -119,7 +130,7 @@ Once the Memory Map C++ have been generated, they are ready to be used in the No
     ```cpp
     #include "Atams/Node/Maps/MapExample/BlockExample1.hpp"
     ```
-- **Variable ID Access:** With the appropriate Map or Block files have been included, an example variable ID could look like this:  
+- **Variable ID Access:** With the appropriate Map or Block files included, an example variable ID could look like this:  
     ```cpp
     Atams::MapExample::BlockExample::VAR_EXAMPLE_1
     ```
@@ -140,7 +151,7 @@ Once the Memory Map C++ have been generated, they are ready to be used in the No
     Atams::write(VAR_EXAMPLE_1, userVariableToWrite); // Variable could belong to BlockExample1 or 2
     ```
 > [!CAUTION]   
-> Block-only header inclusion only provides a loose limit on variable access. The compiler will provide warnings should the user try to use a variable ID that is not provided by the included file, or if a variable ID does not exist in the explicitly specified Block namespace. However, users should be cautious of hidden includes of other Data Block or Memory Map files, or using raw `uint16_t` variables instead of the provided enum named constants as input arguments to Atams functions. Atams functions will always return an error if the variable ID is outside the bounds of the entire Memory Map.
+> Block-only header inclusion only provides a loose limit on variable access. The compiler will provide warnings should the user try to use a variable ID that is not provided by the included file, or if a variable ID does not exist in the explicitly specified Block namespace. However, users should be cautious of hidden includes of other Block or Map files, or using raw `uint16_t` variables instead of the provided enum named constants as input arguments to Atams functions. Atams functions will always return an error if the variable ID is outside the bounds of the entire Memory Map.
 
 
 # Node Library
@@ -148,41 +159,91 @@ Once the Memory Map C++ have been generated, they are ready to be used in the No
 ### Includes & Core Setup
 The Node library is compatible with single and dual-core micro-controllers. The user can decide which setup is more appropriate for their use case, but should aim to minimise Atams communications response times for the best Atams Bus performance.
 
-- **Minimising Response Times:** Care should be taken when using Atams alongside user code containing lengthy, high-priority, device functions. The definition of "lengthy" depends on the use case. If user device functions run at the same priority or higher than an Atams comms update function, the response time of the Node could be at least up to the length of time it takes these user functions to run. One solution for RTOS based systems can be to run the `Atams::updateCommsBlocking(void)` function in a higher priority thread than any user device functions. If this is not possible, the second core of a dual-core MCU can be used to run Atams communications for the quickest Node response times.
+- **Minimising Response Times:** Care should be taken when using Atams alongside user code containing lengthy, high-priority, device functions. If user device functions run at the same priority or higher than an Atams comms update function, the response time of the Node could be at least up to the length of time it takes these user functions to run. One solution for RTOS based systems can be to run the `Atams::updateCommsBlocking(void)` function in a higher priority thread than any user device functions. If this is not possible, the second core of a dual-core MCU can be used to run Atams communications for the quickest Node response times.
 
 - **Single Core Includes:** If the Atams Node library is used on a single core platform, all the necessary Node device functions become accessible with the following header include:
     ```cpp
     #include "Atams/Node/CommsCore/CommsCore.hpp"
     ```
-- **Dual-Core Includes:** If a dual-core setup is used, files with code running on the user application core should include the following header file:
+- **Dual-Core Includes:** If a dual-core setup is used, user application-core files should include the following header:
     ```cpp
     #include "Atams/Node/AppCore/AppCore.hpp"
     ```
-    Files with code running on the core used for Atams communications should then include the following header file:
+    Files running communications-core functions should then include the following header:
     ```cpp
     #include "Atams/Node/CommsCore/CommsCore.hpp"
     ```
 
 ### Comms Core (Single & Dual-Core)
-- **Responsibility:**
-- **Initialisation:**
-- **Comms Update:**
-- **Read and Write:**
+- **Initialisation:** The communications core should be initialized with the Memory Map generated for the device in development. During initialiation, the Memory Map is validated, before the default values are loaded into variable storage. If compatible values exist in non-volatile memory (NVM), they are restored - replacing the default values where applicable. If all checks pass, and the below function returns `Atams::ERROR_NONE`, the comms core is ready for operation.
+
+    ```cpp
+    Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap);
+    ```
+
+    Initialisation example:
+
+    ```cpp
+    #include <stdio.h>
+
+    #include "Atams/Node/CommsCore/CommsCore.hpp"
+    #include "Atams/Node/Maps/MapExample/MapExample.hpp"
+
+    Atams::Error_t initStatus;
+
+    initStatus = initCommsCore(Atams::MapExample::memoryMap);
+
+    if (initStatus != Atams::ERROR_NONE)
+    {
+      // Handle error case
+      printf("Atams Node initialisation error: ");
+      printf(Atams::getErrorString(initStatus));
+    }
+    ```
+
+- **Comms Update:** The Atams communications update functions wait for and process all incoming Bus messages. A single request packet from an Atams Hub can include read and write requests for multiple Atams variables. When a request packet is received, it is stored for processing at the appropriate time. During processing, the comms core will write any received data to the Atams variable storage, read any requested variable data into a Response packet, and transmit the Response packet back to the Hub on the same Bus as the original Request packet.
+
+    The following communications update function should be polled as often as possible from the user code. The longer the delay between calls, the slower the potential response time of the Node device:
+    ```cpp
+    void updateCommsPolling(void);
+    ```
+
+    This alternative version can be called from an RTOS thread. The function will block the calling thread while waiting to receive new packets. Ihe calling thread priority should be as high as possible.
+    ```cpp
+    void updateCommsBlocking(void);
+    ```
+
+- **Read and Write:** The Atams::read and Atams::write functions can be used to read from and write to the Atams variable storage from user code. If `varID` is outside of the Memory Map range, or the Memory Map has not been correctly initialised, the functions will return `Atams::ERROR_VAR_ID`. If the template argument type does not match the type specified for the variable in the Memory Map, the functions will return `Atams::ERROR_VAR_TYPE`. Otherwise, the functions will return `Atams::ERROR_NONE`.
+
+    ```cpp
+    template <typename T>
+    Atams::Error_t write(const uint16_t varID, const T writeValue);
+    
+    template <typename T>
+    Atams::Error_t read(const uint16_t  varID, T &outputRef);
+    ```
 
 ### App Core (Dual-Core Only)
-- **Responsibility:**
 - **Initialisation:**
 - **Read and Write:**
 
 ### Platform Setup
-The Node library is written to maximise compatibility with different user application setups. This includes single or multi-threaded applications running on single or dual-core microcontrollers, alongside polling or event-driven communications peripheral setups. Atams provides platform files that contain all the required user constants, function declarations, and empty function definitions. It is the users responsibility to complete these platform files. The required platform function definitions change depending upon the users core, threading, and communications peripheral setups. Platform file comments are provided above each constant and function definition to aid with correct implementation. 
+The Node library is written to maximise compatibility with different user application setups. This includes single or multi-threaded applications running on single or dual-core microcontrollers, alongside polling or event-driven communications peripheral setups. Atams provides platform files that contain all the required user constants, function declarations, and empty function definitions. The required platform function definitions change depending upon the users core, threading, and communications peripheral setups. Commenting is provided above each constant and function definition to aid with correct implementation. The following Node library files must be completed by the user:
+
+Dual-core only:  
+`Atams/Node/AppCore/AppPlatform.hpp`  
+`Atams/Node/AppCore/AppPlatform.cpp`  
+
+Single and dual-core:  
+`Atams/Node/CommsCore/CommsPlatform.hpp`  
+`Atams/Node/CommsCore/CommsPlatform.cpp`  
 
 - **Function Comments:** The following tags are present in the function definition comments to indicate when the definition is required. Non-applicable function definitions can be left empty; it is recommended to cast any unused function arguments to void to avoid compiler warnings.
 
 | Comment Tag                        | Requirement Condition |  
 | :--------------------------------- | :---------- |  
 | ALL                                | Required for all platform setups. |  
-| MULTI-THREAD                       | Required where Atams variable storage could be accessed concurrently from multiple threads, and/or interrupt contexts, on the given core. It is best to assume that all Atams functions result in variable storage access. | 
+| MULTI-THREAD                       | Required where Atams variable storage could be accessed concurrently from multiple threads, and/or interrupt contexts, on the given core. It is best to assume that all Atams public functions access variable storage. | 
 | DUAL-CORE                          | Required where Atams variable storage could be accessed concurrently from multiple MCU cores. |
 | POLLING COMMS                      | Required where the platform hardware needs to be polled in order to receive incoming bytes. |
 | EVENT DRIVEN COMMS                 | Required where bytes are received into an interrupt or event context separate from the context running an Atams comms update function. |
@@ -203,43 +264,12 @@ The Node library is written to maximise compatibility with different user applic
 
 ### Node Initialisation
 
-### Bus Setup
+### Bus Configuration
+
+### Bus Initialisation Procedure
 
 ### Bus Update Cycle
 
 ### Platform Implementation
 
 
-
-
-
-
-# README #
-
-This README would normally document whatever steps are necessary to get your application up and running.
-
-### What is this repository for? ###
-
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
-
-### How do I get set up? ###
-
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
-
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
