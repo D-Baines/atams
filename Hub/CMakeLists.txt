@@ -46,8 +46,8 @@ add_library(${PROJECT_NAME} ${ATAMS_HUB_SOURCES})
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
 # Add user-supplied include directories, libraries, and sources if set
-if(ATAMS_HUB_USER_INCLUDE)
-    target_include_directories(${PROJECT_NAME} PUBLIC "${ATAMS_HUB_USER_INCLUDE}")
+if(ATAMS_HUB_USER_INCLUDES)
+    target_include_directories(${PROJECT_NAME} PUBLIC "${ATAMS_HUB_USER_INCLUDES}")
 endif()
 if(ATAMS_HUB_USER_LIBS)
     target_link_libraries(${PROJECT_NAME} PUBLIC ${ATAMS_HUB_USER_LIBS})
