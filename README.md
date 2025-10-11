@@ -142,16 +142,17 @@ Once the Memory Map C++ have been generated, they are ready to be used in the No
     // Recommended 
     using namespace Atams::MapExample;
 
-    Atams::write(BlockExample1::VAR_EXAMPLE_1, userVariableToWrite);
+    Atams::write(BlockExample1::VAR_EXAMPLE_1, variableToWrite);
     
     // Not Recommended 
     using namespace Atams::MapExample::BlockExample1;
     using namespace Atams::MapExample::BlockExample2;
 
-    Atams::write(VAR_EXAMPLE_1, userVariableToWrite); // Variable could belong to BlockExample1 or 2
+    // Variable could belong to BlockExample1 or 2
+    Atams::write(VAR_EXAMPLE_1, variableToWrite);
     ```
 > [!CAUTION]   
-> Block-only header inclusion only provides a loose limit on variable access. The compiler will provide warnings should the user try to use a variable ID that is not provided by the included file, or if a variable ID does not exist in the explicitly specified Block namespace. However, users should be cautious of hidden includes of other Block or Map files, or using raw `uint16_t` variables instead of the provided enum named constants as input arguments to Atams functions. Atams functions will always return an error if the variable ID is outside the bounds of the entire Memory Map.
+> Block-only header inclusion provides a loose limit on variable access. The compiler will provide warnings should the user try to use a variable ID that is not provided by the included file, or if a variable ID does not exist in the explicitly specified Block namespace. However, users should be cautious of hidden includes of other Block or Map files, or using raw `uint16_t` variables instead of the provided enum named constants as input arguments to Atams functions. Atams functions will always return an error if the variable ID is outside the bounds of the entire Memory Map.
 
 
 # Node Library
@@ -159,7 +160,7 @@ Once the Memory Map C++ have been generated, they are ready to be used in the No
 ### Includes & Core Setup
 The Node library is compatible with single and dual-core micro-controllers. The user can decide which setup is more appropriate for their use case, but should aim to minimise Atams communications response times for the best Atams Bus performance.
 
-- **Minimising Response Times:** Care should be taken when using Atams alongside user code containing lengthy, high-priority, device functions. If user device functions run at the same priority or higher than an Atams comms update function, the response time of the Node could be at least up to the length of time it takes these user functions to run. One solution for RTOS based systems can be to run the `Atams::updateCommsBlocking(void)` function in a higher priority thread than any user device functions. If this is not possible, the second core of a dual-core MCU can be used to run Atams communications for the quickest Node response times.
+- **Minimising Response Times:** Care should be taken when using Atams alongside user code containing high-priority, device functions. If user device functions run at the same priority or higher than an Atams comms update function, the response time of the Node could be up to, or greater than, the length of time it takes these user functions to run. One solution for RTOS based systems can be to run the `Atams::updateCommsBlocking(void)` function in a higher priority thread than any user device functions. If this is not possible, the second core of a dual-core MCU can be used to run Atams communications for the quickest Node response times.
 
 - **Single Core Includes:** If the Atams Node library is used on a single core platform, all the necessary Node device functions become accessible with the following header include:
     ```cpp
@@ -175,8 +176,16 @@ The Node library is compatible with single and dual-core micro-controllers. The 
     ```
 
 ### Comms Core (Single & Dual-Core)
-- **Initialisation:** The communications core should be initialized with the Memory Map generated for the device in development. During initialiation, the Memory Map is validated, before the default values are loaded into variable storage. If compatible values exist in non-volatile memory (NVM), they are restored - replacing the default values where applicable. If all checks pass, and the below function returns `Atams::ERROR_NONE`, the comms core is ready for operation.
+- **Initialisation:** The communications core should be initialised with the Memory Map generated for the device-in-development. During initialiation, the Memory Map is validated, before the default values are loaded into the Atams variable storage. If compatible values exist in non-volatile memory (NVM), they are restored - replacing the default values where applicable. If all checks pass, and the init function returns `Atams::ERROR_NONE`, the comms core is ready for operation. 
 
+    There are two versions of the comms core init functions. When used, the dual-core function handles synchronisation with the user application core.
+
+    Single-core function:
+    ```cpp
+    Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap);
+    ```
+
+    Dual-core function:
     ```cpp
     Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap);
     ```
@@ -191,7 +200,7 @@ The Node library is compatible with single and dual-core micro-controllers. The 
 
     Atams::Error_t initStatus;
 
-    initStatus = initCommsCore(Atams::MapExample::memoryMap);
+    initStatus = initSingleCore(Atams::MapExample::memoryMap);
 
     if (initStatus != Atams::ERROR_NONE)
     {
@@ -201,19 +210,19 @@ The Node library is compatible with single and dual-core micro-controllers. The 
     }
     ```
 
-- **Comms Update:** The Atams communications update functions wait for and process all incoming Bus messages. A single request packet from an Atams Hub can include read and write requests for multiple Atams variables. When a request packet is received, it is stored for processing at the appropriate time. During processing, the comms core will write any received data to the Atams variable storage, read any requested variable data into a Response packet, and transmit the Response packet back to the Hub on the same Bus as the original Request packet.
+- **Comms Update:** The Atams communications update functions wait for and process all incoming Bus messages. A single Request Packet from an Atams Hub can include read and write requests for multiple Atams variables. When a Request Packet is received, it is stored for processing at the appropriate time. During processing, the Request Packet is first validated. The comms core will then write any received data to the Atams variable storage, read any requested variable data into a Response packet, and transmit the Response packet back to the Hub on the same Bus used to receive the original Request packet.
 
-    The following communications update function should be polled as often as possible from the user code. The longer the delay between calls, the slower the potential response time of the Node device:
+    If used, the following communications update function should be polled as often as possible from the user code. The longer the delay between calls, the slower the potential response time of the Node device:
     ```cpp
     void updateCommsPolling(void);
     ```
 
-    This alternative version can be called from an RTOS thread. The function will block the calling thread while waiting to receive new packets. Ihe calling thread priority should be as high as possible.
+    This alternative version can be called from an RTOS thread. The function will block the calling thread while waiting to receive new packets. The calling thread priority should be set as high as possible.
     ```cpp
     void updateCommsBlocking(void);
     ```
 
-- **Read and Write:** The Atams::read and Atams::write functions can be used to read from and write to the Atams variable storage from user code. If `varID` is outside of the Memory Map range, or the Memory Map has not been correctly initialised, the functions will return `Atams::ERROR_VAR_ID`. If the template argument type does not match the type specified for the variable in the Memory Map, the functions will return `Atams::ERROR_VAR_TYPE`. Otherwise, the functions will return `Atams::ERROR_NONE`.
+- **Read and Write:** The `Atams::read` and `Atams::write` functions can be used to read from and write to the Atams variable storage from the user application code. If `varID` is outside of the Memory Map range, or the Memory Map has not been correctly initialised, the functions will return `Atams::ERROR_VAR_ID`. If the template argument type does not match the type specified for the variable in the Memory Map, the functions will return `Atams::ERROR_VAR_TYPE`. Otherwise, the functions will return `Atams::ERROR_NONE`.
 
     ```cpp
     template <typename T>
@@ -224,19 +233,19 @@ The Node library is compatible with single and dual-core micro-controllers. The 
     ```
 
 ### App Core (Dual-Core Only)
-- **Initialisation:**
+- **Initialisation:** 
 - **Read and Write:**
 
 ### Platform Setup
 The Node library is written to maximise compatibility with different user application setups. This includes single or multi-threaded applications running on single or dual-core microcontrollers, alongside polling or event-driven communications peripheral setups. Atams provides platform files that contain all the required user constants, function declarations, and empty function definitions. The required platform function definitions change depending upon the users core, threading, and communications peripheral setups. Commenting is provided above each constant and function definition to aid with correct implementation. The following Node library files must be completed by the user:
 
-Dual-core only:  
-`Atams/Node/AppCore/AppPlatform.hpp`  
-`Atams/Node/AppCore/AppPlatform.cpp`  
-
 Single and dual-core:  
 `Atams/Node/CommsCore/CommsPlatform.hpp`  
 `Atams/Node/CommsCore/CommsPlatform.cpp`  
+
+Dual-core only:  
+`Atams/Node/AppCore/AppPlatform.hpp`  
+`Atams/Node/AppCore/AppPlatform.cpp`  
 
 - **Function Comments:** The following tags are present in the function definition comments to indicate when the definition is required. Non-applicable function definitions can be left empty; it is recommended to cast any unused function arguments to void to avoid compiler warnings.
 
