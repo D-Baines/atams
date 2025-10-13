@@ -25,10 +25,12 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "string.h"
-#include <type_traits>
 #include "AppCore.hpp"
+
+#include "string.h"
+
 #include "AppPlatform.hpp"
+#include "Atams/Node/Developer/NodeUtilities.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"
 #include "../../Shared/Utilities/AtamsUtilities.hpp"
 
@@ -42,19 +44,11 @@ namespace Atams {
 /* PRIVATE CONSTANTS                                                                 */
 /*************************************************************************************/
 
-static constexpr uint32_t CORE_STATUS_CHECK_PERIOD = 10U;
 
 /*************************************************************************************/
 /* PRIVATE TYPEDEFS                                                                  */
 /*************************************************************************************/
 
-enum CoreInitStatus_t: uint8_t
-{
-  CORE_INIT_IN_PROGRESS = 0U,
-  CORE_INIT_COMPLETE    = 1U
-};
-
-using VarStorage_t = uint8_t[Atams::MAX_TYPE_SIZE];
 
 /*************************************************************************************/
 /* PRIVATE CLASS OBJECTS                                                             */
@@ -78,53 +72,6 @@ static Atams::VarStorage_t s_varStorage[Platform::NODE_NUMBER_OF_VARS];
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
-
-template <typename T>
-constexpr Atams::VarType_t getAtamsType(void)
-{
-    if      constexpr (std::is_same<T, uint8_t>::value)  return (Atams::TYPE_UINT8);
-    else if constexpr (std::is_same<T, int8_t>::value)   return (Atams::TYPE_INT8);
-    else if constexpr (std::is_same<T, uint16_t>::value) return (Atams::TYPE_UINT16);
-    else if constexpr (std::is_same<T, int16_t>::value)  return (Atams::TYPE_INT16);
-    else if constexpr (std::is_same<T, uint32_t>::value) return (Atams::TYPE_UINT32);
-    else if constexpr (std::is_same<T, int32_t>::value)  return (Atams::TYPE_INT32);
-    else if constexpr (std::is_same<T, float>::value)    return (Atams::TYPE_FLOAT);
-    return (Atams::TYPE_NULL);
-}
-
-template<typename T>
-inline void writeToVarStorage(const T inputVar, Atams::VarStorage_t &varStorage)
-{
-  static_assert(sizeof(T) <= Atams::MAX_TYPE_SIZE, "Incompatible type size used in writeToVarStorage");
-
-  uint32_t tempVar;
-
-  if constexpr (std::is_same<T, float>::value) memcpy(&tempVar, &inputVar, sizeof(tempVar));
-  else                                         tempVar = static_cast<uint32_t>(inputVar);
-
-  /* Little endian: LSB first */
-  varStorage[0U] = static_cast<uint8_t>((tempVar                     ) & SINGLE_BYTE_MASK);
-  varStorage[1U] = static_cast<uint8_t>((tempVar >> SINGLE_BYTE_SHIFT) & SINGLE_BYTE_MASK);
-  varStorage[2U] = static_cast<uint8_t>((tempVar >> TWO_BYTE_SHIFT   ) & SINGLE_BYTE_MASK);
-  varStorage[3U] = static_cast<uint8_t>((tempVar >> THREE_BYTE_SHIFT ) & SINGLE_BYTE_MASK);
-}
-
-template<typename T>
-inline void readFromVarStorage(T &outputVar, const Atams::VarStorage_t &varStorage)
-{
-  static_assert(sizeof(T) <= Atams::MAX_TYPE_SIZE, "Incompatible type size used in readFromVarStorage");
-
-  uint32_t tempVar;
-
-  /* Little endian: LSB first */
-  tempVar = ((static_cast<uint32_t>(varStorage[0U])                     ) |
-             (static_cast<uint32_t>(varStorage[1U]) << SINGLE_BYTE_SHIFT) |
-             (static_cast<uint32_t>(varStorage[2U]) << TWO_BYTE_SHIFT   ) |
-             (static_cast<uint32_t>(varStorage[3U]) << THREE_BYTE_SHIFT ) );
-
-  if constexpr (std::is_same<T, float>::value) memcpy(&outputVar, &tempVar, sizeof(outputVar));
-  else                                         outputVar = static_cast<T>(tempVar);
-}
 
 static void resetVars(void)
 {
@@ -224,7 +171,7 @@ template Atams::Error_t write<int32_t >(const uint16_t varID, const int32_t  wri
 template Atams::Error_t write<float   >(const uint16_t varID, const float    writeValue);
 
 template <typename T>
-Atams::Error_t read(const uint16_t  varID, T &outputRef)
+Atams::Error_t read(const uint16_t varID, T &outputRef)
 {
   if (varID >= s_validVarCount) return (Atams:: ERROR_VAR_ID); /* Early Return */
 

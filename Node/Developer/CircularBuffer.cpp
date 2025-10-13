@@ -43,7 +43,7 @@ CircularBuffer::CircularBuffer(void)
   for (uint8_t &byte :buffer_) byte = 0U;
 }
 
-CircularBuffer::CircularBuffer(const uint8_t                  endOfLineChar,
+CircularBuffer::CircularBuffer(const uint8_t                       endOfLineChar,
                                const Platform::CommsPeripheralID_t channelToLock)
 {
   eolChar_      = endOfLineChar;

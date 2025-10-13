@@ -31,7 +31,7 @@
 #include <stdint.h>
 
 #include "../../Shared/AtamsTypedefs.hpp"
-#include "../Developer/NodeUtilities.hpp"
+#include "../Developer/NodeTypedefs.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -52,6 +52,8 @@ namespace Atams {
 /*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
+
+Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap);
 
 Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap);
 

@@ -48,8 +48,9 @@ class CircularBuffer
 
   /*-- Public Constants -------------------------------------------------------------*/
 
-  static inline constexpr uint8_t                  DEFAULT_EOL_CHAR      {0U};
-  static inline constexpr Platform::CommsPeripheralID_t DEFAULT_LOCK_ARGUMENT {static_cast<Platform::CommsPeripheralID_t>(0U)};
+  static constexpr uint8_t DEFAULT_EOL_CHAR {0U};
+
+  static constexpr Platform::CommsPeripheralID_t DEFAULT_LOCK_ARGUMENT {static_cast<Platform::CommsPeripheralID_t>(0U)};
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
@@ -72,7 +73,7 @@ class CircularBuffer
   CircularBuffer(void);
 
   /* Constructor */
-  CircularBuffer(const uint8_t                  endOfLineChar,
+  CircularBuffer(const uint8_t                       endOfLineChar,
                  const Platform::CommsPeripheralID_t channelToLock);
 
   void setEOLChar(const uint8_t endOfLineChar);
@@ -102,8 +103,8 @@ class CircularBuffer
 
   /*-- Private Static Constants -----------------------------------------------------*/
 
-  static inline constexpr uint16_t STATIC_BUFFER_SIZE {Platform::CIRCULAR_BUFFER_SIZE};
-  static inline constexpr uint8_t  NEW_DATA_READY     {1U};
+  static constexpr uint16_t STATIC_BUFFER_SIZE {Platform::CIRCULAR_BUFFER_SIZE};
+  static constexpr uint8_t  NEW_DATA_READY     {1U};
 
   /*-- Private Constants ------------------------------------------------------------*/
 
@@ -123,7 +124,7 @@ class CircularBuffer
 
   uint8_t buffer_[STATIC_BUFFER_SIZE];
 
-  uint8_t                  eolChar_      {DEFAULT_EOL_CHAR};
+  uint8_t                       eolChar_      {DEFAULT_EOL_CHAR};
   Platform::CommsPeripheralID_t lockArgument_ {DEFAULT_LOCK_ARGUMENT};
 
   /*-- Private Function Declarations ------------------------------------------------*/

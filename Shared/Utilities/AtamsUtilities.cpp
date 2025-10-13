@@ -116,21 +116,15 @@ static bool validateUniversalBlock(const SharedMemoryMap_t &memoryMap)
 
 static bool validateMapChecksum(const SharedMemoryMap_t &memoryMap)
 {
-  uint16_t varIndex = 0U;
-
   atamsCRC_.beginRollingCRC();
 
   for (uint16_t varID = BlockUniversal::NUMBER_OF_VARS; varID < memoryMap.noOfVars; varID++)
   {
     const VarInfo_t varInfo = memoryMap.varInfoList[varID];
 
-    if (varIndex == memoryMap.noOfVars) break;
-
     atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.type));
     atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.externalAccess));
     atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.NVMStorage));
-
-    varIndex++;
   }
 
   uint32_t calculatedChecksum = atamsCRC_.getRollingCRC();

@@ -28,13 +28,13 @@
 #include "CommsCore.hpp"
 
 #include "string.h"
-#include <type_traits>
 
 #include "CommsPlatform.hpp"
+#include "Atams/Node/Developer/NodeUtilities.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"
 #include "../../Shared/Utilities/AtamsUtilities.hpp"
 #include "../../Shared/Utilities/CRC32.hpp"
-#include "../Developer/NodeUtilities.hpp"
+#include "../Developer/NodeTypedefs.hpp"
 #include "../Developer/CircularBuffer.hpp"
 #include "../Developer/WatchdogHandler.hpp"
 #include "../Developer/ConfigurationHandler.hpp"
@@ -50,7 +50,6 @@ namespace Atams {
 /* PRIVATE CONSTANTS                                                                 */
 /*************************************************************************************/
 
-static constexpr uint32_t CORE_STATUS_CHECK_PERIOD = 10U;
 
 /*************************************************************************************/
 /* PRIVATE TYPEDEFS                                                                  */
@@ -61,12 +60,6 @@ enum NodeCommsState_t: uint8_t
   NODE_COMMS_UNINITIALISED = 0U,
   NODE_COMMS_INITIALISED   = 1U,
   NODE_COMMS_ACTIVE        = 2U
-};
-
-enum CoreInitStatus_t: uint8_t
-{
-  CORE_INIT_IN_PROGRESS = 0U,
-  CORE_INIT_COMPLETE    = 1U
 };
 
 enum NVMTransfer_t : uint8_t
@@ -88,8 +81,6 @@ struct ChannelSyncPacket_t
   uint8_t  buffer[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   uint16_t length    = 0U;
 };
-
-using VarStorage_t = uint8_t[Atams::MAX_TYPE_SIZE];
 
 /*************************************************************************************/
 /* PRIVATE CLASS OBJECTS                                                             */
@@ -114,62 +105,15 @@ static uint8_t          s_activeSyncCount     {0U};
 static bool             s_appCoreInitRequired {true};
 
 /* Core Init Synchronisation */
-ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
+//ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 static CoreInitStatus_t s_coreInitComplete[Atams::NUMBER_OF_CORES] {CORE_INIT_IN_PROGRESS, CORE_INIT_IN_PROGRESS};
 
-ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
+//ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 static Atams::VarStorage_t s_varStorage[Platform::NODE_NUMBER_OF_VARS];
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
-
-template <typename T>
-constexpr Atams::VarType_t getAtamsType(void)
-{
-    if      constexpr (std::is_same<T, uint8_t>::value)  return (Atams::TYPE_UINT8);
-    else if constexpr (std::is_same<T, int8_t>::value)   return (Atams::TYPE_INT8);
-    else if constexpr (std::is_same<T, uint16_t>::value) return (Atams::TYPE_UINT16);
-    else if constexpr (std::is_same<T, int16_t>::value)  return (Atams::TYPE_INT16);
-    else if constexpr (std::is_same<T, uint32_t>::value) return (Atams::TYPE_UINT32);
-    else if constexpr (std::is_same<T, int32_t>::value)  return (Atams::TYPE_INT32);
-    else if constexpr (std::is_same<T, float>::value)    return (Atams::TYPE_FLOAT);
-    return (Atams::TYPE_NULL);
-}
-
-template<typename T>
-inline void writeToVarStorage(const T inputVar, Atams::VarStorage_t &varStorage)
-{
-  static_assert(sizeof(T) <= Atams::MAX_TYPE_SIZE, "Incompatible type size used in writeToVarStorage");
-
-  uint32_t tempVar;
-
-  if constexpr (std::is_same<T, float>::value) memcpy(&tempVar, &inputVar, sizeof(tempVar));
-  else                                         tempVar = static_cast<uint32_t>(inputVar);
-
-  /* Little endian: LSB first */
-  varStorage[0U] = static_cast<uint8_t>((tempVar                     ) & SINGLE_BYTE_MASK);
-  varStorage[1U] = static_cast<uint8_t>((tempVar >> SINGLE_BYTE_SHIFT) & SINGLE_BYTE_MASK);
-  varStorage[2U] = static_cast<uint8_t>((tempVar >> TWO_BYTE_SHIFT   ) & SINGLE_BYTE_MASK);
-  varStorage[3U] = static_cast<uint8_t>((tempVar >> THREE_BYTE_SHIFT ) & SINGLE_BYTE_MASK);
-}
-
-template<typename T>
-inline void readFromVarStorage(T &outputVar, const Atams::VarStorage_t &varStorage)
-{
-  static_assert(sizeof(T) <= Atams::MAX_TYPE_SIZE, "Incompatible type size used in readFromVarStorage");
-
-  uint32_t tempVar;
-
-  /* Little endian: LSB first */
-  tempVar = ((static_cast<uint32_t>(varStorage[0U])                     ) |
-             (static_cast<uint32_t>(varStorage[1U]) << SINGLE_BYTE_SHIFT) |
-             (static_cast<uint32_t>(varStorage[2U]) << TWO_BYTE_SHIFT   ) |
-             (static_cast<uint32_t>(varStorage[3U]) << THREE_BYTE_SHIFT ) );
-
-  if constexpr (std::is_same<T, float>::value) memcpy(&outputVar, &tempVar, sizeof(outputVar));
-  else                                         outputVar = static_cast<T>(tempVar);
-}
 
 static void resetVars(void)
 {
@@ -247,8 +191,8 @@ static DataStatusReturn_t<uint8_t> getVarLength(const uint16_t varID)
 }
 
 static void receiveCallback(const Platform::CommsPeripheralID_t commsChannel,
-                                  uint8_t                 *rxBufferPtr,
-                            const uint16_t                 rxBufferLength)
+                                  uint8_t                      *rxBufferPtr,
+                            const uint16_t                      rxBufferLength)
 {
   if (commsChannel < Platform::NUMBER_OF_COMMS_PERIPHERALS)
   {
@@ -279,8 +223,8 @@ static void abortResponse(ChannelResponse_t &response, const Atams::Error_t erro
 }
 
 static void sendResponsePacket(Platform::CommsPeripheralID_t commsChannel,
-                               ChannelResponse_t       &response,
-                               Atams::MessageType_t     messageType)
+                               ChannelResponse_t                 &response,
+                               Atams::MessageType_t               messageType)
 {
   static uint8_t  encodedResponseBuffer[Platform::MAX_BUS_PACKET_SIZE] = {0U};
   static uint16_t encodedLength = 0U;
@@ -530,8 +474,8 @@ static void setAbortMessageType(ChannelResponse_t &response, const MessageType_t
 }
 
 static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsChannel,
-                                     const uint8_t          * const packetBuffer,
-                                     const uint16_t                 packetLength)
+                                     const uint8_t * const                    packetBuffer,
+                                     const uint16_t                           packetLength)
 {
   static uint8_t             decodedPacket[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   static uint16_t            decodedLength = 0U;
@@ -619,8 +563,8 @@ static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsCh
 
 static void processRawMeshData(void)
 {
-  static uint8_t  meshPacketRXBuffer[Platform::MAX_BUS_PACKET_SIZE] = {0U};
-  static uint16_t meshPacketRXLength                                = 0U;
+  static uint8_t  meshPacketRXBuffer[Platform::MAX_BUS_PACKET_SIZE];
+  static uint16_t meshPacketRXLength {0U};
 
   if (s_bufferResetRequired == true)
   {
@@ -883,13 +827,13 @@ static Atams::Error_t extractNVMFooter(const NVMHeader_t &nvmHeader, NVMFooter_t
 
 static Atams::Error_t validateNVMHeaderFooter(NVMHeader_t &nvmHeader, NVMFooter_t &nvmFooter)
 {
-  if (Platform::NVM_STORAGE_SIZE < sizeof(NVMHeader_t))            return (Atams::ERROR_NVM_PLATFORM_SIZE);   /* Early Return */
+  if (Platform::NVM_STORAGE_SIZE < sizeof(NVMHeader_t))       return (Atams::ERROR_NVM_PLATFORM_SIZE);   /* Early Return */
 
   if (extractNVMHeader(nvmHeader) != Atams::ERROR_NONE)            return (Atams::ERROR_PLATFORM);            /* Early Return */
 
   if (nvmHeader.identifier != Atams::NVM_HEADER_IDENTIFIER_VALID)  return (Atams::ERROR_NVM_HEADER_VALIDITY); /* Early Return */
 
-  if (Platform::NVM_STORAGE_SIZE < nvmHeader.length)               return (Atams::ERROR_NVM_HEADER_LENGTH);   /* Early Return */
+  if (Platform::NVM_STORAGE_SIZE < nvmHeader.length)          return (Atams::ERROR_NVM_HEADER_LENGTH);   /* Early Return */
 
   if (extractNVMFooter(nvmHeader, nvmFooter) != Atams::ERROR_NONE) return (Atams::ERROR_PLATFORM);            /* Early Return */
 
@@ -1009,7 +953,7 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
 template <typename T>
 Atams::Error_t write(const uint16_t varID, const T writeValue)
 {
-  if (varID >= s_validVarCount) return (Atams:: ERROR_VAR_ID); /* Early Return */
+  if (varID >= s_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
   const Atams::VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
 
@@ -1035,7 +979,7 @@ template Atams::Error_t write<int32_t >(const uint16_t varID, const int32_t  wri
 template Atams::Error_t write<float   >(const uint16_t varID, const float    writeValue);
 
 template <typename T>
-Atams::Error_t read(const uint16_t  varID, T &outputRef)
+Atams::Error_t read(const uint16_t varID, T &outputRef)
 {
   if (varID >= s_validVarCount) return (Atams:: ERROR_VAR_ID); /* Early Return */
 

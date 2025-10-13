@@ -191,7 +191,7 @@ bool transmitBuffer(CommsPeripheralID_t peripheralID, uint8_t *buffer, uint16_t 
 void acquireCommsBufferLock(CommsPeripheralID_t peripheralToLock)
 {
   static_cast<void>(peripheralToLock);
-  //HAL_NVIC_DisableIRQ(USART2_IRQn);
+  HAL_NVIC_DisableIRQ(USART2_IRQn);
   HAL_NVIC_DisableIRQ(DMA1_Stream0_IRQn);
 }
 
@@ -212,7 +212,7 @@ void acquireCommsBufferLock(CommsPeripheralID_t peripheralToLock)
 void releaseCommsBufferLock(CommsPeripheralID_t peripheralToUnlock)
 {
   static_cast<void>(peripheralToUnlock);
-  //HAL_NVIC_EnableIRQ(USART2_IRQn);
+  HAL_NVIC_EnableIRQ(USART2_IRQn);
   HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
 }
 
@@ -406,11 +406,11 @@ void setBitrate(Atams::BitrateOption_t bitrateOption)
  *
  * @note    ATAMS PLATFORM REQUIREMENT - ALL
  */
-void resetNode(void)
+Atams::Error_t resetNode(void)
 {
   HAL_NVIC_SystemReset();
 
-  return (false);
+  return (Atams::ERROR_PLATFORM);
 }
 
 } } /* End Namespace - Atams::Platform */

@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    CommsPlatform.hpp
+  * @file    Platform.hpp
   *
   * @author  D. Baines
   *
@@ -70,9 +70,9 @@ typedef enum: uint8_t
   NUMBER_OF_COMMS_PERIPHERALS
 } CommsPeripheralID_t;
 
-typedef void (*CommsReceiveCallback_t)(const Platform::CommsPeripheralID_t commsChannel,
-                                             uint8_t                      *rxBufferPtr,
-                                       const uint16_t                      rxBufferLength);
+typedef void (*CommsReceiveCallback_t)(const CommsPeripheralID_t commsChannel,
+                                             uint8_t            *rxBufferPtr,
+                                       const uint16_t            rxBufferLength);
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
@@ -118,7 +118,7 @@ void exitConfigurationState(void);
 
 void setBitrate(Atams::BitrateOption_t bitrateOption);
 
-void resetNode(void);
+Atams::Error_t resetNode(void);
 
 
 } } /* End Namespace - Atams::Platform */

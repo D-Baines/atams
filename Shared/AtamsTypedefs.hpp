@@ -73,6 +73,11 @@ inline constexpr uint32_t RESTORE_ALL_PASSCODE          = 0x52535452U;
 inline constexpr uint32_t RESET_NODE_PASSCODE           = 0x4E525354U;
 inline constexpr uint32_t WATCHDOG_RESET_PASSCODE       = 0x57444F47U;
 
+inline constexpr uint8_t THREE_BYTE_SHIFT  = 24U;
+inline constexpr uint8_t TWO_BYTE_SHIFT    = 16U;
+inline constexpr uint8_t SINGLE_BYTE_SHIFT = 8U;
+inline constexpr uint8_t SINGLE_BYTE_MASK  = 0xFFU;
+
 /*************************************************************************************/
 /* STATIC ASSERTIONS                                                                 */
 /*************************************************************************************/

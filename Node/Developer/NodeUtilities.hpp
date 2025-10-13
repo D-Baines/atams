@@ -29,7 +29,11 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+#include <type_traits>
+#include "string.h"
+
 #include "../../Shared/AtamsTypedefs.hpp"
+#include "NodeTypedefs.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -46,44 +50,44 @@ namespace Atams {
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
 
-typedef Atams::Error_t (&InitUniversalDataFn_t)(void);
-typedef Atams::Error_t (&InitDefaultsFn_t)(void);
 
-struct MemoryMap_t :
-public SharedMemoryMap_t
+/*************************************************************************************/
+/* PUBLIC TEMPLATE FUNCTION DEFINITIONS                                              */
+/*************************************************************************************/
+
+template<typename T>
+inline void writeToVarStorage(const T inputVar, Atams::VarStorage_t &varStorage)
 {
-  const InitUniversalDataFn_t initGenInfo;
-  const InitDefaultsFn_t      initUserDefaults;
+  static_assert(sizeof(T) <= Atams::MAX_TYPE_SIZE, "Incompatible type size used in writeToVarStorage");
 
-  MemoryMap_t(const SharedMemoryMap_t    &initSharedMemoryMap,
-              const InitUniversalDataFn_t initGenInfoFn,
-              const InitDefaultsFn_t      initUserDefaultsFn) :
-  SharedMemoryMap_t(initSharedMemoryMap),
-  initGenInfo(initGenInfoFn),
-  initUserDefaults(initUserDefaultsFn){};
+  uint32_t tempVar;
 
-  /* Default Constructor */
-  MemoryMap_t(void) = delete;
+  if constexpr (std::is_same<T, float>::value) memcpy(&tempVar, &inputVar, sizeof(tempVar));
+  else                                         tempVar = static_cast<uint32_t>(inputVar);
 
-  /* Default Destructor */
-  ~MemoryMap_t(void){};
+  /* Little endian: LSB first */
+  varStorage[0U] = static_cast<uint8_t>((tempVar                     ) & SINGLE_BYTE_MASK);
+  varStorage[1U] = static_cast<uint8_t>((tempVar >> SINGLE_BYTE_SHIFT) & SINGLE_BYTE_MASK);
+  varStorage[2U] = static_cast<uint8_t>((tempVar >> TWO_BYTE_SHIFT   ) & SINGLE_BYTE_MASK);
+  varStorage[3U] = static_cast<uint8_t>((tempVar >> THREE_BYTE_SHIFT ) & SINGLE_BYTE_MASK);
+}
 
-  /* Copy Constructor */
-  MemoryMap_t(const MemoryMap_t &other) = delete;
+template<typename T>
+inline void readFromVarStorage(T &outputVar, const Atams::VarStorage_t &varStorage)
+{
+  static_assert(sizeof(T) <= Atams::MAX_TYPE_SIZE, "Incompatible type size used in readFromVarStorage");
 
-  /* Copy Assignment Operator */
-  MemoryMap_t & operator=(const MemoryMap_t &other) = delete;
+  uint32_t tempVar;
 
-  /* Move Constructor */
-  MemoryMap_t(MemoryMap_t &&other) = delete;
+  /* Little endian: LSB first */
+  tempVar = ((static_cast<uint32_t>(varStorage[0U])                     ) |
+             (static_cast<uint32_t>(varStorage[1U]) << SINGLE_BYTE_SHIFT) |
+             (static_cast<uint32_t>(varStorage[2U]) << TWO_BYTE_SHIFT   ) |
+             (static_cast<uint32_t>(varStorage[3U]) << THREE_BYTE_SHIFT ) );
 
-  /* Move Assignment Operator */
-  MemoryMap_t & operator=(MemoryMap_t &&other) = delete;
-};
-
-/*************************************************************************************/
-/* PUBLIC FUNCTION DECLARATIONS                                                      */
-/*************************************************************************************/
+  if constexpr (std::is_same<T, float>::value) memcpy(&outputVar, &tempVar, sizeof(outputVar));
+  else                                         outputVar = static_cast<T>(tempVar);
+}
 
 
 } /* End Namespace - Atams */
