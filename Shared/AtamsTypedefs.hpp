@@ -47,36 +47,36 @@ namespace Atams
 /* PRE-TYPEDEF CONSTANTS                                                             */
 /*************************************************************************************/
 
-inline constexpr uint8_t ATAMS_VERSION_MAJOR = 0U;
-inline constexpr uint8_t ATAMS_VERSION_MINOR = 1U;
+constexpr uint8_t ATAMS_VERSION_MAJOR = 0U;
+constexpr uint8_t ATAMS_VERSION_MINOR = 1U;
 
-inline constexpr uint8_t  NODE_ID_MAX                   = 254U;
-inline constexpr uint8_t  MAX_NUMBER_OF_NODES_PER_BUS   = 255U;
-inline constexpr uint16_t MAX_NUMBER_OF_VARS            = 8191U;
-inline constexpr uint16_t VAR_ID_NULL                   = 8191U;
-inline constexpr uint8_t  MAX_TYPE_SIZE                 = 4U;
-inline constexpr uint8_t  EOL_BYTE                      = 0U;
-inline constexpr int32_t  MAX_INT32                     = 2147483647L;
-inline constexpr int32_t  MIN_INT32                     = -2147483648L;
-inline constexpr uint32_t MAX_UINT32                    = 4294967295U;
-inline constexpr uint32_t MIN_UINT32                    = 0U;
-inline constexpr uint8_t  BITS_IN_A_BYTE                = 8U;
-inline constexpr uint32_t CRC32_POLYNOMIAL              = 0x04C11DB7U;
-inline constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID = 0x00000000U;
-inline constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID   = 0xD0D0CACAU;
-inline constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS  = 0x454E5452U;
-inline constexpr uint32_t CONFIGURATION_PASSKEY_APPLY   = 0x41504C59U;
-inline constexpr uint32_t CONFIGURATION_PASSKEY_CANCEL  = 0x00000000U;
-inline constexpr uint32_t STORE_ALL_PASSCODE            = 0x53415645U;
-inline constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE  = 0x55534552U;
-inline constexpr uint32_t RESTORE_ALL_PASSCODE          = 0x52535452U;
-inline constexpr uint32_t RESET_NODE_PASSCODE           = 0x4E525354U;
-inline constexpr uint32_t WATCHDOG_RESET_PASSCODE       = 0x57444F47U;
+constexpr uint8_t  NODE_ID_MAX                   = 254U;
+constexpr uint8_t  MAX_NUMBER_OF_NODES_PER_BUS   = 255U;
+constexpr uint16_t MAX_NUMBER_OF_VARS            = 8191U;
+constexpr uint16_t VAR_ID_NULL                   = 8191U;
+constexpr uint8_t  MAX_TYPE_SIZE                 = 4U;
+constexpr uint8_t  EOL_BYTE                      = 0U;
+constexpr int32_t  MAX_INT32                     = 2147483647L;
+constexpr int32_t  MIN_INT32                     = -2147483648L;
+constexpr uint32_t MAX_UINT32                    = 4294967295U;
+constexpr uint32_t MIN_UINT32                    = 0U;
+constexpr uint8_t  BITS_IN_A_BYTE                = 8U;
+constexpr uint32_t CRC32_POLYNOMIAL              = 0x04C11DB7U;
+constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID = 0x00000000U;
+constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID   = 0xD0D0CACAU;
+constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS  = 0x454E5452U;
+constexpr uint32_t CONFIGURATION_PASSKEY_APPLY   = 0x41504C59U;
+constexpr uint32_t CONFIGURATION_PASSKEY_CANCEL  = 0x00000000U;
+constexpr uint32_t STORE_ALL_PASSCODE            = 0x53415645U;
+constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE  = 0x55534552U;
+constexpr uint32_t RESTORE_ALL_PASSCODE          = 0x52535452U;
+constexpr uint32_t RESET_NODE_PASSCODE           = 0x4E525354U;
+constexpr uint32_t WATCHDOG_RESET_PASSCODE       = 0x57444F47U;
 
-inline constexpr uint8_t THREE_BYTE_SHIFT  = 24U;
-inline constexpr uint8_t TWO_BYTE_SHIFT    = 16U;
-inline constexpr uint8_t SINGLE_BYTE_SHIFT = 8U;
-inline constexpr uint8_t SINGLE_BYTE_MASK  = 0xFFU;
+constexpr uint8_t THREE_BYTE_SHIFT  = 24U;
+constexpr uint8_t TWO_BYTE_SHIFT    = 16U;
+constexpr uint8_t SINGLE_BYTE_SHIFT = 8U;
+constexpr uint8_t SINGLE_BYTE_MASK  = 0xFFU;
 
 /*************************************************************************************/
 /* STATIC ASSERTIONS                                                                 */
@@ -541,9 +541,9 @@ struct SharedMemoryMap_t
 /* POST-TYPEDEF CONSTANTS                                                            */
 /*************************************************************************************/
 
-inline constexpr uint8_t MINIMUM_SIZE_WRITE_DATAGRAM = Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t);
+constexpr uint8_t MINIMUM_SIZE_WRITE_DATAGRAM = Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t);
 
-inline constexpr uint8_t TYPE_LENGTHS[Atams::NUMBER_OF_VAR_TYPES] =
+constexpr uint8_t TYPE_LENGTHS[Atams::NUMBER_OF_VAR_TYPES] =
 {
   /* [TYPE_NULL  ] = */ 0U,
   /* [TYPE_UINT8 ] = */ 1U,
@@ -555,6 +555,69 @@ inline constexpr uint8_t TYPE_LENGTHS[Atams::NUMBER_OF_VAR_TYPES] =
   /* [TYPE_FLOAT ] = */ 4U,
 };
 
+constexpr const char *ERROR_STRINGS[NUMBER_OF_ATAMS_ERRORS]
+{
+  [Atams::ERROR_NONE                        ] = "No Error",
+  [Atams::ERROR_VAR_ID                      ] = "Variable ID Invalid",
+  [Atams::ERROR_VAR_TYPE                    ] = "Variable Type Invalid",
+  [Atams::ERROR_ACCESS_INVALID              ] = "Access Type Invalid",
+  [Atams::ERROR_REQUEST_BUFFER_LENGTH       ] = "Request Buffer Length Invalid",  
+  [Atams::ERROR_RESPONSE_BUFFER_LENGTH      ] = "Response Buffer Length Invalid",  
+  [Atams::ERROR_NULLPTR                     ] = "Null Pointer",
+  [Atams::ERROR_REQUEST_PATTERN_INVALID     ] = "Request Pattern Invalid", 
+  [Atams::ERROR_MEMORY_MAP                  ] = "Memory Map Invalid",
+  [Atams::ERROR_ATAMS_VERSION_MISMATCH      ] = "Atams Version Mismatch",
+  [Atams::ERROR_WRITE_LIST_FULL             ] = "Write List Full",
+  [Atams::ERROR_ABORTED_RESPONSE            ] = "Aborted Response Received",
+  [Atams::ERROR_ABORT_FAILURE               ] = "Abort Failed",
+  [Atams::ERROR_ENCODE                      ] = "Message Encode Failed",
+  [Atams::ERROR_DECODE_FRAMING              ] = "Message Framing Failure on Decode",
+  [Atams::ERROR_DECODE_CHECKSUM             ] = "Message Checksum Failure on Decode",
+  [Atams::ERROR_MESSAGE_TYPE                ] = "Message Type Invalid",
+  [Atams::ERROR_SYNC_COUNT                  ] = "Message Sync Count Invalid",
+  [Atams::ERROR_SYNC_NODE                   ] = "Message Sync Node ID Invalid",
+  [Atams::ERROR_ACCESS_RESPONSE_INVALID     ] = "Access Response Invalid",
+  [Atams::ERROR_PATTERN_AUTO_UPDATE         ] = "Request Pattern Auto Update Error",
+  [Atams::ERROR_DATAGRAM_SEARCH             ] = "Datagram Search Failed",
+  [Atams::ERROR_ERROR_MANAGEMENT            ] = "Error Management Failure",
+  [Atams::ERROR_PLATFORM                    ] = "Platform Error",
+  [Atams::ERROR_BUS_FULL                    ] = "Bus Full Error",
+  [Atams::ERROR_BUS_EMPTY                   ] = "Bus Empty Error",
+  [Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS    ] = "Update Cycle In Progress",
+  [Atams::ERROR_NEW_DATA_NOT_READY          ] = "New Data Not Ready",
+  [Atams::ERROR_ACK_NOT_RECEIVED            ] = "Acknowledgement Not Received",
+  [Atams::ERROR_RESPONSE_TIMEOUT            ] = "Response Timeout",
+  [Atams::ERROR_NO_RESPONSE                 ] = "No Response Received",
+  [Atams::ERROR_INIT_ORDER                  ] = "Initialisation Order Incorrect",
+  [Atams::ERROR_NVM_CHECKSUM                ] = "NVM Checksum Invalid",
+  [Atams::ERROR_GEN_INFO_MISMATCH           ] = "Gen Info Mismatch",
+  [Atams::ERROR_NVM_HEADER_LENGTH           ] = "NVM Header Length Invalid",
+  [Atams::ERROR_NVM_HEADER_VALIDITY         ] = "NVM Header Invalid",
+  [Atams::ERROR_NVM_PLATFORM_SIZE           ] = "NVM Platform Size Mismatch",
+  [Atams::ERROR_NVM_WRITE_ORDER             ] = "NVM Write Order Incorrect",
+  [Atams::ERROR_NVM_USER_BLOCKS_INVALID     ] = "NVM User Blocks Invalid",
+  [Atams::ERROR_INVALID_NACK                ] = "Invalid NACK Received",
+  [Atams::ERROR_CONFIGURATION_STATE_DENIED  ] = "Configuration State Denied",
+  [Atams::ERROR_CONFIGURATION_STATE_INACTIVE] = "Configuration State Inactive",
+  [Atams::ERROR_REQUEST_PACKET_FATAL        ] = "Request Packet Fatal Error",
+  [Atams::ERROR_INVALID_CASE                ] = "Invalid Case Reached",
+  [Atams::ERROR_SET_CONFIG_VAR_FAILED       ] = "Set Config Variable Failed",
+  [Atams::ERROR_STORAGE_PROCESS_FAILED      ] = "Storage Process Failed",
+  [Atams::ERROR_PROCESS_TIMEOUT             ] = "Process Timeout",
+  [Atams::ERROR_INITIALISATION_REQUIRED     ] = "Initialisation Required",
+  [Atams::ERROR_ID_ASSIGNMENT_FAILED        ] = "ID Assignment Failed",  
+  [Atams::ERROR_CONFIGURATION_EXIT          ] = "Configuration Exit",
+  [Atams::ERROR_NODE_ALREADY_ON_BUS         ] = "Node Already On Bus"
+};
+
+/*************************************************************************************/
+/* INLINE FUNCTION DEFINITIONS                                                       */
+/*************************************************************************************/
+
+inline const char *getErrorString(const Atams::Error_t error)
+{
+  return (ERROR_STRINGS[static_cast<uint8_t>(error)]);
+}
 
 } /* End Namespace - Atams */
 

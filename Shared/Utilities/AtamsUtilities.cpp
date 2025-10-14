@@ -136,14 +136,6 @@ static bool validateMapChecksum(const SharedMemoryMap_t &memoryMap)
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-const char* getErrorString(const Error_t errorID)
-{
-  static_cast<void>(errorID);
-  //return (AtamsErrorStrings[errorID]);
-
-  return (nullptr);
-}
-
 uint32_t bufferToUint32(const uint8_t * const buffer)
 {
   /* Little endian: LSB first */

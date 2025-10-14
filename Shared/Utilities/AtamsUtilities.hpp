@@ -54,8 +54,6 @@ namespace Atams
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-const char* getErrorString(const Atams::Error_t errorID);
-
 uint32_t bufferToUint32(const uint8_t * const buffer);
 
 void uint32ToBuffer(const uint32_t value, uint8_t * const buffer);
