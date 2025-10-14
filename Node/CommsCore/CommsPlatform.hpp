@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    Platform.hpp
+  * @file    CommsPlatform.hpp
   *
   * @author  D. Baines
   *
@@ -29,7 +29,9 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+
 #include "../../Shared/AtamsTypedefs.hpp"
+#include "../SharedPlatform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -38,17 +40,8 @@
 namespace Atams { namespace Platform {
 
 /*************************************************************************************/
-/* PUBLIC MACROS                                                                     */
-/*************************************************************************************/
-
-/* Dual core shared memory space requirement: 2 + (4 * Platform::NODE_NUMBER_OF_VARS) */
-#define ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE __attribute__((section(".atamsSharedRAM")))
-
-/*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
-
-inline constexpr uint16_t NODE_NUMBER_OF_VARS  {100U};  /* Must be <= Atams::MAX_NUMBER_OF_VARS */
 
 inline constexpr uint16_t MAX_BUS_PACKET_SIZE  {64U};
 inline constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};

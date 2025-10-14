@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    AppPlatform.hpp
+  * @file    SharedPlatform.hpp
   *
   * @author  D. Baines
   *
@@ -30,8 +30,7 @@
 
 #include <stdint.h>
 
-#include "../../Shared/AtamsTypedefs.hpp"
-#include "../SharedPlatform.hpp"
+#include "../Shared/AtamsTypedefs.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -40,14 +39,19 @@
 namespace Atams { namespace Platform {
 
 /*************************************************************************************/
-/* PUBLIC FUNCTION DECLARATIONS                                                      */
+/* PUBLIC MACROS                                                                     */
 /*************************************************************************************/
 
-uint32_t getMillis(void);
+/* Dual core shared memory space requirement: 2 + (4 * Platform::NODE_NUMBER_OF_VARS) */
+#define ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE __attribute__((section(".atamsSharedRAM")))
 
-void acquireVarStorageLock(void);
+#define COMMS_CORE_DETECT CORE_CM7
 
-void releaseVarStorageLock(void);
+/*************************************************************************************/
+/* PUBLIC CONSTANTS                                                                  */
+/*************************************************************************************/
+
+constexpr uint16_t NODE_NUMBER_OF_VARS {100U};  /* Must be <= Atams::MAX_NUMBER_OF_VARS */
 
 
 } } /* End Namespace - Atams::Platform */
