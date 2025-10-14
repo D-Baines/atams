@@ -111,7 +111,7 @@ Follow these steps to start auto-generating Memory Maps with the Atams Memory Ma
 
 
 # Memory Map Access
-Once the Memory Map C++ have been generated, they are ready to be used in the Node and Hub libraries.
+Once the Memory Map C++ files have been generated, they are ready to be used in the Node and Hub libraries.
 
 - **Variable IDs:** Each of the generated Data Block `.hpp` files includes an enum list of the variable IDs associated with that Block. These variable IDs are used as input arguments to Atams functions to specify variable access. An example list might look like this:
     ```cpp

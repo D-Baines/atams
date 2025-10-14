@@ -29,7 +29,8 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../../Node.hpp"
+
+#include "../../Developer/NodeTypedefs.hpp"
 #include "../../../Shared/Maps/BlockUniversal.hpp"
 $$$AUTOGEN$$$DATA_BLOCK_FILE_INCLUDES$$$AUTOGEN$$$
 

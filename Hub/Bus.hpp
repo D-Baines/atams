@@ -169,6 +169,7 @@ private Platform::BusPeripheral
     Atams::Error_t      error            {Atams::ERROR_INIT_ORDER};
     uint32_t            prevEventTime    {0U};
     bool                allNodesComplete {false};
+    Atams::Node        *activeNodePtr    {nullptr};
   };
   
   template <typename T>

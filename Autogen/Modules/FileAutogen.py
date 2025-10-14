@@ -108,7 +108,7 @@ def generateConstList(block:        pandas.DataFrame,
     postNameSpaces = postStringRequiredSpace - len(varName)
     if ((not pandas.isnull(value)) and (value != "-")):
       valueAsString = str(value)
-      targetFile.write("inline constexpr " + type + " ")
+      targetFile.write("constexpr " + type + " ")
       writeSpaces(preNameSpaces, targetFile)
       targetFile.write((columnHeader.replace(' ', '_').upper()) + "_" + varName)
       writeSpaces(postNameSpaces, targetFile)
@@ -226,10 +226,10 @@ def generateMapChecksum(dataBlocks: List[pandas.DataFrame]) -> int:
         case "uint32_t": crcCalculator.updateRollingCrc(VarType.TYPE_UINT32.value)
         case "int32_t":  crcCalculator.updateRollingCrc(VarType.TYPE_INT32.value)
         case "float":    crcCalculator.updateRollingCrc(VarType.TYPE_FLOAT.value)
-      if (accessLevels[varID] == "RW"):  crcCalculator.updateRollingCrc(Access.ACCESS_WRITE.value)
-      else:                              crcCalculator.updateRollingCrc(Access.ACCESS_READ.value)
-      if (NVMStorages[varID] == "true"): crcCalculator.updateRollingCrc(NVMStorageFlag.STORAGE_TRUE.value)
-      else:                              crcCalculator.updateRollingCrc(NVMStorageFlag.STORAGE_FALSE.value)
+      if (accessLevels[varID] == "RW"): crcCalculator.updateRollingCrc(Access.ACCESS_WRITE.value)
+      else:                             crcCalculator.updateRollingCrc(Access.ACCESS_READ.value)
+      if (NVMStorages[varID] == "YES"): crcCalculator.updateRollingCrc(NVMStorageFlag.STORAGE_TRUE.value)
+      else:                             crcCalculator.updateRollingCrc(NVMStorageFlag.STORAGE_FALSE.value)
       varID += 1
   return (crcCalculator.getRollingCrc())
 

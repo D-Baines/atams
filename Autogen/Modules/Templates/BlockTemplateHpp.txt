@@ -50,7 +50,7 @@ $$$AUTOGEN$$$VAR_ID_LIST$$$AUTOGEN$$$
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-inline constexpr uint16_t NUMBER_OF_VARS {$$$AUTOGEN$$$NUMBER_OF_VARS$$$AUTOGEN$$$};
+constexpr uint16_t NUMBER_OF_VARS {$$$AUTOGEN$$$NUMBER_OF_VARS$$$AUTOGEN$$$};
 
 $$$AUTOGEN$$$DEFAULTS$$$AUTOGEN$$$
 

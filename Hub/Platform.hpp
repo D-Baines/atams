@@ -58,7 +58,7 @@ constexpr uint16_t MAX_BUS_PACKET_SIZE     = 64U;
 constexpr uint16_t CIRCULAR_BUFFER_SIZE    = 1024U;
 
 /** @brief The maximum time period for Atams communications updates to wait for reception of a new packet */
-constexpr uint64_t BUS_RESPONSE_TIMEOUT    = 500U;
+constexpr uint64_t BUS_RESPONSE_TIMEOUT    = 250U;
 
 /** 
 *   @brief The maximum time period for an Atams::Bus object to wait without response while an Atams Node 

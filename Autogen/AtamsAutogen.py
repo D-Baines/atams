@@ -73,10 +73,10 @@ class directorySearchBox:
       self.entry.insert(0, self.path)
 
 def runFileGeneration(memoryMapName, memoryMapXlsxPath, nodeDir, hubDir):
-  #try:
-  generationStatus = generateCppFiles(memoryMapName, memoryMapXlsxPath, nodeDir, hubDir)
-  #except:
-    #generationStatus = "Error: File Generation Failed - Invalid Memory Map"
+  try:
+    generationStatus = generateCppFiles(memoryMapName, memoryMapXlsxPath, nodeDir, hubDir)
+  except:
+    generationStatus = "Error: File Generation Failed - Invalid Memory Map"
   if statusLabel is not None:
     statusLabel.configure(text=generationStatus)
   
@@ -125,14 +125,14 @@ def find(name, path) -> bool:
 
 def generateButtonPressed(memoryMapName: str, memoryMapXlsxPath:str, nodeDir: str, hubDir:str): 
   if (not memoryMapXlsxPath.endswith('.xlsx')):
-    statusLabel.configure(text="Invalid Memory Map File Type")
+    statusLabel.configure(text="Error: Invalid Memory Map File Type")
     return # Early Return
   elif (not nodeDir.endswith(os.path.join(FRAMEWORK_NAME, 'Node'))):
-    statusLabel.configure(text="Invalid Node Directory")
+    statusLabel.configure(text="Error: Invalid Node Directory")
     return # Early Return
   elif (not hubDir.endswith(os.path.join(FRAMEWORK_NAME, 'Hub'))):
-    statusLabel.configure(text="Invalid Hub Directory")
-    return # Early Return1
+    statusLabel.configure(text="Error: Invalid Hub Directory")
+    return # Early Return
   elif (memoryMapName == ""):
     statusLabel.configure(text="Memory Map Name Unset")
     return # Early Return

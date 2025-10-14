@@ -45,6 +45,7 @@ class CRC32:
         byte &= 0xFFFFFFFF  # Ensure the input value is treated as uint32_t
         self.rollingCrc = (self.rollingCrc >> self.BITS_IN_A_BYTE) ^ self.crcTable[(self.rollingCrc ^ byte) & self.BYTE_MASK]
         self.rollingCrc &= 0xFFFFFFFF  # Ensure the CRC value remains within 32 bits
+        print(f"Updated Rolling CRC: {self.rollingCrc}")
 
     def getRollingCrc(self) -> int:
         return self.reflect(self.rollingCrc ^ self.FINAL_XOR_VALUE, self.NUMBER_OF_CRC_BITS) & 0xFFFFFFFF  # Return the CRC value constrained to 32 bits

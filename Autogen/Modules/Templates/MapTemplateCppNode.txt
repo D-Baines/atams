@@ -27,6 +27,16 @@
 
 #include "Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.hpp"
 
+#include "../../SharedPlatform.hpp"
+
+#ifdef COMMS_CORE_DETECT
+#include "../../CommsCore/CommsCore.hpp"
+#include "../../CommsCore/CommsPlatform.hpp"
+#else
+#include "../../AppCore/AppCore.hpp"
+#include "../../AppCore/AppPlatform.hpp"
+#endif
+
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
