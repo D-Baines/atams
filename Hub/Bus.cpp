@@ -180,8 +180,8 @@ Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
       break;
   }
 
-  if ((!process.error                                  ) &&
-      (processState == Atams::ProcessState::IN_PROGRESS) ) 
+  if ((process.error == Atams::ERROR_NONE               ) &&
+      (processState  == Atams::ProcessState::IN_PROGRESS) ) 
   {
     static_cast<void>(beginUpdateCyclePrivate());
   }
@@ -423,7 +423,9 @@ void Bus::clearAllBusErrors(void)
   }
 }
 
-bool Bus::pollForRequestTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType)
+bool Bus::pollForRequestTransmit(Atams::NodeCallbackHandler &node, 
+                                 Bus::ProcessHandlerBase    &process,
+                                 const Atams::MessageType_t  requestType)
 {
   uint32_t currentTime          = Platform::getMillis();
   bool     messageSendAttempted = false;

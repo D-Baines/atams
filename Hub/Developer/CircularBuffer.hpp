@@ -113,16 +113,16 @@ private Platform::CommsLock
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  volatile uint16_t _headIndex       = 0U;
-  volatile uint16_t _tailIndex       = 0U;
-  volatile uint16_t _eolSearchIndex  = 0U;
-  volatile uint16_t _atomicByteCount = 0U;
-  volatile uint16_t _eolToHead       = 0U;
-  volatile uint16_t _eolToTail       = 0U;
-  volatile uint8_t  _newDataReady    = !CircularBuffer::NEW_DATA_READY; /* UINT8_T MUST BE ATOMIC ON TARGET PLATFORM */
+  volatile uint16_t headIndex_       = 0U;
+  volatile uint16_t tailIndex_       = 0U;
+  volatile uint16_t eolSearchIndex_  = 0U;
+  volatile uint16_t atomicByteCount_ = 0U;
+  volatile uint16_t eolToHead_       = 0U;
+  volatile uint16_t eolToTail_       = 0U;
+  volatile uint8_t  newDataReady_    = !CircularBuffer::NEW_DATA_READY; /* UINT8_T MUST BE ATOMIC ON TARGET PLATFORM */
 
-  uint8_t _buffer[STATIC_BUFFER_SIZE];
-  uint8_t _eolChar = DEFAULT_EOL_CHAR;
+  uint8_t buffer_[STATIC_BUFFER_SIZE];
+  uint8_t eolChar_ = DEFAULT_EOL_CHAR;
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
