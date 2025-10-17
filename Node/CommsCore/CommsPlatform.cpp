@@ -109,7 +109,7 @@ void releaseVarStorageLock(void)
 /**
  * @brief
  *
- * @details Users can optionally choose to start peripheral reception in this function
+ * @details Start reception on all peripherals if required and register the receive callback function.
  *
  * @return  None
  *
@@ -120,10 +120,29 @@ void releaseVarStorageLock(void)
  *
  * @note    ATAMS PLATFORM REQUIREMENT - ALL
  */
-void setReceiveCallback(CommsReceiveCallback_t receiveCallback)
+void beginReceive(CommsReceiveCallback_t receiveCallback)
 {
   _meshPort.setReceiveCallback(receiveCallback);
-  while (_meshPort.beginReceive() != SerialPort::ERROR_NONE);
+
+  while (_meshPort.beginReceive() != SerialPort::ERROR_NONE)
+  {
+    _meshPort.stopReceive();
+  }
+
+  HAL_GPIO_WritePin(RS485_RE_GPIO_Port, RS485_RE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_RESET);
+}
+
+/**
+ * @brief   Stop reception on all peripherals.
+ *
+ * @return  None
+ *
+ * @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
+ */
+void stopReceive(void)
+{
+  _meshPort.stopReceive();
 }
 
 /**

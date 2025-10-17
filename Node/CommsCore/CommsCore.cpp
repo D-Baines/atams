@@ -30,7 +30,8 @@
 #include "string.h"
 
 #include "CommsPlatform.hpp"
-#include "Atams/Node/Developer/NodeUtilities.hpp"
+#include "../Developer/FramingConstants.hpp"
+#include "../Developer/NodeUtilities.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"
 #include "../../Shared/Utilities/AtamsUtilities.hpp"
 #include "../../Shared/Utilities/CRC32.hpp"
@@ -71,15 +72,19 @@ enum NVMTransfer_t : uint8_t
 struct ChannelResponse_t
 {
   uint8_t              buffer[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
-  uint16_t             index            = 0U;
-  bool                 aborted          = false;
-  Atams::MessageType_t abortMessageType = Atams::MESSAGE_ABORT_RESPONSE;
+  uint16_t             index            {0U};
+  bool                 aborted          {false};
+  Atams::MessageType_t abortMessageType {Atams::MESSAGE_ABORT_RESPONSE};
+  uint8_t              activeSyncCount  {0U};
+  uint8_t              encodedBuffer[Platform::MAX_BUS_PACKET_SIZE];
+  uint16_t             encodedLength    {0U};
+
 };
 
 struct ChannelSyncPacket_t
 {
   uint8_t  buffer[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
-  uint16_t length    = 0U;
+  uint16_t length {0U};
 };
 
 /*************************************************************************************/
@@ -91,7 +96,7 @@ static CRC32                s_nodeCRC(Atams::CRC32_POLYNOMIAL);
 static CircularBuffer       s_circularBuffers[Platform::NUMBER_OF_COMMS_PERIPHERALS];
 
 static WatchdogHandler      s_watchdogHandler;
-static ConfigurationHandler s_ConfigurationHandler(s_watchdogHandler);
+static ConfigurationHandler s_configurationHandler(s_watchdogHandler);
 static NVMUnitHandler       s_nvmUnitHandler(s_nodeCRC);
 
 /*************************************************************************************/
@@ -100,8 +105,6 @@ static NVMUnitHandler       s_nvmUnitHandler(s_nodeCRC);
 
 static uint16_t         s_validVarCount       {0U};
 static NodeCommsState_t s_nodeCommsState      {NODE_COMMS_UNINITIALISED};
-static bool             s_bufferResetRequired {false};
-static uint8_t          s_activeSyncCount     {0U};
 static bool             s_appCoreInitRequired {true};
 
 /* Core Init Synchronisation */
@@ -201,19 +204,17 @@ static void receiveCallback(const Platform::CommsPeripheralID_t commsChannel,
   }
 }
 
-static void resetResponse(ChannelResponse_t &response, uint8_t syncCount)
+static void resetResponse(ChannelResponse_t &response, const uint8_t syncCount)
 {
-  s_activeSyncCount = syncCount;
+  response.activeSyncCount               = syncCount;
   response.aborted                       = false;
   response.buffer[HEADER_INDEX_MSG_TYPE] = MESSAGE_UNKNOWN;
-  response.buffer[HEADER_INDEX_SYNC]     = s_activeSyncCount;
-  response.buffer[HEADER_INDEX_NODE_ID]  = s_ConfigurationHandler.getLocalNodeID();
   response.index                         = HEADER_INDEX_FIRST_DATAGRAM;
 }
 
 static void abortResponse(ChannelResponse_t &response, const Atams::Error_t error, const uint16_t varID)
 {
-  response.buffer[HEADER_INDEX_NODE_ID]  = s_ConfigurationHandler.getLocalNodeID();
+  response.buffer[HEADER_INDEX_NODE_ID]  = s_configurationHandler.getLocalNodeID();
   response.buffer[HEADER_INDEX_MSG_TYPE] = response.abortMessageType;
   response.buffer[ABORT_INDEX_ERROR]     = error;
   response.buffer[ABORT_INDEX_VAR_ID_HI] = static_cast<uint8_t>((varID >> ABORT_SHIFT_VAR_ID_HI) & ABORT_MASK_VAR_ID_HI);
@@ -223,24 +224,24 @@ static void abortResponse(ChannelResponse_t &response, const Atams::Error_t erro
 }
 
 static void sendResponsePacket(Platform::CommsPeripheralID_t commsChannel,
-                               ChannelResponse_t                 &response,
-                               Atams::MessageType_t               messageType)
+                               ChannelResponse_t            &response,
+                               Atams::MessageType_t          messageType)
 {
-  static uint8_t  encodedResponseBuffer[Platform::MAX_BUS_PACKET_SIZE] = {0U};
-  static uint16_t encodedLength = 0U;
-
   if (response.aborted == false)
   {
     response.buffer[HEADER_INDEX_MSG_TYPE] = messageType;
   }
 
+  response.buffer[HEADER_INDEX_NODE_ID] = s_configurationHandler.getLocalNodeID();
+  response.buffer[HEADER_INDEX_SYNC]    = response.activeSyncCount;
+
   if (encodeBusPacket(response.buffer,
                       response.index,
-                      encodedResponseBuffer,
-                      sizeof(encodedResponseBuffer),
-                      encodedLength                ) == Atams::ERROR_NONE)
+                      response.encodedBuffer,
+                      sizeof(response.encodedBuffer),
+                      response.encodedLength        ) == Atams::ERROR_NONE)
   {
-    Platform::transmitBuffer(commsChannel, encodedResponseBuffer, encodedLength);
+    Platform::transmitBuffer(commsChannel, response.encodedBuffer, response.encodedLength);
   }
 }
 
@@ -292,7 +293,7 @@ static bool checkUniversalAccess(const uint16_t varID)
   bool accessPermitted = false;
 
   if ((accessAllowedWithoutConfig(varID)              ) ||
-      (s_ConfigurationHandler.getConfigurationActive()) )
+      (s_configurationHandler.getConfigurationActive()) )
   {
     accessPermitted = true;
   }
@@ -328,7 +329,7 @@ static void processDatagramWrite(ChannelResponse_t &response,
       requestPacketDatagramIndex += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + payloadLength);
       if (datagramHeader.varID < BlockUniversal::NUMBER_OF_VARS)
       {
-        s_ConfigurationHandler.setUpdateRequired();
+        s_configurationHandler.setUpdateRequired();
       }
     }
     else
@@ -457,7 +458,7 @@ static inline void copyRequestToSyncPacket(ChannelSyncPacket_t  &syncPacket,
   syncPacket.length = requestLength;
 }
 
-static void setAbortMessageType(ChannelResponse_t &response, const MessageType_t messageType)
+static inline void setAbortMessageType(ChannelResponse_t &response, const MessageType_t messageType)
 {
   switch (messageType)
   {
@@ -474,8 +475,8 @@ static void setAbortMessageType(ChannelResponse_t &response, const MessageType_t
 }
 
 static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsChannel,
-                                     const uint8_t * const                    packetBuffer,
-                                     const uint16_t                           packetLength)
+                                     const uint8_t * const               packetBuffer,
+                                     const uint16_t                      packetLength)
 {
   static uint8_t             decodedPacket[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   static uint16_t            decodedLength = 0U;
@@ -492,10 +493,10 @@ static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsCh
     uint8_t              packetNodeID    = decodedPacket[HEADER_INDEX_NODE_ID];
     ChannelSyncPacket_t &syncPacket      = commsChannelSyncPackets[commsChannel];
     ChannelResponse_t   &response        = commsChannelResponses[commsChannel];
-    uint8_t              localNodeID     = s_ConfigurationHandler.getLocalNodeID();
-    uint8_t              firstSyncNodeID = s_ConfigurationHandler.getFirstSyncNodeID();
-    uint8_t              finalSyncNodeID = s_ConfigurationHandler.getFinalSyncNodeID();
-    uint8_t              prevSyncNodeID  = s_ConfigurationHandler.getPrevSyncNodeID();
+    uint8_t              localNodeID     = s_configurationHandler.getLocalNodeID();
+    uint8_t              firstSyncNodeID = s_configurationHandler.getFirstSyncNodeID();
+    uint8_t              finalSyncNodeID = s_configurationHandler.getFinalSyncNodeID();
+    uint8_t              prevSyncNodeID  = s_configurationHandler.getPrevSyncNodeID();
     uint8_t              packetSyncCount = decodedPacket[HEADER_INDEX_SYNC];
 
     setAbortMessageType(response, messageType);
@@ -537,14 +538,14 @@ static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsCh
         if ((packetNodeID == prevSyncNodeID) &&
             (packetNodeID != localNodeID   ) )
         {
-          if (packetSyncCount != s_activeSyncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT, Atams::VAR_ID_NULL);
+          if (packetSyncCount != response.activeSyncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT, Atams::VAR_ID_NULL);
           sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
         }
         break;
       case MESSAGE_SYNC_JOG:
         if (packetNodeID == localNodeID)
         {
-          if (packetSyncCount != s_activeSyncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT, Atams::VAR_ID_NULL);
+          if (packetSyncCount != response.activeSyncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT, Atams::VAR_ID_NULL);
           sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
         }
         break;
@@ -565,12 +566,6 @@ static void processRawMeshData(void)
 {
   static uint8_t  meshPacketRXBuffer[Platform::MAX_BUS_PACKET_SIZE];
   static uint16_t meshPacketRXLength {0U};
-
-  if (s_bufferResetRequired == true)
-  {
-    s_bufferResetRequired = false;
-    for (CircularBuffer &circularBuffer : s_circularBuffers) circularBuffer.reset();
-  }
 
   for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_PERIPHERALS; commsChannel++)
   {
@@ -827,13 +822,13 @@ static Atams::Error_t extractNVMFooter(const NVMHeader_t &nvmHeader, NVMFooter_t
 
 static Atams::Error_t validateNVMHeaderFooter(NVMHeader_t &nvmHeader, NVMFooter_t &nvmFooter)
 {
-  if (Platform::NVM_STORAGE_SIZE < sizeof(NVMHeader_t))       return (Atams::ERROR_NVM_PLATFORM_SIZE);   /* Early Return */
+  if (Platform::NVM_STORAGE_SIZE < sizeof(NVMHeader_t))            return (Atams::ERROR_NVM_PLATFORM_SIZE);   /* Early Return */
 
   if (extractNVMHeader(nvmHeader) != Atams::ERROR_NONE)            return (Atams::ERROR_PLATFORM);            /* Early Return */
 
   if (nvmHeader.identifier != Atams::NVM_HEADER_IDENTIFIER_VALID)  return (Atams::ERROR_NVM_HEADER_VALIDITY); /* Early Return */
 
-  if (Platform::NVM_STORAGE_SIZE < nvmHeader.length)          return (Atams::ERROR_NVM_HEADER_LENGTH);   /* Early Return */
+  if (Platform::NVM_STORAGE_SIZE < nvmHeader.length)               return (Atams::ERROR_NVM_HEADER_LENGTH);   /* Early Return */
 
   if (extractNVMFooter(nvmHeader, nvmFooter) != Atams::ERROR_NONE) return (Atams::ERROR_PLATFORM);            /* Early Return */
 
@@ -881,11 +876,7 @@ static Atams::Error_t initNVM(void)
     if (!error) error = Atams::ERROR_NVM_USER_BLOCKS_INVALID;
   }
 
-  s_ConfigurationHandler.notifyStorageProcessComplete(error);
-
-  /* Messages may have been received while storage was in progress -
-   * request buffer reset to clear old data */
-  s_bufferResetRequired = true;
+  s_configurationHandler.notifyStorageProcessComplete(error);
 
   return (error);
 }
@@ -932,9 +923,9 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
 
   if (!error)
   {
-    s_ConfigurationHandler.initConfiguration();
+    s_configurationHandler.initConfiguration();
 
-    Platform::setReceiveCallback(receiveCallback);
+    Platform::beginReceive(receiveCallback);
 
     initCommsBuffers();
 
@@ -1030,7 +1021,7 @@ void updateCommsPolling(void)
       break;
   }
 
-  s_ConfigurationHandler.update();
+  s_configurationHandler.update();
 }
 
 void updateCommsBlocking(void)
@@ -1057,7 +1048,7 @@ void updateCommsBlocking(void)
       break;
   }
 
-  s_ConfigurationHandler.update();
+  s_configurationHandler.update();
 }
 
 
@@ -1087,6 +1078,8 @@ Atams::Error_t storeAll(void)
 
   if (getMemoryMapIsValid() != Atams::ERROR_NONE) return (Atams::ERROR_MEMORY_MAP); /* Early Return */
 
+  Platform::stopReceive();
+
   const uint32_t requiredNVMVarSpace = getNVMVarSpaceRequirement();
   const uint32_t requiredNVMSpace    = sizeof(NVMHeader_t) + requiredNVMVarSpace + sizeof(NVMFooter_t);
   const uint32_t nvmFooterIndex      = sizeof(NVMHeader_t) + requiredNVMVarSpace;
@@ -1108,9 +1101,12 @@ Atams::Error_t storeAll(void)
 
   if (!error) error = s_nvmUnitHandler.flushPendingUnit();
 
-  /* Messages may have been received while storage was in progress -
-   * request buffer reset to clear old data */
-  s_bufferResetRequired = true;
+  for (CircularBuffer &circularBuffer : s_circularBuffers)
+  {
+    circularBuffer.reset();
+  }
+
+  Platform::beginReceive(receiveCallback);
 
   return (error);
 }

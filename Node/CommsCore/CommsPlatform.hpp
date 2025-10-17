@@ -43,14 +43,10 @@ namespace Atams { namespace Platform {
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-inline constexpr uint16_t MAX_BUS_PACKET_SIZE  {64U};
-inline constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};
-inline constexpr uint32_t NVM_STORAGE_SIZE     {1024U};
-inline constexpr uint8_t  NVM_UNIT_SIZE        {32U};
-
-inline constexpr uint16_t COBS_MAX_DATA_PER_CODE          {254U};
-inline constexpr uint16_t COBS_MAX_OVERHEAD               {(MAX_BUS_PACKET_SIZE + (COBS_MAX_DATA_PER_CODE - 1U)) / COBS_MAX_DATA_PER_CODE};
-inline constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING {MAX_BUS_PACKET_SIZE - COBS_MAX_OVERHEAD};
+constexpr uint16_t MAX_BUS_PACKET_SIZE  {64U};
+constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};
+constexpr uint32_t NVM_STORAGE_SIZE     {1024U};
+constexpr uint8_t  NVM_UNIT_SIZE        {32U};
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
@@ -80,12 +76,13 @@ typedef void (*CommsReceiveCallback_t)(const CommsPeripheralID_t commsChannel,
  */
 uint32_t getMillis(void);
 
-
 void acquireVarStorageLock(void);
 
 void releaseVarStorageLock(void);
 
-void setReceiveCallback(CommsReceiveCallback_t receiveCallback);
+void beginReceive(CommsReceiveCallback_t receiveCallback);
+
+void stopReceive(void);
 
 void update(void);
 
