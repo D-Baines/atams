@@ -241,13 +241,13 @@ def autogenCallMap(autogenHint:         str,
                    mapNumberOfVars:     int,
                    timeStamp:           datetime) -> None:
   match (autogenHint):
-    case "MAP_NAME_CAMEL": #
+    case "MAP_NAME_CAMEL": 
       targetFile.write(memMapNameCamel)
-    case "FRAMEWORK_NAME": #
+    case "FRAMEWORK_NAME": 
       targetFile.write(FRAMEWORK_NAME)
     case "VAR_INFO_LIST": 
       generateVarInfoList(dataBlockNamesCamel, dataBlocks, targetFile)
-    case "DATA_BLOCK_FILE_INCLUDES": #
+    case "DATA_BLOCK_FILE_INCLUDES": 
       for blockName in dataBlockNamesCamel:
         targetFile.write('#include "Block' + blockName + '.hpp"\n')
       targetFile.seek(targetFile.tell()-1)

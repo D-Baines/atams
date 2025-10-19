@@ -46,15 +46,17 @@ void NodeActions::beginConfigEntryProcess(Node &node)
   return (configEntryProcess_.resetAndAssignNode(node));
 }
 
-void NodeActions::beginConfigExitProcess(Node &node, bool applyChangesOnExit)
+void NodeActions::beginConfigExitProcess(Node &node, bool applyChangesOnExit, std::optional<uint8_t> newNodeID)
 {
-  applyChanges_ = applyChangesOnExit;
+  applyChanges_     = applyChangesOnExit;
+  configExitNodeID_ = newNodeID;
   configExitProcess_.resetAndAssignNode(node);
 }
 
 void NodeActions::beginSetNodeID(Node &node, const uint8_t nodeID)
 {
-  nodeIDToSet_ = nodeID;
+  nodeIDToSet_      = nodeID;
+  configExitNodeID_ = nodeID;
   setConfigVarProcess_.resetAndAssignNode(node);
 }
 
@@ -70,9 +72,10 @@ void NodeActions::beginSetWatchdogPeriod(Node &node, const uint32_t watchdogPeri
   setConfigVarProcess_.resetAndAssignNode(node);
 }
 
-void NodeActions::beginSetUserConfig(Node &node, Atams::NodeUserConfig_t &userConfig)
+void NodeActions::beginSetNodeConfig(Node &node, Atams::NodeConfig_t &userConfig)
 {
-  userConfigToSet_ = userConfig;
+  nodeConfigToSet_  = userConfig;
+  configExitNodeID_ = userConfig.newNodeID;
   setMultiConfigProcess_.resetAndAssignNode(node);
 }
 
@@ -99,7 +102,8 @@ void NodeActions::beginValidateBusIDsProcess(Node &node, Atams::BusIDs_t busIDs)
 
 void NodeActions::beginSetBusIDs(Node &node, const Atams::BusIDs_t busIDs)
 {
-  busIDsToSet_ = busIDs;
+  busIDsToSet_      = busIDs;
+  configExitNodeID_ = std::nullopt; 
   setMultiConfigProcess_.resetAndAssignNode(node);
 }
 
@@ -109,6 +113,7 @@ Atams::ProcessState NodeActions::updateConfigurationStateEntry(Atams::Error_t &e
 
   if (process.nullptrCheck())
   {
+    error = process.error;
     return (process.processState); /* Early Return */
   }
 
@@ -136,7 +141,7 @@ Atams::ProcessState NodeActions::updateConfigurationStateEntry(Atams::Error_t &e
       process.specificState = ConfigEntryState::COLLECT_STATUS_POST;
       break;
     case ConfigEntryState::COLLECT_STATUS_POST:
-      static_cast<void>(node.stopStream(BlockUniversal::VAR_CONFIGURATION_PASSKEY));
+      static_cast<void>(node.stopRequestStream(BlockUniversal::VAR_CONFIGURATION_PASSKEY));
       static_cast<void>(node.clearDataReadyStartRead(BlockUniversal::VAR_CONFIGURATION_STATUS));
       process.specificState = ConfigEntryState::CHECK_STATUS_POST;
       break;
@@ -167,6 +172,7 @@ Atams::ProcessState NodeActions::updateConfigurationStateExit(Atams::Error_t &er
 
   if (process.nullptrCheck())
   {
+    error = process.error;
     return (process.processState); /* Early Return */
   }
 
@@ -194,7 +200,8 @@ Atams::ProcessState NodeActions::updateConfigurationStateExit(Atams::Error_t &er
       process.specificState = ConfigExitState::COLLECT_STATUS_POST;
       break;
     case ConfigExitState::COLLECT_STATUS_POST:
-      static_cast<void>(node.stopStream(BlockUniversal::VAR_CONFIGURATION_PASSKEY));
+      static_cast<void>(node.stopRequestStream(BlockUniversal::VAR_CONFIGURATION_PASSKEY));
+      if (configExitNodeID_.has_value()) node.setNodeID(configExitNodeID_.value());
       static_cast<void>(node.clearDataReadyStartRead(BlockUniversal::VAR_CONFIGURATION_STATUS));
       process.specificState = ConfigExitState::CHECK_STATUS_POST;
       break;
@@ -223,20 +230,20 @@ Atams::ProcessState NodeActions::updateConfigurationStateExit(Atams::Error_t &er
 
 Atams::ProcessState NodeActions::updateSetNodeID(Atams::Error_t &error)
 {
-  return (updateSetConfigVar(error, BlockUniversal::VAR_NODE_ID, nodeIDToSet_));
+  return (updateSetConfigVar<uint8_t>(error, BlockUniversal::VAR_NODE_ID, nodeIDToSet_));
 }
 
 Atams::ProcessState NodeActions::updateSetBitrate(Atams::Error_t &error)
 {
-  return (updateSetConfigVar(error, BlockUniversal::VAR_BITRATE, static_cast<uint8_t>(bitrateOptionToSet_)));
+  return (updateSetConfigVar<uint8_t>(error, BlockUniversal::VAR_BITRATE, static_cast<uint8_t>(bitrateOptionToSet_)));
 }
 
 Atams::ProcessState NodeActions::updateSetWatchdogPeriod(Atams::Error_t &error)
 {
-  return (updateSetConfigVar(error, BlockUniversal::VAR_WATCHDOG_PERIOD, watchdogPeriodToSet_));
+  return (updateSetConfigVar<uint32_t>(error, BlockUniversal::VAR_WATCHDOG_PERIOD, watchdogPeriodToSet_));
 }
 
-Atams::ProcessState NodeActions::updateSetUserConfig(Atams::Error_t &error)
+Atams::ProcessState NodeActions::updateSetNodeConfig(Atams::Error_t &error)
 {
   return (updateSetMultipleConfig(error, setUserConfigFunctions_));
 }
@@ -262,6 +269,7 @@ Atams::ProcessState NodeActions::updateResetNode(Atams::Error_t &error)
 
   if (process.nullptrCheck())
   {
+    error = process.error;
     return (process.processState); /* Early Return */
   }
 
@@ -331,7 +339,7 @@ void NodeActions::cancelConfigProcess(ProcessHandler<T> &process, Atams::Error_t
 {
   process.specificState = T::CANCEL_CONFIG;
   process.cancelError   = error;
-  beginConfigExitProcess(*process.nodePtr, false);
+  beginConfigExitProcess(*process.nodePtr, false, std::nullopt);
 }
 
 template<typename T>
@@ -349,13 +357,15 @@ Atams::ProcessState NodeActions::updateSetConfigVar(Atams::Error_t &error, const
 
   if (process.nullptrCheck())
   {
+    error = process.error;
     return (process.processState); /* Early Return */
   }
 
-  Node                &node            = *process.nodePtr;
-  Atams::ProcessState &subProcessState = process.subProcessState;
-  bool                 ackReceived     = false;
-  T                    readConfigVar;
+  Node                  &node            {*process.nodePtr};
+  Atams::ProcessState   &subProcessState {process.subProcessState};
+  bool                   ackReceived     {false};
+  T                      readConfigVar;    
+  std::optional<uint8_t> newNodeID;     
 
   switch (process.specificState)
   {
@@ -381,7 +391,8 @@ Atams::ProcessState NodeActions::updateSetConfigVar(Atams::Error_t &error, const
       updateCancelConfigState(process);
       break;    
     case SetConfigVarState::BEGIN_APPLY_CONFIG:
-      beginConfigExitProcess(node, true);
+      newNodeID = (varID == BlockUniversal::VAR_NODE_ID) ? configExitNodeID_ : std::nullopt;
+      beginConfigExitProcess(node, true, newNodeID);
       process.specificState = SetConfigVarState::APPLY_CONFIG;
       break;
     case SetConfigVarState::APPLY_CONFIG:
@@ -419,6 +430,7 @@ Atams::ProcessState NodeActions::updateStorageProcess(Atams::Error_t &error, con
 
   if (process.nullptrCheck())
   {
+    error = process.error;
     return (process.processState); /* Early Return */
   }
 
@@ -462,7 +474,7 @@ Atams::ProcessState NodeActions::updateStorageProcess(Atams::Error_t &error, con
       process.specificState = StorageProcessState::STATUS_STREAM;
       break;
     case StorageProcessState::STATUS_STREAM:
-      static_cast<void>(node.stopStream(passcodeVarID));
+      static_cast<void>(node.stopRequestStream(passcodeVarID));
       static_cast<void>(node.clearDataReadyStartRead(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE));
       static_cast<void>(node.clearDataReadyStartRead(BlockUniversal::VAR_STORAGE_STATUS));
       process.prevEventTime = currentTime;
@@ -473,15 +485,15 @@ Atams::ProcessState NodeActions::updateStorageProcess(Atams::Error_t &error, con
       static_cast<void>(node.readIfDataReady(BlockUniversal::VAR_STORAGE_STATUS,           storageStatus));
       if (storeComplete == Atams::ATAMS_TRUE)
       {
-        static_cast<void>(node.stopStream(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE));
-        static_cast<void>(node.stopStream(BlockUniversal::VAR_STORAGE_STATUS));
+        static_cast<void>(node.stopRequestStream(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE));
+        static_cast<void>(node.stopRequestStream(BlockUniversal::VAR_STORAGE_STATUS));
         if (storageStatus == Atams::ERROR_NONE) process.specificState = StorageProcessState::BEGIN_EXIT_CONFIG;
         else                                    cancelConfigProcess(process, Atams::ERROR_STORAGE_PROCESS_FAILED);
       }
       else if ((currentTime - process.prevEventTime) > Platform::NVM_STORAGE_TIMEOUT)
       {
-        static_cast<void>(node.stopStream(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE));
-        static_cast<void>(node.stopStream(BlockUniversal::VAR_STORAGE_STATUS));
+        static_cast<void>(node.stopRequestStream(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE));
+        static_cast<void>(node.stopRequestStream(BlockUniversal::VAR_STORAGE_STATUS));
         cancelConfigProcess(process, Atams::ERROR_PROCESS_TIMEOUT);
       }
       break;
@@ -489,7 +501,7 @@ Atams::ProcessState NodeActions::updateStorageProcess(Atams::Error_t &error, con
       updateCancelConfigState(process);   
       break;    
     case StorageProcessState::BEGIN_EXIT_CONFIG:
-      beginConfigExitProcess(node, false);
+      beginConfigExitProcess(node, false, std::nullopt);
       process.specificState = StorageProcessState::EXIT_CONFIG;
       break;
     case StorageProcessState::EXIT_CONFIG:
@@ -519,6 +531,7 @@ Atams::ProcessState NodeActions::updateValidateMultipleConfig(Atams::Error_t    
 
   if (process.nullptrCheck())
   {
+    error = process.error;
     return (process.processState); /* Early Return */
   }
 
@@ -558,6 +571,7 @@ Atams::ProcessState NodeActions::updateSetMultipleConfig(Atams::Error_t &error, 
 
   if (process.nullptrCheck())
   {
+    error = process.error;
     return (process.processState); /* Early Return */
   }
 
@@ -589,7 +603,7 @@ Atams::ProcessState NodeActions::updateSetMultipleConfig(Atams::Error_t &error, 
       updateCancelConfigState(process);
       break;    
     case SetMultiConfigState::BEGIN_APPLY_CONFIG:
-      static_cast<void>(beginConfigExitProcess(node, true));
+      static_cast<void>(beginConfigExitProcess(node, true, configExitNodeID_));
       process.specificState = SetMultiConfigState::APPLY_CONFIG;
       break;
     case SetMultiConfigState::APPLY_CONFIG:
@@ -684,9 +698,9 @@ Atams::Error_t NodeActions::validateBusIDsCheck(NodeActions &processHandler, Nod
 
 void NodeActions::setUserConfigWrite(NodeActions &processHandler, Node &node)
 {
-  NodeUserConfig_t &userConfig = processHandler.userConfigToSet_;
+  NodeConfig_t &userConfig = processHandler.nodeConfigToSet_;
 
-  static_cast<void>(node.clearAckStartWrite(BlockUniversal::VAR_NODE_ID,         userConfig.nodeID));
+  static_cast<void>(node.clearAckStartWrite(BlockUniversal::VAR_NODE_ID,         userConfig.newNodeID));
   static_cast<void>(node.clearAckStartWrite(BlockUniversal::VAR_BITRATE,         static_cast<uint8_t>(userConfig.bitrateOption)));
   static_cast<void>(node.clearAckStartWrite(BlockUniversal::VAR_WATCHDOG_PERIOD, userConfig.watchdogPeriod));
 }
@@ -711,20 +725,24 @@ void NodeActions::setUserConfigRead(Atams::Node &node)
 
 Atams::Error_t NodeActions::setUserConfigCheck(NodeActions &processHandler, Atams::Node &node, bool &userConfigIsValid)
 {
-  Atams::Error_t   error = Atams::ERROR_NONE;
-  NodeUserConfig_t collectedConfig;
-  uint8_t          bitrateRaw;
+  Atams::Error_t error = Atams::ERROR_NONE;
+  NodeConfig_t  &requestedConfig = processHandler.nodeConfigToSet_;
+
+  uint8_t  nodeID;
+  uint8_t  bitrateRaw;
+  uint32_t watchdogPeriod;
 
   userConfigIsValid = false;
 
-  if (!error) error = node.stopStreamReadIfDataReady(BlockUniversal::VAR_NODE_ID,         collectedConfig.nodeID);
+  if (!error) error = node.stopStreamReadIfDataReady(BlockUniversal::VAR_NODE_ID,         nodeID);
   if (!error) error = node.stopStreamReadIfDataReady(BlockUniversal::VAR_BITRATE,         bitrateRaw);
-  if (!error) error = node.stopStreamReadIfDataReady(BlockUniversal::VAR_WATCHDOG_PERIOD, collectedConfig.watchdogPeriod);
+  if (!error) error = node.stopStreamReadIfDataReady(BlockUniversal::VAR_WATCHDOG_PERIOD, watchdogPeriod);
 
   if (!error) 
   {
-    collectedConfig.bitrateOption = static_cast<Atams::BitrateOption_t>(bitrateRaw);
-    userConfigIsValid = (collectedConfig == processHandler.userConfigToSet_);
+    userConfigIsValid = ((requestedConfig.newNodeID      == nodeID                                         ) &&
+                         (requestedConfig.bitrateOption  == static_cast<Atams::BitrateOption_t>(bitrateRaw)) &&
+                         (requestedConfig.watchdogPeriod == watchdogPeriod                                 ) );
   }
 
   return (error);

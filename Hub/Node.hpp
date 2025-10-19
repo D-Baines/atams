@@ -102,11 +102,11 @@ public NodeCallbackHandler
 
   Atams::Error_t readRequestUntilAck(const uint16_t varID);
 
-  Atams::Error_t startWriteStream(const uint16_t varID);
+  Atams::Error_t startWriteRequestStream(const uint16_t varID);
 
-  Atams::Error_t startReadStream(const uint16_t varID);
+  Atams::Error_t startReadRequestStream(const uint16_t varID);
 
-  Atams::Error_t stopStream(const uint16_t varID);
+  Atams::Error_t stopRequestStream(const uint16_t varID);
 
   Atams::Error_t getDataReadyFlag(const uint16_t varID, bool &newDataReady);
 

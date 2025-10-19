@@ -29,6 +29,8 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+#include <optional>
+
 #include "../../Shared/AtamsTypedefs.hpp"
 
 /*************************************************************************************/
@@ -73,7 +75,7 @@ class NodeActions
 
   void beginConfigEntryProcess(Node &node);
 
-  void beginConfigExitProcess(Node &node, const bool applyChangesOnExit);
+  void beginConfigExitProcess(Node &node, bool applyChangesOnExit, std::optional<uint8_t> newNodeID);
 
   void beginSetNodeID(Node &node, const uint8_t nodeID);
 
@@ -81,7 +83,7 @@ class NodeActions
 
   void beginSetWatchdogPeriod(Node &node, const uint32_t watchdogPeriod);
 
-  void beginSetUserConfig(Node &node, Atams::NodeUserConfig_t &userConfig);
+  void beginSetNodeConfig(Node &node, Atams::NodeConfig_t &userConfig);
 
   void beginStorageProcess(Node &node);
 
@@ -103,7 +105,7 @@ class NodeActions
 
   Atams::ProcessState updateSetWatchdogPeriod(Atams::Error_t &error);
 
-  Atams::ProcessState updateSetUserConfig(Atams::Error_t &error);
+  Atams::ProcessState updateSetNodeConfig(Atams::Error_t &error);
 
   Atams::ProcessState updateStoreAll(Atams::Error_t &error);
 
@@ -279,12 +281,13 @@ class NodeActions
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  bool                      applyChanges_        {false};
-  uint8_t                   nodeIDToSet_         {0U};
-  Atams::BitrateOption_t    bitrateOptionToSet_  {Atams::BitrateOption_t::BITRATE_OPTION_0};
-  uint32_t                  watchdogPeriodToSet_ {0U};
-  Atams::NodeUserConfig_t   userConfigToSet_;
-  BusIDs_t                  busIDsToSet_;
+  bool                   applyChanges_        {false};
+  uint8_t                nodeIDToSet_         {0U};
+  std::optional<uint8_t> configExitNodeID_    {std::nullopt};
+  Atams::BitrateOption_t bitrateOptionToSet_  {Atams::BitrateOption_t::BITRATE_OPTION_0};
+  uint32_t               watchdogPeriodToSet_ {0U};
+  Atams::NodeConfig_t    nodeConfigToSet_;
+  BusIDs_t               busIDsToSet_;
 
   ValidateMultiConfigFtns_t validateGenInfoFunctions_ = {validateGenInfoRead, validateGenInfoCheck};
   ValidateMultiConfigFtns_t validateBusIDsFunctions_  = {validateBusIDsRead,  validateBusIDsCheck};

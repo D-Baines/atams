@@ -418,15 +418,17 @@ struct DataStatusReturn_t
   Atams::Error_t status;
 };
 
-struct NodeUserConfig_t
+struct NodeConfig_t
 {
-  uint8_t                nodeID;
+  uint8_t                currentNodeID;
+  uint8_t                newNodeID;
   Atams::BitrateOption_t bitrateOption;
   uint32_t               watchdogPeriod;
 
-  bool operator==(const NodeUserConfig_t &other)
+  bool operator==(const NodeConfig_t &other)
   {
-    return ((nodeID         == other.nodeID        ) &&
+    return ((currentNodeID  == other.currentNodeID ) &&
+            (newNodeID      == other.newNodeID     ) &&
             (bitrateOption  == other.bitrateOption ) &&
             (watchdogPeriod == other.watchdogPeriod) );
   }

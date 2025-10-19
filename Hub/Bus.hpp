@@ -90,13 +90,17 @@ private Platform::BusPeripheral
 
   Atams::Error_t beginUpdateCycle(void);
 
+  Atams::Error_t beginSingleNodeUpdateCycle(Atams::Node &node);
+
   Atams::ProcessState runUpdateCycleSync(Atams::Error_t &error);
 
   Atams::ProcessState runUpdateCycleAsync(Atams::Error_t &error);
 
-  Atams::Error_t processBuffers(void);
+  Atams::ProcessState runUpdateCycleSingleNode(Atams::Error_t &error, Atams::Node &node);
 
-  void beginSetNodeConfigProcess(const NodeUserConfig_t &userConfig);
+  Atams::Error_t processSyncBuffers(void);
+
+  Atams::Error_t beginSetNodeConfigProcess(const NodeConfig_t &userConfig);
 
   Atams::ProcessState updateSetNodeConfigProcess(Atams::Error_t &error); 
 
@@ -113,20 +117,19 @@ private Platform::BusPeripheral
 
   enum class InitState: uint8_t
   {
-    START               = 0U,
-    VALIDATE_GEN_INFO   = 1U,
-    VALIDATE_IDS_PRE    = 2U,
-    SET_BUS_IDS         = 3U,
-    STORE_BUS_IDS       = 4U,
-    VALIDATE_IDS_POST   = 5U,
-    COMPLETE            = 6U,
-    ERROR               = 7U,
+    START             = 0U,
+    VALIDATE_GEN_INFO = 1U,
+    VALIDATE_IDS_PRE  = 2U,
+    SET_BUS_IDS       = 3U,
+    STORE_BUS_IDS     = 4U,
+    VALIDATE_IDS_POST = 5U,
+    COMPLETE          = 6U,
+    ERROR             = 7U,
   };
 
   enum class ConfigUpdateState: uint8_t
   {
     START        = 0U,
-    INIT_NODE    = 1U,
     WRITE_CONFIG = 2U,
     STORE_CONFIG = 3U,
     SEND_REQUEST = 4U,
@@ -204,6 +207,7 @@ private Platform::BusPeripheral
   Bus::ProcessHandler<Bus::ConfigUpdateState> configUpdateProcessHandler_;
   Bus::ProcessHandler<Bus::ValidateState>     validateGenInfoProcessHandler_;
   Bus::ProcessHandler<Bus::UpdateState>       updateProcessHandler_;
+  Bus::ProcessHandler<Bus::UpdateState>       singleNodeUpdateProcessHandler_;
 
   /*-- Private Variables ------------------------------------------------------------*/
 
@@ -222,14 +226,16 @@ private Platform::BusPeripheral
 
   Atams::MessageType_t lastSentMessageType_;
 
-  NodeUserConfig_t userConfigToSet_;
-  Atams::BusIDs_t  busIDsToSet_;
+  NodeConfig_t    userConfigToSet_;
+  Atams::BusIDs_t busIDsToSet_;
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
   bool findNodeOnBus(Node &node);
 
   Atams::Error_t beginUpdateCyclePrivate(void);
+
+  Atams::Error_t beginSingleNodeUpdateCyclePrivate(Atams::Node &node);
 
   void clearAllBusErrors(void);
 

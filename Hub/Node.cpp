@@ -188,17 +188,17 @@ Atams::Error_t Node::readRequestUntilAck(const uint16_t varID)
   return (Node::setRequestPattern(varID, Atams::ACCESS_READ, Atams::REQUEST_UNTIL_ACK));
 }
 
-Atams::Error_t Node::startWriteStream(const uint16_t varID)
+Atams::Error_t Node::startWriteRequestStream(const uint16_t varID)
 {
   return (Node::setRequestPattern(varID, Atams::ACCESS_WRITE, Atams::REQUEST_STREAM));
 }
 
-Atams::Error_t Node::startReadStream(const uint16_t varID)
+Atams::Error_t Node::startReadRequestStream(const uint16_t varID)
 {
   return (Node::setRequestPattern(varID, Atams::ACCESS_READ, Atams::REQUEST_STREAM));
 }
 
-Atams::Error_t Node::stopStream(const uint16_t varID)
+Atams::Error_t Node::stopRequestStream(const uint16_t varID)
 {
   return (Node::setRequestPattern(varID, Atams::ACCESS_NONE, Atams::REQUEST_INACTIVE));
 }
@@ -258,14 +258,14 @@ Atams::Error_t Node::clearAckFlag(const uint16_t varID)
 Atams::Error_t Node::clearDataReadyStartRead(const uint16_t varID)
 {
   Atams::Error_t error = Node::clearDataReadyFlag(varID);
-  if (!error)    error = Node::startReadStream(varID);
+  if (!error)    error = Node::startReadRequestStream(varID);
 
   return (error);
 }
 
 Atams::Error_t Node::stopStreamGetDataReady(const uint16_t varID, bool &newDataReady)
 {
-  Atams::Error_t error = Node::stopStream(varID);
+  Atams::Error_t error = Node::stopRequestStream(varID);
   if (!error)    error = Node::getDataReadyFlag(varID, newDataReady);
 
   return (error);
@@ -274,7 +274,7 @@ Atams::Error_t Node::stopStreamGetDataReady(const uint16_t varID, bool &newDataR
 template<typename T>
 Atams::Error_t Node::stopStreamReadIfDataReady(const uint16_t varID, T &readData)
 {
-  Atams::Error_t error = Node::stopStream(varID);
+  Atams::Error_t error = Node::stopRequestStream(varID);
   if (!error)    error = Node::readIfDataReady(varID, readData);
 
   return (error);
@@ -293,7 +293,7 @@ Atams::Error_t Node::clearAckStartWrite(const uint16_t varID, const T writeData)
 {
   Atams::Error_t error = Node::clearAckFlag(varID);
   if (!error)    error = Node::write(varID, writeData);
-  if (!error)    error = Node::startWriteStream(varID);
+  if (!error)    error = Node::startWriteRequestStream(varID);
 
   return (error);
 }
@@ -308,7 +308,7 @@ template Atams::Error_t Node::clearAckStartWrite<float   >(const uint16_t varID,
 
 Atams::Error_t Node::stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived)
 {
-  Atams::Error_t error = Node::stopStream(varID);
+  Atams::Error_t error = Node::stopRequestStream(varID);
   if (!error)    error = Node::getAckFlag(varID, ackReceived);
 
   return (error);
@@ -506,7 +506,7 @@ void Node::injectBusError(const Atams::Error_t errorToInject,
       /* TODO - Cannot be handled here */
       break;
     case Atams::ERROR_CONFIGURATION_STATE_INACTIVE:
-      static_cast<void>(startWriteStream(BlockUniversal::VAR_STORE_ALL));
+      static_cast<void>(startWriteRequestStream(BlockUniversal::VAR_STORE_ALL));
     default:
       /* Do Nothing */
       break; 
@@ -538,7 +538,7 @@ void Node::clearInjectedBusError(const Atams::Error_t errorToClear, const uint16
       resetRequestPacket();
       break;
     case Atams::ERROR_CONFIGURATION_STATE_INACTIVE:
-      static_cast<void>(stopStream(BlockUniversal::VAR_STORE_ALL));
+      static_cast<void>(stopRequestStream(BlockUniversal::VAR_STORE_ALL));
     default:
       /* Do Nothing */
       break; 
