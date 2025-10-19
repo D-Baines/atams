@@ -349,8 +349,7 @@ static void processDatagramWrite(ChannelResponse_t &response,
 
 static void validateRequestPacket(ChannelResponse_t &response,
                                   uint8_t * const    requestPacket,
-                                  const uint16_t     requestPacketLength,
-                                  const bool         universalBroadcast)
+                                  const uint16_t     requestPacketLength)
 {
   DatagramHeader_t datagramHeader;
   uint16_t         datagramStartIndex     = HEADER_INDEX_FIRST_DATAGRAM;
@@ -361,37 +360,29 @@ static void validateRequestPacket(ChannelResponse_t &response,
   {
     bufferToDatagramHeader(&requestPacket[datagramStartIndex], datagramHeader);
 
-    if ((universalBroadcast                                    ) &&
-        (datagramHeader.varID >= BlockUniversal::NUMBER_OF_VARS) )
+    DataStatusReturn_t<uint8_t> varLength = getVarLength(datagramHeader.varID);
+
+    if (varLength.status != Atams::ERROR_NONE)
     {
-      abortResponse(response, Atams::ERROR_VAR_ID, datagramHeader.varID);
+      abortResponse(response, varLength.status, datagramHeader.varID);
     }
     else
     {
-      DataStatusReturn_t<uint8_t> varLength = getVarLength(datagramHeader.varID);
-
-      if (varLength.status != Atams::ERROR_NONE)
+      switch (static_cast<Access_t>(datagramHeader.command))
       {
-        abortResponse(response, varLength.status, datagramHeader.varID);
-      }
-      else
-      {
-        switch (static_cast<Access_t>(datagramHeader.command))
-        {
-          case Atams::ACCESS_READ:
-            datagramStartIndex     += DATAGRAM_SIZE_HEADER;
-            requiredResponseLength += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + varLength.data);
-            break;
+        case Atams::ACCESS_READ:
+          datagramStartIndex     += DATAGRAM_SIZE_HEADER;
+          requiredResponseLength += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + varLength.data);
+          break;
 
-          case Atams::ACCESS_WRITE:
-            datagramStartIndex     += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + varLength.data);
-            requiredResponseLength += DATAGRAM_SIZE_HEADER;
-            break;
+        case Atams::ACCESS_WRITE:
+          datagramStartIndex     += static_cast<uint16_t>(DATAGRAM_SIZE_HEADER + varLength.data);
+          requiredResponseLength += DATAGRAM_SIZE_HEADER;
+          break;
 
-          default:
-            abortResponse(response, Atams::ERROR_ACCESS_INVALID, datagramHeader.varID);
-            break;
-        }
+        default:
+          abortResponse(response, Atams::ERROR_ACCESS_INVALID, datagramHeader.varID);
+          break;
       }
     }
   }
@@ -405,15 +396,14 @@ static void validateRequestPacket(ChannelResponse_t &response,
 
 static void processRequestPacket(ChannelResponse_t &response,
                                  uint8_t * const    requestPacket,
-                                 const uint16_t     requestPacketLength,
-                                 const bool         universalBroadcast)
+                                 const uint16_t     requestPacketLength)
 {
   DatagramHeader_t datagramHeader;
   uint16_t         datagramStartIndex = HEADER_INDEX_FIRST_DATAGRAM;
 
   resetResponse(response, requestPacket[HEADER_INDEX_SYNC]);
 
-  validateRequestPacket(response, requestPacket, requestPacketLength, universalBroadcast);
+  validateRequestPacket(response, requestPacket, requestPacketLength);
 
   while ((datagramStartIndex + DATAGRAM_SIZE_HEADER <= requestPacketLength) &&
          (response.aborted                          == false              ) )
@@ -503,14 +493,10 @@ static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsCh
 
     switch (messageType)
     {
-      case MESSAGE_BROADCAST_UNIVERSAL:
-        processRequestPacket(response, decodedPacket, decodedLength, true);
-        sendResponsePacket(commsChannel, response, Atams::MESSAGE_BROADCAST_RESPONSE);
-        break;
       case MESSAGE_REQUEST:
         if (packetNodeID == localNodeID)
         {
-          processRequestPacket(response, decodedPacket, decodedLength, false);
+          processRequestPacket(response, decodedPacket, decodedLength);
           sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE);
         }
         break;
@@ -519,7 +505,7 @@ static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsCh
         {
           if (localNodeID == finalSyncNodeID)
           {
-            processRequestPacket(response, decodedPacket, decodedLength, false);
+            processRequestPacket(response, decodedPacket, decodedLength);
             if (localNodeID == firstSyncNodeID) sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
           }
           else
@@ -529,7 +515,7 @@ static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsCh
         }
         else if (packetNodeID == finalSyncNodeID)
         {
-          processRequestPacket(response, syncPacket.buffer, syncPacket.length, false);
+          processRequestPacket(response, syncPacket.buffer, syncPacket.length);
           if (localNodeID == firstSyncNodeID) sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
         }
         break;
