@@ -41,17 +41,18 @@ namespace Atams { namespace COBS {
 
 typedef enum
 {
-  ERROR_NONE                 = 0U,
-  ERROR_NULL_PTR             = 1U,
-  ERROR_BUFFER_OVERFLOW      = 2U,
-  ERROR_NO_END_OF_LINE       = 3U,
-  ERROR_BUFFER_CONTAINS_ZERO = 4U,
+  ERROR_NONE               = 0U,
+  ERROR_NULL_PTR           = 1U,
+  ERROR_SOURCE_LENGTH      = 2U,
+  ERROR_DESTINATION_LENGTH = 3U,
+  ERROR_NO_END_OF_LINE     = 4U,
+  ERROR_INVALID_ZERO       = 5U,
 } Error_t;
 
 struct Result_t
 {
-  COBS::Error_t status       = COBS::ERROR_NONE;
-  uint16_t      outputLength = 0U;
+  COBS::Error_t status       {COBS::ERROR_NONE};
+  uint16_t      outputLength {0U};
 };
 
 
@@ -59,16 +60,16 @@ struct Result_t
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-COBS::Result_t encode(const uint8_t *sourceBufferPtr,
-                      const uint16_t sourceBufferLength,
-                            uint8_t *destBufferPtr,
-                      const uint16_t destBufferLength);
+COBS::Result_t encode(const uint8_t * const srcBufferPtr,
+                      const uint16_t        srcBufferLength,
+                            uint8_t * const destBufferPtr,
+                      const uint16_t        destBufferLength);
 
 
-COBS::Result_t decode(const uint8_t *sourceBufferPtr,
-                      const uint16_t sourceBufferLength,
-                            uint8_t *destBufferPtr,
-                      const uint16_t destBufferLength);
+COBS::Result_t decode(const uint8_t * const srcBufferPtr,
+                      const uint16_t        srcBufferLength,
+                            uint8_t * const destBufferPtr,
+                      const uint16_t        destBufferLength);
 
 } } /* End Namespace - Atams::COBS */
 

@@ -36,163 +36,184 @@ namespace Atams { namespace COBS {
 /* PRIVATE CONSTANTS                                                                 */
 /*************************************************************************************/
 
-constexpr uint8_t MAX_BLOCK_ELEMENTS = 254U;
-constexpr uint8_t MAX_UINT8_DECIMAL  = 255U;
+constexpr uint8_t MAX_CODE_VALUE = 255U;
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-COBS::Result_t encode(const uint8_t *sourceBufferPtr,
-                      const uint16_t sourceBufferLength,
-                            uint8_t *destBufferPtr,
-                      const uint16_t destBufferLength)
+COBS::Result_t encode(const uint8_t * const srcBufferPtr,
+                      const uint16_t        srcBufferLength,
+                            uint8_t * const destBufferPtr,
+                      const uint16_t        destBufferLength)
 {
+  COBS::Result_t result {COBS::ERROR_NONE, 0U};
 
-  COBS::Result_t encodeResult;
-  uint16_t       destIndex        = 1U;
-  uint16_t       blockStartIndex  = 0U;
-  uint8_t        zeroSearchLength = 1U;
-
-  /* Buffer pointer NULL checks */
-  if ((sourceBufferPtr == nullptr) || (destBufferPtr == nullptr))
+  if ((srcBufferPtr == nullptr) || (destBufferPtr == nullptr))
   {
-    encodeResult.status = ERROR_NULL_PTR;
-    return (encodeResult);
+    result.status = COBS::ERROR_NULL_PTR;
+
+    return (result); /* Early Return */
   }
 
+  if (srcBufferLength == 0U)
+  {
+    result.status = COBS::ERROR_SOURCE_LENGTH;
+
+    return (result); /* Early Return */
+  }
+
+  uint16_t destIndex          {1U};
+  uint16_t codeIndex          {0U};
+  uint8_t  distanceToNextZero {1U};
+
   /* Iterate over all bytes in source buffer */
-  for (uint16_t srcIndex = 0U; srcIndex < sourceBufferLength; srcIndex++)
+  for (uint16_t srcIndex = 0U; srcIndex < srcBufferLength; srcIndex++)
   {
     /* Check to see if the destination buffer has run out of space */
     if (destIndex >= destBufferLength)
     {
-      encodeResult.status = ERROR_BUFFER_OVERFLOW;
-      return (encodeResult);
+      result.status = COBS::ERROR_DESTINATION_LENGTH;
+
+      return (result); /* Early Return */
     }
 
-    uint8_t sourceByte = sourceBufferPtr[srcIndex];
+    uint8_t sourceByte = srcBufferPtr[srcIndex];
 
     if (sourceByte == 0U)
     {
-      /* Zero byte found - log location in last zero locator and update new zero locator position */
-      destBufferPtr[blockStartIndex] = zeroSearchLength;
-      blockStartIndex                = destIndex;
-      zeroSearchLength               = 1U;
+      /* Zero byte found - log location at last code index and reset distance to next zero */
+      destBufferPtr[codeIndex] = distanceToNextZero;
+      codeIndex                = destIndex;
+      distanceToNextZero       = 1U;
       destIndex++;
     }
     else
     {
       /* Copy non-zero byte from source to destination buffer */
-      destBufferPtr[destIndex] = sourceByte;
-      destIndex++;
-      zeroSearchLength++;
+      destBufferPtr[destIndex++] = sourceByte;
+      distanceToNextZero++;
 
-      if (zeroSearchLength == MAX_UINT8_DECIMAL)
+      if (distanceToNextZero == COBS::MAX_CODE_VALUE)
       {
-        /* No zero within 255 bytes, set previous zero locator to 255 and update new zero locator position */
-        destBufferPtr[blockStartIndex] = zeroSearchLength;
-        blockStartIndex                = destIndex;
-        zeroSearchLength               = 1U;
+        /* No zero within 255 bytes, set previous code to 255 and reset distance to next zero */
+        destBufferPtr[codeIndex] = distanceToNextZero;
+        codeIndex                = destIndex;
+        distanceToNextZero       = 1U;
         destIndex++;
       }
     }
   }
 
+  /* Write final code byte */
+  if (destIndex >= destBufferLength)
+  {
+    result.status = COBS::ERROR_DESTINATION_LENGTH;
+
+    return (result); /* Early Return */
+  }
+
   /* Set zero locator value for zero end byte */
-  destBufferPtr[blockStartIndex] = zeroSearchLength;
-  destBufferPtr[destIndex]      = 0U;
-  destIndex++;
+  destBufferPtr[codeIndex]   = distanceToNextZero;
+  destBufferPtr[destIndex++] = 0U;
 
   /* Set output length and success status */
-  encodeResult.outputLength = destIndex;
-  encodeResult.status       = ERROR_NONE;
+  result.outputLength = destIndex;
+  result.status       = COBS::ERROR_NONE;
 
-  return (encodeResult);
-
+  return (result);
 }
 
 
-COBS::Result_t decode(const uint8_t *sourceBufferPtr,
-                      const uint16_t sourceBufferLength,
-                            uint8_t *destBufferPtr,
-                      const uint16_t destBufferLength)
+COBS::Result_t decode(const uint8_t * const srcBufferPtr,
+                      const uint16_t        srcBufferLength,
+                            uint8_t * const destBufferPtr,
+                      const uint16_t        destBufferLength)
 {
-  Result_t decodeResult;
+  COBS::Result_t result = {COBS::ERROR_NONE, 0U};
 
-  uint16_t srcIndex    = 0U;
-  uint16_t destIndex   = 0U;
-  uint16_t blockLength = 0U;
-
-  /* -1U implemented as destIndex can be incremented twice after check */
-  uint16_t destEndCheckLength = static_cast<uint16_t>(destBufferLength - 1U);
-
-  /* Buffer pointer NULL checks */
-  if ((sourceBufferPtr == nullptr) || (destBufferPtr == nullptr))
+  if ((srcBufferPtr == nullptr) || (destBufferPtr == nullptr))
   {
-    decodeResult.status = ERROR_NULL_PTR;
-    return (decodeResult);
+    result.status = COBS::ERROR_NULL_PTR;
+
+    return (result); /* Early Return */
   }
 
-  while (srcIndex < sourceBufferLength)
+  if (srcBufferLength == 0U)
   {
-    blockLength = static_cast<uint16_t>(sourceBufferPtr[srcIndex] - 1U);
-    srcIndex++;
+    result.status = COBS::ERROR_SOURCE_LENGTH;
 
-    /* Iterate over block elements */
-    for (uint16_t index = 0U; index < blockLength; index++)
+    return (result); /* Early Return */
+  }
+
+  if (srcBufferPtr[srcBufferLength - 1U] != 0U)
+  {
+    result.status = COBS::ERROR_SOURCE_LENGTH;
+
+    return (result); /* Early Return */
+  }
+
+  uint16_t srcIndex  {0U};
+  uint16_t destIndex {0U};
+
+  while (srcIndex < (srcBufferLength - 1U))
+  {
+    uint8_t code = srcBufferPtr[srcIndex++];
+
+    if (code == 0U)
     {
-      uint8_t sourceByte = sourceBufferPtr[srcIndex];
+      result.status = COBS::ERROR_INVALID_ZERO;
+
+      return (result); /* Early Return */
+    }
+
+    uint8_t blockLength = static_cast<uint8_t>(code - 1U);
+
+    if ((srcIndex + blockLength) >= srcBufferLength)
+    {
+      result.status = COBS::ERROR_SOURCE_LENGTH;
+
+      return (result); /* Early Return */
+    }
+
+    for (uint8_t blockIndex = 0; blockIndex < blockLength; blockIndex++)
+    {
+      if (destIndex >= destBufferLength)
+      {
+        result.status = COBS::ERROR_DESTINATION_LENGTH;
+
+        return (result); /* Early Return */
+      }
+
+      uint8_t sourceByte = srcBufferPtr[srcIndex++];
 
       if (sourceByte == 0U)
       {
-        /* Zero found within block */
-        decodeResult.status = ERROR_BUFFER_CONTAINS_ZERO;
-        return (decodeResult);
+        result.status = COBS::ERROR_INVALID_ZERO;
+
+        return (result); /* Early Return */
       }
 
-      /* Check to see if the destination buffer has run out of space before copying */
-      if (destIndex >= destEndCheckLength)
-      {
-        decodeResult.status = ERROR_BUFFER_OVERFLOW;
-        return (decodeResult);
-      }
-
-      /* Copy non-zero locator byte into destination buffer */
-      destBufferPtr[destIndex] = sourceByte;
-      destIndex++;
-      srcIndex++;
+      destBufferPtr[destIndex++] = sourceByte;
     }
 
-    if (sourceBufferPtr[srcIndex] == 0U)
+    if (code < COBS::MAX_CODE_VALUE && (srcIndex < (srcBufferLength - 1U)))
     {
-      if (srcIndex < (sourceBufferLength - 1U))
+      if (destIndex >= destBufferLength)
       {
-        /* Termination character found before end of packet */
-        decodeResult.status = ERROR_BUFFER_CONTAINS_ZERO;
-        return (decodeResult);
+        result.status = COBS::ERROR_DESTINATION_LENGTH;
+
+        return (result); /* Early Return */
       }
 
-      /* Termination character found at end of packet - decode successful */
-      break;
-    }
-
-    /* If the block length is maximum, it was created due to it reaching maximum size.
-     * Otherwise, the end of the block length indicates a 0 byte needs to be placed
-     * in the decoded buffer.
-     */
-    if (blockLength < MAX_BLOCK_ELEMENTS)
-    {
-      destBufferPtr[destIndex] = 0U;
-      destIndex++;
+      destBufferPtr[destIndex++] = 0U;
     }
   }
 
-  /* Set output length and success status */
-  decodeResult.outputLength = destIndex;
-  decodeResult.status       = ERROR_NONE;
+  result.outputLength = destIndex;
+  result.status       = COBS::ERROR_NONE;
 
-  return (decodeResult);
+  return (result);
 }
 
 

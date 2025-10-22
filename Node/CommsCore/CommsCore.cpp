@@ -41,6 +41,8 @@
 #include "../Developer/ConfigurationHandler.hpp"
 #include "../Developer/NVMUnitHandler.hpp"
 
+#include "main.h"
+
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
@@ -193,10 +195,22 @@ static DataStatusReturn_t<uint8_t> getVarLength(const uint16_t varID)
   return (lengthReturn);
 }
 
+static uint32_t count {0U};
+
 static void receiveCallback(const Platform::CommsPeripheralID_t commsChannel,
                                   uint8_t                      *rxBufferPtr,
                             const uint16_t                      rxBufferLength)
 {
+  if (rxBufferLength < 7U)
+  {
+    count++;
+  }
+
+  if (count > 4U)
+  {
+    count = 0U;
+  }
+
   if (commsChannel < Platform::NUMBER_OF_COMMS_PERIPHERALS)
   {
     s_circularBuffers[commsChannel].pushHead(rxBufferPtr, rxBufferLength);
@@ -1065,6 +1079,7 @@ Atams::Error_t storeAll(void)
   if (getMemoryMapIsValid() != Atams::ERROR_NONE) return (Atams::ERROR_MEMORY_MAP); /* Early Return */
 
   Platform::stopReceive();
+  __disable_irq();
 
   const uint32_t requiredNVMVarSpace = getNVMVarSpaceRequirement();
   const uint32_t requiredNVMSpace    = sizeof(NVMHeader_t) + requiredNVMVarSpace + sizeof(NVMFooter_t);
@@ -1093,6 +1108,7 @@ Atams::Error_t storeAll(void)
   }
 
   Platform::beginReceive(receiveCallback);
+  __enable_irq();
 
   return (error);
 }

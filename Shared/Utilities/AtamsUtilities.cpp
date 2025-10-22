@@ -167,14 +167,14 @@ Atams::Error_t decodeBusPacket(const uint8_t  * const inputBuffer,
     return (Atams::ERROR_DECODE_FRAMING);
   }
 
-  if (COBSDecodeResult.outputLength < HEADER_SIZE_HEADER)
+  if (COBSDecodeResult.outputLength < Atams::HEADER_SIZE_HEADER)
   {
     return (Atams::ERROR_DECODE_FRAMING);
   }
 
-  uint32_t packetCRC = bufferToUint32(&decodedBuffer[HEADER_INDEX_CRC]);
+  uint32_t packetCRC = bufferToUint32(&decodedBuffer[Atams::HEADER_INDEX_CRC]);
 
-  memset(&decodedBuffer[HEADER_INDEX_CRC], 0U, HEADER_SIZE_CRC);
+  memset(&decodedBuffer[Atams::HEADER_INDEX_CRC], 0U, Atams::HEADER_SIZE_CRC);
 
   if (packetCRC != atamsCRC_.calculateCRC(decodedBuffer, COBSDecodeResult.outputLength))
   {

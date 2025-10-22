@@ -143,6 +143,7 @@ void beginReceive(CommsReceiveCallback_t receiveCallback)
 void stopReceive(void)
 {
   _meshPort.stopReceive();
+  HAL_GPIO_WritePin(RS485_RE_GPIO_Port, RS485_RE_Pin, GPIO_PIN_SET);
 }
 
 /**
@@ -231,8 +232,8 @@ void acquireCommsBufferLock(CommsPeripheralID_t peripheralToLock)
 void releaseCommsBufferLock(CommsPeripheralID_t peripheralToUnlock)
 {
   static_cast<void>(peripheralToUnlock);
-  HAL_NVIC_EnableIRQ(USART2_IRQn);
   HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+  HAL_NVIC_EnableIRQ(USART2_IRQn);
 }
 
 /**
@@ -339,7 +340,7 @@ bool readFromNVM(const uint32_t readIndex, uint8_t * outputPtr, const uint32_t r
  *           this to an appropriate value for their platform. The provided data buffer will
  *           always be of size Platform::NVM_UNIT_SIZE.
  *
- *  @param  writeIndex Index into non-voltatile memory at which to write the provided data.
+ *  @param  writeIndex Index into non-volatile memory at which to write the provided data.
  *  @param  nvmUnit    Reference to an array of size Platform::NVM_UNIT_SIZE holding the data to write.
  *
  *  @return Write status.

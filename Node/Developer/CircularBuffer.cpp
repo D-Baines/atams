@@ -137,21 +137,21 @@ CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t          *inputBu
 {
   if (inputBuffer == nullptr)
   {
-    return (CircularBuffer::ERROR_NULLPTR);
+    return (CircularBuffer::ERROR_NULLPTR);             /* Early Return */
+  }
+
+  if ((inputLength >  STATIC_BUFFER_SIZE) ||
+      (inputLength == 0U                ) )
+  {
+    return (CircularBuffer::ERROR_INPUT_BUFFER_LENGTH); /* Early Return */
   }
 
   Platform::acquireCommsBufferLock(lockArgument_);
 
-  if (inputLength > STATIC_BUFFER_SIZE)
-  {
-    Platform::releaseCommsBufferLock(lockArgument_);
-    return (CircularBuffer::ERROR_INPUT_BUFFER_LENGTH); /* Early Return */
-  }
-
   if ((byteCount_ + inputLength) >= STATIC_BUFFER_SIZE)
   {
     Platform::releaseCommsBufferLock(lockArgument_);
-    return (CircularBuffer::ERROR_FULL); /* Early Return */
+    return (CircularBuffer::ERROR_FULL);                /* Early Return */
   }
 
   uint16_t preWrapLength = STATIC_BUFFER_SIZE - headIndex_;
