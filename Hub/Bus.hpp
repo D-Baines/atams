@@ -96,7 +96,7 @@ private Platform::BusPeripheral
 
   Atams::ProcessState runUpdateCycleAsync(Atams::Error_t &error);
 
-  Atams::ProcessState runUpdateCycleSingleNode(Atams::Error_t &error, Atams::Node &node);
+  Atams::ProcessState runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::Node &node);
 
   Atams::Error_t processSyncBuffers(void);
 
@@ -239,16 +239,16 @@ private Platform::BusPeripheral
 
   void clearAllBusErrors(void);
 
-  bool pollForRequestTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType);
+  bool pollForRequestTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType);
   
-  bool pollForJogTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process);
+  bool pollForJogTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process);
 
-  Bus::PollResult pollForResponse(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse);
+  Bus::PollResult pollForResponse(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse);
 
   virtual void rxCallback(uint8_t       *rxBufferPtr,
                           const uint16_t rxBufferLength) override final;
 
-  bool validateAndStoreResponsePacket(Atams::NodeCallbackHandler &node, const MessageType_t responseType);
+  bool validateAndStoreResponsePacket(Atams::Node &node, const MessageType_t responseType);
 
   void startWriteConfigVars(void);
 

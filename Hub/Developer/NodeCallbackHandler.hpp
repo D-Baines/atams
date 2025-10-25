@@ -81,8 +81,6 @@ class NodeCallbackHandler
 
   /*-- Private Pure Virtual Function Declarations -----------------------------------*/
 
-  virtual uint8_t getNodeID(void) = 0;
-
   virtual bool validateGenInfo(void) = 0;
 
   virtual void reportBusError(const Atams::Error_t error) = 0;
@@ -90,8 +88,6 @@ class NodeCallbackHandler
   virtual void clearBusError(void) = 0;
 
   virtual void clearAbortDetails(void) = 0;
-
-  virtual Atams::Error_t getBusError(void) = 0;
 
   virtual void responseReceived(uint8_t *inputBuffer, uint16_t inputLength) = 0;
 

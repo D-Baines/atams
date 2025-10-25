@@ -86,69 +86,67 @@ public NodeCallbackHandler
 
   Atams::Error_t init(const MemoryMap_t &memoryMap);
 
-  Atams::Error_t initDefaults(void);
+  void setNodeID(const uint8_t nodeID);
+
+  uint8_t getNodeID(void);
      
   template <typename T>
-  Atams::Error_t write(const uint16_t varID, const T writeValue);
+  Atams::Error_t setVar(const uint16_t varID, const T writeValue);
   
   template <typename T>
-  Atams::Error_t read(const uint16_t varID, T &readData);
-
-  template <typename T>
-  Atams::Error_t readIfDataReady(const uint16_t varID, T &outputRef);
-
-  template <typename T>
-  Atams::Error_t writeRequestUntilAck(const uint16_t varID, const T writeValue);
-
-  Atams::Error_t readRequestUntilAck(const uint16_t varID);
-
-  Atams::Error_t startWriteRequestStream(const uint16_t varID);
-
-  Atams::Error_t startReadRequestStream(const uint16_t varID);
-
-  Atams::Error_t stopRequestStream(const uint16_t varID);
-
-  Atams::Error_t getDataReadyFlag(const uint16_t varID, bool &newDataReady);
-
-  Atams::Error_t clearDataReadyFlag(const uint16_t varID);
-
-  Atams::Error_t getAckFlag(const uint16_t varID, bool &ackReceived);
-
-  Atams::Error_t clearAckFlag(const uint16_t varID);
-
-  Atams::Error_t clearDataReadyStartRead(const uint16_t varID);
-
-  Atams::Error_t stopStreamGetDataReady(const uint16_t varID, bool &newDataReady);
-
-  template<typename T>
-  Atams::Error_t stopStreamReadIfDataReady(const uint16_t varID, T &readData);
-
-  template<typename T>
-  Atams::Error_t clearAckStartWrite(const uint16_t varID, const T writeData);
-  
-  Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
+  Atams::Error_t getVar(const uint16_t varID, T &readData);
 
   Atams::Error_t setRequestPattern(const uint16_t         varID,
                                    const Access_t         accessRequest,
                                    const RequestPattern_t requestPattern);
 
   Atams::Error_t getRequestPattern(const uint16_t   varID,
-                                   Access_t         &accessRequest,
-                                   RequestPattern_t &requestPattern);
-
+                                  Access_t         &accessRequest,
+                                  RequestPattern_t &requestPattern);
+  
   void resetRequestPacket(void);
+
+  Atams::Error_t getBusError(void);
+  
+  template <typename T>
+  Atams::Error_t setWriteUntilAck(const uint16_t varID, const T writeValue);
+
+  Atams::Error_t setReadUntilAck(const uint16_t varID);
+
+  Atams::Error_t setWriteStream(const uint16_t varID);
+
+  Atams::Error_t setReadStream(const uint16_t varID);
+
+  Atams::Error_t stopStream(const uint16_t varID);
+
+  Atams::Error_t isDataReady(const uint16_t varID, bool &newDataReady);
+
+  Atams::Error_t clearDataReady(const uint16_t varID);
+
+  Atams::Error_t isWriteAcked(const uint16_t varID, bool &ackReceived);
+
+  Atams::Error_t clearWriteAck(const uint16_t varID);
+
+  Atams::Error_t clearDataReadySetReadStream(const uint16_t varID);
+
+  Atams::Error_t stopStreamIsDataReady(const uint16_t varID, bool &newDataReady);
+
+  template <typename T>
+  Atams::Error_t getVarIfDataReady(const uint16_t varID, T &outputRef);
+
+  template<typename T>
+  Atams::Error_t stopStreamGetVarIfDataReady(const uint16_t varID, T &readData);
+
+  template<typename T>
+  Atams::Error_t clearAckSetWriteStream(const uint16_t varID, const T writeData);
+  
+  Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
+
+  Atams::Error_t getVarLength(const uint16_t varID, uint8_t &length);
 
   uint16_t getRequestPacketLength(void);
 
   uint16_t getWriteListLength(void);
-
-  Atams::Error_t getVarLength(const uint16_t varID, uint8_t &length);
-
-  void setNodeID(const uint8_t nodeID);
-
-  virtual uint8_t getNodeID(void) final;
-
-  virtual Atams::Error_t getBusError(void) final;
 
   Atams::AbortedResponseDetails_t getAbortedResponseDetails(void);
 

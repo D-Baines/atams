@@ -139,7 +139,7 @@ Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
 
   Atams::Node &node {*initNodePtr};
 
-  if ((runUpdateCycleSingleNode(cycleError, node) == Atams::ProcessState::IN_PROGRESS) ||
+  if ((runSingleNodeUpdateCycle(cycleError, node) == Atams::ProcessState::IN_PROGRESS) ||
       (processState                               != Atams::ProcessState::IN_PROGRESS) )
   {
     error = process.error;
@@ -317,7 +317,7 @@ Atams::ProcessState Bus::runUpdateCycleAsync(Atams::Error_t &error)
   return (processState);
 }
 
-Atams::ProcessState Bus::runUpdateCycleSingleNode(Atams::Error_t &error, Atams::Node &node)
+Atams::ProcessState Bus::runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::Node &node)
 { 
   Bus::ProcessHandler<Bus::UpdateState> &process             = singleNodeUpdateProcessHandler_;
   Atams::ProcessState                   &processState        = process.processState;
@@ -327,11 +327,11 @@ Atams::ProcessState Bus::runUpdateCycleSingleNode(Atams::Error_t &error, Atams::
 
   //Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
 
+   Platform::BusPeripheral::update();
+   
   switch (updateState)
   {
     case Bus::UpdateState::SEND_REQUESTS:
-      process.activeNodePtr = nullptr;
-
       if (pollForRequestTransmit(node, process, Atams::MESSAGE_REQUEST))
       {
         if (process.error) process.terminate(process.error);
@@ -340,7 +340,6 @@ Atams::ProcessState Bus::runUpdateCycleSingleNode(Atams::Error_t &error, Atams::
       break;
 
     case Bus::UpdateState::COLLECT_RESPONSES:
-      Platform::BusPeripheral::update();
       
       rxPollResult = pollForResponse(node, process, Atams::MESSAGE_RESPONSE);
 
@@ -369,6 +368,11 @@ Atams::ProcessState Bus::runUpdateCycleSingleNode(Atams::Error_t &error, Atams::
   return (processState);
 }
 
+Atams::Error_t Bus::getUpdateCycleError(void)
+{
+  for (Node )
+}
+
 Atams::Error_t Bus::processSyncBuffers(void)
 {
   if (updateProcessHandler_.processState == Atams::ProcessState::IN_PROGRESS) 
@@ -378,13 +382,14 @@ Atams::Error_t Bus::processSyncBuffers(void)
 
   Atams::Error_t firstError = Atams::ERROR_NONE;
 
-  for (Node *&nodePtr : nodePtrs_)
+  for (Atams::Node *&nodePtr : nodePtrs_)
   {
     if (nodePtr != nullptr) 
     {
-      NodeCallbackHandler &callbackHandler = *nodePtr;
-      callbackHandler.processResponseBuffer();
-      if (!firstError) firstError = callbackHandler.getBusError();
+      Atams::Node         &node          = *nodePtr;     
+      NodeCallbackHandler &nodeCallbacks = node;
+      nodeCallbacks.processResponseBuffer();
+      if (!firstError) firstError = node.getBusError();
     }
   }
 
@@ -415,7 +420,7 @@ Atams::ProcessState Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
   Bus::ConfigUpdateState                      &configUpdateState {process.specificState};
   Atams::Error_t                               cycleError        {Atams::ERROR_NONE};
 
-  if ((runUpdateCycleSingleNode(cycleError, dummyNode_) == Atams::ProcessState::IN_PROGRESS) ||
+  if ((runSingleNodeUpdateCycle(cycleError, dummyNode_) == Atams::ProcessState::IN_PROGRESS) ||
       (processState                                     != Atams::ProcessState::IN_PROGRESS) )
   {
     error = process.error;
@@ -509,8 +514,11 @@ Atams::Error_t Bus::beginSingleNodeUpdateCyclePrivate(Atams::Node &node)
   static_cast<NodeCallbackHandler&>(node).clearAbortDetails();
   circularBuffer_.reset();
   activeSyncCount_++;
+  singleNodeUpdateProcessHandler_.activeNodePtr = &node;
   singleNodeUpdateProcessHandler_.resetProcess();
   singleNodeUpdateProcessHandler_.specificState = Bus::UpdateState::SEND_REQUESTS;
+
+  return (Atams::ERROR_NONE);
 }
 
 void Bus::clearAllBusErrors(void)
@@ -525,24 +533,29 @@ void Bus::clearAllBusErrors(void)
   }
 }
 
-bool Bus::pollForRequestTransmit(Atams::NodeCallbackHandler &node, 
+bool Bus::pollForRequestTransmit(Atams::Node                &node, 
                                  Bus::ProcessHandlerBase    &process,
                                  const Atams::MessageType_t  requestType)
 {
-  uint32_t currentTime          = Platform::getMillis();
-  bool     messageSendAttempted = false;
+  Atams::NodeCallbackHandler &nodeCallbacks        = node; 
+  uint32_t                    currentTime          = Platform::getMillis();
+  bool                        messageSendAttempted = false;
   
   if (Platform::BusPeripheral::transmitReady())
   {
-    if (node.getEncodedRequestPacket(requestType,
-                                     activeSyncCount_,
-                                     encodedBuffer_, 
-                                     sizeof(encodedBuffer_), 
-                                     encodedLength_) == Atams::ERROR_NONE)
+    if (nodeCallbacks.getEncodedRequestPacket(requestType,
+                                              activeSyncCount_,
+                                              encodedBuffer_, 
+                                              sizeof(encodedBuffer_), 
+                                              encodedLength_) == Atams::ERROR_NONE)
     {
+      if (encodedLength_ < 7U)
+      {
+        encodedLength_ = 0U;
+      }
       if (Platform::BusPeripheral::transmit(encodedBuffer_, encodedLength_) == false)
       {
-        node.reportBusError(Atams::ERROR_PLATFORM);
+        nodeCallbacks.reportBusError(Atams::ERROR_PLATFORM);
         process.error = Atams::ERROR_PLATFORM;
       }
       else 
@@ -558,10 +571,11 @@ bool Bus::pollForRequestTransmit(Atams::NodeCallbackHandler &node,
   return (messageSendAttempted);
 }
 
-bool Bus::pollForJogTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process)
+bool Bus::pollForJogTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process)
 {
-  uint32_t currentTime          = Platform::getMillis();
-  bool     messageSendAttempted = false;
+  Atams::NodeCallbackHandler &nodeCallbacks        = node;
+  uint32_t                    currentTime          = Platform::getMillis();
+  bool                        messageSendAttempted = false;
 
   jogBuffer_[HEADER_INDEX_NODE_ID]  = node.getNodeID();
   jogBuffer_[HEADER_INDEX_MSG_TYPE] = Atams::MESSAGE_SYNC_JOG;
@@ -577,7 +591,7 @@ bool Bus::pollForJogTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessHandl
     {
       if (Platform::BusPeripheral::transmit(encodedBuffer_, encodedLength_) == false)
       {
-        node.reportBusError(Atams::ERROR_PLATFORM);
+        nodeCallbacks.reportBusError(Atams::ERROR_PLATFORM);
       }
       else 
       {
@@ -591,10 +605,11 @@ bool Bus::pollForJogTransmit(Atams::NodeCallbackHandler &node, Bus::ProcessHandl
   return (messageSendAttempted);
 }
 
-Bus::PollResult Bus::pollForResponse(Atams::NodeCallbackHandler &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse)
+Bus::PollResult Bus::pollForResponse(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse)
 {
-  uint32_t        currentTime  = Platform::getMillis();
-  Bus::PollResult result       = Bus::PollResult::WAITING;
+  Atams::NodeCallbackHandler &nodeCallbacks = node;
+  uint32_t                    currentTime   = Platform::getMillis();
+  Bus::PollResult             result        = Bus::PollResult::WAITING;
 
   if ((circularBuffer_.getPacket(rxBuffer_, sizeof(rxBuffer_), rxLength_) == CircularBuffer::ERROR_NONE) &&
       (validateAndStoreResponsePacket(node, expectedResponse)             == true                      ) )
@@ -605,7 +620,7 @@ Bus::PollResult Bus::pollForResponse(Atams::NodeCallbackHandler &node, Bus::Proc
 
   else if (currentTime - process.prevEventTime > Platform::BUS_RESPONSE_TIMEOUT)
   { 
-    node.reportBusError(Atams::ERROR_RESPONSE_TIMEOUT);
+    nodeCallbacks.reportBusError(Atams::ERROR_RESPONSE_TIMEOUT);
     result = Bus::PollResult::TIMEOUT;
     process.prevEventTime = currentTime;
   }
@@ -618,10 +633,11 @@ void Bus::rxCallback(uint8_t *rxBufferPtr, const uint16_t rxBufferLength)
   static_cast<void>(circularBuffer_.pushHead(rxBufferPtr, rxBufferLength));
 }
 
-bool Bus::validateAndStoreResponsePacket(Atams::NodeCallbackHandler &node, const MessageType_t expectedResponse)
+bool Bus::validateAndStoreResponsePacket(Atams::Node &node, const MessageType_t expectedResponse)
 {
-  Atams::Error_t error       = Atams::ERROR_NONE;
-  bool           packetValid = true;
+  Atams::NodeCallbackHandler &nodeCallbacks = node;
+  Atams::Error_t              error         = Atams::ERROR_NONE;
+  bool                        packetValid   = true;
 
   error = decodeBusPacket(rxBuffer_, 
                           rxLength_, 
@@ -643,9 +659,9 @@ bool Bus::validateAndStoreResponsePacket(Atams::NodeCallbackHandler &node, const
     else if (packetNodeID    != node.getNodeID())     error = Atams::ERROR_SYNC_NODE;
     else if ((messageType    != expectedResponse) &&
              (messageIsAbort == false           ) )   error = Atams::ERROR_MESSAGE_TYPE;
-    else                                              node.responseReceived(decodedBuffer_, decodedLength_);
+    else                                              nodeCallbacks.responseReceived(decodedBuffer_, decodedLength_);
 
-    if (error != Atams::ERROR_NONE) node.reportBusError(error);
+    if (error != Atams::ERROR_NONE) nodeCallbacks.reportBusError(error);
   }
   else 
   {
