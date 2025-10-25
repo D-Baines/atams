@@ -137,6 +137,10 @@ class CircularBuffer
 
   inline void resetEOLIndex(void);
 
+  inline uint16_t calcEolToTail(void);
+
+  inline uint16_t calcEolToHead(void);
+
   inline CircularBuffer::Error_t eolSearch(void);
 
 };

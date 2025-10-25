@@ -39,6 +39,8 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
+static uint32_t commsErrorResetCount {0U};
+
 namespace Atams { namespace Platform {
 
 /*************************************************************************************/
@@ -60,7 +62,6 @@ static SerialPort _meshPort(SerialPort::PORT_ID_MESH);
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
-
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
@@ -126,6 +127,7 @@ void beginReceive(CommsReceiveCallback_t receiveCallback)
 
   while (_meshPort.beginReceive() != SerialPort::ERROR_NONE)
   {
+
     _meshPort.stopReceive();
   }
 
@@ -158,7 +160,21 @@ void stopReceive(void)
  */
 void update(void)
 {
+  if (_meshPort.getError() != SerialPort::ERROR_NONE)
+  {
+    commsErrorResetCount++;
 
+    while (_meshPort.beginReceive() != SerialPort::ERROR_NONE)
+    {
+      commsErrorResetCount++;
+      _meshPort.stopReceive();
+    }
+  }
+}
+
+bool transmitReady(void)
+{
+  return (_meshPort.transmitReady());
 }
 
 /**
@@ -166,8 +182,8 @@ void update(void)
  *
  * @details Users can choose to implement this function as a blocking or non-blocking.
  *          If implemented as non-blocking for event-driven comms, the function must ensure that
- *          the transmission is started before returning. If implemented as blocking for polling
- *          comms, the function must ensure that all bytes are transmitted before returning.
+ *          the transmission is started before returning true. If implemented as blocking for polling
+ *          comms, the function must ensure that all bytes are transmitted before returning true.
  *
  * @param   peripheralID The ID of the communications peripheral to use for transmission
  * @param   buffer       Pointer to the buffer holding the bytes to be transmitted

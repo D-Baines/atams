@@ -25,7 +25,7 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "ConfigurationHandler.hpp"
+#include <Atams/Node/Developer/UniversalBlockManager.hpp>
 #include "../CommsCore/CommsCore.hpp"
 #include "../CommsCore/CommsPlatform.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"
@@ -40,11 +40,11 @@ namespace Atams {
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-ConfigurationHandler::ConfigurationHandler(WatchdogHandler &watchdogHandler) :
+UniversalBlockManager::UniversalBlockManager(WatchdogHandler &watchdogHandler) :
 watchdogHandler_(watchdogHandler),
 configPasscodeCheckers_
 {
-  /* [PASSCODE_ID_STORE_ALL] = */
+  /* [PROCESS_ID_STORE_ALL] = */
   {
     /* .passcodeVarID    = */ BlockUniversal::VAR_STORE_ALL,
     /* .requiredPasscode = */ Atams::STORE_ALL_PASSCODE,
@@ -53,7 +53,7 @@ configPasscodeCheckers_
     /* .processFunction  = */ Atams::storeAll,
     /* .isStorageProcess = */ true
   },
-  /* [PASSCODE_ID_RESTORE_USER_BLOCKS] = */
+  /* [PROCESS_ID_RESTORE_USER_BLOCKS] = */
   {
     /* .passcodeVarID    = */ BlockUniversal::VAR_RESTORE_USER_BLOCKS,
     /* .requiredPasscode = */ Atams::RESTORE_USER_BLOCKS_PASSCODE,
@@ -62,7 +62,7 @@ configPasscodeCheckers_
     /* .processFunction  = */ Atams::restoreUser,
     /* .isStorageProcess = */ true
   },
-  /* [PASSCODE_ID_RESTORE_ALL] = */
+  /* [PROCESS_ID_RESTORE_ALL] = */
   {
     /* .passcodeVarID    = */ BlockUniversal::VAR_RESTORE_ALL,
     /* .requiredPasscode = */ Atams::RESTORE_ALL_PASSCODE,
@@ -71,7 +71,7 @@ configPasscodeCheckers_
     /* .processFunction  = */ Atams::restoreAll,
     /* .isStorageProcess = */ true
   },
-  /* [PASSCODE_ID_RESET_NODE] = */
+  /* [PROCESS_ID_RESET_NODE] = */
   {
     /* .passcodeVarID    = */ BlockUniversal::VAR_RESTORE_ALL,
     /* .requiredPasscode = */ Atams::RESET_NODE_PASSCODE,
@@ -85,16 +85,16 @@ configPasscodeCheckers_
   /* Do Nothing */
 }
 
-void ConfigurationHandler::initConfiguration(void)
+void UniversalBlockManager::initConfiguration(void)
 {
   applyUniversalConfiguration();
 }
 
-void ConfigurationHandler::update(void)
+UniversalBlockManager::ProcessID_t UniversalBlockManager::update(void)
 {
   if (updateRequired_ == false)
   {
-    return; /* Early Return */
+    return (PROCESS_ID_UNKNOWN); /* Early Return */
   }
 
   updateRequired_ = false;
@@ -117,35 +117,75 @@ void ConfigurationHandler::update(void)
       break;
   }
 
-  Atams::write(BlockUniversal::VAR_CONFIGURATION_STATUS, static_cast<uint8_t>(configurationState_));
+  static_cast<void>(Atams::write(BlockUniversal::VAR_CONFIGURATION_STATUS,
+                    static_cast<uint8_t>(configurationState_)));
+
+  return (pendingProcessID_);
 }
 
-void ConfigurationHandler::setUpdateRequired(void)
+void UniversalBlockManager::triggerPendingProcess(void)
+{
+  if (pendingProcessID_ < NUMBER_OF_PROCESSES)
+  {
+    PasscodeChecker_t &checker       = configPasscodeCheckers_[pendingProcessID_];
+    Atams::Error_t     processStatus = checker.processFunction();
+
+    if (checker.isStorageProcess == true)
+    {
+      notifyStorageProcessComplete(processStatus);
+    }
+
+    pendingProcessID_ = PROCESS_ID_UNKNOWN;
+  }
+}
+
+void UniversalBlockManager::setUpdateRequired(void)
 {
   updateRequired_ = true;
 }
 
-bool ConfigurationHandler::getConfigurationActive(void)
+bool UniversalBlockManager::checkWriteAccess(const uint16_t varID)
 {
-  return (configurationState_ == CONFIGURATION_STATUS_ACTIVE);
+  if (varID == BlockUniversal::VAR_CONFIGURATION_PASSKEY)
+  {
+    return (true);
+  }
+
+  return ((configurationState_ == CONFIGURATION_STATUS_ACTIVE              ) ||
+          (varID               == BlockUniversal::VAR_CONFIGURATION_PASSKEY) ||
+          (varID               == BlockUniversal::VAR_WATCHDOG_RESET       ) );
 }
 
-uint8_t ConfigurationHandler::getLocalNodeID(void)
+void UniversalBlockManager::processRead(const uint16_t varID)
+{
+  switch (varID)
+  {
+    case BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE:
+      static_cast<void>(Atams::write(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE,
+                                     static_cast<uint8_t>(Atams::ATAMS_FALSE)));
+      break;
+    default:
+      /* Do Nothing */
+      break;
+  }
+}
+
+uint8_t UniversalBlockManager::getLocalNodeID(void)
 {
   return (localNodeID_);
 }
 
-uint8_t ConfigurationHandler::getPrevSyncNodeID(void)
+uint8_t UniversalBlockManager::getPrevSyncNodeID(void)
 {
   return (prevSyncNodeID_);
 }
 
-uint8_t ConfigurationHandler::getFirstSyncNodeID(void)
+uint8_t UniversalBlockManager::getFirstSyncNodeID(void)
 {
   return (firstSyncNodeID_);
 }
 
-uint8_t ConfigurationHandler::getFinalSyncNodeID(void)
+uint8_t UniversalBlockManager::getFinalSyncNodeID(void)
 {
   return (finalSyncNodeID_);
 }
@@ -154,7 +194,7 @@ uint8_t ConfigurationHandler::getFinalSyncNodeID(void)
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-void ConfigurationHandler::checkConfigurationStateEntry(void)
+void UniversalBlockManager::checkConfigurationStateEntry(void)
 {
   static uint32_t prevConfigStatePasskey = 0U;
   uint32_t        configStatePasskey     = 0U;
@@ -180,7 +220,7 @@ void ConfigurationHandler::checkConfigurationStateEntry(void)
   }
 }
 
-void ConfigurationHandler::checkConfigurationStateExit(void)
+void UniversalBlockManager::checkConfigurationStateExit(void)
 {
   uint32_t configStatePasskey = 0U;
 
@@ -205,28 +245,25 @@ void ConfigurationHandler::checkConfigurationStateExit(void)
   }
 }
 
-void ConfigurationHandler::checkConfigurationPasscodes(void)
+void UniversalBlockManager::checkConfigurationPasscodes(void)
 {
-  for (PasscodeChecker_t &checker : configPasscodeCheckers_)
+  for (uint8_t processIndex = 0U; processIndex < NUMBER_OF_PROCESSES; processIndex++)
   {
+    PasscodeChecker_t &checker = configPasscodeCheckers_[processIndex];
+
     static_cast<void>(Atams::read(checker.passcodeVarID, checker.passcode));
 
     if ((checker.passcode     == checker.requiredPasscode) &&
         (checker.prevPasscode != checker.requiredPasscode) )
     {
-      Atams::Error_t processStatus = checker.processFunction();
-
-      if (checker.isStorageProcess == true)
-      {
-        notifyStorageProcessComplete(processStatus);
-      }
+      pendingProcessID_ = static_cast<ProcessID_t>(processIndex);
     }
 
     checker.prevPasscode = checker.passcode;
   }
 }
 
-void ConfigurationHandler::applyUniversalConfiguration(void)
+void UniversalBlockManager::applyUniversalConfiguration(void)
 {
   uint32_t watchdogPeriod = WatchdogHandler::MINIMUM_VALID_WATCHDOG_PERIOD;
 
@@ -242,7 +279,7 @@ void ConfigurationHandler::applyUniversalConfiguration(void)
   watchdogHandler_.setWatchdogPeriod(watchdogPeriod);
 }
 
-void ConfigurationHandler::cancelConfigurationValueChange(void)
+void UniversalBlockManager::cancelConfigurationValueChange(void)
 {
   uint32_t watchdogPeriod = watchdogHandler_.getWatchdogPeriod();
 
@@ -254,7 +291,7 @@ void ConfigurationHandler::cancelConfigurationValueChange(void)
   static_cast<void>(Atams::write(BlockUniversal::VAR_WATCHDOG_PERIOD,  watchdogPeriod));
 }
 
-void ConfigurationHandler::notifyStorageProcessComplete(Atams::Error_t processStatus)
+void UniversalBlockManager::notifyStorageProcessComplete(Atams::Error_t processStatus)
 {
   static_cast<void>(Atams::write(BlockUniversal::VAR_STORAGE_STATUS,           static_cast<uint8_t>(processStatus)));
   static_cast<void>(Atams::write(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE, static_cast<uint8_t>(ATAMS_TRUE)));

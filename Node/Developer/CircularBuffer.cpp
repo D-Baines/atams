@@ -86,7 +86,7 @@ CircularBuffer::Error_t CircularBuffer::getPacket(uint8_t        *targetBuffer,
   if (newDataReady_ != CircularBuffer::NEW_DATA_READY)
   {
     statusReturn = CircularBuffer::ERROR_NO_NEW_DATA;
-    return (statusReturn);
+    return (statusReturn); /* Early Return */
   }
 
   Platform::acquireCommsBufferLock(lockArgument_);
@@ -97,33 +97,33 @@ CircularBuffer::Error_t CircularBuffer::getPacket(uint8_t        *targetBuffer,
   if (eolSearchResult != CircularBuffer::ERROR_NONE)
   {
     Platform::releaseCommsBufferLock(lockArgument_);
-    return (eolSearchResult);
+    return (eolSearchResult); /* Early Return */
   }
 
-  outputLength = eolToTail_;
+  outputLength = calcEolToTail();
 
   if (maxOutputLength < outputLength)
   {
-    resetEOLIndex();
-    statusReturn = CircularBuffer::ERROR_OUTPUT_BUFFER_LENGTH;
+    /* Discard the data that is too long */
+    increaseTailIndex(outputLength);
+    Platform::releaseCommsBufferLock(lockArgument_);
+    return (CircularBuffer::ERROR_OUTPUT_BUFFER_LENGTH); /* Early Return */
+  }
+
+  uint16_t preWrapLength = STATIC_BUFFER_SIZE - tailIndex_;
+
+  if (outputLength < preWrapLength)
+  {
+    memcpy(&targetBuffer[0U], &buffer_[tailIndex_], outputLength);
   }
   else
   {
-    uint16_t preWrapLength = STATIC_BUFFER_SIZE - tailIndex_;
-
-    if (outputLength < preWrapLength)
-    {
-      memcpy(&targetBuffer[0U], &buffer_[tailIndex_], outputLength);
-    }
-    else
-    {
-      uint16_t postWrapLength = outputLength - preWrapLength;
-      memcpy(&targetBuffer[0U],            &buffer_[tailIndex_], preWrapLength);
-      memcpy(&targetBuffer[preWrapLength], &buffer_[0U],         postWrapLength);
-    }
-
-    increaseTailIndex(outputLength);
+    uint16_t postWrapLength = outputLength - preWrapLength;
+    memcpy(&targetBuffer[0U],            &buffer_[tailIndex_], preWrapLength);
+    memcpy(&targetBuffer[preWrapLength], &buffer_[0U],         postWrapLength);
   }
+
+  increaseTailIndex(outputLength);
 
   if (byteCount_ == 0U) newDataReady_ = !CircularBuffer::NEW_DATA_READY;
 
@@ -184,35 +184,43 @@ inline void CircularBuffer::increaseHeadIndex(volatile const uint16_t length)
 {
   headIndex_  = (headIndex_ + length) % STATIC_BUFFER_SIZE;
   byteCount_ += length;
-  eolToHead_ += length;
 }
 
 inline void CircularBuffer::increaseTailIndex(volatile const uint16_t length)
 {
   tailIndex_  = (tailIndex_ + length) % STATIC_BUFFER_SIZE;
   byteCount_ -= length;
-  eolToTail_ -= length;
 }
 
 inline void CircularBuffer::incrementEOLIndex(void)
 {
   eolSearchIndex_ = (eolSearchIndex_ + 1U) % STATIC_BUFFER_SIZE;
-  eolToHead_--;
-  eolToTail_++;
 }
 
 inline void CircularBuffer::resetEOLIndex(void)
 {
   eolSearchIndex_ = tailIndex_;
-  eolToTail_      = 0U;
-  eolToHead_      = byteCount_;
+}
+
+inline uint16_t CircularBuffer::calcEolToTail(void)
+{
+    return (eolSearchIndex_ >= tailIndex_) ?
+           (eolSearchIndex_ - tailIndex_)  :
+           (STATIC_BUFFER_SIZE - tailIndex_ + eolSearchIndex_);
+}
+
+inline uint16_t CircularBuffer::calcEolToHead(void)
+{
+    return (headIndex_ >= eolSearchIndex_) ?
+           (headIndex_ - eolSearchIndex_)  :
+           (STATIC_BUFFER_SIZE - eolSearchIndex_ + headIndex_);
 }
 
 inline CircularBuffer::Error_t CircularBuffer::eolSearch(void)
 {
   bool eolFound = false;
 
-  for (uint16_t searchLength = eolToHead_; searchLength > 0U; searchLength--)
+  for (uint16_t searchLength = calcEolToHead(); searchLength > 0U; searchLength--)
   {
     eolFound = (buffer_[eolSearchIndex_] == eolChar_);
     incrementEOLIndex();

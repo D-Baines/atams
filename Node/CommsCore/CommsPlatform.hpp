@@ -86,6 +86,8 @@ void stopReceive(void);
 
 void update(void);
 
+bool transmitReady(void);
+
 bool transmitBuffer(CommsPeripheralID_t peripheralID, uint8_t *buffer, uint16_t length);
 
 void acquireCommsBufferLock(CommsPeripheralID_t peripheralToLock);

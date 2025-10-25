@@ -41,7 +41,7 @@ namespace Atams {
 /* CLASS DEFINITIONS                                                                 */
 /*************************************************************************************/
 
-class ConfigurationHandler
+class UniversalBlockManager
 {
 
   public:
@@ -52,36 +52,50 @@ class ConfigurationHandler
 
   using PasscodeProtectedFunction_t = Atams::Error_t (&)(void);
 
+  enum ProcessID_t: uint8_t
+  {
+    PROCESS_ID_STORE_ALL           = 0U,
+    PROCESS_ID_RESTORE_USER_BLOCKS = 1U,
+    PROCESS_ID_RESTORE_ALL         = 2U,
+    PROCESS_ID_RESET_NODE          = 3U,
+    NUMBER_OF_PROCESSES,
+    PROCESS_ID_UNKNOWN
+  };
+
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Constructor */
-  ConfigurationHandler(WatchdogHandler &watchdogHandler);
+  UniversalBlockManager(WatchdogHandler &watchdogHandler);
 
   /* Default Constructor */
-  ConfigurationHandler(void) = delete;
+  UniversalBlockManager(void) = delete;
 
   /* Destructor */
-  ~ConfigurationHandler(void) = default;
+  ~UniversalBlockManager(void) = default;
 
   /* Copy Constructor */
-  ConfigurationHandler(const ConfigurationHandler &other) = delete;
+  UniversalBlockManager(const UniversalBlockManager &other) = delete;
 
   /* Copy Assignment Operator */
-  ConfigurationHandler & operator=(const ConfigurationHandler &other) = delete;
+  UniversalBlockManager & operator=(const UniversalBlockManager &other) = delete;
 
   /* Move Constructor */
-  ConfigurationHandler(ConfigurationHandler &&other) = delete;
+  UniversalBlockManager(UniversalBlockManager &&other) = delete;
 
   /* Move Assignment Operator */
-  ConfigurationHandler & operator=(ConfigurationHandler &&other) = delete;
+  UniversalBlockManager & operator=(UniversalBlockManager &&other) = delete;
 
   void initConfiguration(void);
 
-  void update(void);
+  UniversalBlockManager::ProcessID_t update(void);
+
+  void triggerPendingProcess(void);
 
   void setUpdateRequired(void);
 
-  bool getConfigurationActive(void);
+  bool checkWriteAccess(const uint16_t varID);
+
+  void processRead(const uint16_t varID);
 
   uint8_t getLocalNodeID(void);
 
@@ -98,15 +112,6 @@ class ConfigurationHandler
   /*-- Private Constants ------------------------------------------------------------*/
 
   /*-- Private Typedefs -------------------------------------------------------------*/
-
-  enum StoragePasscodeID_t: uint8_t
-  {
-    PASSCODE_ID_STORE_ALL           = 0U,
-    PASSCODE_ID_RESTORE_USER_BLOCKS = 1U,
-    PASSCODE_ID_RESTORE_ALL         = 2U,
-    PASSCODE_ID_RESET_NODE          = 3U,
-    NUMBER_OF_PASSCODES
-  };
 
   struct PasscodeChecker_t
   {
@@ -125,16 +130,17 @@ class ConfigurationHandler
   /*-- Private Variables ------------------------------------------------------------*/
 
   WatchdogHandler             &watchdogHandler_;
-  PasscodeChecker_t            configPasscodeCheckers_[ConfigurationHandler::NUMBER_OF_PASSCODES];
-  bool                         updateRequired_     = false;
-  Atams::ConfigurationStatus_t configurationState_ = Atams::CONFIGURATION_STATUS_INACTIVE;
+  PasscodeChecker_t            configPasscodeCheckers_[NUMBER_OF_PROCESSES];
+  bool                         updateRequired_     {false};
+  Atams::ConfigurationStatus_t configurationState_ {Atams::CONFIGURATION_STATUS_INACTIVE};
+  ProcessID_t                  pendingProcessID_   {PROCESS_ID_UNKNOWN};
 
   /* Configuration Parameters */
-  uint8_t localNodeID_     = 0U;
-  uint8_t prevSyncNodeID_  = 0U;
-  uint8_t finalSyncNodeID_ = 0U;
-  uint8_t firstSyncNodeID_ = 0U;
-  uint8_t bitrateOption_   = static_cast<uint8_t>(Atams::BITRATE_OPTION_0);
+  uint8_t localNodeID_     {0U};
+  uint8_t prevSyncNodeID_  {0U};
+  uint8_t finalSyncNodeID_ {0U};
+  uint8_t firstSyncNodeID_ {0U};
+  uint8_t bitrateOption_   {static_cast<uint8_t>(Atams::BITRATE_OPTION_0)};
 
   /*-- Private Function Declarations -------------------------------------------------*/
 
