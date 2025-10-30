@@ -76,22 +76,25 @@ constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING = MAX_BUS_PACKET_SIZE - COBS_
 /*************************************************************************************/
 
 /** 
-* @brief Platform comms peripheral class for transmit and receive of raw byte buffers. 
-*        BusPeripheral is inherited and used by the Atams::Bus class. A single 
-*        BusPeripheral object is constructed for each Atams::Bus object.
-* @note  ATAMS PLATFORM REQUIREMENT - ALL
-*/ 
+ * @brief Platform comms peripheral class for transmit and receive of raw byte buffers. 
+ *        BusPeripheral is inherited and used by the Atams::Bus class. A single 
+ *        BusPeripheral object is constructed for each Atams::Bus object.
+ *
+ * @note  ATAMS PLATFORM REQUIREMENT - ALL
+ */ 
 class BusPeripheral
 {
   public:
 
   /**
-  * @brief   User data structure for the BusPeripheral class.
-  * @details The user must populate this structure with any data required for
-  *          the platform comms peripheral to operate. This structure is passed
-  *          to the Atams::Bus constructor.
-  * @note    ATAMS PLATFORM REQUIREMENT - OPTIONAL
-  */
+   * @brief   User data structure for the BusPeripheral class.
+   *
+   * @details The user must populate this structure with any data required for
+   *          the platform comms peripheral to operate. This structure is passed
+   *          to the Atams::Bus constructor.
+   *
+   * @note    ATAMS PLATFORM REQUIREMENT - OPTIONAL
+   */
   struct UserData_t
   {
     asio::io_context  &ioContext;
@@ -102,35 +105,48 @@ class BusPeripheral
   BusPeripheral(UserData_t userData);
 
   /** @brief   Start receiving data on the user comms peripheral. 
+   *
    *  @details This function is called from the Atams::Bus class when a bus init or config update process is started.
+   *
    *  @return  True if the user comms peripheral was started successfully, false otherwise.
+   *
    *  @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
    */
   bool startReceive(void);
 
   /**
    * @brief   Check if the user comms peripheral is ready to transmit data.
+   *
    * @details This function is called from the Atams::Bus class during a bus update cycle.
+   *
    * @return  True if the user comms peripheral is ready to transmit data, false otherwise.
+   *
    * @note    ATAMS PLATFORM REQUIREMENT - ALL
    */
   bool transmitReady(void);
 
   /**
    * @brief   Transmit bytes using the user comms peripheral.
+   *
    * @details This function is called from the Atams::Bus class during a bus update cycle.
+   *
    * @param   buffer Pointer to the data buffer to transmit.
+   *
    * @param   length Length of the data buffer to transmit.
+   *
    * @return  Transmission status.
    *          true:  Transmission successfully started or all bytes successfully transmitted.
    *          false: Transmission error occurred.
+   *
    *  @note   ATAMS PLATFORM REQUIREMENT - ALL
    */
   bool transmit(uint8_t *buffer, const uint16_t length);
 
   /**
    * @brief   Update or poll the user comms peripheral if required.
+   *
    * @details This function is called from the Atams::Bus class during a bus update cycle.
+   *
    * @note    ATAMS PLATFORM REQUIREMENT - POLLING COMMS
    */
   void update(void);
@@ -147,11 +163,15 @@ class BusPeripheral
 
   /**
    * @brief   Callback function for received bytes.
+   *
    * @param   rxBufferPtr    Pointer to the received data buffer (optionally use rxBuffer_).
+   *
    * @param   rxBufferLength Length of the received data buffer.
+   *
    * @details The user must call this function when new bytes have been received.
    *          This function is overridden by the Atams::Bus class. Bytes will be copied
    *          from rxBufferPtr into an Atams::Bus circular buffer in the overidden function.
+   *
    * @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
    */
   virtual void rxCallback(      uint8_t  *rxBufferPtr,

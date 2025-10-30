@@ -200,8 +200,8 @@ private Platform::BusPeripheral
   Atams::CircularBuffer circularBuffer_;
   Node                 *nodePtrs_[Platform::NUMBER_OF_NODES_PER_BUS];
   NodeActions           nodeProcessHandler_;
-  Node                  dummyNode_ = {0U};
-  NodeCallbackHandler  &dummyNodeCallbackHandler_ = dummyNode_;
+  Node                  dummyNode_ {0U};
+  NodeCallbackHandler  &dummyNodeCallbackHandler_ {dummyNode_};
 
   Bus::ProcessHandler<Bus::InitState>         initProcessHandler_;
   Bus::ProcessHandler<Bus::ConfigUpdateState> configUpdateProcessHandler_;

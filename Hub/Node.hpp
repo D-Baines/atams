@@ -104,7 +104,7 @@ public NodeCallbackHandler
                                   Access_t         &accessRequest,
                                   RequestPattern_t &requestPattern);
   
-  void resetRequestPacket(void);
+  void clearAllRequestPatterns(void);
 
   Atams::Error_t getBusError(void);
   

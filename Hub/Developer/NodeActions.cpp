@@ -800,7 +800,7 @@ void NodeActions::ProcessHandler<T>::resetAndAssignNode(Node &node)
   this->error         = Atams::ERROR_NONE;
   this->specificState = T::START;
   this->processState  = Atams::ProcessState::IN_PROGRESS;
-  this->nodePtr->resetRequestPacket();
+  this->nodePtr->clearAllRequestPatterns();
 }
 
 template <typename T>
@@ -809,7 +809,7 @@ void NodeActions::ProcessHandler<T>::terminate(Atams::Error_t exitError)
   this->error         = exitError;
   this->specificState = T::ERROR;
   this->processState  = Atams::ProcessState::ERROR;
-  if (this->nodePtr != nullptr) this->nodePtr->resetRequestPacket();
+  if (this->nodePtr != nullptr) this->nodePtr->clearAllRequestPatterns();
 }
 
 template <typename T>
@@ -818,7 +818,7 @@ void NodeActions::ProcessHandler<T>::setProcessComplete(void)
   this->error         = Atams::ERROR_NONE;
   this->specificState = T::COMPLETE;
   this->processState  = Atams::ProcessState::COMPLETE;
-  if (this->nodePtr != nullptr) this->nodePtr->resetRequestPacket();
+  if (this->nodePtr != nullptr) this->nodePtr->clearAllRequestPatterns();
 }
 
 template <typename T>

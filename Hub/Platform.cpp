@@ -51,8 +51,11 @@ userData_(userData)
 }
 
 /** @brief   Start receiving data on the user comms peripheral. 
+ *
  *  @details This function is called from the Atams::Bus class when a bus init or config update process is started.
+ *
  *  @return  True if the user comms peripheral was started successfully, false otherwise.
+ *
  *  @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
  */
 bool BusPeripheral::startReceive(void)
@@ -66,8 +69,11 @@ bool BusPeripheral::startReceive(void)
 }
 
 /** @brief   Check if the user comms peripheral is ready to transmit data.
+ *
  *  @details This function is called from the Atams::Bus class during a bus update cycle.
+ *
  *  @return  True if the user comms peripheral is ready to transmit data, false otherwise.
+ *
  *  @note    ATAMS PLATFORM REQUIREMENT - ALL
  */
 bool BusPeripheral::transmitReady(void)
@@ -76,12 +82,17 @@ bool BusPeripheral::transmitReady(void)
 }
 
 /** @brief   Transmit bytes using the user comms peripheral.
+ *
  *  @details This function is called from the Atams::Bus class during a bus update cycle.
+ *
  *  @param   buffer Pointer to the data buffer to transmit.
+ *
  *  @param   length Length of the data buffer to transmit.
+ *
  *  @return  Transmission status.
  *           true:  Transmission successfully started or all bytes successfully transmitted.
  *           false: Transmission error occurred. 
+ *
  *  @note    ATAMS PLATFORM REQUIREMENT - ALL
  */
 bool BusPeripheral::transmit(uint8_t *buffer, const uint16_t length)
@@ -94,7 +105,9 @@ bool BusPeripheral::transmit(uint8_t *buffer, const uint16_t length)
 }
 
 /** @brief   Update or poll the user comms peripheral if required.
+ *
  *  @details This function is called from the Atams::Bus class during a bus update cycle.
+ *
  *  @note    ATAMS PLATFORM REQUIREMENT - POLLING COMMS
  */
 void BusPeripheral::update(void)
@@ -136,6 +149,7 @@ void BusPeripheral::txHandler(asio::error_code ec, size_t xfr)
 
 /** 
  * @brief Initialize the memory lock if required.
+ *
  * @note  ATAMS PLATFORM REQUIREMENT - MULTI-THREADED
  */
 bool MemoryLock::init(void)
@@ -145,6 +159,7 @@ bool MemoryLock::init(void)
 
 /** 
  *  @brief Acquire the memory lock.
+ *
  *  @note  ATAMS PLATFORM REQUIREMENT - MULTI-THREADED
  */
 void MemoryLock::acquireLock(void)
@@ -154,6 +169,7 @@ void MemoryLock::acquireLock(void)
 
 /** 
  *  @brief Release the memory lock.
+ *
  *  @note  ATAMS PLATFORM REQUIREMENT - MULTI-THREADED
  */
 void MemoryLock::releaseLock(void)
@@ -167,6 +183,7 @@ void MemoryLock::releaseLock(void)
 
 /** 
  * @brief Initialize the comms lock if required.
+ *
  * @note  ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
  */
 bool CommsLock::init(void)
@@ -176,6 +193,7 @@ bool CommsLock::init(void)
 
 /** 
  *  @brief Acquire the comms lock.
+ *
  *  @note  ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
  */
 void CommsLock::acquireLock(void)
@@ -185,6 +203,7 @@ void CommsLock::acquireLock(void)
 
 /** 
  *  @brief Release the comms lock.
+ *
  *  @note  ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
  */
 void CommsLock::releaseLock(void)

@@ -42,12 +42,36 @@ namespace Atams {
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
+/**
+ * @brief Construct a Node with the specified node ID.
+ *
+ * Initialises the Node instance with the given node ID. 
+ * The Node Memory Map is left uninitialized until @ref init is called.
+ *
+ * @param nodeID The unique identifier for this Node.
+ */
 Node::Node(const uint8_t nodeID) :
 nodeID_(nodeID)
 {
 
 }
 
+/**
+ * @brief Initialises the Node with a memory map.
+ *
+ * Validates and stores a reference to the provided Memory Map for variable access.
+ * Initialises internal locks and prepares the Node for use. If validation or lock 
+ * initialisation fails, the Memory Map is invalidated.
+ *
+ * @param memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
+ *
+ * @retval @c ERROR_NONE                   Initialisation successful.
+ * @retval @c ERROR_MEMORY_MAP             Memory Map validation failed (invalid structure, length, universal block, or checksum).
+ * @retval @c ERROR_ATAMS_VERSION_MISMATCH Memory Map validation failed (ATAMS version mismatch).
+ * @retval @c ERROR_PLATFORM               Failed to initialise internal locks.
+ *
+ * @note This function must be called before accessing variables or request patterns on the Node.
+ */
 Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
 {
   Atams::Error_t statusReturn = Atams::validateMemoryMap(memoryMap, Platform::NODE_NUMBER_OF_VARS);
@@ -71,16 +95,52 @@ Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
   return (statusReturn);
 }
 
+/**
+ * @brief Sets the Node ID for this instance.
+ *
+ * Updates the Node ID stored in this object.
+ * This does not configure the Node ID on the physical device; use the Atams::Bus
+ * set Node configuration process for that.
+ *
+ * @param nodeID The new Node ID to assign.
+ */
 void Node::setNodeID(const uint8_t nodeID)
 {
   nodeID_ = nodeID;
 }
 
+/**
+ * @brief Retrieves the Node ID for this instance.
+ *
+ * Returns the Node ID currently stored in this object. 
+ * This may differ from the physical ID on the Node device if it has not been synchronised.
+ *
+ * @return The Node ID assigned to this instance.
+ */
 uint8_t Node::getNodeID(void)
 {
   return (nodeID_);
 }
 
+/**
+ * @brief Sets the value of a variable in the Node's internal variable storage.
+ *
+ * Writes a value to the specified variable in the Node's local storage. 
+ * The data type @c T must match the type defined for the variable ID in the initialised Memory Map.
+ * This function does not communicate with any external or physical device; it only updates the value
+ * currently held in this Node instance.
+ *
+ * @tparam T         The data type of the variable to set. Must match the type stored for the specified variable ID.
+ * @param varID      The ID of the variable to set.
+ * @param writeValue The value to write to the variable storage.
+ *
+ * @retval @c ERROR_NONE           Variable successfully set.
+ * @retval @c ERROR_VAR_ID         The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_VAR_TYPE       The data type for the specified variable ID does not match @c T.
+ * @retval @c ERROR_ACCESS_INVALID Insufficient access permissions to write to the specified variable.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 template <typename T>
 Atams::Error_t Node::setVar(const uint16_t varID, const T writeValue)
 {
@@ -110,6 +170,25 @@ template Atams::Error_t Node::setVar<uint32_t>(const uint16_t varID, const uint3
 template Atams::Error_t Node::setVar<int32_t >(const uint16_t varID, const int32_t  writeValue);
 template Atams::Error_t Node::setVar<float   >(const uint16_t varID, const float    writeValue);
 
+/**
+ * @brief Retrieves the value of a variable from the Node's internal variable storage.
+ *
+ * Reads the value of the specified variable from the Node's local storage.
+ * The data type @c T must match the type defined for the variable ID in the initialised Memory Map.
+ * This function does not communicate with any external or physical device; it only accesses the value 
+ * currently held in this Node instance.
+ *
+ * @tparam T         The data type of the variable to retrieve. Must match the type stored for the specified variable ID.
+ * @param varID      The ID of the variable to retrieve.
+ * @param outputRef  Reference to a variable where the retrieved value will be stored.
+ *
+ * @retval @c ERROR_NONE           Variable successfully retrieved.
+ * @retval @c ERROR_VAR_ID         The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_VAR_TYPE       The data type for the specified variable ID does not match @c T.
+ * @retval @c ERROR_ACCESS_INVALID Insufficient access permissions to read the specified variable.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 template <typename T>
 Atams::Error_t Node::getVar(const uint16_t varID, T &outputRef)
 {
@@ -139,6 +218,38 @@ template Atams::Error_t Node::getVar<uint32_t>(const uint16_t varID, uint32_t &o
 template Atams::Error_t Node::getVar<int32_t >(const uint16_t varID, int32_t  &outputRef);
 template Atams::Error_t Node::getVar<float   >(const uint16_t varID, float    &outputRef);
 
+/**
+ * @brief Sets the request pattern for a variable.
+ *
+ * Adds, removes, or replaces a read or write datagram for the specified variable in the Node's internal request packet, 
+ * according to the requested access type and pattern. A datagram is only present in the request packet if required by the 
+ * current configuration; it is not possible to have both a read and write datagram for the same variable at the same time.
+ * The request packet is sent to the physical Node device during a Bus update cycle, allowing data to be written to or retrieved 
+ * from multiple variables at once. This function only updates the internal request packet; no communication with the physical 
+ * device occurs until the next Bus update cycle.
+ *
+ * @param varID          Variable ID to configure.
+ * @param accessRequest  Access type to request for the variable:
+ *                       - @c ACCESS_NONE: Remove any existing request for this variable.
+ *                       - @c ACCESS_READ: Add a read request for this variable. If a write request exists, it will be replaced.
+ *                       - @c ACCESS_WRITE: Add a write request for this variable. If a read request exists, it will be replaced.
+ * @param requestPattern Request pattern to set:
+ *                       - @c REQUEST_INACTIVE: Remove any existing request for this variable.
+ *                       - @c REQUEST_UNTIL_ACK: Keep the request until a write acknowledgement or new read data is received.
+ *                       - @c REQUEST_STREAM: Keep the request until explicitly cleared or changed.
+ *
+ * @retval @c ERROR_NONE                    Success.
+ * @retval @c ERROR_VAR_ID                  Invalid variable ID.
+ * @retval @c ERROR_REQUEST_PATTERN_INVALID  Invalid request pattern.
+ * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions.
+ * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer too small or too large.
+ * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
+ * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
+ * @retval @c ERROR_NULLPTR                 Null pointer encountered.
+ *
+ * @note The function checks access permissions before updating the request packet.
+ */
 Atams::Error_t Node::setRequestPattern(const uint16_t         varID,
                                        const Access_t         accessRequest,
                                        const RequestPattern_t requestPattern)
@@ -176,6 +287,20 @@ Atams::Error_t Node::setRequestPattern(const uint16_t         varID,
   return (statusReturn);
 }
 
+/**
+ * @brief Retrieves the active request pattern and access type for a variable.
+ *
+ * Returns the current request pattern and access type configured for the specified variable in this Node instance.
+ *
+ * @param varID          The ID of the variable to query.
+ * @param accessRequest  Reference to store the current access type for the variable.
+ * @param requestPattern Reference to store the current request pattern for the variable.
+ *
+ * @retval @c ERROR_NONE   Request pattern and access type successfully retrieved.
+ * @retval @c ERROR_VAR_ID The specified variable ID is out of range for the initialised Memory Map.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 Atams::Error_t Node::getRequestPattern(const uint16_t   varID,
                                        Access_t         &accessRequest,
                                        RequestPattern_t &requestPattern)
@@ -194,7 +319,14 @@ Atams::Error_t Node::getRequestPattern(const uint16_t   varID,
   return (Atams::ERROR_NONE);
 }
 
-void Node::resetRequestPacket(void)
+/**
+ * @brief Clears all active request patterns for variables in this Node instance.
+ *
+ * Resets the request pattern and access type for every variable in the Node's internal storage,
+ * and resets the internal request packet. This removes all pending read and write requests from the packet.
+ * No communication with the physical Node device occurs until the request packet is sent during the next Bus update cycle.
+ */
+void Node::clearAllRequestPatterns(void)
 {
   requestPacketLock_.acquireLock();
 
@@ -203,6 +335,16 @@ void Node::resetRequestPacket(void)
   requestPacketLock_.releaseLock();
 }
 
+/**
+ * @brief Retrieves the most recent Bus error detected for this Node instance.
+ *
+ * During a Atams::Bus update cycle, the physical Node device returns a response packet that is processed to update read values and
+ * acknowledge write requests. The Bus update cycle will only report the first Node with an error, but this function allows the user to 
+ * check for errors specific to this Node (such as decoding failures, aborted responses, or timeouts) after the cycle completes. 
+ * The stored bus error is reset automatically at the start of each new bus update cycle.
+ *
+ * @return The first @c Atams::Error_t detected for this Node during the last Bus update cycle, or @c ERROR_NONE if no error has occurred.
+ */
 Atams::Error_t Node::getBusError(void)
 {
   Atams::Error_t errorReturn = Atams::ERROR_NONE;
@@ -535,7 +677,7 @@ void Node::clearInjectedBusError(const Atams::Error_t errorToClear, const uint16
       requestPacketLock_.releaseLock();
       break;
     case Atams::ERROR_RESPONSE_BUFFER_LENGTH:
-      resetRequestPacket();
+      clearAllRequestPatterns();
       break;
     case Atams::ERROR_CONFIGURATION_STATE_INACTIVE:
       static_cast<void>(stopStream(BlockUniversal::VAR_STORE_ALL));
@@ -1246,7 +1388,7 @@ Atams::Error_t Node::getEncodedRequestPacket(const Atams::MessageType_t requestT
 
   if (updateRequestPacketWriteData() != Atams::ERROR_NONE)
   {
-    resetRequestPacket();
+    clearAllRequestPatterns();
     statusReturn = Atams::ERROR_REQUEST_PACKET_FATAL;
   }
   else 

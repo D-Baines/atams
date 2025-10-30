@@ -114,7 +114,7 @@ Atams::Error_t Bus::beginBusInitProcess(void)
   
   for (Atams::Node *&nodePtr : nodePtrs_)
   {
-    if (nodePtr != nullptr) nodePtr->resetRequestPacket();
+    if (nodePtr != nullptr) nodePtr->clearAllRequestPatterns();
   }
 
   return (Atams::ERROR_NONE);
@@ -368,11 +368,6 @@ Atams::ProcessState Bus::runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::
   return (processState);
 }
 
-Atams::Error_t Bus::getUpdateCycleError(void)
-{
-  for (Node )
-}
-
 Atams::Error_t Bus::processSyncBuffers(void)
 {
   if (updateProcessHandler_.processState == Atams::ProcessState::IN_PROGRESS) 
@@ -407,7 +402,7 @@ Atams::Error_t Bus::beginSetNodeConfigProcess(const NodeConfig_t &userConfig)
   dummyNode_.setNodeID(userConfig.currentNodeID);
   configUpdateProcessHandler_.resetProcess();
   configUpdateProcessHandler_.specificState = Bus::ConfigUpdateState::START;
-  dummyNode_.resetRequestPacket();
+  dummyNode_.clearAllRequestPatterns();
 
   return (Atams::ERROR_NONE);
 }
