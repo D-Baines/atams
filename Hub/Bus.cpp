@@ -4,7 +4,13 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Atams Bus class for managing Node communication.
+  *
+  * @details The Bus class coordinates communication and synchronisation between the Hub and multiple Node instances.
+  *          All Bus member functions must be called from the same thread or context to ensure correct operation.
+  *          Node functions (such as @c Node::setVar, @c Node::getVar, and @c Node::setRequestPattern) may be called
+  *          from other threads or contexts, provided the user has correctly filled the multi-threading/concurrency
+  *          function definitions in the Platform files.
   *
   * @version v1.0
   ******************************************************************************
@@ -39,6 +45,16 @@ namespace Atams {
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
+/**
+ * @brief Constructs a Bus instance with user-defined platform data.
+ *
+ * Initialises the Bus and its base @c Platform::BusPeripheral with the provided @ref Platform::BusPeripheral::UserData_t "UserData_t" 
+ * structure. The @ref Platform::BusPeripheral::UserData_t "UserData_t" struct is defined by the user in @c Platform.hpp inside the 
+ * @c BusPeripheral class definition, and must be passed to the Bus constructor to provide access to any data required for the user's 
+ * implementation of @c Platform::BusPeripheral. All Node pointers are initialised to @c nullptr.
+ *
+ * @param userData User-defined data required for initialising the underlying bus peripheral.
+ */
 Bus::Bus(Platform::BusPeripheral::UserData_t userData) : 
 Platform::BusPeripheral(userData),
 circularBuffer_(Atams::EOL_BYTE)
@@ -46,6 +62,23 @@ circularBuffer_(Atams::EOL_BYTE)
   for (Atams::Node *&nodePtr : nodePtrs_) nodePtr = nullptr; 
 }
 
+/**
+ * @brief Adds a Node to the Bus.
+ *
+ * Registers the specified @c Node instance with this Bus. The Node pointer is stored internally, and the Node will participate in 
+ * subsequent Bus operations. If the Bus is already full or the Node is already present, the function returns an appropriate error code 
+ * and does not add the Node again.
+ *
+ * @param node Reference to the @c Node instance to add to the Bus.
+ *
+ * @retval @c ERROR_NONE                Node successfully added to the Bus.
+ * @retval @c ERROR_BUS_FULL            The Bus has reached the maximum number of Nodes allowed.
+ * @retval @c ERROR_NODE_ALREADY_ON_BUS The specified Node is already registered on this Bus.
+ *
+ * @note The @c Node object must exist for the entire period it is registered on the Bus. 
+ *       Before destroying or removing a Node, call @c removeNodeFromBus and ensure it returns @c Atams::ERROR_NONE to confirm the Node 
+ *       has been safely removed.
+ */
 Atams::Error_t Bus::addNodeToBus(Atams::Node &node)
 {
   if (noOfNodesOnBus_ >= Platform::NUMBER_OF_NODES_PER_BUS)
@@ -65,8 +98,33 @@ Atams::Error_t Bus::addNodeToBus(Atams::Node &node)
   return (Atams::ERROR_NONE);
 }
 
-void Bus::removeNodeFromBus(Node &node)
+/**
+ * @brief Removes a Node from the Bus.
+ *
+ * Deregisters the specified @c Node instance from this Bus, so it will no longer participate in Bus operations.
+ * The function will fail if the Node is not currently registered, or if a Bus update cycle or related process is in progress.
+ * Removing a Node invalidates the current Bus initialisation; the Bus initialisation process must be completed again before 
+ * further Bus operations can proceed.
+ *
+ * @param node Reference to the @c Node instance to remove from the Bus.
+ *
+ * @retval @c ERROR_NONE                     Node successfully removed from the Bus.
+ * @retval @c ERROR_NODE_NOT_ON_BUS          The specified Node is not registered on this Bus.
+ * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS A Bus update cycle or related process is currently in progress; try again when the Bus is idle.
+ *
+ * @note Ensure that @c removeNodeFromBus returns @c Atams::ERROR_NONE before destroying or removing the Node object.
+ *       It is not safe to remove a Node while any Bus update cycle or related process is active.
+ *       After removing a Node, you must re-run the Bus initialisation procedure before starting any further Bus operations.
+ */
+Atams::Error_t Bus::removeNodeFromBus(Node &node)
 {
+  if (canRemoveNode() == false)
+  {
+    return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
+  }
+
+  bool nodeFound = false;
+
   for (uint16_t findIndex = 0U; findIndex < noOfNodesOnBus_; findIndex++)
   {
     if (nodePtrs_[findIndex] == &node)
@@ -77,10 +135,50 @@ void Bus::removeNodeFromBus(Node &node)
       }
 
       noOfNodesOnBus_--;
+      nodeFound = true;
     }
   }
+
+  Atams::Error_t statusReturn = Atams::ERROR_NONE;
+
+  if (!nodeFound)
+  {
+    statusReturn = Atams::ERROR_NODE_NOT_ON_BUS;
+  }
+  else 
+  {
+    initProcessHandler_.specificState = Bus::InitState::ERROR;
+    initProcessHandler_.processState  = Atams::ProcessState::ERROR;
+    initProcessHandler_.error         = Atams::ERROR_INIT_ORDER;
+    statusReturn                      = Atams::ERROR_NONE;
+  }
+
+  return (statusReturn);
 }
 
+/**
+ * @brief Begins the Bus initialisation process.
+ *
+ * Sets the internal state to start the Bus initialisation sequence for all registered Nodes. This function does not perform the full
+ * initialisation itself; the process is progressed through repeated calls to @ref Bus::updateBusInitProcess.
+ *
+ * The initialisation process validates that the Memory Map used by each physical Node device matches the Memory Map used to initialise
+ * the corresponding internal Node instance. For Atams synchronous communication, each Node is configured with the IDs of the first, 
+ * last, and previous Node on the Bus. These IDs are stored in the Universal Data Block of each Node during initialisation and saved to 
+ * non-volatile memory, ensuring synchronous communication remains functional even after a Node is power-cycled.
+ *
+ * The Bus initialisation process does not set the Node ID that each Node uses for all communications. Individual device Node IDs must
+ * first be set using the Node configuration process (@ref Bus::beginSetNodeConfigProcess and @ref Bus::updateSetNodeConfigProcess),
+ * which should be performed when Nodes are added to the Bus one by one.
+ *
+ * @note The initialisation procedure will be significantly faster after the first time, provided the set of Nodes on the physical Bus
+ *       remains unchanged. If Nodes are added or removed, the full initialisation process will be required again.
+ *
+ * @retval @c ERROR_NONE      Bus initialisation process successfully started.
+ * @retval @c ERROR_BUS_EMPTY No Nodes are registered on the Bus.
+ * @retval @c ERROR_NULLPTR   A registered Node pointer is null.
+ * @retval @c ERROR_PLATFORM  Failed to start data reception on the platform bus peripheral.
+ */
 Atams::Error_t Bus::beginBusInitProcess(void)
 {
   if (noOfNodesOnBus_ == 0U) 
@@ -107,7 +205,7 @@ Atams::Error_t Bus::beginBusInitProcess(void)
   busIDsToSet_.lastNodeID           = lastNodePtr->getNodeID();
   busIDsToSet_.previousNodeID       = firstNodePtr->getNodeID();
 
-  initProcessHandler_.resetProcess();
+  initProcessHandler_.readyProcess();
   initProcessHandler_.error         = Atams::ERROR_NONE;
   initProcessHandler_.specificState = Bus::InitState::START;
   initNodeIndex_                    = 0U;
@@ -400,7 +498,7 @@ Atams::Error_t Bus::beginSetNodeConfigProcess(const NodeConfig_t &userConfig)
 
   userConfigToSet_ = userConfig;
   dummyNode_.setNodeID(userConfig.currentNodeID);
-  configUpdateProcessHandler_.resetProcess();
+  configUpdateProcessHandler_.readyProcess();
   configUpdateProcessHandler_.specificState = Bus::ConfigUpdateState::START;
   dummyNode_.clearAllRequestPatterns();
 
@@ -469,6 +567,14 @@ Atams::ProcessState Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
+bool Bus::canRemoveNode(void) 
+{
+    return ((updateProcessHandler_.processState           != Atams::ProcessState::IN_PROGRESS) &&
+            (singleNodeUpdateProcessHandler_.processState != Atams::ProcessState::IN_PROGRESS) &&
+            (initProcessHandler_.processState             != Atams::ProcessState::IN_PROGRESS) &&
+            (configUpdateProcessHandler_.processState     != Atams::ProcessState::IN_PROGRESS) );
+}
+
 bool Bus::findNodeOnBus(Node &node)
 {
   bool nodeFound = false;
@@ -492,7 +598,7 @@ Atams::Error_t Bus::beginUpdateCyclePrivate(void)
   circularBuffer_.reset();
   updateNodeIndex_ = 0U;
   activeSyncCount_++;
-  updateProcessHandler_.resetProcess();
+  updateProcessHandler_.readyProcess();
   updateProcessHandler_.specificState = Bus::UpdateState::SEND_REQUESTS;
 
   return (Atams::ERROR_NONE);
@@ -510,7 +616,7 @@ Atams::Error_t Bus::beginSingleNodeUpdateCyclePrivate(Atams::Node &node)
   circularBuffer_.reset();
   activeSyncCount_++;
   singleNodeUpdateProcessHandler_.activeNodePtr = &node;
-  singleNodeUpdateProcessHandler_.resetProcess();
+  singleNodeUpdateProcessHandler_.readyProcess();
   singleNodeUpdateProcessHandler_.specificState = Bus::UpdateState::SEND_REQUESTS;
 
   return (Atams::ERROR_NONE);
@@ -871,7 +977,7 @@ bool Bus::ProcessHandler<T>::getProcessTerminated(void)
 }
 
 template <typename T>
-void Bus::ProcessHandler<T>::resetProcess(void)
+void Bus::ProcessHandler<T>::readyProcess(void)
 {
   this->error           = Atams::ERROR_NONE;
   this->processState    = Atams::ProcessState::IN_PROGRESS;

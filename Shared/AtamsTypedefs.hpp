@@ -232,6 +232,7 @@ enum Error_t: uint8_t
   ERROR_ID_ASSIGNMENT_FAILED         = 48U,
   ERROR_CONFIGURATION_EXIT           = 49U,
   ERROR_NODE_ALREADY_ON_BUS          = 50U,
+  ERROR_NODE_NOT_ON_BUS              = 51U,
 
   NUMBER_OF_ATAMS_ERRORS
 };

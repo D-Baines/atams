@@ -4,7 +4,13 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Atams Bus class for managing Node communication.
+  *
+  * @details The Bus class coordinates communication and synchronisation between the Hub and multiple Node instances.
+  *          All Bus member functions must be called from the same thread or context to ensure correct operation.
+  *          Node functions (such as @c Node::setVar, @c Node::getVar, and @c Node::setRequestPattern) may be called
+  *          from other threads or contexts, provided the user has correctly filled the multi-threading/concurrency
+  *          function definitions in the Platform files.
   *
   * @version v1.0
   ******************************************************************************
@@ -28,6 +34,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+
 #include "../Shared/AtamsTypedefs.hpp"
 #include "Developer/CircularBuffer.hpp"
 #include "Platform.hpp"
@@ -44,6 +51,18 @@ namespace Atams {
 /* CLASS DEFINITIONS                                                                 */
 /*************************************************************************************/
 
+/**
+ * @class Bus
+ *
+ * @brief Manages communication with multiple Node instances on an Atams Bus.
+ *
+ * The Bus class coordinates communication and synchronisation between the Hub and multiple Node instances.
+ * All Bus member functions must be called from the same thread or context to ensure correct operation.
+ * Node functions (such as @c Node::setVar, @c Node::getVar, and @c Node::setRequestPattern) may be called
+ * from other threads or contexts, provided the user has correctly filled the multi-threading/concurrency
+ * function definitions in the Platform files.
+ *
+ */
 class   Bus :
 private Platform::BusPeripheral
 {
@@ -82,7 +101,7 @@ private Platform::BusPeripheral
 
   Atams::Error_t addNodeToBus(Node &node);
 
-  void removeNodeFromBus(Node &node);
+  Atams::Error_t removeNodeFromBus(Node &node);
 
   Atams::Error_t beginBusInitProcess(void);
 
@@ -187,7 +206,7 @@ private Platform::BusPeripheral
     void terminate(Atams::Error_t error);
     void setProcessComplete(void);
     bool getProcessTerminated(void);
-    void resetProcess(void);
+    void readyProcess(void);
   };
 
   /*-- Static Private Variables -----------------------------------------------------*/
@@ -230,6 +249,8 @@ private Platform::BusPeripheral
   Atams::BusIDs_t busIDsToSet_;
 
   /*-- Private Function Declarations ------------------------------------------------*/
+
+  bool canRemoveNode(void);
 
   bool findNodeOnBus(Node &node);
 

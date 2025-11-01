@@ -46,7 +46,7 @@ namespace Atams {
  * @brief Construct a Node with the specified node ID.
  *
  * Initialises the Node instance with the given node ID. 
- * The Node Memory Map is left uninitialized until @ref init is called.
+ * The Node Memory Map is left uninitialized until @ref Node::init is called.
  *
  * @param nodeID The unique identifier for this Node.
  */
@@ -57,20 +57,19 @@ nodeID_(nodeID)
 }
 
 /**
- * @brief Initialises the Node with a memory map.
+ * @brief Initialises the Node with an Atams Memory Map.
  *
- * Validates and stores a reference to the provided Memory Map for variable access.
- * Initialises internal locks and prepares the Node for use. If validation or lock 
- * initialisation fails, the Memory Map is invalidated.
+ * Validates and stores a reference to the provided Memory Map for variable access control. Initialises concurrency locks and
+ * prepares the Node instance for use. If validation or lock initialisation fails, the Memory Map is invalidated.
  *
  * @param memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
  *
  * @retval @c ERROR_NONE                   Initialisation successful.
  * @retval @c ERROR_MEMORY_MAP             Memory Map validation failed (invalid structure, length, universal block, or checksum).
- * @retval @c ERROR_ATAMS_VERSION_MISMATCH Memory Map validation failed (ATAMS version mismatch).
- * @retval @c ERROR_PLATFORM               Failed to initialise internal locks.
+ * @retval @c ERROR_ATAMS_VERSION_MISMATCH Memory Map validation failed (Atams version mismatch).
+ * @retval @c ERROR_PLATFORM               Failed to initialise concurrency locks.
  *
- * @note This function must be called before accessing variables or request patterns on the Node.
+ * @note This function must be called before accessing variables or changing request patterns on the Node.
  */
 Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
 {
@@ -225,25 +224,25 @@ template Atams::Error_t Node::getVar<float   >(const uint16_t varID, float    &o
  * according to the requested access type and pattern. A datagram is only present in the request packet if required by the 
  * current configuration; it is not possible to have both a read and write datagram for the same variable at the same time.
  * The request packet is sent to the physical Node device during a Bus update cycle, allowing data to be written to or retrieved 
- * from multiple variables at once. This function only updates the internal request packet; no communication with the physical 
- * device occurs until the next Bus update cycle.
+ * from multiple device variables at once. This function only updates the internal request packet; no communication with the 
+ * physical device occurs until the next Bus update cycle.
  *
  * @param varID          Variable ID to configure.
  * @param accessRequest  Access type to request for the variable:
- *                       - @c ACCESS_NONE: Remove any existing request for this variable.
- *                       - @c ACCESS_READ: Add a read request for this variable. If a write request exists, it will be replaced.
+ *                       - @c ACCESS_NONE:  Remove any existing request for this variable.
+ *                       - @c ACCESS_READ:  Add a read request for this variable. If a write request exists, it will be replaced.
  *                       - @c ACCESS_WRITE: Add a write request for this variable. If a read request exists, it will be replaced.
  * @param requestPattern Request pattern to set:
- *                       - @c REQUEST_INACTIVE: Remove any existing request for this variable.
+ *                       - @c REQUEST_INACTIVE:  Remove any existing request for this variable.
  *                       - @c REQUEST_UNTIL_ACK: Keep the request until a write acknowledgement or new read data is received.
- *                       - @c REQUEST_STREAM: Keep the request until explicitly cleared or changed.
+ *                       - @c REQUEST_STREAM:    Keep the request until explicitly cleared or changed.
  *
  * @retval @c ERROR_NONE                    Success.
  * @retval @c ERROR_VAR_ID                  Invalid variable ID.
- * @retval @c ERROR_REQUEST_PATTERN_INVALID  Invalid request pattern.
+ * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
  * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions.
- * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error.
- * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer too small or too large.
+ * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error - the request packet is corrupt and all request patterns have been reset.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
  * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
  * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
  * @retval @c ERROR_NULLPTR                 Null pointer encountered.
@@ -323,8 +322,7 @@ Atams::Error_t Node::getRequestPattern(const uint16_t   varID,
  * @brief Clears all active request patterns for variables in this Node instance.
  *
  * Resets the request pattern and access type for every variable in the Node's internal storage,
- * and resets the internal request packet. This removes all pending read and write requests from the packet.
- * No communication with the physical Node device occurs until the request packet is sent during the next Bus update cycle.
+ * and resets the internal request packet. This removes all read and write requests from the packet.
  */
 void Node::clearAllRequestPatterns(void)
 {
@@ -338,12 +336,13 @@ void Node::clearAllRequestPatterns(void)
 /**
  * @brief Retrieves the most recent Bus error detected for this Node instance.
  *
- * During a Atams::Bus update cycle, the physical Node device returns a response packet that is processed to update read values and
+ * During an Atams::Bus update cycle, the physical Node device returns a response packet that is processed to update read values and
  * acknowledge write requests. The Bus update cycle will only report the first Node with an error, but this function allows the user to 
  * check for errors specific to this Node (such as decoding failures, aborted responses, or timeouts) after the cycle completes. 
  * The stored bus error is reset automatically at the start of each new bus update cycle.
  *
- * @return The first @c Atams::Error_t detected for this Node during the last Bus update cycle, or @c ERROR_NONE if no error has occurred.
+ * @return The first @c Atams::Error_t detected for this Node during the last Bus update cycle, or @c Atams::ERROR_NONE if no error
+ *         has occurred.
  */
 Atams::Error_t Node::getBusError(void)
 {
@@ -356,6 +355,29 @@ Atams::Error_t Node::getBusError(void)
   return (errorReturn);
 }
 
+/**
+ * @brief Sets a variable's value and configures a write-until-acknowledged request pattern.
+ *
+ * Writes the specified value to the variable in the Node's internal storage, then updates the request packet to repeatedly request a 
+ * write operation for this variable until an acknowledgement is received from the physical Node device during a Bus update cycle.
+ * This function only updates the internal state and request packet; communication with the physical device occurs during the next 
+ * Bus update cycle.
+ *
+ * @tparam T         The data type of the variable to set. Must match the type stored for the specified variable ID.
+ * @param varID      The ID of the variable to set.
+ * @param writeValue The value to write to the variable storage.
+ *
+ * @retval @c ERROR_NONE                  Operation successful.
+ * @retval @c ERROR_VAR_ID                The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_VAR_TYPE              The data type for the specified variable ID does not match @c T.
+ * @retval @c ERROR_ACCESS_INVALID        Insufficient access permissions to write to the specified variable.
+ * @retval @c ERROR_REQUEST_PACKET_FATAL  Internal packet error - the request packet is corrupt and all request patterns have been reset.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_WRITE_LIST_FULL       Write list is full.
+ * @retval @c ERROR_NULLPTR               Null pointer encountered.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 template <typename T>
 Atams::Error_t Node::setWriteUntilAck(const uint16_t varID, const T writeValue)
 {
@@ -377,26 +399,124 @@ template Atams::Error_t Node::setWriteUntilAck<uint32_t>(const uint16_t varID, c
 template Atams::Error_t Node::setWriteUntilAck<int32_t >(const uint16_t varID, const int32_t  writeValue);
 template Atams::Error_t Node::setWriteUntilAck<float   >(const uint16_t varID, const float    writeValue);
 
+/**
+ * @brief Configures a read-until-acknowledged request pattern for a variable.
+ *
+ * Updates the request packet to repeatedly request a read operation for the specified variable until new data is received from the 
+ * physical Node device during a Bus update cycle. This function only updates the internal request packet; communication with the 
+ * physical device occurs during the next Bus update cycle.
+ *
+ * @param varID The ID of the variable to configure.
+ *
+ * @retval @c ERROR_NONE                    Operation successful.
+ * @retval @c ERROR_VAR_ID                  The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
+ * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions to read the specified variable.
+ * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
+ * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
+ * @retval @c ERROR_NULLPTR                 Null pointer encountered.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 Atams::Error_t Node::setReadUntilAck(const uint16_t varID)
 {
   return (Node::setRequestPattern(varID, Atams::ACCESS_READ, Atams::REQUEST_UNTIL_ACK));
 }
 
+/**
+ * @brief Configures a write-stream request pattern for a variable.
+ *
+ * Updates the request packet to continuously request a write operation for the specified variable during each Bus update cycle, until 
+ * the request pattern is explicitly cleared or changed. This function only updates the internal request packet; communication with the 
+ * physical device occurs during the next Bus update cycle.
+ *
+ * @param varID The ID of the variable to configure.
+ *
+ * @retval @c ERROR_NONE                    Operation successful.
+ * @retval @c ERROR_VAR_ID                  The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
+ * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions to write to the specified variable.
+ * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
+ * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
+ * @retval @c ERROR_NULLPTR                 Null pointer encountered.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 Atams::Error_t Node::setWriteStream(const uint16_t varID)
 {
   return (Node::setRequestPattern(varID, Atams::ACCESS_WRITE, Atams::REQUEST_STREAM));
 }
 
+/**
+ * @brief Configures a read-stream request pattern for a variable.
+ *
+ * Updates the request packet to continuously request a read operation for the specified variable during each Bus update cycle, until 
+ * the request pattern is explicitly cleared or changed. This function only updates the internal request packet; communication with the 
+ * physical device occurs during the next Bus update cycle.
+ *
+ * @param varID The ID of the variable to configure.
+ *
+ * @retval @c ERROR_NONE                    Operation successful.
+ * @retval @c ERROR_VAR_ID                  The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
+ * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions to read the specified variable.
+ * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
+ * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
+ * @retval @c ERROR_NULLPTR                 Null pointer encountered.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 Atams::Error_t Node::setReadStream(const uint16_t varID)
 {
   return (Node::setRequestPattern(varID, Atams::ACCESS_READ, Atams::REQUEST_STREAM));
 }
 
+/**
+ * @brief Stops any active stream or repeated request pattern for a variable.
+ *
+ * Updates the request packet to remove any existing read or write request for the specified variable, setting its access type to
+ * @c ACCESS_NONE and its request pattern to @c REQUEST_INACTIVE. This function only updates the internal request packet; communication 
+ * with the physical device occurs during the next Bus update cycle.
+ *
+ * @param varID The ID of the variable for which to stop streaming or repeated requests.
+ *
+ * @retval @c ERROR_NONE                    Operation successful.
+ * @retval @c ERROR_VAR_ID                  The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
+ * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions to read the specified variable.
+ * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
+ * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
+ * @retval @c ERROR_NULLPTR                 Null pointer encountered.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 Atams::Error_t Node::stopStream(const uint16_t varID)
 {
   return (Node::setRequestPattern(varID, Atams::ACCESS_NONE, Atams::REQUEST_INACTIVE));
 }
 
+/**
+ * @brief Checks if new data is available for a variable in the Node's internal storage.
+ *
+ * Determines whether new data has been received and is ready to be read for the specified variable in this Node instance.
+ * This function only checks the internal state and does not communicate with any external or physical device.
+ *
+ * @param varID        The ID of the variable to check.
+ * @param newDataReady Reference to a boolean that will be set to @c true if new data is available, or @c false otherwise.
+ *
+ * @retval @c ERROR_NONE   Operation successful.
+ * @retval @c ERROR_VAR_ID The specified variable ID is out of range for the initialised Memory Map.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 Atams::Error_t Node::isDataReady(const uint16_t varID, bool &newDataReady)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
@@ -410,6 +530,19 @@ Atams::Error_t Node::isDataReady(const uint16_t varID, bool &newDataReady)
   return (Atams::ERROR_NONE);
 }
 
+/**
+ * @brief Clears the data-ready flag for a variable in the Node's internal storage.
+ *
+ * Resets the data-ready status for the specified variable in this Node instance, indicating that any new data has been acknowledged or 
+ * processed. This function only updates the internal state and does not communicate with any external or physical device.
+ *
+ * @param varID The ID of the variable for which to clear the data-ready flag.
+ *
+ * @retval @c ERROR_NONE   Operation successful.
+ * @retval @c ERROR_VAR_ID The specified variable ID is out of range for the initialised Memory Map.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 Atams::Error_t Node::clearDataReady(const uint16_t varID)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
@@ -423,6 +556,21 @@ Atams::Error_t Node::clearDataReady(const uint16_t varID)
   return (Atams::ERROR_NONE);
 }
 
+/**
+ * @brief Checks if a write acknowledgement has been received for a variable.
+ *
+ * Determines whether a write operation for the specified variable has been acknowledged by the physical Node device during a Bus 
+ * update cycle. This function only checks the internal state of this Node instance and does not communicate with any external or 
+ * physical device.
+ *
+ * @param varID       The ID of the variable to check.
+ * @param ackReceived Reference to a boolean that will be set to @c true if a write acknowledgement has been received, or @c false otherwise.
+ *
+ * @retval @c ERROR_NONE   Operation successful.
+ * @retval @c ERROR_VAR_ID The specified variable ID is out of range for the initialised Memory Map.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 Atams::Error_t Node::isWriteAcked(const uint16_t varID, bool &ackReceived)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
@@ -436,6 +584,20 @@ Atams::Error_t Node::isWriteAcked(const uint16_t varID, bool &ackReceived)
   return (Atams::ERROR_NONE);
 }
 
+/**
+ * @brief Clears the write acknowledgement flag for a variable in the Node's internal storage.
+ *
+ * Resets the write acknowledgement status for the specified variable in this Node instance, indicating that any previous write 
+ * acknowledgement has been acknowledged or processed. This function only updates the internal state and does not communicate with 
+ * any external or physical device.
+ *
+ * @param varID The ID of the variable for which to clear the write acknowledgement flag.
+ *
+ * @retval @c ERROR_NONE   Operation successful.
+ * @retval @c ERROR_VAR_ID The specified variable ID is out of range for the initialised Memory Map.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 Atams::Error_t Node::clearWriteAck(const uint16_t varID)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
@@ -449,6 +611,28 @@ Atams::Error_t Node::clearWriteAck(const uint16_t varID)
   return (Atams::ERROR_NONE);
 }
 
+/**
+ * @brief Clears the data-ready flag and configures a read-stream request pattern for a variable.
+ *
+ * Resets the data-ready status for the specified variable in this Node instance, then updates the request packet to continuously 
+ * request a read operation for this variable during each Bus update cycle, until the request pattern is explicitly cleared or changed.
+ * This function only updates the internal state and request packet; communication with the physical device occurs during the next 
+ * Bus update cycle.
+ *
+ * @param varID The ID of the variable to configure.
+ *
+ * @retval @c ERROR_NONE                    Operation successful.
+ * @retval @c ERROR_VAR_ID                  The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
+ * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions to read the specified variable.
+ * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
+ * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
+ * @retval @c ERROR_NULLPTR                 Null pointer encountered.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 Atams::Error_t Node::clearDataReadySetReadStream(const uint16_t varID)
 {
   Atams::Error_t error = Node::clearDataReady(varID);
@@ -457,6 +641,29 @@ Atams::Error_t Node::clearDataReadySetReadStream(const uint16_t varID)
   return (error);
 }
 
+/**
+ * @brief Stops any active request pattern for a variable and checks if new data is available.
+ *
+ * Removes any existing read or write request for the specified variable by setting its access type to @c ACCESS_NONE and its request 
+ * pattern to @c REQUEST_INACTIVE. Then, checks whether new data has been received and is ready to be read for this variable in the 
+ * Node's internal storage. This function only updates the internal request packet and checks the internal state; communication with 
+ * the physical device occurs during the next Bus update cycle.
+ *
+ * @param varID        The ID of the variable to process.
+ * @param newDataReady Reference to a boolean that will be set to @c true if new data is available, or @c false otherwise.
+ *
+ * @retval @c ERROR_NONE                    Operation successful.
+ * @retval @c ERROR_VAR_ID                  The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
+ * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions.
+ * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
+ * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
+ * @retval @c ERROR_NULLPTR                 Null pointer encountered.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 Atams::Error_t Node::stopStreamIsDataReady(const uint16_t varID, bool &newDataReady)
 {
   Atams::Error_t error = Node::stopStream(varID);
@@ -465,6 +672,25 @@ Atams::Error_t Node::stopStreamIsDataReady(const uint16_t varID, bool &newDataRe
   return (error);
 }
 
+/**
+ * @brief Retrieves the value of a variable if new data is available.
+ *
+ * Checks whether new data has been received for the specified variable in the Node's internal storage. If new data is available, the 
+ * value is read and the data-ready flag is cleared; otherwise, no data is read and an error is returned. This function only accesses 
+ * the internal state and does not communicate with any external or physical device.
+ *
+ * @tparam T        The data type of the variable to retrieve. Must match the type stored for the specified variable ID.
+ * @param varID     The ID of the variable to retrieve.
+ * @param outputRef Reference to a variable where the retrieved value will be stored if new data is available.
+ *
+ * @retval @c ERROR_NONE               Variable successfully retrieved and data-ready flag cleared.
+ * @retval @c ERROR_VAR_ID             The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_VAR_TYPE           The data type for the specified variable ID does not match @c T.
+ * @retval @c ERROR_ACCESS_INVALID     Insufficient access permissions to read the specified variable.
+ * @retval @c ERROR_NEW_DATA_NOT_READY No new data is available for the specified variable.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 template <typename T>
 Atams::Error_t Node::getVarIfDataReady(const uint16_t varID, T &outputRef)
 {
@@ -498,6 +724,32 @@ template Atams::Error_t Node::getVarIfDataReady<uint32_t>(const uint16_t varID, 
 template Atams::Error_t Node::getVarIfDataReady<int32_t >(const uint16_t varID, int32_t  &outputRef);
 template Atams::Error_t Node::getVarIfDataReady<float   >(const uint16_t varID, float    &outputRef);
 
+/**
+ * @brief Stops any active request pattern for a variable and retrieves its value if new data is available.
+ *
+ * Removes any existing read or write request for the specified variable by setting its access type to @c ACCESS_NONE and its request 
+ * pattern to @c REQUEST_INACTIVE. Then, checks whether new data has been received for this variable in the Node's internal storage. 
+ * If new data is available, the value is read and the data-ready flag is cleared; otherwise, no data is read and an error is returned.
+ * This function only updates the internal request packet and accesses the internal state; communication with the physical device 
+ * occurs during the next Bus update cycle.
+ *
+ * @tparam T         The data type of the variable to retrieve. Must match the type stored for the specified variable ID.
+ * @param varID      The ID of the variable to process.
+ * @param readData   Reference to a variable where the retrieved value will be stored if new data is available.
+ *
+ * @retval @c ERROR_NONE                    Variable successfully retrieved and data-ready flag cleared.
+ * @retval @c ERROR_VAR_ID                  The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
+ * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions.
+ * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
+ * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
+ * @retval @c ERROR_NULLPTR                 Null pointer encountered.
+ * @retval @c ERROR_NEW_DATA_NOT_READY      No new data is available for the specified variable.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 template<typename T>
 Atams::Error_t Node::stopStreamGetVarIfDataReady(const uint16_t varID, T &readData)
 {
@@ -515,6 +767,30 @@ template Atams::Error_t Node::stopStreamGetVarIfDataReady<uint32_t>(const uint16
 template Atams::Error_t Node::stopStreamGetVarIfDataReady<int32_t >(const uint16_t varID, int32_t  &readData);
 template Atams::Error_t Node::stopStreamGetVarIfDataReady<float   >(const uint16_t varID, float    &readData);
 
+/**
+ * @brief Clears the write acknowledgement flag, sets a new value, and configures a write-stream request pattern for a variable.
+ *
+ * Resets the write acknowledgement status for the specified variable in this Node instance, writes the provided value to the
+ * variable's internal storage, and updates the request packet to continuously request a write operation for this variable during each 
+ * Bus update cycle, until the request pattern is explicitly cleared or changed. This function only updates the internal state and 
+ * request packet; communication with the physical device occurs during the next Bus update cycle.
+ *
+ * @tparam T         The data type of the variable to set. Must match the type stored for the specified variable ID.
+ * @param varID      The ID of the variable to configure.
+ * @param writeData  The value to write to the variable storage.
+ *
+ * @retval @c ERROR_NONE                    Operation successful.
+ * @retval @c ERROR_VAR_ID                  The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_VAR_TYPE                The data type for the specified variable ID does not match @c T.
+ * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions to write to the specified variable.
+ * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
+ * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
+ * @retval @c ERROR_NULLPTR                 Null pointer encountered.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 template<typename T>
 Atams::Error_t Node::clearAckSetWriteStream(const uint16_t varID, const T writeData)
 {
@@ -533,6 +809,28 @@ template Atams::Error_t Node::clearAckSetWriteStream<uint32_t>(const uint16_t va
 template Atams::Error_t Node::clearAckSetWriteStream<int32_t >(const uint16_t varID, const int32_t  writeData);
 template Atams::Error_t Node::clearAckSetWriteStream<float   >(const uint16_t varID, const float    writeData);
 
+/**
+ * @brief Stops any active request pattern for a variable and checks if a write acknowledgement has been received.
+ *
+ * Removes any existing read or write request for the specified variable by setting its access type to @c ACCESS_NONE and its request 
+ * pattern to @c REQUEST_INACTIVE. Then, checks whether a write operation for this variable has been acknowledged by the physical Node 
+ * device during a Bus update cycle. This function only updates the internal request packet and checks the internal state; communication 
+ * with the physical device occurs during the next Bus update cycle.
+ *
+ * @param varID       The ID of the variable to process.
+ * @param ackReceived Reference to a boolean that will be set to @c true if a write acknowledgement has been received, or @c false otherwise.
+ *
+ * @retval @c ERROR_NONE                    Operation successful.
+ * @retval @c ERROR_VAR_ID                  The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
+ * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
+ * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
+ * @retval @c ERROR_NULLPTR                 Null pointer encountered.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 Atams::Error_t Node::stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived)
 {
   Atams::Error_t error = Node::stopStream(varID);
@@ -541,6 +839,20 @@ Atams::Error_t Node::stopStreamGetWriteAck(const uint16_t varID, bool &ackReceiv
   return (error);
 }
 
+/**
+ * @brief Retrieves the storage length (in bytes) for a variable.
+ *
+ * Returns the number of bytes required to store the specified variable, as defined in the initialised Memory Map.
+ * This function only accesses the internal state of the Node instance and does not communicate with any external or physical device.
+ *
+ * @param varID  The ID of the variable to query.
+ * @param length Reference to a variable where the storage length (in bytes) will be stored.
+ *
+ * @retval @c ERROR_NONE   Operation successful.
+ * @retval @c ERROR_VAR_ID The specified variable ID is out of range for the initialised Memory Map.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 Atams::Error_t Node::getVarLength(const uint16_t varID, uint8_t &length)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
@@ -552,6 +864,15 @@ Atams::Error_t Node::getVarLength(const uint16_t varID, uint8_t &length)
   return (Atams::ERROR_NONE);
 }
 
+/**
+ * @brief Retrieves the current length of the Node's request packet.
+ *
+ * Returns the length, in bytes, of the internal request packet that will be sent to the physical Node device during the next Bus 
+ * update cycle. This function only accesses the internal state of the Node instance and does not communicate with any external or 
+ * physical device.
+ *
+ * @return The length of the request packet, in bytes.
+ */
 uint16_t Node::getRequestPacketLength(void)
 {
   requestPacketLock_.acquireLock();
@@ -563,6 +884,16 @@ uint16_t Node::getRequestPacketLength(void)
   return (requestPacketLength);
 }
 
+/**
+ * @brief Retrieves the number of active write requests in the Node's request packet.
+ *
+ * Returns the current length of the internal write list, which tracks all variables with active write stream requests in the Node's 
+ * request packet. At the start of each Bus update cycle, the write list is used to efficiently transfer variable values from the 
+ * Node's internal storage into the appropriate locations within the request packet. This function only accesses the internal state 
+ * of the Node instance and does not communicate with any external or physical device.
+ *
+ * @return The number of active write requests in the write list.
+ */
 uint16_t Node::getWriteListLength(void)
 {
   requestPacketLock_.acquireLock();
@@ -574,6 +905,19 @@ uint16_t Node::getWriteListLength(void)
   return (writeListLength);
 }
 
+/**
+ * @brief Retrieves details of the most recent aborted response received from the Node device.
+ *
+ * If a Node device detects a problem with the incoming request packet - such as packet corruption or a scenario suggesting a mismatch 
+ * between the Hub and Node Memory Maps - it will send an aborted response packet. This packet contains an @c Atams::Error_t code 
+ * indicating the cause of the aborted response, and may also include a @c varID if the error was related to a specific variable 
+ * access attempt. If the error was not associated with a particular variable, the @c varID will be set to @c Atams::VAR_ID_NULL.
+ *
+ * @return An @c AbortedResponseDetails_t structure containing the error code and variable ID associated with the most recent aborted 
+ *         response received from the Node device.
+ *
+ * @note The details are updated each time an aborted response is received and are specific to this Node instance.
+ */
 Atams::AbortedResponseDetails_t Node::getAbortedResponseDetails(void)
 {
   busErrorLock_.acquireLock();
