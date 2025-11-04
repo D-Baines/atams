@@ -250,7 +250,7 @@ private Platform::BusPeripheral
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
-  bool canRemoveNode(void);
+  bool safeToRemoveNode(void);
 
   bool findNodeOnBus(Node &node);
 

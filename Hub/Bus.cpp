@@ -6,11 +6,14 @@
   *
   * @brief   Atams Bus class for managing Node communication.
   *
-  * @details The Bus class coordinates communication and synchronisation between the Hub and multiple Node instances.
-  *          All Bus member functions must be called from the same thread or context to ensure correct operation.
-  *          Node functions (such as @c Node::setVar, @c Node::getVar, and @c Node::setRequestPattern) may be called
-  *          from other threads or contexts, provided the user has correctly filled the multi-threading/concurrency
-  *          function definitions in the Platform files.
+  * @details The Bus class coordinates communication and synchronisation between
+  *          the Hub and multiple Node instances. All Bus member functions must
+  *          be called from the same thread or context to ensure correct 
+  *          operation. Node functions (such as @c Node::setVar, 
+  *          @c Node::getVar, and @c Node::setRequestPattern) may be called from
+  *          other threads or contexts, provided the user has correctly filled 
+  *          the appropriate multi-threading/concurrency function definitions in 
+  *          the Platform files.
   *
   * @version v1.0
   ******************************************************************************
@@ -118,7 +121,7 @@ Atams::Error_t Bus::addNodeToBus(Atams::Node &node)
  */
 Atams::Error_t Bus::removeNodeFromBus(Node &node)
 {
-  if (canRemoveNode() == false)
+  if (safeToRemoveNode() == false)
   {
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
   }
@@ -162,14 +165,14 @@ Atams::Error_t Bus::removeNodeFromBus(Node &node)
  * Sets the internal state to start the Bus initialisation sequence for all registered Nodes. This function does not perform the full
  * initialisation itself; the process is progressed through repeated calls to @ref Bus::updateBusInitProcess.
  *
- * The initialisation process validates that the Memory Map used by each physical Node device matches the Memory Map used to initialise
- * the corresponding internal Node instance. For Atams synchronous communication, each Node is configured with the IDs of the first, 
- * last, and previous Node on the Bus. These IDs are stored in the Universal Data Block of each Node during initialisation and saved to 
- * non-volatile memory, ensuring synchronous communication remains functional even after a Node is power-cycled.
+ * The initialisation process validates that the Memory Map used by each physical Node device matches the Memory Map of the corresponding
+ * internal Node instance. For Atams synchronous communication, each Node is configured with the IDs of the first, last, and previous
+ * Node on the Bus. These IDs are stored in the Universal Data Block of each Node during initialisation and saved to non-volatile
+ * memory, ensuring synchronous communication remains functional even after a Node is power-cycled.
  *
- * The Bus initialisation process does not set the Node ID that each Node uses for all communications. Individual device Node IDs must
- * first be set using the Node configuration process (@ref Bus::beginSetNodeConfigProcess and @ref Bus::updateSetNodeConfigProcess),
- * which should be performed when Nodes are added to the Bus one by one.
+ * The Bus initialisation process does not set the Node ID that a Node uses for all communications. Individual device Node IDs must first
+ * be set using the Node configuration process (@ref Bus::beginSetNodeConfigProcess and @ref Bus::updateSetNodeConfigProcess), which
+ * should be performed when Nodes are added to the Bus one by one.
  *
  * @note The initialisation procedure will be significantly faster after the first time, provided the set of Nodes on the physical Bus
  *       remains unchanged. If Nodes are added or removed, the full initialisation process will be required again.
@@ -218,6 +221,24 @@ Atams::Error_t Bus::beginBusInitProcess(void)
   return (Atams::ERROR_NONE);
 }
 
+/**
+ * @brief Progresses the Bus initialisation process.
+ *
+ * Advances the Bus initialisation sequence started by @ref Bus::beginBusInitProcess. This function should be called repeatedly until 
+ * the process completes or an error occurs. During initialisation, the function validates that the Memory Map of each physical Node 
+ * matches the internal Node instance, and configures the IDs required for Atams synchronous communication (first, last, and previous
+ * Node IDs) in each Node's Universal Data Block.
+ *
+ * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::ProcessState::ERROR, this will be
+ *              set to the error that caused the failure; otherwise, the value can be ignored.
+ *
+ * @return The current @c Atams::ProcessState of the initialisation process:
+ *         - @c IN_PROGRESS: Initialisation is ongoing and this function should be called again.
+ *         - @c COMPLETE:    Initialisation has finished successfully.
+ *         - @c ERROR:       An error has occurred; check @p error for details.
+ *
+ * @note The Bus initialisation process must be completed before running any Bus update cycles.
+ */
 Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
 {
   Bus::ProcessHandler<Bus::InitState> &process         {initProcessHandler_};
@@ -297,6 +318,21 @@ Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
   return (processState);
 }
 
+/**
+ * @brief Begins an update cycle for all Nodes on the Bus.
+ *
+ * Starts the process of sending request packets to all registered Nodes and collecting their responses. This function is used to
+ * initiate both synchronous and asynchronous update cycles. The Bus must be fully initialised before calling this function; otherwise,
+ * the update cycle will not start.
+ *
+ * After calling this function, the update cycle is progressed through repeated calls to either @ref Bus::runUpdateCycleSync or
+ * @ref Bus::runUpdateCycleAsync, depending on the desired update mode.
+ *
+ * @retval @c ERROR_NONE                     Update cycle started successfully.
+ * @retval @c ERROR_INIT_ORDER               The Bus has not been initialised; call @ref Bus::beginBusInitProcess and complete the 
+ *                                           initialisation before starting an update cycle.
+ * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS An update cycle is already in progress.
+ */
 Atams::Error_t Bus::beginUpdateCycle(void)
 {
   if (initProcessHandler_.processState != Atams::ProcessState::COMPLETE)
@@ -307,6 +343,20 @@ Atams::Error_t Bus::beginUpdateCycle(void)
   return (beginUpdateCyclePrivate());
 } 
 
+/**
+ * @brief Begins an update cycle for a single Node on the Bus.
+ *
+ * Starts the process of sending request packets to the specified Node and collecting its responses.
+ * The Bus must be fully initialised before calling this function; otherwise, the update cycle will not start.
+ *
+ * After calling this function, the update cycle is progressed through repeated calls to @ref Bus::runSingleNodeUpdateCycle.
+ *
+ * @param node Reference to the @c Node instance to update.
+ *
+ * @retval @c ERROR_NONE       Update cycle started successfully.
+ * @retval @c ERROR_INIT_ORDER The Bus has not been initialised; call @ref Bus::beginBusInitProcess and complete the initialisation before starting an update cycle.
+ * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS An update cycle is already in progress.
+ */
 Atams::Error_t Bus::beginSingleNodeUpdateCycle(Atams::Node &node)
 {
   if (initProcessHandler_.processState != Atams::ProcessState::COMPLETE)
@@ -317,6 +367,36 @@ Atams::Error_t Bus::beginSingleNodeUpdateCycle(Atams::Node &node)
   return (beginSingleNodeUpdateCyclePrivate(node));
 }
 
+/**
+ * @brief Progresses the synchronous update cycle for all Nodes on the Bus.
+ *
+ * Advances the update cycle started by @ref Bus::beginUpdateCycle in synchronous mode. This function should be called repeatedly
+ * until the update cycle completes or an error occurs. Each call advances the internal state machine by a single step, such as
+ * sending a request, waiting for a response, or processing a response once received.
+ *
+ * In the synchronous update cycle, request packets are sent to all Nodes, which store them in a sync buffer. Once the final Node
+ * receives its request, all Nodes process their stored requests simultaneously: writes are performed, and read data is prepared for
+ * response packets. The first Node transmits its response immediately and each subsequent Node transmits its response after receiving
+ * the previous Node's response. If a Node does not respond before a timeout, this function detects the timeout and sends a jog packet
+ * to the next Node in the response order, ensuring the cycle continues.
+ *
+ * Unlike the asynchronous and single-node update cycles, this function does not process incoming response data during the update.
+ * To process all received response packets at a time of your choosing, call @ref Bus::processSyncBuffers after the update cycle completes.
+ *
+ * This function can operate in either blocking or non-blocking mode. If the user implements the @c Platform::CommsSemaphore functions
+ * (including @c Platform::CommsSemaphore::waitWithTimeout) in @c Platform.cpp, the calling thread will be blocked while waiting for
+ * packet transmissions and responses. If these functions are left empty, the function will operate in a polling fashion.
+ *
+ * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::ProcessState::ERROR, this will be
+ *              set to the error that caused the failure; otherwise, it will be set to @c Atams::ERROR_NONE.
+ *
+ * @return The current @c Atams::ProcessState of the update cycle:
+ *         - @c IN_PROGRESS: Update is ongoing and this function should be called again.
+ *         - @c COMPLETE:    Update has finished successfully.
+ *         - @c ERROR:       An error has occurred; check @p error for details.
+ *
+ * @note The update cycle must be started by calling @ref Bus::beginUpdateCycle before calling this function.
+ */
 Atams::ProcessState Bus::runUpdateCycleSync(Atams::Error_t &error)
 {
   Bus::ProcessHandler<Bus::UpdateState> &process       = updateProcessHandler_;
@@ -331,6 +411,8 @@ Atams::ProcessState Bus::runUpdateCycleSync(Atams::Error_t &error)
 
   //Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
 
+  Platform::BusPeripheral::update();
+
   switch (updateState)
   {
     case Bus::UpdateState::SEND_REQUESTS:
@@ -341,7 +423,6 @@ Atams::ProcessState Bus::runUpdateCycleSync(Atams::Error_t &error)
       }
       break;
     case Bus::UpdateState::COLLECT_RESPONSES:
-      Platform::BusPeripheral::update();
       rxPollResult = pollForResponse(*activeNodePtr, process, Atams::MESSAGE_RESPONSE_SYNCED);
 
       if (rxPollResult != Bus::PollResult::WAITING)
@@ -367,6 +448,30 @@ Atams::ProcessState Bus::runUpdateCycleSync(Atams::Error_t &error)
   return (processState);
 }
 
+/**
+ * @brief Progresses the asynchronous update cycle for all Nodes on the Bus.
+ *
+ * Advances the update cycle started by @ref Bus::beginUpdateCycle in asynchronous mode. This function should be called repeatedly
+ * until the update cycle completes or an error occurs. Each call advances the internal state machine by a single step, such as
+ * sending a request, waiting for a response with a timeout, or processing a response once received.
+ *
+ * In the asynchronous update cycle, each Node responds immediately to its request packet with a response packet. Node transactions
+ * are handled one after another: the Bus sends a request to a Node, waits for and processes its response, then proceeds to the next Node.
+ *
+ * This function can operate in either blocking or non-blocking mode. If the user implements the @c Platform::CommsSemaphore functions
+ * (including @c Platform::CommsSemaphore::waitWithTimeout) in @c Platform.cpp, the calling thread will be blocked while waiting for
+ * packet transmissions and responses. If these functions are left empty, the function will operate in a polling fashion.
+ *
+ * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::ProcessState::ERROR, this will be
+ *              set to the error that caused the failure; otherwise, it will be set to @c Atams::ERROR_NONE.
+ *
+ * @return The current @c Atams::ProcessState of the update cycle:
+ *         - @c IN_PROGRESS: Update is ongoing and this function should be called again.
+ *         - @c COMPLETE:    Update has finished successfully.
+ *         - @c ERROR:       An error has occurred; check @p error for details.
+ *
+ * @note The update cycle must be started by calling @ref Bus::beginUpdateCycle before calling this function.
+ */
 Atams::ProcessState Bus::runUpdateCycleAsync(Atams::Error_t &error)
 { 
   Bus::ProcessHandler<Bus::UpdateState> &process                = updateProcessHandler_;
@@ -382,6 +487,8 @@ Atams::ProcessState Bus::runUpdateCycleAsync(Atams::Error_t &error)
 
   //Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
 
+  Platform::BusPeripheral::update();
+
   switch (updateState)
   {
     case Bus::UpdateState::SEND_REQUESTS:
@@ -392,7 +499,6 @@ Atams::ProcessState Bus::runUpdateCycleAsync(Atams::Error_t &error)
       }
       break;
     case Bus::UpdateState::COLLECT_RESPONSES:
-      Platform::BusPeripheral::update();
       rxPollResult = pollForResponse(*activeNodePtr, process, Atams::MESSAGE_RESPONSE);
 
       if (rxPollResult != Bus::PollResult::WAITING)
@@ -415,6 +521,31 @@ Atams::ProcessState Bus::runUpdateCycleAsync(Atams::Error_t &error)
   return (processState);
 }
 
+/**
+ * @brief Progresses the update cycle for a single Node on the Bus.
+ *
+ * Advances the update cycle started by @ref Bus::beginSingleNodeUpdateCycle. This function should be called repeatedly
+ * until the update cycle completes or an error occurs. Each call advances the internal state machine by a single step,
+ * such as sending a request, waiting for a response with a timeout, or processing a received response.
+ *
+ * For single-node updates, the Bus sends a request packet to the specified Node, waits for and processes its response,
+ * and then completes the cycle. This function can operate in either blocking or non-blocking mode. If the user implements
+ * the @c Platform::CommsSemaphore functions (including @c Platform::CommsSemaphore::waitWithTimeout) in @c Platform.cpp,
+ * the calling thread will be blocked while waiting for packet transmissions and responses. If these functions are left empty,
+ * the function will operate in a polling fashion.
+ *
+ * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::ProcessState::ERROR,
+ *              this will be set to the error that caused the failure; otherwise, it will be set to @c Atams::ERROR_NONE.
+ * @param node  Reference to the @c Node instance being updated. This must be the same @c Node passed to
+ *              @ref Bus::beginSingleNodeUpdateCycle.
+ *
+ * @return The current @c Atams::ProcessState of the update cycle:
+ *         - @c IN_PROGRESS: Update is ongoing and this function should be called again.
+ *         - @c COMPLETE:    Update has finished successfully.
+ *         - @c ERROR:       An error has occurred; check @p error for details.
+ *
+ * @note The update cycle must be started by calling @ref Bus::beginSingleNodeUpdateCycle before calling this function.
+ */
 Atams::ProcessState Bus::runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::Node &node)
 { 
   Bus::ProcessHandler<Bus::UpdateState> &process             = singleNodeUpdateProcessHandler_;
@@ -425,7 +556,7 @@ Atams::ProcessState Bus::runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::
 
   //Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
 
-   Platform::BusPeripheral::update();
+  Platform::BusPeripheral::update();
    
   switch (updateState)
   {
@@ -466,6 +597,25 @@ Atams::ProcessState Bus::runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::
   return (processState);
 }
 
+/**
+ * @brief Processes all response packets received during the last synchronous update cycle.
+ *
+ * This function should be called after a synchronous update cycle (run with @ref Bus::runUpdateCycleSync) has completed.
+ * It processes the response buffers for all registered Nodes by calling @ref Node::processResponseBuffer on each Node,
+ * making the received data available to the user and updating each Node's internal state accordingly.
+ *
+ * @return An @c Atams::Error_t code:
+ *         - @c ERROR_NONE if all response buffers were processed successfully and no bus errors occurred.
+ *         - @c ERROR_UPDATE_CYCLE_IN_PROGRESS if the synchronous update cycle is still in progress (not related to a Node).
+ *         - Otherwise, the first error code encountered while processing a Node's response buffer (other Nodes may also have errors).
+ *
+ * @note This function is only required for synchronous update cycles. Asynchronous and single-node update cycles process
+ *       response data as it is received, so this function does not need to be called in those cases.
+ *
+ * @attention If this function returns an error other than @c Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS, it corresponds to the first Node 
+ *            on the Bus that experienced a bus error during the update cycle. Other Nodes may also have experienced errors. To check 
+ *            for errors on individual Nodes, call @ref Node::getBusError on each Node after calling this function.
+ */
 Atams::Error_t Bus::processSyncBuffers(void)
 {
   if (updateProcessHandler_.processState == Atams::ProcessState::IN_PROGRESS) 
@@ -489,8 +639,30 @@ Atams::Error_t Bus::processSyncBuffers(void)
   return (firstError);
 }
 
+/**
+ * @brief Begins the Node configuration process for a single device.
+ *
+ * Prepares the Bus to adjust configuration values in the Universal Data Block of a Node device, including Node ID, communications
+ * bitrate, and watchdog period. This function only sets internal states and begins reception on the bus peripheral; the configuration
+ * process itself is progressed through repeated calls to @ref Bus::updateSetNodeConfigProcess.
+ *
+ * The user must provide the current Node ID and the new Node ID to set, along with other configuration parameters, in the 
+ * @c NodeConfig_t structure. Atams Nodes default to a Node ID of 0 if configuration has never been set, allowing new Nodes to be 
+ * added to the bus one at a time and reconfigured before adding the next Node.
+ *
+ * @param userConfig Structure containing the current Node ID, desired Node ID, and other configuration parameters.
+ *
+ * @retval @c ERROR_NONE                     Configuration process started successfully.
+ * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS An update cycle is currently in progress; configuration cannot be started.
+ * @retval @c ERROR_PLATFORM                 Failed to start data reception on the platform bus peripheral.
+ */
 Atams::Error_t Bus::beginSetNodeConfigProcess(const NodeConfig_t &userConfig)
 {
+  if (updateProcessHandler_.processState == Atams::ProcessState::IN_PROGRESS)
+  {
+    return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); 
+  }
+
   if (BusPeripheral::startReceive() == false) 
   {
     return (Atams::ERROR_PLATFORM); /* Early Return */
@@ -505,6 +677,27 @@ Atams::Error_t Bus::beginSetNodeConfigProcess(const NodeConfig_t &userConfig)
   return (Atams::ERROR_NONE);
 }
 
+/**
+ * @brief Progresses the Node configuration process for a single device.
+ *
+ * Advances the configuration sequence started by @ref Bus::beginSetNodeConfigProcess. This function should be called repeatedly
+ * until the configuration process completes or an error occurs. Each call advances the internal state machine by a single step,
+ * such as writing configuration data, storing it to non-volatile memory, or verifying the result.
+ *
+ * The configuration process adjusts values in the Universal Data Block of the Node, including Node ID, communications bitrate,
+ * and watchdog period. The user must provide the current and desired Node IDs, as well as other parameters, in the @c NodeConfig_t structure.
+ *
+ * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::ProcessState::ERROR, this will be
+ *              set to the error that caused the failure; otherwise, it will be set to @c Atams::ERROR_NONE.
+ *
+ * @return The current @c Atams::ProcessState of the configuration process:
+ *         - @c IN_PROGRESS: Configuration is ongoing and this function should be called again.
+ *         - @c COMPLETE:    Configuration has finished successfully.
+ *         - @c ERROR:       An error has occurred; check @p error for details.
+ *
+ * @note The configuration process must be started by calling @ref Bus::beginSetNodeConfigProcess before calling this function.
+ *       New Nodes default to a Node ID of 0 if configuration has never been set, allowing them to be added and reconfigured one at a time.
+ */
 Atams::ProcessState Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
 {
   Bus::ProcessHandler<Bus::ConfigUpdateState> &process           {configUpdateProcessHandler_};
@@ -567,7 +760,7 @@ Atams::ProcessState Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-bool Bus::canRemoveNode(void) 
+bool Bus::safeToRemoveNode(void) 
 {
     return ((updateProcessHandler_.processState           != Atams::ProcessState::IN_PROGRESS) &&
             (singleNodeUpdateProcessHandler_.processState != Atams::ProcessState::IN_PROGRESS) &&
@@ -589,7 +782,8 @@ bool Bus::findNodeOnBus(Node &node)
 
 Atams::Error_t Bus::beginUpdateCyclePrivate(void)
 {
-  if (updateProcessHandler_.processState == Atams::ProcessState::IN_PROGRESS)
+  if ((updateProcessHandler_.processState           == Atams::ProcessState::IN_PROGRESS) ||
+      (singleNodeUpdateProcessHandler_.processState == Atams::ProcessState::IN_PROGRESS) )
   {
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
   }
@@ -606,7 +800,8 @@ Atams::Error_t Bus::beginUpdateCyclePrivate(void)
 
 Atams::Error_t Bus::beginSingleNodeUpdateCyclePrivate(Atams::Node &node)
 {
-  if (singleNodeUpdateProcessHandler_.processState == Atams::ProcessState::IN_PROGRESS)
+  if ((updateProcessHandler_.processState           == Atams::ProcessState::IN_PROGRESS) ||
+      (singleNodeUpdateProcessHandler_.processState == Atams::ProcessState::IN_PROGRESS) )
   {
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
   }
