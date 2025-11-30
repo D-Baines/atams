@@ -39,8 +39,6 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-static uint32_t commsErrorResetCount {0U};
-
 namespace Atams { namespace Platform {
 
 /*************************************************************************************/
@@ -57,7 +55,7 @@ namespace Atams { namespace Platform {
 /* PRIVATE VARIABLES                                                                 */
 /*************************************************************************************/
 
-static SerialPort _meshPort(SerialPort::PORT_ID_MESH);
+static SerialPort s_serialPort(SerialPort::PORT_ID_MESH);
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -123,12 +121,11 @@ void releaseVarStorageLock(void)
  */
 void beginReceive(CommsReceiveCallback_t receiveCallback)
 {
-  _meshPort.setReceiveCallback(receiveCallback);
+  s_serialPort.setReceiveCallback(receiveCallback);
 
-  while (_meshPort.beginReceive() != SerialPort::ERROR_NONE)
+  while (s_serialPort.beginReceive() != SerialPort::ERROR_NONE)
   {
-
-    _meshPort.stopReceive();
+    s_serialPort.stopReceive();
   }
 
   HAL_GPIO_WritePin(RS485_RE_GPIO_Port, RS485_RE_Pin, GPIO_PIN_RESET);
@@ -144,7 +141,7 @@ void beginReceive(CommsReceiveCallback_t receiveCallback)
  */
 void stopReceive(void)
 {
-  _meshPort.stopReceive();
+  s_serialPort.stopReceive();
   HAL_GPIO_WritePin(RS485_RE_GPIO_Port, RS485_RE_Pin, GPIO_PIN_SET);
 }
 
@@ -160,21 +157,31 @@ void stopReceive(void)
  */
 void update(void)
 {
-  if (_meshPort.getError() != SerialPort::ERROR_NONE)
+  if (s_serialPort.getError() != SerialPort::ERROR_NONE)
   {
-    commsErrorResetCount++;
-
-    while (_meshPort.beginReceive() != SerialPort::ERROR_NONE)
+    while (s_serialPort.beginReceive() != SerialPort::ERROR_NONE)
     {
-      commsErrorResetCount++;
-      _meshPort.stopReceive();
+      s_serialPort.stopReceive();
     }
   }
 }
 
-bool transmitReady(void)
+/**
+ * @brief   Check if the specified communications peripheral is ready to transmit new bytes.
+ *
+ * @param   peripheralID The ID of the communications peripheral to check
+ *
+ * @return  Transmission readiness.
+ *          true:  Peripheral ready to accept new bytes for transmission.
+ *          false: Peripheral not ready to accept new bytes for transmission.
+ *
+ * @note    ATAMS PLATFORM REQUIREMENT - ALL
+ */
+bool transmitReady(CommsPeripheralID_t peripheralID)
 {
-  return (_meshPort.transmitReady());
+  static_cast<void>(peripheralID);
+
+  return (s_serialPort.transmitReady());
 }
 
 /**
@@ -202,7 +209,7 @@ bool transmitBuffer(CommsPeripheralID_t peripheralID, uint8_t *buffer, uint16_t 
   HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_SET);               // @suppress("C-Style cast instead of C++ cast")
   HAL_GPIO_WritePin(LED_RS485_GREEN_GPIO_Port, LED_RS485_GREEN_Pin, GPIO_PIN_SET); // @suppress("C-Style cast instead of C++ cast")
 
-  SerialPort::Error_t transmitResult = _meshPort.transmitBuffer(buffer, length);
+  SerialPort::Error_t transmitResult = s_serialPort.transmitBuffer(buffer, length);
 
   if (transmitResult != SerialPort::ERROR_NONE) return (false);
 
@@ -266,7 +273,7 @@ void releaseCommsBufferLock(CommsPeripheralID_t peripheralToUnlock)
  *
  * @note    ATAMS PLATFORM REQUIREMENT - MULTI-THREAD + EVENT DRIVEN COMMS
  */
-void waitOnCommsBufferSemaphore(uint32_t timeoutMilliseconds)
+void acquireWaitOnReceiveSempahore(uint32_t timeoutMilliseconds)
 {
   static_cast<void>(timeoutMilliseconds);
 }
@@ -281,7 +288,7 @@ void waitOnCommsBufferSemaphore(uint32_t timeoutMilliseconds)
  *
  * @note    ATAMS PLATFORM REQUIREMENT - MULTI-THREAD + EVENT DRIVEN COMMS
  */
-void signalCommsBufferSemaphore(void)
+void releaseWaitOnReceiveSemaphore(void)
 {
 
 }
@@ -419,9 +426,10 @@ void exitConfigurationState(void)
 
 
 /**
- * @brief
+ * @brief   Set the bitrate for all communications peripherals.
  *
- * @details
+ * @details Function will be called when an Atams Hub device requests a bitrate change
+ *          through the configuration state.
  *
  * @return  bitrateOption User defined bitrate option to be asserted.
  *
@@ -433,10 +441,10 @@ void setBitrate(Atams::BitrateOption_t bitrateOption)
 }
 
 /**
- * @brief   Reset the system
+ * @brief   Reset the system.
  *
- * @details Function should never exit if system resets successfully.
- *          This function will only be called if Atams has first entered the configuration state.
+ * @details Function will be called when an Atams Hub device requests a node reset.
+ *          This function should not return, the system should reset immediately.
  *
  * @return  None.
  *

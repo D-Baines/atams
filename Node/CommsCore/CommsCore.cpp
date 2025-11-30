@@ -228,7 +228,7 @@ static void receiveCallback(const Platform::CommsPeripheralID_t commsChannel,
       (rxBufferLength > 0U                                   ) )
   {
     s_circularBuffers[commsChannel].pushHead(rxBufferPtr, rxBufferLength);
-    Platform::signalCommsBufferSemaphore();
+    Platform::releaseWaitOnReceiveSemaphore();
   }
 }
 
@@ -869,6 +869,21 @@ static Atams::Error_t initNVM(void)
   return (error);
 }
 
+static bool allCommsTransmissionsComplete(void)
+{
+  bool allComplete {true};
+
+  for (uint8_t peripheralID = 0U; peripheralID < Platform::NUMBER_OF_COMMS_PERIPHERALS; peripheralID++)
+  {
+    if (Platform::transmitReady(static_cast<Platform::CommsPeripheralID_t>(peripheralID)) == false)
+    {
+      allComplete = false;
+    }
+  }
+
+  return (allComplete);
+}
+
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
@@ -1006,18 +1021,21 @@ void updateCommsPolling(void)
       Platform::update();
       processRawMeshData();
       break;
+
     case Atams::NODE_STATE_ACTIVE:
       Platform::update();
       processRawMeshData();
       s_watchdogHandler.update(currentTime);
       break;
+
     case Atams::NODE_STATE_PROCESS_PENDING:
-      if (Platform::transmitReady())
+      if (allCommsTransmissionsComplete() == true)
       {
-        s_uniBlockManager.triggerPendingProcess();
+        s_uniBlockManager.runPendingProcess();
         s_nodeCommsState = Atams::NODE_STATE_ACTIVE;
       }
       break;
+
     default:
       /* Do Nothing */
       break;
@@ -1040,22 +1058,34 @@ void updateCommsBlocking(void)
       break;
 
     case Atams::NODE_STATE_INITIALISED:
-      Platform::waitOnCommsBufferSemaphore(WatchdogHandler::WATCHDOG_UPDATE_PERIOD);
+      Platform::acquireWaitOnReceiveSempahore(WatchdogHandler::WATCHDOG_UPDATE_PERIOD);
       processRawMeshData();
       break;
+
     case Atams::NODE_STATE_ACTIVE:
-      Platform::waitOnCommsBufferSemaphore(WatchdogHandler::WATCHDOG_UPDATE_PERIOD);
+      Platform::acquireWaitOnReceiveSempahore(WatchdogHandler::WATCHDOG_UPDATE_PERIOD);
       processRawMeshData();
       s_watchdogHandler.update(currentTime);
       break;
+
+    case Atams::NODE_STATE_PROCESS_PENDING:
+      if (allCommsTransmissionsComplete() == true)
+      {
+        s_uniBlockManager.runPendingProcess();
+        s_nodeCommsState = Atams::NODE_STATE_ACTIVE;
+      }
+      break;
+
     default:
       /* Do Nothing */
       break;
   }
 
-  s_uniBlockManager.update();
+  if (s_uniBlockManager.update() < UniversalBlockManager::NUMBER_OF_PROCESSES)
+  {
+    s_nodeCommsState = Atams::NODE_STATE_PROCESS_PENDING;
+  }
 }
-
 
 Atams::Error_t restoreAll(void)
 {

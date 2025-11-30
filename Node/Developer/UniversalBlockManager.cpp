@@ -123,7 +123,7 @@ UniversalBlockManager::ProcessID_t UniversalBlockManager::update(void)
   return (pendingProcessID_);
 }
 
-void UniversalBlockManager::triggerPendingProcess(void)
+void UniversalBlockManager::runPendingProcess(void)
 {
   if (pendingProcessID_ < NUMBER_OF_PROCESSES)
   {

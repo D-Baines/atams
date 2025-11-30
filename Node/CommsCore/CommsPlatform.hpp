@@ -52,14 +52,14 @@ constexpr uint8_t  NVM_UNIT_SIZE        {32U};
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
 
-typedef enum: uint8_t
+enum CommsPeripheralID_t : uint8_t
 {
   COMMS_DEFAULT = 0,
 
   NUMBER_OF_COMMS_PERIPHERALS
-} CommsPeripheralID_t;
+};
 
-typedef void (*CommsReceiveCallback_t)(const CommsPeripheralID_t commsChannel,
+typedef void (*CommsReceiveCallback_t)(const CommsPeripheralID_t peripheralID,
                                              uint8_t            *rxBufferPtr,
                                        const uint16_t            rxBufferLength);
 
@@ -86,7 +86,7 @@ void stopReceive(void);
 
 void update(void);
 
-bool transmitReady(void);
+bool transmitReady(CommsPeripheralID_t peripheralID);
 
 bool transmitBuffer(CommsPeripheralID_t peripheralID, uint8_t *buffer, uint16_t length);
 
@@ -94,9 +94,9 @@ void acquireCommsBufferLock(CommsPeripheralID_t peripheralToLock);
 
 void releaseCommsBufferLock(CommsPeripheralID_t peripheralToUnlock);
 
-void waitOnCommsBufferSemaphore(uint32_t timeoutMilliseconds);
+void acquireWaitOnReceiveSempahore(uint32_t timeoutInMilliseconds);
 
-void signalCommsBufferSemaphore(void);
+void releaseWaitOnReceiveSemaphore(void);
 
 bool eraseNVM(void);
 

@@ -89,7 +89,7 @@ class UniversalBlockManager
 
   UniversalBlockManager::ProcessID_t update(void);
 
-  void triggerPendingProcess(void);
+  void runPendingProcess(void);
 
   void setUpdateRequired(void);
 
