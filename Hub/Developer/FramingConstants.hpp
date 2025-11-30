@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    SharedPlatform.hpp
+  * @file    FramingConstants.hpp
   *
   * @author  D. Baines
   *
@@ -21,7 +21,7 @@
   ******************************************************************************
   */
 
-/* Pragma to prevent recursive inclusion --------------------------------------------*/
+/* Define to prevent recursive inclusion --------------------------------------------*/
 #pragma once
 
 /*************************************************************************************/
@@ -30,7 +30,7 @@
 
 #include <stdint.h>
 
-#include "../Shared/AtamsTypedefs.hpp"
+#include "../Platform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -39,36 +39,12 @@
 namespace Atams { namespace Platform {
 
 /*************************************************************************************/
-/* PUBLIC MACROS                                                                     */
-/*************************************************************************************/
-
-/** 
-*   @brief Define used in dual-core applications to place shared variables in a
-*          dedicated shared memory section accessible by both cores. This section
-*          should be defined in the application linker script.
-*
-*   @details The size of the shared memory section must be at least:
-*            2 + (4 * Platform::NODE_NUMBER_OF_VARS) bytes.
-*/
-#define ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE __attribute__((section(".atamsSharedRAM")))
-
-/**
-*   @brief Define used in dual-core applications to determine which core is
-*          responsible for handling Atams communications. The define should only
-*          exist on compilation of the code for the core handling Atams communications.
-*/
-#define COMMS_CORE_DETECT CORE_CM7
-
-/*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-/** 
-*   @brief The number of vars in the Atams Memory Map that will be used to initialise the Node.
-*          This value must be less than or equal to @ref Atams::MAX_NUMBER_OF_VARS.
-*/
-constexpr uint16_t NODE_NUMBER_OF_VARS {100U};
-
+constexpr uint16_t COBS_MAX_DATA_PER_CODE          {254U};
+constexpr uint16_t COBS_MAX_OVERHEAD               {(MAX_BUS_PACKET_SIZE + (COBS_MAX_DATA_PER_CODE - 1U)) / COBS_MAX_DATA_PER_CODE};
+constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING {MAX_BUS_PACKET_SIZE - COBS_MAX_OVERHEAD};
 
 } } /* End Namespace - Atams::Platform */
 
@@ -76,3 +52,5 @@ constexpr uint16_t NODE_NUMBER_OF_VARS {100U};
 /**
   * @}End of File
   */
+
+

@@ -51,10 +51,10 @@ namespace Atams {
 /**
  * @brief Constructs a Bus instance with user-defined platform data.
  *
- * Initialises the Bus and its base @c Platform::BusPeripheral with the provided @ref Platform::BusPeripheral::UserData_t "UserData_t" 
- * structure. The @ref Platform::BusPeripheral::UserData_t "UserData_t" struct is defined by the user in @c Platform.hpp inside the 
- * @c BusPeripheral class definition, and must be passed to the Bus constructor to provide access to any data required for the user's 
- * implementation of @c Platform::BusPeripheral. All Node pointers are initialised to @c nullptr.
+ * Initialises the Bus and its base @c Platform::BusPeripheral with the provided @ref Platform::BusPeripheral::UserData_t
+ * structure. The @ref Platform::BusPeripheral::UserData_t struct is defined by the user in @c Platform.hpp inside the
+ * @c BusPeripheral class definition, and must be passed to the Bus constructor to provide access to any data required
+ * for the user's implementation of @c Platform::BusPeripheral. All Node pointers are initialised to @c nullptr.
  *
  * @param userData User-defined data required for initialising the underlying bus peripheral.
  */
@@ -168,7 +168,7 @@ Atams::Error_t Bus::removeNodeFromBus(Node &node)
  * The initialisation process validates that the Memory Map used by each physical Node device matches the Memory Map of the corresponding
  * internal Node instance. For Atams synchronous communication, each Node is configured with the IDs of the first, last, and previous
  * Node on the Bus. These IDs are stored in the Universal Data Block of each Node during initialisation and saved to non-volatile
- * memory, ensuring synchronous communication remains functional even after a Node is power-cycled.
+ * memory, ensuring synchronous communication remains functional even after a Node is reset.
  *
  * The Bus initialisation process does not set the Node ID that a Node uses for all communications. Individual device Node IDs must first
  * be set using the Node configuration process (@ref Bus::beginSetNodeConfigProcess and @ref Bus::updateSetNodeConfigProcess), which
@@ -372,7 +372,7 @@ Atams::Error_t Bus::beginSingleNodeUpdateCycle(Atams::Node &node)
  *
  * Advances the update cycle started by @ref Bus::beginUpdateCycle in synchronous mode. This function should be called repeatedly
  * until the update cycle completes or an error occurs. Each call advances the internal state machine by a single step, such as
- * sending a request, waiting for a response, or processing a response once received.
+ * sending a request, waiting for a response, or jogging a Node if a timeout occurs.
  *
  * In the synchronous update cycle, request packets are sent to all Nodes, which store them in a sync buffer. Once the final Node
  * receives its request, all Nodes process their stored requests simultaneously: writes are performed, and read data is prepared for

@@ -38,6 +38,7 @@
 #include "../Shared/AtamsTypedefs.hpp"
 #include "Developer/CircularBuffer.hpp"
 #include "Platform.hpp"
+#include "Developer/FramingConstants.hpp"
 #include "Developer/NodeActions.hpp"
 #include "Node.hpp"
 

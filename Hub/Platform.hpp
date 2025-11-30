@@ -43,33 +43,31 @@ namespace Atams { namespace Platform {
 /*************************************************************************************/
 
 /** @brief The maximum number of Nodes added to on any of the application's Atams::Bus objects */
-constexpr uint16_t NUMBER_OF_NODES_PER_BUS = 3U;
+constexpr uint16_t NUMBER_OF_NODES_PER_BUS {3U};
 
 /** @brief The maximum number of Atams vars used by any of the application's Atams::Node objects */
-constexpr uint16_t NODE_NUMBER_OF_VARS     = 100U; 
+constexpr uint16_t NODE_NUMBER_OF_VARS {100U};
 
 /** @brief The maximum packet size compatible with the applications communications peripheral */
-constexpr uint16_t MAX_BUS_PACKET_SIZE     = 64U;
+constexpr uint16_t MAX_BUS_PACKET_SIZE {64U};
+
+/**
+*  @brief The circular buffer size used for receiving Atams packets.
+*         A minimum size of 3 * Atams::MAX_BUS_PACKET_SIZE is recommended.
+*/
+constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};
 
 /** 
-*   @brief The circular buffer size used to accept Atams packets.
-*          A minimum size of 3 * Atams::MAX_BUS_PACKET_SIZE is recommended. 
+*   @brief The maximum time period for an Atams::Bus object to wait for a response 
+*          from an Atams::Node device during a Bus update cycle
 */
-constexpr uint16_t CIRCULAR_BUFFER_SIZE    = 1024U;
-
-/** @brief The maximum time period for Atams communications updates to wait for reception of a new packet */
-constexpr uint64_t BUS_RESPONSE_TIMEOUT    = 250U;
+constexpr uint64_t BUS_RESPONSE_TIMEOUT {250U};
 
 /** 
-*   @brief The maximum time period for an Atams::Bus object to wait without response while an Atams Node 
-*          completes a non-volatile memory storage task
+*   @brief The maximum time period for an Atams::Bus object to wait without response while an 
+*          Atams::Node device completes a non-volatile memory storage task
 */
-constexpr uint64_t NVM_STORAGE_TIMEOUT     = 5000U;
-
-/* MOVE THIS STUFF */
-constexpr uint16_t COBS_MAX_DATA_PER_CODE          = 254U; 
-constexpr uint16_t COBS_MAX_OVERHEAD               = (MAX_BUS_PACKET_SIZE + (COBS_MAX_DATA_PER_CODE - 1U)) / COBS_MAX_DATA_PER_CODE;
-constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING = MAX_BUS_PACKET_SIZE - COBS_MAX_OVERHEAD;
+constexpr uint64_t NVM_STORAGE_TIMEOUT {5000U};
 
 /*************************************************************************************/
 /* PUBLIC CLASSES                                                                    */
@@ -172,7 +170,7 @@ class BusPeripheral
    *          This function is overridden by the Atams::Bus class. Bytes will be copied
    *          from rxBufferPtr into an Atams::Bus circular buffer in the overidden function.
    *
-   * @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
+   * @note    ATAMS PLATFORM REQUIREMENT - ALL
    */
   virtual void rxCallback(      uint8_t  *rxBufferPtr,
                           const uint16_t  rxBufferLength) = 0;

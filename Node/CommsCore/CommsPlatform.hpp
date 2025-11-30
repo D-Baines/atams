@@ -43,15 +43,45 @@ namespace Atams { namespace Platform {
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-constexpr uint16_t MAX_BUS_PACKET_SIZE  {64U};
+/** @brief The maximum packet size compatible with all of the Node communications peripherals */  
+constexpr uint16_t MAX_BUS_PACKET_SIZE {64U};
+
+/**
+*  @brief The circular buffer size used for receiving Atams packets.
+*         A minimum size of 3 * Atams::MAX_BUS_PACKET_SIZE is recommended.
+*/
 constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};
-constexpr uint32_t NVM_STORAGE_SIZE     {1024U};
-constexpr uint8_t  NVM_UNIT_SIZE        {32U};
+
+/** @brief The size of non-volatile memory (NVM) reserved for Atams use.
+*
+*   @details The size required depends on the number of vars selected for non-volatile
+*            storage in the Atams Memory Map. The formula for calculating the minimum
+*            required size is:
+*            (noOfNVMVars * sizeOfEachVar) + headerSize + footerSize + safetyMargin
+*/
+constexpr uint32_t NVM_STORAGE_SIZE {1024U};
+
+/** 
+*   @brief The size of each NVM write unit in bytes.
+* 
+*   @details This value defines the size of each write operation to non-volatile memory.
+*            Some platforms can only write to non-volatile memory in fixed size units.
+*            The user should set this to an appropriate value for their platform.
+*            The provided data buffer in @ref Platform::writeToNVM will always be of 
+*            size Platform::NVM_UNIT_SIZE.
+*/
+constexpr uint8_t NVM_UNIT_SIZE {32U};
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
 
+/** 
+*   @brief Identifiers for the Node devices communication peripherals.
+*
+*   @details Used to identify which communication peripheral is being referenced
+*            on multi-peripheral devices. Users should extend this enum as required.
+*/
 enum CommsPeripheralID_t : uint8_t
 {
   COMMS_DEFAULT = 0,
@@ -59,6 +89,20 @@ enum CommsPeripheralID_t : uint8_t
   NUMBER_OF_COMMS_PERIPHERALS
 };
 
+/**
+  * @brief   Callback function pointer typedef for received bytes.
+  *
+  * @param   peripheralID   The ID of the communications peripheral on which data was received.
+  *                         Corresponds to the @ref Platform::CommsPeripheralID_t enum.
+  *
+  * @param   rxBufferPtr    Pointer to the received data buffer.
+  *
+  * @param   rxBufferLength Length of the received data buffer.
+  *
+  * @details The user must call this function when new bytes have been received.
+  *          Bytes will be copied from rxBufferPtr into an Atams circular buffer.
+  *
+  */
 typedef void (*CommsReceiveCallback_t)(const CommsPeripheralID_t peripheralID,
                                              uint8_t            *rxBufferPtr,
                                        const uint16_t            rxBufferLength);
@@ -67,13 +111,6 @@ typedef void (*CommsReceiveCallback_t)(const CommsPeripheralID_t peripheralID,
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-/**
- * @brief  Get system time in milliseconds since startup.
- *
- * @return System time in milliseconds since startup.
- *
- * @note   ATAMS PLATFORM REQUIREMENT - ALL
- */
 uint32_t getMillis(void);
 
 void acquireVarStorageLock(void);

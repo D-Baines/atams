@@ -32,6 +32,7 @@
 #include "../Shared/AtamsTypedefs.hpp"
 #include "../Shared/Utilities/CRC32.hpp"
 #include "Platform.hpp"
+#include "Developer/FramingConstants.hpp"
 #include "Developer/WriteList.hpp"
 #include "Developer/NodeCallbackHandler.hpp"
 #include "Developer/NodeActions.hpp"
