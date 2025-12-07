@@ -78,8 +78,16 @@ uint32_t getMillis(void)
 }
 
 /**
- * @brief   Acquire the lock protecting variable storage from concurrent access
+ * @brief   Acquire the lock protecting the Node variable storage from concurrent access.
  *
+ * @details This function will be called before Node variable storage access. The variable storage
+ *          may be accessed from multiple threads or cores depending on the user's platform. The user 
+ *          must ensure that the lock is held until Platform::releaseVarStorageLock() is called.
+ *
+ *          For multi-threaded platforms, the user should use a mutex or similar mechanism. For dual-core 
+ *          platforms, the user should use a hardware semaphore or similar mechanism. A combination of both
+ *          may be required for multi-threaded dual-core platforms.
+ *         
  * @return  None
  *
  * @note    ATAMS PLATFORM REQUIREMENT - MULTI-THREADED
@@ -91,9 +99,10 @@ void acquireVarStorageLock(void)
 }
 
 /**
- * @brief   Release the lock protecting variable storage from concurrent access
+ * @brief   Release the lock protecting the Node variable storage from concurrent access.
  *
- * @details
+ * @details This function will be called after Node variable storage access. The user must 
+ *          release or unlock the mechanism locked in Platform::acquireVarStorageLock().
  *
  * @return  None
  *
@@ -106,9 +115,7 @@ void releaseVarStorageLock(void)
 }
 
 /**
- * @brief
- *
- * @details Start reception on all peripherals if required and register the receive callback function.
+ * @brief   Start reception on all peripherals and register the receive callback function.
  *
  * @return  None
  *
@@ -133,11 +140,11 @@ void beginReceive(CommsReceiveCallback_t receiveCallback)
 }
 
 /**
- * @brief   Stop reception on all peripherals.
+ * @brief  Stop reception on all peripherals.
  *
- * @return  None
+ * @return None
  *
- * @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
+ * @note   ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
  */
 void stopReceive(void)
 {

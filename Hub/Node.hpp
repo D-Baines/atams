@@ -220,9 +220,6 @@ public NodeCallbackHandler
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
-  template <typename T>
-  constexpr Atams::VarType_t getAtamsType(void);
-
   template<typename T>
   inline void writeToVarStorage(const T inputVar, Node::Var_t &nodeVar);
 

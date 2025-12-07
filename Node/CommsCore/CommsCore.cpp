@@ -25,11 +25,12 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include <Atams/Node/Developer/UniversalBlockManager.hpp>
 #include "CommsCore.hpp"
 
 #include "string.h"
 
+#include "../../Shared/Utilities/AtamsUtilities.hpp"
+#include "../Developer/UniversalBlockManager.hpp"
 #include "CommsPlatform.hpp"
 #include "../Developer/FramingConstants.hpp"
 #include "../Developer/NodeUtilities.hpp"
@@ -52,16 +53,6 @@ namespace Atams {
 /*************************************************************************************/
 /* PRIVATE CONSTANTS                                                                 */
 /*************************************************************************************/
-
-static bool     postStore {false};
-static uint32_t receiveCallbackCount {0U};
-static uint32_t receiveByteCount[100];
-static uint32_t processPacketCountPreDecode {0U};
-static uint32_t processPacketCountPostDecode{0U};
-static uint32_t processPreDecodeByteCount[100];
-static uint32_t processPostDecodeByteCount[100];
-
-static uint8_t packets[10][1000];
 
 /*************************************************************************************/
 /* PRIVATE TYPEDEFS                                                                  */
@@ -209,21 +200,6 @@ static void receiveCallback(const Platform::CommsPeripheralID_t commsChannel,
                                   uint8_t                      *rxBufferPtr,
                             const uint16_t                      rxBufferLength)
 {
-  if (postStore)
-  {
-    receiveCallbackCount++;
-
-    if (receiveCallbackCount < 100U)
-    {
-      receiveByteCount[receiveCallbackCount - 1U] = rxBufferLength;
-    }
-
-    if (receiveCallbackCount < 10)
-    {
-      if (rxBufferLength <= 1000) memcpy(packets[receiveCallbackCount - 1U], rxBufferPtr, rxBufferLength);
-    }
-  }
-
   if ((commsChannel   < Platform::NUMBER_OF_COMMS_PERIPHERALS) &&
       (rxBufferLength > 0U                                   ) )
   {
@@ -479,15 +455,6 @@ static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsCh
     uint8_t              prevSyncNodeID  = s_uniBlockManager.getPrevSyncNodeID();
     uint8_t              packetSyncCount = decodedPacket[HEADER_INDEX_SYNC];
 
-    if (postStore)
-    {
-      processPacketCountPostDecode++;
-      if (processPacketCountPostDecode < 100U)
-      {
-        processPostDecodeByteCount[processPacketCountPostDecode - 1U] = decodedLength;
-      }
-    }
-
     setAbortMessageType(response, messageType);
 
     switch (messageType)
@@ -543,7 +510,7 @@ static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsCh
   {
     static uint32_t errorCount = 0U;
     errorCount++;
-    Atams::write(BlockUniversal::VAR_CRC_ERROR_COUNT, errorCount);
+    Atams::setVar(BlockUniversal::VAR_CRC_ERROR_COUNT, errorCount);
   }
 }
 
@@ -561,15 +528,6 @@ static void processRawMeshData(void)
     /* Early return if no packets ready */
     if (bufferStatus == CircularBuffer::ERROR_NONE)
     {
-      if (postStore)
-      {
-        processPacketCountPreDecode++;
-        if (processPacketCountPreDecode < 100U)
-        {
-          processPreDecodeByteCount[processPacketCountPreDecode - 1U] = meshPacketRXLength;
-        }
-      }
-
       /* Process the packet that has been copied into the request packet buffer */
       processEncodedMeshPacket(static_cast<Platform::CommsPeripheralID_t>(commsChannel),
                                meshPacketRXBuffer,
@@ -700,7 +658,7 @@ static Atams::Error_t nvmTransferVars(const uint32_t      maxIndex,
 
       if ((nvmIndex + varLength) > maxIndex)
       {
-        return (Atams::ERROR_NVM_HEADER_LENGTH); /* Early Return */
+        return (Atams::ERROR_NVM_PLATFORM_SIZE); /* Early Return */
       }
 
       switch (transferType)
@@ -772,12 +730,12 @@ static Atams::Error_t initUniversalDefaults(void)
 {
   Atams::Error_t error = Atams::ERROR_NONE;
 
-  if (!error) error = Atams::write(BlockUniversal::VAR_NODE_ID,          BlockUniversal::DEFAULT_NODE_ID);
-  if (!error) error = Atams::write(BlockUniversal::VAR_FIRST_NODE_ID,    BlockUniversal::DEFAULT_FIRST_NODE_ID);
-  if (!error) error = Atams::write(BlockUniversal::VAR_LAST_NODE_ID,     BlockUniversal::DEFAULT_LAST_NODE_ID);
-  if (!error) error = Atams::write(BlockUniversal::VAR_PREVIOUS_NODE_ID, BlockUniversal::DEFAULT_PREVIOUS_NODE_ID);
-  if (!error) error = Atams::write(BlockUniversal::VAR_BITRATE,          BlockUniversal::DEFAULT_BITRATE);
-  if (!error) error = Atams::write(BlockUniversal::VAR_WATCHDOG_PERIOD,  BlockUniversal::DEFAULT_WATCHDOG_PERIOD);
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_NODE_ID,          BlockUniversal::DEFAULT_NODE_ID);
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_FIRST_NODE_ID,    BlockUniversal::DEFAULT_FIRST_NODE_ID);
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_LAST_NODE_ID,     BlockUniversal::DEFAULT_LAST_NODE_ID);
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_PREVIOUS_NODE_ID, BlockUniversal::DEFAULT_PREVIOUS_NODE_ID);
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_BITRATE,          BlockUniversal::DEFAULT_BITRATE);
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_WATCHDOG_PERIOD,  BlockUniversal::DEFAULT_WATCHDOG_PERIOD);
 
   return (error);
 }
@@ -888,6 +846,31 @@ static bool allCommsTransmissionsComplete(void)
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
+/**
+ * @brief   Initialise the Node for single core platforms.
+ *
+ * @details Validates and stores a reference to the provided Memory Map, initialises default variable values, 
+ *          validates and loads non-volatile memory (NVM) data, and starts the communication peripherals.
+ *
+ * @param memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
+ *
+ * @retval @c ERROR_NONE                    Initialisation successful.
+ * @retval @c ERROR_MEMORY_MAP              Memory Map validation failed (invalid structure, length, universal block, or checksum).
+ * @retval @c ERROR_ATAMS_VERSION_MISMATCH  Memory Map validation failed (Atams version mismatch).
+ * @retval @c ERROR_PLATFORM                Platform-level NVM access failure (read/write/erase/flush).
+ * @retval @c ERROR_NVM_HEADER_VALIDITY     NVM header/footer identifier invalid.
+ * @retval @c ERROR_NVM_HEADER_LENGTH       NVM header length exceeds platform NVM size.
+ * @retval @c ERROR_NVM_PLATFORM_SIZE       Platform NVM size insufficient for header.
+ * @retval @c ERROR_NVM_CHECKSUM            NVM checksum mismatch.
+ * @retval @c ERROR_GEN_INFO_MISMATCH       Atams version major/minor mismatch.
+ * @retval @c ERROR_NVM_USER_BLOCKS_INVALID User blocks in NVM are invalid; only universal block loaded.
+ *
+ * @warning If @c ERROR_NVM_USER_BLOCKS_INVALID is returned, initialisation is otherwise complete and the node is operational, 
+ *          but user Data Block variables were not restored from NVM. See value of BlockUniversal::VAR_STORAGE_STATUS for details. 
+ *          Only Universal Block variables are restored. Application logic should check for this and handle accordingly.
+ *
+ * @note This function must be called before accessing variables or changing request patterns on the Node.
+ */
 Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap)
 {
   s_appCoreInitRequired = false;
@@ -895,18 +878,40 @@ Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap)
   return (initCommsCore(memoryMap));
 }
 
+/**
+ * @brief   Initialise the Node Communications Core for dual-core platforms.
+ *
+ * @details Validates and stores a reference to the provided Memory Map, initialises default variable values,
+ *          validates and loads non-volatile memory (NVM) data, and starts the communication peripherals.
+ *          This function also synchronises with the Control Core during initialisation and should be called
+ *          from the Communications Core at system startup.
+ *
+ * @param memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
+ *
+ * @retval @c ERROR_NONE                    Initialisation successful.
+ * @retval @c ERROR_MEMORY_MAP              Memory Map validation failed (invalid structure, length, universal block, or checksum).
+ * @retval @c ERROR_ATAMS_VERSION_MISMATCH  Memory Map validation failed (Atams version mismatch).
+ * @retval @c ERROR_PLATFORM                Platform-level NVM access failure (read/write/erase).
+ * @retval @c ERROR_NVM_HEADER_VALIDITY     NVM header/footer identifier invalid.
+ * @retval @c ERROR_NVM_HEADER_LENGTH       NVM header length exceeds platform NVM size.
+ * @retval @c ERROR_NVM_PLATFORM_SIZE       Platform NVM size insufficient for header.
+ * @retval @c ERROR_NVM_CHECKSUM            NVM checksum mismatch.
+ * @retval @c ERROR_GEN_INFO_MISMATCH       Atams version major/minor mismatch.
+ * @retval @c ERROR_NVM_USER_BLOCKS_INVALID User blocks in NVM are invalid; only universal block loaded.
+ *
+ * @warning If @c ERROR_NVM_USER_BLOCKS_INVALID is returned, initialisation is otherwise complete and the Node is operational, 
+ *          but User Data Block variables were not restored from NVM. See value of BlockUniversal::VAR_STORAGE_STATUS for details. 
+ *          Only Universal Block variables are restored. Application logic should check for this and handle accordingly.
+ *
+ * @warning This function must be called before accessing any Node variables.
+ *
+ */
 Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
 {
-  for (uint32_t i = 0U; i < 100; i++)
-  {
-    receiveByteCount[i] = 0U;
-    processPreDecodeByteCount[i] = 0U;
-    processPostDecodeByteCount[i] = 0U;
-  }
-
   if (s_appCoreInitRequired) waitForControlCoreInit();
 
-  Atams::Error_t error = Atams::validateMemoryMap(memoryMap, Platform::NODE_NUMBER_OF_VARS);
+  Atams::Error_t error    = Atams::validateMemoryMap(memoryMap, Platform::NODE_NUMBER_OF_VARS);
+  Atams::Error_t nvmError = Atams::ERROR_NONE;
 
   if (!error)
   {
@@ -915,13 +920,10 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
   }
 
   if (!error) resetVars();
+  if (!error) error    = initAllDefaults();
+  if (!error) nvmError = initNVM();
 
-  if (!error) error = initAllDefaults();
-
-  if (!error) error = initNVM();
-
-  /* Invalid user blocks will not be loaded in initNVM and user has been notified through BlockUniversal::VAR_STORAGE_STATUS */
-  if (error == Atams::ERROR_NVM_USER_BLOCKS_INVALID) error = Atams::ERROR_NONE;
+  error = ((nvmError == Atams::ERROR_NVM_USER_BLOCKS_INVALID) ? Atams::ERROR_NONE : nvmError);
 
   if (error != Atams::ERROR_NONE)
   {
@@ -941,6 +943,8 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
 
     signalCommsCoreInitComplete();
 
+    if (nvmError == Atams::ERROR_NVM_USER_BLOCKS_INVALID) error = nvmError;
+
     s_nodeCommsState = Atams::NODE_STATE_INITIALISED;
   }
   else
@@ -951,8 +955,24 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
   return (error);
 }
 
+/**
+ * @brief Sets the value of a variable in the Node's variable storage.
+ *
+ * Writes a value to the specified variable in the Node's variable storage. 
+ * The data type @c T must match the type defined for the variable ID in the initialised Memory Map.
+ *
+ * @tparam T         The data type of the variable to set. Must match the type stored for the specified variable ID.
+ * @param varID      The ID of the variable to set.
+ * @param writeValue The value to write to the variable storage.
+ *
+ * @retval @c ERROR_NONE           Variable successfully set.
+ * @retval @c ERROR_VAR_ID         The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_VAR_TYPE       The data type for the specified variable ID does not match @c T.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 template <typename T>
-Atams::Error_t write(const uint16_t varID, const T writeValue)
+Atams::Error_t setVar(const uint16_t varID, const T writeValue)
 {
   if (varID >= s_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -971,16 +991,32 @@ Atams::Error_t write(const uint16_t varID, const T writeValue)
   return (Atams::ERROR_NONE);
 }
 
-template Atams::Error_t write<uint8_t >(const uint16_t varID, const uint8_t  writeValue);
-template Atams::Error_t write<int8_t  >(const uint16_t varID, const int8_t   writeValue);
-template Atams::Error_t write<uint16_t>(const uint16_t varID, const uint16_t writeValue);
-template Atams::Error_t write<int16_t >(const uint16_t varID, const int16_t  writeValue);
-template Atams::Error_t write<uint32_t>(const uint16_t varID, const uint32_t writeValue);
-template Atams::Error_t write<int32_t >(const uint16_t varID, const int32_t  writeValue);
-template Atams::Error_t write<float   >(const uint16_t varID, const float    writeValue);
+template Atams::Error_t setVar<uint8_t >(const uint16_t varID, const uint8_t  writeValue);
+template Atams::Error_t setVar<int8_t  >(const uint16_t varID, const int8_t   writeValue);
+template Atams::Error_t setVar<uint16_t>(const uint16_t varID, const uint16_t writeValue);
+template Atams::Error_t setVar<int16_t >(const uint16_t varID, const int16_t  writeValue);
+template Atams::Error_t setVar<uint32_t>(const uint16_t varID, const uint32_t writeValue);
+template Atams::Error_t setVar<int32_t >(const uint16_t varID, const int32_t  writeValue);
+template Atams::Error_t setVar<float   >(const uint16_t varID, const float    writeValue);
 
+/**
+ * @brief Retrieves the value of a variable from the Node's variable storage.
+ *
+ * Reads the value of the specified variable from the Node's variable storage.
+ * The data type @c T must match the type defined for the variable ID in the initialised Memory Map.
+ *
+ * @tparam T        The data type of the variable to retrieve. Must match the type stored for the specified variable ID.
+ * @param varID     The ID of the variable to retrieve.
+ * @param outputRef Reference to a variable where the retrieved value will be stored.
+ *
+ * @retval @c ERROR_NONE     Variable successfully retrieved.
+ * @retval @c ERROR_VAR_ID   The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_VAR_TYPE The data type for the specified variable ID does not match @c T.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 template <typename T>
-Atams::Error_t read(const uint16_t varID, T &outputRef)
+Atams::Error_t getVar(const uint16_t varID, T &outputRef)
 {
   if (varID >= s_validVarCount) return (Atams:: ERROR_VAR_ID); /* Early Return */
 
@@ -999,14 +1035,33 @@ Atams::Error_t read(const uint16_t varID, T &outputRef)
   return (Atams::ERROR_NONE);
 }
 
-template Atams::Error_t read<uint8_t >(const uint16_t varID, uint8_t  &outputRef);
-template Atams::Error_t read<int8_t  >(const uint16_t varID, int8_t   &outputRef);
-template Atams::Error_t read<uint16_t>(const uint16_t varID, uint16_t &outputRef);
-template Atams::Error_t read<int16_t >(const uint16_t varID, int16_t  &outputRef);
-template Atams::Error_t read<uint32_t>(const uint16_t varID, uint32_t &outputRef);
-template Atams::Error_t read<int32_t >(const uint16_t varID, int32_t  &outputRef);
-template Atams::Error_t read<float   >(const uint16_t varID, float    &outputRef);
+template Atams::Error_t getVar<uint8_t >(const uint16_t varID, uint8_t  &outputRef);
+template Atams::Error_t getVar<int8_t  >(const uint16_t varID, int8_t   &outputRef);
+template Atams::Error_t getVar<uint16_t>(const uint16_t varID, uint16_t &outputRef);
+template Atams::Error_t getVar<int16_t >(const uint16_t varID, int16_t  &outputRef);
+template Atams::Error_t getVar<uint32_t>(const uint16_t varID, uint32_t &outputRef);
+template Atams::Error_t getVar<int32_t >(const uint16_t varID, int32_t  &outputRef);
+template Atams::Error_t getVar<float   >(const uint16_t varID, float    &outputRef);
 
+/**
+ * @brief   Performs non-blocking polling and update operations for the Node Communications Core.
+ *
+ * @details Processes incoming and outgoing communication packets, updates the Node's state machine,
+ *          and manages watchdog and pending storage processes. This function should be called regularly
+ *          from the main application loop to maintain Node communications.
+ *
+ * @note    The Node should be initialised before calling this function.
+ *
+ * @note    This function operates in non-blocking mode and returns immediately after processing.
+ *          For blocking operation, use @ref updateCommsBlocking. The recommended call period is
+ *          equal to or less than @c WatchdogHandler::WATCHDOG_UPDATE_PERIOD (1ms) to maintain correct
+ *          operation. More frequent calls improve Node responsiveness and Atams Bus update cycle speed.
+ *
+ * @warning If a storage process is initiated via Bus communications, this function will block while
+ *          the storage process completes. Before this occurs, the application is queried whether it is 
+ *          safe to enter configuration state using @ref Platform::enterConfigurationState. Blocking 
+ *          processes will only occur if the Node is in the configuration state.
+ */
 void updateCommsPolling(void)
 {
   uint32_t currentTime = Platform::getMillis();
@@ -1047,6 +1102,21 @@ void updateCommsPolling(void)
   }
 }
 
+/**
+ * @brief   Performs blocking update operations for the Node Communications Core.
+ *
+ * @details Processes incoming and outgoing communication packets, updates the Node's state machine,
+ *          and manages watchdog and pending storage processes. This function operates in blocking mode, 
+            blocking the calling thread while waiting for a communication event or for the watchdog period
+ *          (@c WatchdogHandler::WATCHDOG_UPDATE_PERIOD, 1ms) to elapse before returning. 
+ *          For non-blocking operation, use @ref updateCommsPolling.
+ *
+ * @note    The Node should be initialised before calling this function.
+ *
+ * @warning If a storage process is initiated via Bus communications, this function will block while
+ *          the storage process completes. Before this occurs, the application is queried whether it is
+ *          safe to enter configuration state using @ref Platform::enterConfigurationState.
+ */
 void updateCommsBlocking(void)
 {
   uint32_t currentTime = Platform::getMillis();
@@ -1087,6 +1157,23 @@ void updateCommsBlocking(void)
   }
 }
 
+/**
+ * @brief   Restores all Node variables to their default values and saves them to non-volatile memory (NVM).
+ *
+ * @details This function resets all variables defined in the Node's Memory Map to their default values,
+ *          then writes the updated values to NVM.
+ *
+ * @retval @c ERROR_NONE              All variables successfully restored and saved to NVM.
+ * @retval @c ERROR_MEMORY_MAP        Memory Map validation failed or is not initialised.
+ * @retval @c ERROR_PLATFORM          Platform-level NVM access failure (erase, write).
+ * @retval @c ERROR_NVM_PLATFORM_SIZE Platform NVM size insufficient for header or data.
+ *
+ * @note    The Node must be initialised and a valid Memory Map must be present before calling this function.
+ *          All user and universal block variables will be reset to their default values as defined in the Memory Map.
+ *
+ * @note    This function will be called automatically by @ref Atams::UniversalBlockManager if the Node is in the configuration
+ *          state and a restore-all process has been triggered via bus communications.
+ */
 Atams::Error_t restoreAll(void)
 {
   Atams::Error_t error = initAllDefaults();
@@ -1096,6 +1183,24 @@ Atams::Error_t restoreAll(void)
   return (error);
 }
 
+/**
+ * @brief   Restores all User Data Block variables to their default values and saves them to non-volatile memory (NVM).
+ *
+ * @details This function resets all User Data Block variables defined in the Node's Memory Map to their default values,
+ *          then writes the updated values to NVM. Universal Block variables are not affected.
+ *
+ * @retval @c ERROR_NONE              All user variables successfully restored and saved to NVM.
+ * @retval @c ERROR_MEMORY_MAP        Memory Map validation failed or is not initialised.
+ * @retval @c ERROR_PLATFORM          Platform-level NVM access failure (erase, write).
+ * @retval @c ERROR_NVM_PLATFORM_SIZE Platform NVM size insufficient for header or data.
+ *
+ * @note    The Node must be initialised and a valid Memory Map must be present before calling this function.
+ *          Only user Data Block variables will be reset to their default values as defined in the Memory Map.
+ *          Universal Block variables remain unchanged.
+ *
+ * @note    This function may be called automatically by @ref Atams::UniversalBlockManager if the Node is in the configuration
+ *          state and a restore-user process has been triggered via bus communications.
+ */
 Atams::Error_t restoreUser(void)
 {
   Atams::Error_t error = getMemoryMapIsValid();
@@ -1107,6 +1212,23 @@ Atams::Error_t restoreUser(void)
   return (error);
 }
 
+/**
+ * @brief   Stores all Node variables to non-volatile memory (NVM).
+ *
+ * @details This function writes the current values of all variables defined in the Node's Memory Map
+ *          to NVM, including both Universal and User Data Block variables. The NVM header and footer
+ *          are constructed and written to ensure data integrity and version tracking.
+ *
+ * @retval @c ERROR_NONE              All variables successfully saved to NVM.
+ * @retval @c ERROR_MEMORY_MAP        Memory Map validation failed or is not initialised.
+ * @retval @c ERROR_PLATFORM          Platform-level NVM access failure (erase, write, flush).
+ * @retval @c ERROR_NVM_PLATFORM_SIZE Platform NVM size insufficient for header or data.
+ *
+ * @note    The Node must be initialised and a valid Memory Map must be present before calling this function.
+ *          All user and universal block variables will be saved to NVM as defined in the Memory Map.
+ *
+ * @warning This function stops communications while the storage process is in progress.
+ */
 Atams::Error_t storeAll(void)
 {
   NVMHeader_t nvmHeader;
@@ -1144,8 +1266,6 @@ Atams::Error_t storeAll(void)
 
   Platform::beginReceive(receiveCallback);
   __enable_irq();
-
-  postStore = true;
 
   return (error);
 }

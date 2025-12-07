@@ -1037,20 +1037,6 @@ void Node::clearInjectedBusError(const Atams::Error_t errorToClear, const uint16
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-template <typename T>
-constexpr Atams::VarType_t Node::getAtamsType(void)
-{
-  if      constexpr (std::is_same<T, uint8_t>::value)  return (Atams::TYPE_UINT8);
-  else if constexpr (std::is_same<T, int8_t>::value)   return (Atams::TYPE_INT8);
-  else if constexpr (std::is_same<T, uint16_t>::value) return (Atams::TYPE_UINT16);
-  else if constexpr (std::is_same<T, int16_t>::value)  return (Atams::TYPE_INT16);
-  else if constexpr (std::is_same<T, uint32_t>::value) return (Atams::TYPE_UINT32);
-  else if constexpr (std::is_same<T, int32_t>::value)  return (Atams::TYPE_INT32);
-  else if constexpr (std::is_same<T, float>::value)    return (Atams::TYPE_FLOAT);
-  else    static_assert(!std::is_same<T, T>::value,   "Invalid type passed to Node::getAtamsType(void)");
-  return (Atams::TYPE_NULL);
-}
-
 template<typename T>
 inline void Node::writeToVarStorage(const T inputVar, Node::Var_t &nodeVar)
 {

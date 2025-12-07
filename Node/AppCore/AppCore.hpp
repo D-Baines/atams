@@ -55,10 +55,10 @@ namespace Atams {
 Atams::Error_t initAppCore(const MemoryMap_t &memoryMap);
 
 template <typename T>
-Atams::Error_t write(const uint16_t varID, const T writeValue);
+Atams::Error_t setVar(const uint16_t varID, const T writeValue);
 
 template <typename T>
-Atams::Error_t read(const uint16_t varID, T &outputRef);
+Atams::Error_t getVar(const uint16_t varID, T &outputRef);
 
 bool getWatchdogFault(void);
 
