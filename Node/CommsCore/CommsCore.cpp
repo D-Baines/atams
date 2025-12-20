@@ -883,8 +883,8 @@ Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap)
  *
  * @details Validates and stores a reference to the provided Memory Map, initialises default variable values,
  *          validates and loads non-volatile memory (NVM) data, and starts the communication peripherals.
- *          This function also synchronises with the Control Core during initialisation and should be called
- *          from the Communications Core at system startup.
+ *          This function also synchronises with the Control Core and will block until the Control Core 
+ *          has successfully completed its initialisation.
  *
  * @param memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
  *
@@ -958,16 +958,17 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
 /**
  * @brief Sets the value of a variable in the Node's variable storage.
  *
- * Writes a value to the specified variable in the Node's variable storage. 
+ * Writes a value to the specified variable in the Node's variable storage in a type-safe manner.
  * The data type @c T must match the type defined for the variable ID in the initialised Memory Map.
  *
  * @tparam T         The data type of the variable to set. Must match the type stored for the specified variable ID.
+ *
  * @param varID      The ID of the variable to set.
  * @param writeValue The value to write to the variable storage.
  *
- * @retval @c ERROR_NONE           Variable successfully set.
- * @retval @c ERROR_VAR_ID         The specified variable ID is out of range for the initialised Memory Map.
- * @retval @c ERROR_VAR_TYPE       The data type for the specified variable ID does not match @c T.
+ * @retval @c ERROR_NONE     Variable successfully set.
+ * @retval @c ERROR_VAR_ID   The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_VAR_TYPE The data type for the specified variable ID does not match @c T.
  *
  * @note The Memory Map must be initialised before calling this function.
  */
@@ -1002,10 +1003,13 @@ template Atams::Error_t setVar<float   >(const uint16_t varID, const float    wr
 /**
  * @brief Retrieves the value of a variable from the Node's variable storage.
  *
- * Reads the value of the specified variable from the Node's variable storage.
+ * Copies the value of the specified variable from the Node's variable storage to the provided 
+ * output reference in a type-safe manner.
+ *
  * The data type @c T must match the type defined for the variable ID in the initialised Memory Map.
  *
  * @tparam T        The data type of the variable to retrieve. Must match the type stored for the specified variable ID.
+ *
  * @param varID     The ID of the variable to retrieve.
  * @param outputRef Reference to a variable where the retrieved value will be stored.
  *

@@ -12,22 +12,22 @@ This document balances style guidelines to keep the codebase consistent, and saf
 
 ### Dynamic Memory Allocation: 
 - **Rule:** Do not use dynamic (heap) memory allocation (`new`, `malloc`, etc.), including standard library containers or functions that allocate memory dynamically (e.g., `vector`, `string`, `map`).
-- **Rationale:** Avoids memory fragmentation, memory leaks, and unpredictable behavior. Improves code predictability and determism.
+- **Rationale:** Avoids memory fragmentation, memory leaks, and unpredictable behavior. Improves code predictability and determinism.
 
 ### Type Punning
 - **Rule:** All type punning shall be performed using std::memcpy. The use of unions or direct use of reinterpret_cast for type punning is prohibited.
 - **Rationale:** The C++ standard only guarantees defined behavior when sharing an object’s representation through std::memcpy (C++17). Type punning through unions or reinterpret_cast is undefined behavior and may result in non-portable code. This applies both to conversions between variables and to interpreting data received from external buffers.
 - **Compliant Example:**
 ```cpp
-float    f = 1.0f;
-uint32_t i;
+float   f = 1.0F;
+int32_t i;
 
 std::memcpy(&i, &f, sizeof(i));
 ```
 
 - **Non-compliant `reinterpret_cast` Example:**
 ```cpp
-float    f = 1.0f;
+float    f = 1.0F;
 uint32_t i = *reinterpret_cast<std::uint32_t*>(&f);
 ```
 
@@ -40,8 +40,10 @@ union U_t
 };
 
 U_t u;
-u.f = 1.0f;
-uint32_t i = u.i;
+
+u.f = 1.0F;
+
+int32_t i = u.i;
 ```
 
 ### Array Declaration and Initialisation
@@ -49,11 +51,11 @@ uint32_t i = u.i;
 - **Rationale:** Explicit or inferred array sizes prevent accidental buffer overruns and clarify intent. Size inference from an initialiser list guarantees full initialisation, while explicit size with no initialiser leaves the array uninitialised. The initial contents of an uninitialised array are not defined by the C++ standard and can often contain undefined values. Explicitly filling such arrays with a known value ensures predictable behaviour and prevents bugs caused by reading uninitialised data.
 - **Example:**
 ```cpp
-static constexpr BUFFER_SIZE {4U};
+constexpr uint8_t BUFFER_SIZE {4U};
 
-// Compliant: Explicit size, uninitialised (must be filled before use)
+// Compliant: Explicit size, uninitialised (but must be filled before access)
 uint8_t buffer[BUFFER_SIZE];
-std::memset(buffer, 0, sizeof(buffer)); 
+std::memset(buffer, 0, sizeof(buffer)); /* Example fill */
 
 // Compliant: Size inferred from initialiser list (fully initialised)
 uint8_t values[] = {0U, 0U, 0U, 0U};
@@ -62,7 +64,7 @@ uint8_t values[] = {0U, 0U, 0U, 0U};
 uint8_t data[]; 
 
 // Non-compliant: Size mismatch between declaration and initialiser list
-uint8_t numbers[BUFFER_SZIE] = {0U, 0U, 0U, 0U, 0U}; 
+uint8_t numbers[BUFFER_SZIE] = {0U, 0U, 0U}; 
 ```
 
 ### Serialising and Deserialising 
@@ -70,12 +72,12 @@ uint8_t numbers[BUFFER_SZIE] = {0U, 0U, 0U, 0U, 0U};
 - **Rationale:** Explicit bit manipulation ensures deterministic layout and handles differences in system endianness automatically. Compiler-dependent padding, alignment, or member ordering in objects can break portability.
 - **Example:**
 ```cpp
-static constexpr uint8_t  CONTAINER_SIZE   = 3U;
-static constexpr uint8_t  ITEM_A_INDEX     = 0U;
-static constexpr uint8_t  ITEMB_LO_INDEX   = 1U;
-static constexpr uint8_t  ITEMB_HI_INDEX   = 2U;
-static constexpr uint16_t ITEMB_BYTE_MASK  = 0xFFU;
-static constexpr uint8_t  ITEMB_BYTE_SHIFT = 8U;
+constexpr uint8_t  CONTAINER_SIZE   = 3U;
+constexpr uint8_t  ITEM_A_INDEX     = 0U;
+constexpr uint8_t  ITEMB_LO_INDEX   = 1U;
+constexpr uint8_t  ITEMB_HI_INDEX   = 2U;
+constexpr uint16_t ITEMB_BYTE_MASK  = 0xFFU;
+constexpr uint8_t  ITEMB_BYTE_SHIFT = 8U;
 
 struct Container_t
 {
@@ -126,16 +128,25 @@ static_assert(std::numeric_limits<float>::is_iec559, "Platform float representat
 ```
 
 ### Integer Literals
-- **Rule:** Use the `U` suffix for all unsigned integer literals up to `uint32_t`, including `uint8_t` and `uint16_t`. The use of unsigned types larger than `uint32_t` is to be discouraged.
+- **Rule:** Use a capital `U` suffix for all unsigned integer literals up to `uint32_t`, including `uint8_t` and `uint16_t`. The use of unsigned types larger than `uint32_t` is to be discouraged.
 - **Rationale:** Using the `U` suffix ensures that unsigned literals are explicit and consistent. The `U` suffix yields an `unsigned int`, which safely converts to `uint8_t`, `uint16_t`, and `uint32_t` on 32 bit or larger targets. Narrowing conversions to smaller widths are intentional and safe when using brace-initialization. `int64_t`, `uint64_t`, and `double` are not compatible with Atams communications and are currently not used in developer code. Suffixes for these types may be included in future guidelines.
 
 ### Float Literals
-- **Rule:** All float literals must include the decimal and use the `F` suffix (e.g., `1.0F`).  
+- **Rule:** All float literals must include the decimal and use a capital `F` suffix (e.g., `1.0F`).  
 - **Rationale:** Ensures the literal is explicitly a float and prevents accidental interpretation as an integer or implicit conversion from double.
 
 ### Variable Initialisation
 - **Rule:** Always intitialise variables using brace-initialisation `{}`.  
 - **Rationale:** Ensures compile-time checks catch accidental narrowing conversions, wrap-around, and overflow conditions.
+- **Example:**
+```cpp
+// Non-compliant
+uint8_t testVar = 15U;
+
+// Compliant
+uint8_t testVar {15U};
+```
+
 - **Compile-time Warning Examples:**
 ```cpp
 uint8_t testVar1 {300U};      // ! narrowing conversion from unsigned int to uint8_t
@@ -185,7 +196,7 @@ uint8_t ***ptr3 = &ptr2;  // Non-compliant: more than two levels of indirection
 ```
 
 ### Dereferencing Pointers
-- **Rule:** A pointer must be checked for nullptr before it is dereferenced, whether accessing the value it points to or passing the pointed-to object to another function.
+- **Rule:** A pointer must be checked for nullptr before it is dereferenced, whether accessing the value it points to or passing the pointed-to object by reference to another function.
 - **Rationale:** Prevents invalid memory access by ensuring pointers are not nullptr before dereferencing.
 - **Example:** 
 ```cpp
@@ -196,21 +207,15 @@ struct Data_t
 
 void processData(Data_t *inputPtr)
 {
-
   if (dataPtr == nullptr)
   {
-    return;
+    return; // Nullptr guard clause return
   }
   
-  //Compliant: Both methods of dereferencing safe after nullptr check
+  // Compliant: Both methods of dereferencing safe after nullptr check
   Data_t  localCopy = *inputPtr;   // Direct dereference
   uint8_t value     = inputPtr->x; // Member access via pointer
 }
-
-// Usage example:
-Data_t  data;
-Data_t* dataPtr = &data;
-processData(dataPtr);
 ```
 
 ### Nullptr
@@ -269,7 +274,7 @@ struct Counter_t
 
 ### Public Class Variables
 - **Rule:** Non-constant public member variables shall not be used. Setters and getters of private variables should be defined instead for more tightly specified object interactions.
-- **Rationale:** Clarifies expected class usage and concurrency locks can be encapsulated in setter/getter functions to avoid race conditions where appropriate.
+- **Rationale:** Clarifies expected class usage, and concurrency locks can be encapsulated in setter/getter functions to avoid race conditions.
 
 ### Operator Overloading
 - **Rule:** Overloads must be obvious & complete.  
@@ -299,6 +304,10 @@ struct Data_t
 ### Derived Class Virtual Functions
 - **Rule:** Overriding virtual functions in derived classes must be declared using the `virtual` keyword and marked with `override`.
 - **Rationale:** Marks intent, improves code clarity, and allows the compiler to catch accidental non-overrides.
+- **Examle:**
+```cpp
+virtual void functionToOverride override;
+```
 
 ### Virtual Function Chains
 - **Rule:** Limit virtual overrides to one level where possible. Mark overriding virtual functions with `final` to prevent further accidental overriding.
@@ -391,8 +400,8 @@ void readBuffer(const uint8_t * const ptr);
 
 ### Pointer Function Arguments
 - **Rule:** Functions with pointers arguments must check whether the pointer arguments are nullptr at the start of the function.
-- **Exception:** If nullptr checks should be performed by the calling functions to avoid repetitice checks and improve speed, the function should be commented with a warning.
-- **Rationale:**
+- **Exception:** If nullptr checks should be performed by the calling functions to avoid repetitive checks and improve efficiency, the function should be commented with a warning.
+- **Rationale:** 
 - **Example:**
 
 ### Unused Function Arguments
@@ -438,10 +447,10 @@ void serialiseToBuffer(const T& value, uint8_t &buffer[BUFFER_SIZE]);
   std::memcpy(buffer, &value, sizeof(T));
 }
 
-template void serialiseToBuffer<uint16_t>(const uint8_t&,  uint8_t &buffer[BUFFER_SIZE]);
-template void serialiseToBuffer<uint16_t>(const int8_t&,   uint8_t &buffer[BUFFER_SIZE]);
+template void serialiseToBuffer<uint8_t> (const uint8_t&,  uint8_t &buffer[BUFFER_SIZE]);
+template void serialiseToBuffer<int8_t>  (const int8_t&,   uint8_t &buffer[BUFFER_SIZE]);
 template void serialiseToBuffer<uint16_t>(const uint16_t&, uint8_t &buffer[BUFFER_SIZE]);
-template void serialiseToBuffer<uint16_t>(const int16_t&,  uint8_t &buffer[BUFFER_SIZE]);
+template void serialiseToBuffer<int16_t> (const int16_t&,  uint8_t &buffer[BUFFER_SIZE]);
 
 // Usage
 uint8_t buffer[BUFFER_SIZE];
@@ -511,7 +520,7 @@ enum VarID_t : uint8_t
 
 } } }; /* End Namespace - Atams::MapExample::BlockExample */
 
-// Allowed in a source file or function:
+// Allowed in a .cpp source file or function:
 using namespace Atams::MapExample;
 
 uint8_t varID = BlockExample::VAR_EXAMPLE;
@@ -573,21 +582,19 @@ enum class Item : uint8_t
   BAR = 1U, 
 };
 
-uint8_t data {1U};
+Item i {static_cast<Item>(1U)}; // Non-compliant: casting to class enum is prohibited
 
-Item item = static_cast<Item>(data); // Non-compliant: casting to class enum is prohibited
-
-Item item = Item::BAR;               // Compliant: Explicit type usage
+Item i {Item::BAR};             // Compliant: Explicit type usage
 ```
 
 ### Non-Class Enum Function Arguments
 - **Rule:** Where a non-class enum is used as a function argument, the value of it must be range checked at the start of the function definition.
-- **Rationale:** Non-class enums can be implicitly converted from integers, which may result in invalid values being passed to functions. Range checkin at the start of the function ensures only valid enum values are used for the remainder of the function logic.
+- **Rationale:** Non-class enums can be implicitly converted from integers, which may result in invalid values being passed to functions. Range checking at the start of the function ensures only valid enum values are used for the remainder of the function logic.
 ```cpp
 enum CellID_t : uint8_t 
 { 
-  FOO             = 0U, 
-  BAR             = 1U, 
+  FOO = 0U, 
+  BAR = 1U, 
   NUMBER_OF_CELLS 
 };
 
@@ -597,7 +604,7 @@ void setCellValue(CellID_t cellID, uint8_t value)
 {
   if (cellID >= NUMBER_OF_CELLS)
   {
-    //Handle invalid cell ID
+    // Handle invalid cell ID
     return;
   }
 
@@ -607,7 +614,7 @@ void setCellValue(CellID_t cellID, uint8_t value)
 ```
 
 ## 9. Switch Statements
-- **Rule:** All switch statements must include a `default` case. If it is safe for the `default` cause to perform no actions, a `/* Do Nothing */` comment must be added to the body of the case. The `default` case should handle errors correctly if doing nothing is not appropriate.
+- **Rule:** All switch statements must include a `default` case. If it is safe for the `default` case to perform no action, a `/* Do Nothing */` comment must be added to the body of the case. The `default` case should handle errors correctly if doing nothing is not appropriate.
 - **Rationale:**  Including a default case ensures all possible values are handled, making the code robust to future changes, and clarifying developer intent for unhandled or unexpected cases.
 - **Example:**
 ```cpp
@@ -633,8 +640,12 @@ switch (condition)
   case CONDITION_B:
     foo();
     break;
-  case CONDITION_C:
-    bar();                              // Non-compliant: missing break
+  case CONDITION_C:                     // Non-compliant
+    bar();                              
+    /* Fall-through */                 
+  case CONDITION_D:                     // Non-compliant
+    foo();
+    bar();
   default:
     handleError();
     break;
@@ -649,7 +660,7 @@ switch (condition)
 
 ### Namespace Indentation
 - **Rule:** Namespace contents should not be indented.
-- **Rationale:** As Atams namespaces are file wide, this avoids having the majority of files contents having to be indented.
+- **Rationale:** As Atams namespaces are file wide, this avoids having the majority of file contents indented.
 
 ### Switch Statements
 
@@ -694,12 +705,12 @@ if ((shortConditionA  && shortConditionB ) ||
   foo();
 }
 
-(((datagramHeader.command << DATAGRAM_HEADER_SHIFT_COMMAND) & DATAGRAM_HEADER_MASK_COMMAND) |
- ((datagramHeader.varID  >> DATAGRAM_HEADER_SHIFT_VAR_ID_HI) & DATAGRAM_HEADER_MASK_VAR_ID_HI))
+(((datagramHeader.command << DATAGRAM_HEADER_SHIFT_COMMAND  ) & DATAGRAM_HEADER_MASK_COMMAND  ) |
+ ((datagramHeader.varID   >> DATAGRAM_HEADER_SHIFT_VAR_ID_HI) & DATAGRAM_HEADER_MASK_VAR_ID_HI) )
 ```
 
 ### `return` statements
-- **Rule:** The value of a `return` statement must be bracketed `()`.  
+- **Rule:** The value of a `return` statement must be bracketed.  
 
 - **Example:**
 ```cpp
@@ -714,10 +725,13 @@ return (result); // Compliant
 ```cpp
 if (condition) foo(); /* Compliant */
 
-if (condition)
-{                     /* Compliant */
+if (condition)        /* Compliant */
+{                     
   foo();             
 }
+
+if (condition)        /* Non-compliant */
+  foo();
 
 if (condition) {      /* Non-compliant */
   foo();              
@@ -750,7 +764,7 @@ else if (conditionB) /* Compliant */
 
 
 ## 12. Naming and Name Format Conventions
-Minimal prefix/suffix definitions keep codebase cleaner. Prefixes for member and static variables alert programmers to potential out-of-function-scope effects. Global variables and public class variables are to be avoided entirely in the Atams codebase (const memoryMap exluded).
+Minimal prefix/suffix definitions keep codebase cleaner. Prefixes for member and static variables alert programmers to potential out-of-function-scope effects. Multi-file scope global variables and public class variables are to be avoided entirely in the Atams codebase (excluding constant memoryMap globals).
 
 ### Naming
 - **Rule:** Naming should provide context. Single character and overly shorted names should not be used.
@@ -767,17 +781,22 @@ uint8_t cnt(void);          // Non-compliant: Excessive abbreviation
 ```
 
 ### Variables Name Format
+camelCase
 
 ### Class Name Format
+ThisCase
 
 ### File Name Format
+ThisCase
 
-### Constant Name Format
+### Constexpr Name Format
+THIS_CASE
 
 ### Class Enum Name Format
+This
 
 ### Non-class Enum Name Format
-
+This_t
 
 ## 13. Error Handling
 
@@ -821,7 +840,7 @@ uint8_t cnt(void);          // Non-compliant: Excessive abbreviation
 #include <stdint.h>
 #include <string.h>
 
-#include "AtamsProjectFile.hpp"
+#include "OtherProjectFile.hpp"
 ```
 
 ## Init Orders

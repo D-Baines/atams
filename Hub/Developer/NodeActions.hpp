@@ -243,8 +243,10 @@ class NodeActions
   /*-- Private Helper Struct Declarations -------------------------------------------*/
 
   template <typename T>
-  struct ProcessHandler
+  class ProcessHandler
   {
+    public:
+    
     ProcessHandler(void)  = default;
     ~ProcessHandler(void) = default;
     ProcessHandler(const ProcessHandler &other)             = delete;

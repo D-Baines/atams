@@ -123,6 +123,23 @@ static void syncWithCommsCoreInit(void)
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
+/**
+ * @brief   Initialises the Node Application Core for dual-core platforms.
+ *
+ * @details Validates and stores a reference to the provided Memory Map, then synchronises with the Communications Core. 
+ *          This function must be called from the Application Core at system startup before accessing any Node variables.
+ *
+ * @param memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
+ *   
+ * @retval @c ERROR_NONE       Initialisation successful.
+ * @retval @c ERROR_MEMORY_MAP Memory Map validation failed (invalid structure, length, universal block, or checksum).
+ *
+ * @note    This function does not initialise variable values or NVM data; it only validates the Memory Map and synchronises
+ *          with the Communications Core. Variable and NVM initialisation are handled by the Communications Core.
+ *          Once this function returns, see value of BlockUniversal::VAR_STORAGE_STATUS for NVM initialisation status.
+ *          
+ * @warning This function will block until the Communications Core has successfully completed its initialisation.
+ */
 Atams::Error_t initAppCore(const MemoryMap_t &memoryMap)
 {
   Atams::Error_t initStatus = validateMemoryMap(memoryMap, Platform::NODE_NUMBER_OF_VARS);
@@ -142,6 +159,23 @@ Atams::Error_t initAppCore(const MemoryMap_t &memoryMap)
   return (initStatus);
 }
 
+/**
+ * @brief Sets the value of a variable in the Node's variable storage.
+ *
+ * Writes a value to the specified variable in the Node's variable storage in a type-safe manner.
+ * The data type @c T must match the type defined for the variable ID in the initialised Memory Map.
+ *
+ * @tparam T         The data type of the variable to set. Must match the type stored for the specified variable ID.
+ *
+ * @param varID      The ID of the variable to set.
+ * @param writeValue The value to write to the variable storage.
+ *
+ * @retval @c ERROR_NONE     Variable successfully set.
+ * @retval @c ERROR_VAR_ID   The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_VAR_TYPE The data type for the specified variable ID does not match @c T.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 template <typename T>
 Atams::Error_t setVar(const uint16_t varID, const T writeValue)
 {
@@ -170,6 +204,25 @@ template Atams::Error_t setVar<uint32_t>(const uint16_t varID, const uint32_t wr
 template Atams::Error_t setVar<int32_t >(const uint16_t varID, const int32_t  writeValue);
 template Atams::Error_t setVar<float   >(const uint16_t varID, const float    writeValue);
 
+/**
+ * @brief Retrieves the value of a variable from the Node's variable storage.
+ *
+ * Copies the value of the specified variable from the Node's variable storage to the provided 
+ * output reference in a type-safe manner.
+ *
+ * The data type @c T must match the type defined for the variable ID in the initialised Memory Map.
+ *
+ * @tparam T        The data type of the variable to retrieve. Must match the type stored for the specified variable ID.
+ *
+ * @param varID     The ID of the variable to retrieve.
+ * @param outputRef Reference to a variable where the retrieved value will be stored.
+ *
+ * @retval @c ERROR_NONE     Variable successfully retrieved.
+ * @retval @c ERROR_VAR_ID   The specified variable ID is out of range for the initialised Memory Map.
+ * @retval @c ERROR_VAR_TYPE The data type for the specified variable ID does not match @c T.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
 template <typename T>
 Atams::Error_t getVar(const uint16_t varID, T &outputRef)
 {
