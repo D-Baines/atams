@@ -849,33 +849,31 @@ static bool allCommsTransmissionsComplete(void)
 /**
  * @brief   Initialise the Node for single core platforms.
  *
- * @details Validates and stores a reference to the provided Memory Map, initialises default variable values, 
+ * @details Validates and stores a reference to the provided Memory Map, initialises default variable values,
  *          validates and loads non-volatile memory (NVM) data, and starts the communication peripherals.
+ *          The result of the NVM validation and load process is reported via the @p nvmError output parameter.
  *
- * @param memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
+ * @param      memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
+ * @param[out] nvmError  Reference to an @c Atams::Error_t variable. On return, this will contain the result of the NVM
+ *                       validation and load process. If @c ERROR_NONE, all NVM validation and load operations succeeded.
+ *                       If set to @c ERROR_NVM_USER_BLOCKS_INVALID, only Universal Block variables were restored from NVM;
+ *                       User Data Block variables were not restored. Any other error indicates a platform or NVM validation
+ *                       failure.
  *
- * @retval @c ERROR_NONE                    Initialisation successful.
- * @retval @c ERROR_MEMORY_MAP              Memory Map validation failed (invalid structure, length, universal block, or checksum).
- * @retval @c ERROR_ATAMS_VERSION_MISMATCH  Memory Map validation failed (Atams version mismatch).
- * @retval @c ERROR_PLATFORM                Platform-level NVM access failure (read/write/erase/flush).
- * @retval @c ERROR_NVM_HEADER_VALIDITY     NVM header/footer identifier invalid.
- * @retval @c ERROR_NVM_HEADER_LENGTH       NVM header length exceeds platform NVM size.
- * @retval @c ERROR_NVM_PLATFORM_SIZE       Platform NVM size insufficient for header.
- * @retval @c ERROR_NVM_CHECKSUM            NVM checksum mismatch.
- * @retval @c ERROR_GEN_INFO_MISMATCH       Atams version major/minor mismatch.
- * @retval @c ERROR_NVM_USER_BLOCKS_INVALID User blocks in NVM are invalid; only universal block loaded.
+ * @retval @c ERROR_NONE                   Initialisation successful; Node is ready for operation.
+ * @retval @c ERROR_MEMORY_MAP             Memory Map validation failed (Invalid structure, length, universal block, or checksum).
+ * @retval @c ERROR_ATAMS_VERSION_MISMATCH Memory Map validation failed (Atams version mismatch).
  *
- * @warning If @c ERROR_NVM_USER_BLOCKS_INVALID is returned, initialisation is otherwise complete and the node is operational, 
- *          but user Data Block variables were not restored from NVM. See value of BlockUniversal::VAR_STORAGE_STATUS for details. 
- *          Only Universal Block variables are restored. Application logic should check for this and handle accordingly.
+ * @warning It is recommended to check the value of the @p nvmError output parameter after calling this function. 
+ *          See param details above.
  *
- * @note This function must be called before accessing variables or changing request patterns on the Node.
+ * @note    This function must be called before accessing any Node variables.
  */
-Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap)
+Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmError)
 {
   s_appCoreInitRequired = false;
 
-  return (initCommsCore(memoryMap));
+  return (initCommsCore(memoryMap, nvmError));
 }
 
 /**
@@ -883,35 +881,31 @@ Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap)
  *
  * @details Validates and stores a reference to the provided Memory Map, initialises default variable values,
  *          validates and loads non-volatile memory (NVM) data, and starts the communication peripherals.
+ *          The result of the NVM validation and load process is reported via the @p nvmError output parameter.
  *          This function also synchronises with the Control Core and will block until the Control Core 
  *          has successfully completed its initialisation.
  *
- * @param memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
+ * @param      memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
+ * @param[out] nvmError  Reference to an @c Atams::Error_t variable. On return, this will contain the result of the NVM
+ *                       validation and load process. If @c ERROR_NONE, all NVM validation and load operations succeeded. 
+ *                       If set to @c ERROR_NVM_USER_BLOCKS_INVALID, only Universal Block variables were restored from NVM;
+ *                       User Data Block variables were not restored. Any other error indicates a platform or NVM validation
+ *                       failure.
  *
- * @retval @c ERROR_NONE                    Initialisation successful.
- * @retval @c ERROR_MEMORY_MAP              Memory Map validation failed (invalid structure, length, universal block, or checksum).
- * @retval @c ERROR_ATAMS_VERSION_MISMATCH  Memory Map validation failed (Atams version mismatch).
- * @retval @c ERROR_PLATFORM                Platform-level NVM access failure (read/write/erase).
- * @retval @c ERROR_NVM_HEADER_VALIDITY     NVM header/footer identifier invalid.
- * @retval @c ERROR_NVM_HEADER_LENGTH       NVM header length exceeds platform NVM size.
- * @retval @c ERROR_NVM_PLATFORM_SIZE       Platform NVM size insufficient for header.
- * @retval @c ERROR_NVM_CHECKSUM            NVM checksum mismatch.
- * @retval @c ERROR_GEN_INFO_MISMATCH       Atams version major/minor mismatch.
- * @retval @c ERROR_NVM_USER_BLOCKS_INVALID User blocks in NVM are invalid; only universal block loaded.
+ * @retval @c ERROR_NONE                   Initialisation successful; Node is ready for operation.
+ * @retval @c ERROR_MEMORY_MAP             Memory Map validation failed (Invalid structure, length, universal block, or checksum).
+ * @retval @c ERROR_ATAMS_VERSION_MISMATCH Memory Map validation failed (Atams version mismatch).
  *
- * @warning If @c ERROR_NVM_USER_BLOCKS_INVALID is returned, initialisation is otherwise complete and the Node is operational, 
- *          but User Data Block variables were not restored from NVM. See value of BlockUniversal::VAR_STORAGE_STATUS for details. 
- *          Only Universal Block variables are restored. Application logic should check for this and handle accordingly.
+ * @warning It is recommended to check the value of the @p nvmError output parameter after calling this function. 
+ *          See param details above.
  *
- * @warning This function must be called before accessing any Node variables.
- *
+ * @note    This function must be called before accessing any Node variables.
  */
-Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
+Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmError)
 {
   if (s_appCoreInitRequired) waitForControlCoreInit();
 
   Atams::Error_t error    = Atams::validateMemoryMap(memoryMap, Platform::NODE_NUMBER_OF_VARS);
-  Atams::Error_t nvmError = Atams::ERROR_NONE;
 
   if (!error)
   {

@@ -53,9 +53,9 @@ namespace Atams {
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap);
+Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmError);
 
-Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap);
+Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmError);
 
 template <typename T>
 Atams::Error_t setVar(const uint16_t varID, const T writeValue);
