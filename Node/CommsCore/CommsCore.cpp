@@ -1232,7 +1232,6 @@ Atams::Error_t storeAll(void)
   if (getMemoryMapIsValid() != Atams::ERROR_NONE) return (Atams::ERROR_MEMORY_MAP); /* Early Return */
 
   Platform::stopReceive();
-  __disable_irq();
 
   const uint32_t requiredNVMVarSpace = getNVMVarSpaceRequirement();
   const uint32_t requiredNVMSpace    = sizeof(NVMHeader_t) + requiredNVMVarSpace + sizeof(NVMFooter_t);
@@ -1261,7 +1260,6 @@ Atams::Error_t storeAll(void)
   }
 
   Platform::beginReceive(receiveCallback);
-  __enable_irq();
 
   return (error);
 }
