@@ -804,8 +804,8 @@ static Atams::Error_t validateNVMGenInfo(const NVMHeader_t &nvmHeader)
 
 static Atams::Error_t initNVM(void)
 {
-  NVMHeader_t    nvmHeader;
-  NVMFooter_t    nvmFooter;
+  NVMHeader_t nvmHeader;
+  NVMFooter_t nvmFooter;
 
   Atams::Error_t error = getMemoryMapIsValid();
 
@@ -923,11 +923,11 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
   if (!error) error    = initAllDefaults();
   if (!error) nvmError = initNVM();
 
-  error = ((nvmError == Atams::ERROR_NVM_USER_BLOCKS_INVALID) ? Atams::ERROR_NONE : nvmError);
-
-  if (error != Atams::ERROR_NONE)
+  if ((nvmError != Atams::ERROR_NONE                   ) &&
+      (nvmError != Atams::ERROR_NVM_USER_BLOCKS_INVALID) )
   {
     resetVars();
+    s_uniBlockManager.notifyStorageProcessComplete(nvmError);
     error = initAllDefaults();
   }
 
@@ -942,8 +942,6 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap)
     initCommsBuffers();
 
     signalCommsCoreInitComplete();
-
-    if (nvmError == Atams::ERROR_NVM_USER_BLOCKS_INVALID) error = nvmError;
 
     s_nodeCommsState = Atams::NODE_STATE_INITIALISED;
   }

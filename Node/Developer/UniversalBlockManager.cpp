@@ -73,7 +73,7 @@ configPasscodeCheckers_
   },
   /* [PROCESS_ID_RESET_NODE] = */
   {
-    /* .passcodeVarID    = */ BlockUniversal::VAR_RESTORE_ALL,
+    /* .passcodeVarID    = */ BlockUniversal::VAR_RESET_NODE,
     /* .requiredPasscode = */ Atams::RESET_NODE_PASSCODE,
     /* .passcode         = */ 0U,
     /* .prevPasscode     = */ 0U,
@@ -117,7 +117,7 @@ UniversalBlockManager::ProcessID_t UniversalBlockManager::update(void)
       break;
   }
 
-  static_cast<void>(Atams::write(BlockUniversal::VAR_CONFIGURATION_STATUS,
+  static_cast<void>(Atams::setVar(BlockUniversal::VAR_CONFIGURATION_STATUS,
                     static_cast<uint8_t>(configurationState_)));
 
   return (pendingProcessID_);
@@ -161,7 +161,7 @@ void UniversalBlockManager::processRead(const uint16_t varID)
   switch (varID)
   {
     case BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE:
-      static_cast<void>(Atams::write(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE,
+      static_cast<void>(Atams::setVar(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE,
                                      static_cast<uint8_t>(Atams::ATAMS_FALSE)));
       break;
     default:
@@ -204,7 +204,7 @@ void UniversalBlockManager::checkConfigurationStateEntry(void)
     return; /* Early Return */
   }
 
-  static_cast<void>(Atams::read(BlockUniversal::VAR_CONFIGURATION_PASSKEY, configStatePasskey));
+  static_cast<void>(Atams::getVar(BlockUniversal::VAR_CONFIGURATION_PASSKEY, configStatePasskey));
 
   if ((configStatePasskey     == Atams::CONFIGURATION_PASSKEY_ACCESS) &&
       (prevConfigStatePasskey != Atams::CONFIGURATION_PASSKEY_ACCESS) )
@@ -229,7 +229,7 @@ void UniversalBlockManager::checkConfigurationStateExit(void)
     return; /* Early Return */
   }
 
-  static_cast<void>(Atams::read(BlockUniversal::VAR_CONFIGURATION_PASSKEY, configStatePasskey));
+  static_cast<void>(Atams::getVar(BlockUniversal::VAR_CONFIGURATION_PASSKEY, configStatePasskey));
 
   if (configStatePasskey == Atams::CONFIGURATION_PASSKEY_APPLY)
   {
@@ -251,7 +251,7 @@ void UniversalBlockManager::checkConfigurationPasscodes(void)
   {
     PasscodeChecker_t &checker = configPasscodeCheckers_[processIndex];
 
-    static_cast<void>(Atams::read(checker.passcodeVarID, checker.passcode));
+    static_cast<void>(Atams::getVar(checker.passcodeVarID, checker.passcode));
 
     if ((checker.passcode     == checker.requiredPasscode) &&
         (checker.prevPasscode != checker.requiredPasscode) )
@@ -267,12 +267,12 @@ void UniversalBlockManager::applyUniversalConfiguration(void)
 {
   uint32_t watchdogPeriod = WatchdogHandler::MINIMUM_VALID_WATCHDOG_PERIOD;
 
-  static_cast<void>(Atams::read(BlockUniversal::VAR_NODE_ID,          localNodeID_));
-  static_cast<void>(Atams::read(BlockUniversal::VAR_FIRST_NODE_ID,    firstSyncNodeID_));
-  static_cast<void>(Atams::read(BlockUniversal::VAR_PREVIOUS_NODE_ID, prevSyncNodeID_));
-  static_cast<void>(Atams::read(BlockUniversal::VAR_LAST_NODE_ID,     finalSyncNodeID_));
-  static_cast<void>(Atams::read(BlockUniversal::VAR_BITRATE,          bitrateOption_));
-  static_cast<void>(Atams::read(BlockUniversal::VAR_WATCHDOG_PERIOD,  watchdogPeriod));
+  static_cast<void>(Atams::getVar(BlockUniversal::VAR_NODE_ID,          localNodeID_));
+  static_cast<void>(Atams::getVar(BlockUniversal::VAR_FIRST_NODE_ID,    firstSyncNodeID_));
+  static_cast<void>(Atams::getVar(BlockUniversal::VAR_PREVIOUS_NODE_ID, prevSyncNodeID_));
+  static_cast<void>(Atams::getVar(BlockUniversal::VAR_LAST_NODE_ID,     finalSyncNodeID_));
+  static_cast<void>(Atams::getVar(BlockUniversal::VAR_BITRATE,          bitrateOption_));
+  static_cast<void>(Atams::getVar(BlockUniversal::VAR_WATCHDOG_PERIOD,  watchdogPeriod));
 
   Platform::setBitrate(static_cast<Atams::BitrateOption_t>(bitrateOption_));
 
@@ -283,18 +283,18 @@ void UniversalBlockManager::cancelConfigurationValueChange(void)
 {
   uint32_t watchdogPeriod = watchdogHandler_.getWatchdogPeriod();
 
-  static_cast<void>(Atams::write(BlockUniversal::VAR_NODE_ID,          localNodeID_));
-  static_cast<void>(Atams::write(BlockUniversal::VAR_FIRST_NODE_ID,    firstSyncNodeID_));
-  static_cast<void>(Atams::write(BlockUniversal::VAR_PREVIOUS_NODE_ID, prevSyncNodeID_));
-  static_cast<void>(Atams::write(BlockUniversal::VAR_LAST_NODE_ID,     finalSyncNodeID_));
-  static_cast<void>(Atams::write(BlockUniversal::VAR_BITRATE,          bitrateOption_));
-  static_cast<void>(Atams::write(BlockUniversal::VAR_WATCHDOG_PERIOD,  watchdogPeriod));
+  static_cast<void>(Atams::setVar(BlockUniversal::VAR_NODE_ID,          localNodeID_));
+  static_cast<void>(Atams::setVar(BlockUniversal::VAR_FIRST_NODE_ID,    firstSyncNodeID_));
+  static_cast<void>(Atams::setVar(BlockUniversal::VAR_PREVIOUS_NODE_ID, prevSyncNodeID_));
+  static_cast<void>(Atams::setVar(BlockUniversal::VAR_LAST_NODE_ID,     finalSyncNodeID_));
+  static_cast<void>(Atams::setVar(BlockUniversal::VAR_BITRATE,          bitrateOption_));
+  static_cast<void>(Atams::setVar(BlockUniversal::VAR_WATCHDOG_PERIOD,  watchdogPeriod));
 }
 
 void UniversalBlockManager::notifyStorageProcessComplete(Atams::Error_t processStatus)
 {
-  static_cast<void>(Atams::write(BlockUniversal::VAR_STORAGE_STATUS,           static_cast<uint8_t>(processStatus)));
-  static_cast<void>(Atams::write(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE, static_cast<uint8_t>(ATAMS_TRUE)));
+  static_cast<void>(Atams::setVar(BlockUniversal::VAR_STORAGE_STATUS,           static_cast<uint8_t>(processStatus)));
+  static_cast<void>(Atams::setVar(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE, static_cast<uint8_t>(ATAMS_TRUE)));
 }
 
 
