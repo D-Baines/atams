@@ -29,7 +29,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "../Platform.hpp"
+#include "FramingConstants.hpp"
 #include "../../Shared/AtamsTypedefs.hpp"
 
 /***************************************************************************/

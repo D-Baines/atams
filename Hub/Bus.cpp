@@ -243,15 +243,15 @@ Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
 {
   Bus::ProcessHandler<Bus::InitState> &process         {initProcessHandler_};
   Atams::ProcessState                 &processState    {process.processState};
-  Atams::Error_t                       cycleError      {Atams::ERROR_NONE};
   Atams::ProcessState                 &subProcessState {process.subProcessState};
   Bus::InitState                      &initState       {process.specificState};
+  Atams::Error_t                       cycleError      {Atams::ERROR_NONE};
   bool                                 dataIsValid     {false}; 
   Atams::Node                        *&initNodePtr     {process.activeNodePtr};
 
   if (initNodePtr == nullptr) 
   {
-    process.terminate(Atams::ERROR_NULLPTR);
+    process.terminate(Atams::ERROR_INIT_ORDER);
     error = process.error;
     return (processState);
   }
@@ -557,7 +557,7 @@ Atams::ProcessState Bus::runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::
   //Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
 
   Platform::BusPeripheral::update();
-   
+  
   switch (updateState)
   {
     case Bus::UpdateState::SEND_REQUESTS:

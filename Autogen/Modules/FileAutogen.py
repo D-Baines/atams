@@ -181,7 +181,7 @@ def generateInitUniversalMapInfo(targetFile: TextIO) -> None:
   varIterator = 0
   for varID in universalvarsToSet:
     variableName = variableNames[varIterator]
-    targetFile.write("  if (!error) error = Atams::write(BlockUniversal::VAR_"+varID+", ")
+    targetFile.write("  if (!error) error = Atams::setVar(BlockUniversal::VAR_"+varID+", ")
     targetFile.write("s_genInfo."+variableName+");\n")
     varIterator += 1
   targetFile.seek(targetFile.tell()-1)
@@ -203,7 +203,7 @@ def generateInitDefaultsDefinition(dataBlockNamesCamel: List[str],
       varIndex += 1
     for varID in varsWithDefaults:
       varIDCaps = varID.replace(" ", "_").upper()
-      targetFile.write("  if (!error) error = Atams::write(Block"+blockNameCamel+"::VAR_" +varIDCaps+", ")
+      targetFile.write("  if (!error) error = Atams::setVar(Block"+blockNameCamel+"::VAR_" +varIDCaps+", ")
       targetFile.write("Block"+blockNameCamel+"::DEFAULT_"+varIDCaps+");\n")
     blockIndex +=1
   targetFile.seek(targetFile.tell()-1)

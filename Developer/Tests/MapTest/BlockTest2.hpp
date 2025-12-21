@@ -63,22 +63,22 @@ enum VarID_t: uint16_t
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-inline constexpr uint16_t NUMBER_OF_VARS {14U};
+constexpr uint16_t NUMBER_OF_VARS {14U};
 
-inline constexpr uint8_t  DEFAULT_READ_UINT8   {0U};
-inline constexpr int8_t   DEFAULT_READ_INT8    {1};
-inline constexpr uint16_t DEFAULT_READ_UINT16  {2U};
-inline constexpr int16_t  DEFAULT_READ_INT16   {3};
-inline constexpr uint32_t DEFAULT_READ_UINT32  {4U};
-inline constexpr int32_t  DEFAULT_READ_INT32   {5};
-inline constexpr float    DEFAULT_READ_FLOAT   {6.0F};
-inline constexpr uint8_t  DEFAULT_WRITE_UINT8  {7U};
-inline constexpr int8_t   DEFAULT_WRITE_INT8   {8};
-inline constexpr uint16_t DEFAULT_WRITE_UINT16 {9U};
-inline constexpr int16_t  DEFAULT_WRITE_INT16  {10};
-inline constexpr uint32_t DEFAULT_WRITE_UINT32 {11U};
-inline constexpr int32_t  DEFAULT_WRITE_INT32  {12};
-inline constexpr float    DEFAULT_WRITE_FLOAT  {13.0F};
+constexpr uint8_t  DEFAULT_READ_UINT8   {0U};
+constexpr int8_t   DEFAULT_READ_INT8    {1};
+constexpr uint16_t DEFAULT_READ_UINT16  {2U};
+constexpr int16_t  DEFAULT_READ_INT16   {3};
+constexpr uint32_t DEFAULT_READ_UINT32  {4U};
+constexpr int32_t  DEFAULT_READ_INT32   {5};
+constexpr float    DEFAULT_READ_FLOAT   {6.0F};
+constexpr uint8_t  DEFAULT_WRITE_UINT8  {7U};
+constexpr int8_t   DEFAULT_WRITE_INT8   {8};
+constexpr uint16_t DEFAULT_WRITE_UINT16 {9U};
+constexpr int16_t  DEFAULT_WRITE_INT16  {10};
+constexpr uint32_t DEFAULT_WRITE_UINT32 {11U};
+constexpr int32_t  DEFAULT_WRITE_INT32  {12};
+constexpr float    DEFAULT_WRITE_FLOAT  {13.0F};
 
 
 } } } /* End Namespace - Atams::MapTest::BlockTest2 */

@@ -116,7 +116,7 @@ private Platform::CommsLock
   volatile uint16_t headIndex_       = 0U;
   volatile uint16_t tailIndex_       = 0U;
   volatile uint16_t eolSearchIndex_  = 0U;
-  volatile uint16_t atomicByteCount_ = 0U;
+  volatile uint16_t byteCount_       = 0U;
   volatile uint16_t eolToHead_       = 0U;
   volatile uint16_t eolToTail_       = 0U;
   volatile uint8_t  newDataReady_    = !CircularBuffer::NEW_DATA_READY; /* UINT8_T MUST BE ATOMIC ON TARGET PLATFORM */

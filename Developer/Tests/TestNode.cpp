@@ -58,92 +58,92 @@ void TestNode::runFunctionArgTests(void)
   Atams::Error_t expectedError = Atams::ERROR_NONE;
   Atams::Error_t error         = Atams::ERROR_NONE;
 
-  /* Node::write Var Access Error Checks - Read Only Var */
+  /* Node::setVar Var Access Error Checks - Read Only Var */
   expectedError = Atams::ERROR_ACCESS_INVALID;
-  error         = Node::write(BlockTest1::VAR_READ_UINT8,  testUint8_); 
+  error         = Node::setVar(BlockTest1::VAR_READ_UINT8,  testUint8_); 
   if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
-  /* Node::write Var ID Error Checks - Invalid Var ID */
+  /* Node::setVar Var ID Error Checks - Invalid Var ID */
   expectedError = Atams::ERROR_VAR_ID;
-  error         = Node::write((BlockTest3::VAR_WRITE_UINT32_20+1U),  testUint8_); 
+  error         = Node::setVar((BlockTest3::VAR_WRITE_UINT32_20 + 1U),  testUint8_); 
   if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
-  /* Node::write Var Type Error Checks - Valid and Invalid Var Types */
+  /* Node::setVar Var Type Error Checks - Valid and Invalid Var Types */
   for (uint16_t varID = BlockTest1::VAR_WRITE_UINT8; varID <= BlockTest1::VAR_WRITE_FLOAT; varID++)
   {
     expectedError = (varID == BlockTest1::VAR_WRITE_UINT8) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
-    error         = Node::write(varID, testUint8_);
+    error         = Node::setVar(varID, testUint8_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
     expectedError = (varID == BlockTest1::VAR_WRITE_INT8) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
-    error         = Node::write(varID, testInt8_);
+    error         = Node::setVar(varID, testInt8_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
     expectedError = (varID == BlockTest1::VAR_WRITE_UINT16) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
-    error         = Node::write(varID, testUint16_);
+    error         = Node::setVar(varID, testUint16_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
     expectedError = (varID == BlockTest1::VAR_WRITE_INT16) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
-    error         = Node::write(varID, testInt16_);
+    error         = Node::setVar(varID, testInt16_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
     expectedError = (varID == BlockTest1::VAR_WRITE_UINT32) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
-    error         = Node::write(varID, testUint32_);
+    error         = Node::setVar(varID, testUint32_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
     expectedError = (varID == BlockTest1::VAR_WRITE_INT32) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
-    error         = Node::write(varID, testInt32_);
+    error         = Node::setVar(varID, testInt32_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
     expectedError = (varID == BlockTest1::VAR_WRITE_FLOAT) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
-    error         = Node::write(varID, testFloat_);
+    error         = Node::setVar(varID, testFloat_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
   }
 
-  /* Node::read Var Access Error Checks - Write Access Var */
+  /* Node::getVar Var Access Error Checks - Write Access Var */
   expectedError = Atams::ERROR_NONE;
-  error         = Node::read(BlockTest1::VAR_WRITE_UINT8,  testUint8_); 
+  error         = Node::getVar(BlockTest1::VAR_WRITE_UINT8,  testUint8_); 
   if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
-  /* Node::read Var Access Error Checks - Read Access Var */
+  /* Node::getVar Var Access Error Checks - Read Access Var */
   expectedError = Atams::ERROR_NONE;
-  error         = Node::read(BlockTest1::VAR_READ_UINT8,  testUint8_); 
+  error         = Node::getVar(BlockTest1::VAR_READ_UINT8,  testUint8_); 
   if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
-  /* Node::read Var ID Error Checks - Invalid Var ID */
+  /* Node::getVar Var ID Error Checks - Invalid Var ID */
   expectedError = Atams::ERROR_VAR_ID;
-  error         = Node::read((BlockTest3::VAR_WRITE_UINT32_20+1U),  testUint8_); 
+  error         = Node::getVar((BlockTest3::VAR_WRITE_UINT32_20+1U),  testUint8_); 
   if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
-  /* Node::read Var Type Error Checks - Valid and Invalid Var Types */
+  /* Node::getVar Var Type Error Checks - Valid and Invalid Var Types */
   for (uint16_t varID = BlockTest1::VAR_WRITE_UINT8; varID <= BlockTest1::VAR_WRITE_FLOAT; varID++)
   {
     expectedError = (varID == BlockTest1::VAR_WRITE_UINT8) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
-    error         = Node::read(varID, testUint8_);
+    error         = Node::getVar(varID, testUint8_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
     expectedError = (varID == BlockTest1::VAR_WRITE_INT8) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
-    error         = Node::read(varID, testInt8_);
+    error         = Node::getVar(varID, testInt8_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
     expectedError = (varID == BlockTest1::VAR_WRITE_UINT16) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
-    error         = Node::read(varID, testUint16_);
+    error         = Node::getVar(varID, testUint16_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
     expectedError = (varID == BlockTest1::VAR_WRITE_INT16) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
-    error         = Node::read(varID, testInt16_);
+    error         = Node::getVar(varID, testInt16_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
     expectedError = (varID == BlockTest1::VAR_WRITE_UINT32) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
-    error         = Node::read(varID, testUint32_);
+    error         = Node::getVar(varID, testUint32_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
     expectedError = (varID == BlockTest1::VAR_WRITE_INT32) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
-    error         = Node::read(varID, testInt32_);
+    error         = Node::getVar(varID, testInt32_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
     expectedError = (varID == BlockTest1::VAR_WRITE_FLOAT) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
-    error         = Node::read(varID, testFloat_);
+    error         = Node::getVar(varID, testFloat_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
   }
 
@@ -183,7 +183,7 @@ void TestNode::runFunctionArgTests(void)
   if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
   /* Clear Request Pattern All Vars */
-  Node::resetRequestPacket();
+  Node::clearAllRequestPatterns();
 
   /* Request Packet and Write List Duplicate Tests */
   expectedError = Atams::ERROR_NONE;
@@ -205,16 +205,16 @@ void TestNode::runFunctionArgTests(void)
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
   }
 
-  Node::resetRequestPacket();
+  Node::clearAllRequestPatterns();
 
   /* Request Packet and Write List Overflow Test */
   uint16_t      expectedWriteListLength     = 0U;
   uint16_t      expectedRequestPacketLength = Atams::HEADER_SIZE_HEADER;
-  const uint8_t writeDatagramLength         = Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t);
+  const uint8_t setVarDatagramLength         = Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t);
   
   for (uint16_t varID = BlockTest3::VAR_WRITE_UINT8_1; varID <= BlockTest3::VAR_WRITE_UINT8_20; varID++)
   {
-    if ((expectedRequestPacketLength + writeDatagramLength) > Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING)
+    if ((expectedRequestPacketLength + setVarDatagramLength) > Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING)
     {
       expectedError = Atams::ERROR_REQUEST_BUFFER_LENGTH;
     }
@@ -222,7 +222,7 @@ void TestNode::runFunctionArgTests(void)
     {
       expectedError = Atams::ERROR_NONE;
       expectedWriteListLength++;
-      expectedRequestPacketLength += writeDatagramLength;
+      expectedRequestPacketLength += setVarDatagramLength;
     }
 
     error = Node::setRequestPattern(varID, Atams::ACCESS_WRITE, Atams::REQUEST_STREAM);
@@ -235,7 +235,7 @@ void TestNode::runFunctionArgTests(void)
     }
   }
 
-  Node::resetRequestPacket();
+  Node::clearAllRequestPatterns();
 }
 
 void TestNode::runUpdateCycleTests(void)
@@ -302,10 +302,10 @@ void TestNode::runUpdateCycleTests(void)
         case BlockTest1::VAR_WRITE_FLOAT:  updateWriteValue(varID, feedbackFloat_,  testFloat_);  break;
       }
 
-      /* Check acknowledgement flag is false before starting write */
+      /* Check acknowledgement flag is false before starting setVar */
       bool ackReceived = true;
 
-      static_cast<void>(Node::getAckFlag(varID, ackReceived));
+      static_cast<void>(Node::isWriteAcked(varID, ackReceived));
 
       if (ackReceived == true) errorHandler(error, "Write Acknowledgement Not Cleared On Node ");
 
@@ -321,15 +321,15 @@ void TestNode::runUpdateCycleTests(void)
     {
       bool ackReceived = false;
 
-      static_cast<void>(Node::getAckFlag(varID, ackReceived));
+      static_cast<void>(Node::isWriteAcked(varID, ackReceived));
 
       if (ackReceived == false) errorHandler(Atams::ERROR_NONE, "Write Acknowledgement Not Received On Node ");
 
-      static_cast<void>(Node::clearAckFlag(varID));
+      static_cast<void>(Node::clearWriteAck(varID));
 
       bool newDataReady = true;
 
-      static_cast<void>(Node::getDataReadyFlag(varID, newDataReady));
+      static_cast<void>(Node::isDataReady(varID, newDataReady));
 
       if (newDataReady == true) errorHandler(Atams::ERROR_NONE, "Data Ready Flag Not Cleared On Node ");
 
@@ -355,11 +355,11 @@ void TestNode::runUpdateCycleTests(void)
     {
       bool newDataReady = false;
 
-      static_cast<void>(Node::getDataReadyFlag(varID, newDataReady));
+      static_cast<void>(Node::isDataReady(varID, newDataReady));
 
       if (newDataReady == false) errorHandler(Atams::ERROR_NONE, "Data Ready Flag Not Set On Node ");
 
-      static_cast<void>(Node::clearDataReadyFlag(varID));
+      static_cast<void>(Node::clearDataReady(varID));
 
       switch (varID)
       {
@@ -466,15 +466,15 @@ void TestNode::updateWriteValue(const uint16_t varID, T &feedbackVar, T &writeVa
 {
   Atams::Error_t error = Atams::ERROR_NONE;
 
-  error = Node::read(varID, feedbackVar);
+  error = Node::getVar(varID, feedbackVar);
 
-  if (error) errorHandler(error, "Node::read error in TestNode::updateWriteValue On Node ");
+  if (error) errorHandler(error, "Node::getVar error in TestNode::updateWriteValue On Node ");
 
   writeVar = static_cast<T>(std::rand());
   if (writeVar == feedbackVar) writeVar++;
-  error = Node::write(varID, writeVar);
+  error = Node::setVar(varID, writeVar);
 
-  if (error) errorHandler(error, "Node::write error in TestNode::updateWriteValue On Node ");
+  if (error) errorHandler(error, "Node::setVar error in TestNode::updateWriteValue On Node ");
 }
 
 template<typename T>
@@ -484,9 +484,9 @@ void TestNode::checkReadValue(const uint16_t varID, T &feedbackVar, T &writtenVa
 
   writtenVar++;
 
-  error = Node::read(varID, feedbackVar);
+  error = Node::getVar(varID, feedbackVar);
 
-  if (error)                     errorHandler(error, "Node::read error in TestNode::checkReadValue On Node ");
+  if (error)                     errorHandler(error, "Node::getVar error in TestNode::checkReadValue On Node ");
   if (feedbackVar != writtenVar) errorHandler(Atams::ERROR_NONE, "Feedback Mismatch on Node ");
 }
 

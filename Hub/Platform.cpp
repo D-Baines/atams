@@ -113,6 +113,7 @@ bool BusPeripheral::transmit(uint8_t *buffer, const uint16_t length)
 void BusPeripheral::update(void)
 {
   userData_.ioContext.poll();
+  userData_.ioContext.restart();
 }
 
 /*************************************************************************************/

@@ -41,12 +41,12 @@ static const GenInfo_t s_genInfo =
 {
   /* .atamsVersionMajor = */ 0U,
   /* .atamsVersionMinor = */ 1U,
-  /* .genDay            = */ 17U,
-  /* .genMonth          = */ 8U,
+  /* .genDay            = */ 21U,
+  /* .genMonth          = */ 12U,
   /* .genYear           = */ 2025U,
-  /* .genHour           = */ 21U,
-  /* .genMinute         = */ 54U,
-  /* .genSecond         = */ 22U,
+  /* .genHour           = */ 11U,
+  /* .genMinute         = */ 34U,
+  /* .genSecond         = */ 5U,
   /* .genChecksum       = */ 495011647U,
   /* .noOfVars          = */ 96U
 };

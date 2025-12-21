@@ -71,10 +71,10 @@ static void errorHandler(const Atams::Error_t error, const char * errorMessage);
 /*************************************************************************************/
 
 static Atams::Bus      testBus_(userData_);
-static Atams::TestNode testNode1_(0U, errorHandler);
-static Atams::TestNode testNode2_(1U, errorHandler);
-static Atams::TestNode testNode3_(2U, errorHandler);
-static Atams::TestNode testNode4_(3U, errorHandler);
+static Atams::TestNode testNode1_(1U, errorHandler);
+static Atams::TestNode testNode2_(2U, errorHandler);
+static Atams::TestNode testNode3_(3U, errorHandler);
+static Atams::TestNode testNode4_(4U, errorHandler);
 
 static Atams::TestNode *testNodes_[] = 
 {
@@ -82,6 +82,8 @@ static Atams::TestNode *testNodes_[] =
   &testNode2_,
   &testNode3_
 };
+
+static bool syncAsyncToggle_ {false};
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -175,7 +177,7 @@ static void testBusInit(void)
       {
         char errorBuffer[100];
 
-        std::snprintf (errorBuffer, sizeof(errorBuffer), "Node %d Bus Error during Init: %d", testNodePtr->getNodeID(), nodeError);
+        std::snprintf (errorBuffer, sizeof(errorBuffer), "Node %d Bus Error During Init: %d", testNodePtr->getNodeID(), nodeError);
 
         errorHandler(nodeError, errorBuffer);
       }
@@ -216,13 +218,18 @@ static Atams::Error_t runUpdateCycleTests(void)
 
   for(;;)
   { 
-    Atams::ProcessState updateState = testBus_.runUpdateCycleSync(error);
+    Atams::ProcessState updateState {Atams::ProcessState::IN_PROGRESS};
+
+    if (syncAsyncToggle_) updateState = testBus_.runUpdateCycleSync(error);
+    else                  updateState = testBus_.runUpdateCycleAsync(error);
 
     if (updateState != Atams::ProcessState::IN_PROGRESS)
     { 
       if (updateState != Atams::ProcessState::COMPLETE) errorHandler(error, "Unexpected Update Cycle Error");
 
-      error = testBus_.processBuffers();
+      if (syncAsyncToggle_) testBus_.processSyncBuffers();
+
+      syncAsyncToggle_ = !syncAsyncToggle_;
      
       for (TestNode *&testNodePtr : testNodes_)
       {

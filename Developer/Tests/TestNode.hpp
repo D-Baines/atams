@@ -29,6 +29,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+
 #include "../../Hub/Node.hpp"
 #include "MapTest/MapTest.hpp"
 
