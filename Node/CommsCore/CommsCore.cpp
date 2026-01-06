@@ -619,7 +619,7 @@ static uint32_t getNVMVarSpaceRequirement(void)
 {
   uint32_t requiredVarSpace = 0U;
 
-  for (uint16_t varID = 0U; varID < s_memoryMapPtr->noOfVars; varID++)
+  for (uint16_t varID = 0U; varID < s_memoryMapPtr->genInfo.noOfVars; varID++)
   {
     const VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
 
@@ -646,7 +646,7 @@ static Atams::Error_t nvmTransferVars(const uint32_t      maxIndex,
 {
   uint16_t numberOfVarsToTransfer = universalBlockOnly == true                            ?
                                     static_cast<uint16_t>(BlockUniversal::NUMBER_OF_VARS) :
-                                    s_memoryMapPtr->noOfVars;
+                                    s_memoryMapPtr->genInfo.noOfVars;
 
   for (uint16_t varID = 0U; varID < numberOfVarsToTransfer; varID++)
   {
@@ -910,7 +910,7 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmEr
   if (!error)
   {
     s_memoryMapPtr  = &memoryMap;
-    s_validVarCount =  memoryMap.noOfVars;
+    s_validVarCount =  memoryMap.genInfo.noOfVars;
   }
 
   if (!error) resetVars();

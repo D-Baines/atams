@@ -1128,14 +1128,25 @@ void Bus::updateSetConfigGetResponse(void)
 /* PRIVATE STATIC CONSTANTS                                                          */
 /*************************************************************************************/
 
-const Atams::GenInfo_t Bus::blankGenInfo_;
+const Atams::GenInfo_t Bus::dummyGenInfo_
+{
+  /* .atamsVersionMajor  = */ ATAMS_VERSION_MAJOR,
+  /* .atamsVersionMinor  = */ ATAMS_VERSION_MINOR,
+  /* .genDay             = */ 0U,
+  /* .genMonth           = */ 0U,
+  /* .genYear            = */ 0U,
+  /* .genHour            = */ 0U,
+  /* .genMinute          = */ 0U,
+  /* .genSecond          = */ 0U,
+  /* .genChecksum        = */ 0U,
+  /* .noOfVars           = */ BlockUniversal::NUMBER_OF_VARS,
+};
 
-const Node::MemoryMap_t Bus::dummyMemoryMap_ = 
+const Node::MemoryMap_t Bus::dummyMemoryMap_ 
 {
   /* .sharedMemoryMap = */
   {
-    /* .noOfVars    = */ BlockUniversal::NUMBER_OF_VARS,
-    /* .genInfo     = */ Bus::blankGenInfo_,
+    /* .genInfo     = */ Bus::dummyGenInfo_,
     /* .varInfoList = */ BlockUniversal::varInfoList
   }
 };

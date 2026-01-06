@@ -57,17 +57,18 @@ static inline bool validateAtamsVersion(const SharedMemoryMap_t &memoryMap)
 
 static bool validateMapLength(const SharedMemoryMap_t &memoryMap, const uint32_t varStorageLength)
 {
-  bool     lengthValid = true;
-  uint16_t varIndex    = 0U;
+  const uint16_t numberOfVars {memoryMap.genInfo.noOfVars};
+  bool           lengthValid  {true};
+  uint16_t       varIndex     {0U};
 
-  if ((memoryMap.noOfVars > varStorageLength                        ) ||
-      (memoryMap.noOfVars > Atams::MAX_NUMBER_OF_VARS               ) ||
-      (memoryMap.noOfVars < BlockUniversal::NUMBER_OF_VARS) )
+  if ((numberOfVars > varStorageLength              ) ||
+      (numberOfVars > Atams::MAX_NUMBER_OF_VARS     ) ||
+      (numberOfVars < BlockUniversal::NUMBER_OF_VARS) )
   {
     lengthValid = false;
   }
 
-  for (uint16_t varID = 0U; varID < memoryMap.noOfVars; varID++)
+  for (uint16_t varID = 0U; varID < numberOfVars; varID++)
   {
     const VarInfo_t varInfo = memoryMap.varInfoList[varID];
 
@@ -82,7 +83,7 @@ static bool validateMapLength(const SharedMemoryMap_t &memoryMap, const uint32_t
     if ((varInfo.type           == Atams::TYPE_NULL  ) ||
         (varInfo.externalAccess == Atams::ACCESS_NONE) )
     {
-      if (varIndex != memoryMap.noOfVars) lengthValid = false;
+      if (varIndex != numberOfVars) lengthValid = false;
       break;
     }
 
@@ -97,7 +98,7 @@ static bool validateUniversalBlock(const SharedMemoryMap_t &memoryMap)
   bool     universalValid = true;
   uint16_t varIndex       = 0U;
 
-  if (memoryMap.noOfVars < BlockUniversal::NUMBER_OF_VARS)
+  if (memoryMap.genInfo.noOfVars < BlockUniversal::NUMBER_OF_VARS)
   {
     return (false); /* Early Return */
   }
@@ -118,7 +119,7 @@ static bool validateMapChecksum(const SharedMemoryMap_t &memoryMap)
 {
   atamsCRC_.beginRollingCRC();
 
-  for (uint16_t varID = BlockUniversal::NUMBER_OF_VARS; varID < memoryMap.noOfVars; varID++)
+  for (uint16_t varID = BlockUniversal::NUMBER_OF_VARS; varID < memoryMap.genInfo.noOfVars; varID++)
   {
     const VarInfo_t varInfo = memoryMap.varInfoList[varID];
 

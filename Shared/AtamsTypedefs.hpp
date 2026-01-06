@@ -505,14 +505,11 @@ typedef void (*CommsTransmitCallback_t)(TXMessage_t message);
 
 struct SharedMemoryMap_t
 {
-  const uint16_t   noOfVars = 0U;
   const GenInfo_t  genInfo;
   const VarInfo_t *varInfoList;
 
-  SharedMemoryMap_t(const uint16_t   initNumberOfVars,
-                    const GenInfo_t  initGenInfo,
+  SharedMemoryMap_t(const GenInfo_t  initGenInfo,
                     const VarInfo_t (*initVarInfoList)) :
-  noOfVars(initNumberOfVars),
   genInfo(initGenInfo),
   varInfoList(initVarInfoList){};
 
@@ -524,7 +521,6 @@ struct SharedMemoryMap_t
 
   /* Copy Constructor */
   SharedMemoryMap_t(const SharedMemoryMap_t &other) :
-  noOfVars(other.noOfVars),
   genInfo(other.genInfo),
   varInfoList(other.varInfoList){};
 

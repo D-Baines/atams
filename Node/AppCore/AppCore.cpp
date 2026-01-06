@@ -147,7 +147,7 @@ Atams::Error_t initAppCore(const MemoryMap_t &memoryMap)
   if (initStatus == Atams::ERROR_NONE)
   {
     s_memoryMapPtr  = &memoryMap;
-    s_validVarCount =  memoryMap.noOfVars;
+    s_validVarCount =  memoryMap.genInfo.noOfVars;
 
     syncWithCommsCoreInit();
   }

@@ -504,9 +504,8 @@ const Node::MemoryMap_t memoryMap =
 {
   /* SharedMemoryMap_t */
   {
-    /* noOfVars         = */ MapTest::s_genInfo.noOfVars,
-    /* genInfo          = */ MapTest::s_genInfo,
-    /* varInfoList      = */ MapTest::s_varInfoList
+    /* genInfo     = */ MapTest::s_genInfo,
+    /* varInfoList = */ MapTest::s_varInfoList
   }
 };
 

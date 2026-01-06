@@ -212,7 +212,7 @@ private Platform::BusPeripheral
 
   /*-- Static Private Variables -----------------------------------------------------*/
 
-  static const GenInfo_t         blankGenInfo_;
+  static const GenInfo_t         dummyGenInfo_;
   static const Node::MemoryMap_t dummyMemoryMap_;
 
   /*-- Private Class Objects --------------------------------------------------------*/
