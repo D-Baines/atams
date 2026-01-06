@@ -82,7 +82,7 @@ Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
         (busErrorLock_.init()     ) )
     {
       memoryMap_     = &memoryMap;
-      validVarCount_ = memoryMap.noOfVars;
+      validVarCount_ = memoryMap.genInfo.noOfVars;
     }
     else 
     {
