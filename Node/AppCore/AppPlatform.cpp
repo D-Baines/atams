@@ -51,7 +51,10 @@ uint32_t getMillis(void)
 
 void acquireVarStorageLock(void)
 {
-  HAL_HSEM_FastTake(0U);
+  while (HAL_HSEM_FastTake(0U) != HAL_OK)
+  {
+    /* Wait */
+  };
 }
 
 void releaseVarStorageLock(void)

@@ -57,7 +57,7 @@ namespace Atams { namespace Platform {
 *          responsible for handling Atams communications. The define should only
 *          exist on compilation of the code for the core handling Atams communications.
 */
-#define COMMS_CORE_DETECT CORE_CM7
+#define COMMS_CORE_DETECT CORE_CM4
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */

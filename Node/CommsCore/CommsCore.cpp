@@ -111,10 +111,10 @@ static NodeCommsState_t s_nodeCommsState      {NODE_STATE_UNINITIALISED};
 static bool             s_appCoreInitRequired {true};
 
 /* Core Init Synchronisation */
-//ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
+ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 static CoreInitStatus_t s_coreInitComplete[Atams::NUMBER_OF_CORES] {CORE_INIT_IN_PROGRESS, CORE_INIT_IN_PROGRESS};
 
-//ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
+ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 static Atams::VarStorage_t s_varStorage[Platform::NODE_NUMBER_OF_VARS];
 
 /*************************************************************************************/
@@ -553,7 +553,7 @@ static Atams::Error_t getMemoryMapIsValid(void)
   }
 }
 
-static void waitForControlCoreInit(void)
+static void waitForAppCoreInit(void)
 {
   uint32_t                  previousCoreCheckTime = 0U;
   volatile CoreInitStatus_t coreInitStatus        = CORE_INIT_IN_PROGRESS;
@@ -882,7 +882,7 @@ Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmE
  * @details Validates and stores a reference to the provided Memory Map, initialises default variable values,
  *          validates and loads non-volatile memory (NVM) data, and starts the communication peripherals.
  *          The result of the NVM validation and load process is reported via the @p nvmError output parameter.
- *          This function also synchronises with the Control Core and will block until the Control Core 
+ *          This function also synchronises with the Application Core and will block until the Application Core
  *          has successfully completed its initialisation.
  *
  * @param      memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
@@ -903,7 +903,7 @@ Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmE
  */
 Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmError)
 {
-  if (s_appCoreInitRequired) waitForControlCoreInit();
+  if (s_appCoreInitRequired) waitForAppCoreInit();
 
   Atams::Error_t error    = Atams::validateMemoryMap(memoryMap, Platform::NODE_NUMBER_OF_VARS);
 
