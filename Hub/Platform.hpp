@@ -43,7 +43,7 @@ namespace Atams { namespace Platform {
 /*************************************************************************************/
 
 /** @brief The maximum number of Nodes added to on any of the application's Atams::Bus objects */
-constexpr uint16_t NUMBER_OF_NODES_PER_BUS {3U};
+constexpr uint16_t NUMBER_OF_NODES_PER_BUS {2U};
 
 /** @brief The maximum number of Atams vars used by any of the application's Atams::Node objects */
 constexpr uint16_t NODE_NUMBER_OF_VARS {100U};

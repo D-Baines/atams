@@ -47,36 +47,36 @@ namespace Atams
 /* PRE-TYPEDEF CONSTANTS                                                             */
 /*************************************************************************************/
 
-constexpr uint8_t ATAMS_VERSION_MAJOR = 0U;
-constexpr uint8_t ATAMS_VERSION_MINOR = 1U;
+constexpr uint8_t ATAMS_VERSION_MAJOR {0U};
+constexpr uint8_t ATAMS_VERSION_MINOR {1U};
 
-constexpr uint8_t  NODE_ID_MAX                   = 254U;
-constexpr uint8_t  MAX_NUMBER_OF_NODES_PER_BUS   = 255U;
-constexpr uint16_t MAX_NUMBER_OF_VARS            = 8191U;
-constexpr uint16_t VAR_ID_NULL                   = 8191U;
-constexpr uint8_t  MAX_TYPE_SIZE                 = 4U;
-constexpr uint8_t  EOL_BYTE                      = 0U;
-constexpr int32_t  MAX_INT32                     = 2147483647L;
-constexpr int32_t  MIN_INT32                     = -2147483648L;
-constexpr uint32_t MAX_UINT32                    = 4294967295U;
-constexpr uint32_t MIN_UINT32                    = 0U;
-constexpr uint8_t  BITS_IN_A_BYTE                = 8U;
-constexpr uint32_t CRC32_POLYNOMIAL              = 0x04C11DB7U;
-constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID = 0x00000000U;
-constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID   = 0xD0D0CACAU;
-constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS  = 0x454E5452U;
-constexpr uint32_t CONFIGURATION_PASSKEY_APPLY   = 0x41504C59U;
-constexpr uint32_t CONFIGURATION_PASSKEY_CANCEL  = 0x00000000U;
-constexpr uint32_t STORE_ALL_PASSCODE            = 0x53415645U;
-constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE  = 0x55534552U;
-constexpr uint32_t RESTORE_ALL_PASSCODE          = 0x52535452U;
-constexpr uint32_t RESET_NODE_PASSCODE           = 0x4E525354U;
-constexpr uint32_t WATCHDOG_RESET_PASSCODE       = 0x57444F47U;
+constexpr uint8_t  NODE_ID_MAX                   {254U};
+constexpr uint8_t  MAX_NUMBER_OF_NODES_PER_BUS   {255U};
+constexpr uint16_t MAX_NUMBER_OF_VARS            {8191U};
+constexpr uint16_t VAR_ID_NULL                   {8191U};
+constexpr uint8_t  MAX_TYPE_SIZE                 {4U};
+constexpr uint8_t  EOL_BYTE                      {0U};
+constexpr int32_t  MAX_INT32                     {2147483647L};
+constexpr int32_t  MIN_INT32                     {-2147483648L};
+constexpr uint32_t MAX_UINT32                    {4294967295U};
+constexpr uint32_t MIN_UINT32                    {0U};
+constexpr uint8_t  BITS_IN_A_BYTE                {8U};
+constexpr uint32_t CRC32_POLYNOMIAL              {0x04C11DB7U};
+constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID {0x00000000U};
+constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID   {0xD0D0CACAU};
+constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS  {0x454E5452U};
+constexpr uint32_t CONFIGURATION_PASSKEY_APPLY   {0x41504C59U};
+constexpr uint32_t CONFIGURATION_PASSKEY_CANCEL  {0x00000000U};
+constexpr uint32_t STORE_ALL_PASSCODE            {0x53415645U};
+constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE  {0x55534552U};
+constexpr uint32_t RESTORE_ALL_PASSCODE          {0x52535452U};
+constexpr uint32_t RESET_NODE_PASSCODE           {0x4E525354U};
+constexpr uint32_t WATCHDOG_RESET_PASSCODE       {0x57444F47U};
 
-constexpr uint8_t THREE_BYTE_SHIFT  = 24U;
-constexpr uint8_t TWO_BYTE_SHIFT    = 16U;
-constexpr uint8_t SINGLE_BYTE_SHIFT = 8U;
-constexpr uint8_t SINGLE_BYTE_MASK  = 0xFFU;
+constexpr uint8_t THREE_BYTE_SHIFT  {24U};
+constexpr uint8_t TWO_BYTE_SHIFT    {16U};
+constexpr uint8_t SINGLE_BYTE_SHIFT {8U};
+constexpr uint8_t SINGLE_BYTE_MASK  {0xFFU};
 
 /*************************************************************************************/
 /* STATIC ASSERTIONS                                                                 */
@@ -318,9 +318,9 @@ enum CoreID_t: uint8_t
 
 struct VarInfo_t
 {
-  VarType_t type           = Atams::TYPE_NULL;
-  Access_t  externalAccess = Atams::ACCESS_NONE;
-  uint8_t   NVMStorage     = Atams::ATAMS_FALSE;
+  VarType_t type           {Atams::TYPE_NULL};
+  Access_t  externalAccess {Atams::ACCESS_NONE};
+  uint8_t   NVMStorage     {Atams::ATAMS_FALSE};
 
   bool operator==(const VarInfo_t &other)
   {
@@ -349,16 +349,16 @@ struct DatagramHeader_t
 
 struct GenInfo_t
 {
-  uint8_t  atamsVersionMajor  = ATAMS_VERSION_MAJOR;
-  uint8_t  atamsVersionMinor  = ATAMS_VERSION_MINOR;
-  uint8_t  genDay             = 0U;
-  uint8_t  genMonth           = 0U;
-  uint16_t genYear            = 0U;
-  uint8_t  genHour            = 0U;
-  uint8_t  genMinute          = 0U;
-  uint8_t  genSecond          = 0U;
-  uint32_t genChecksum        = 0U;
-  uint16_t noOfVars           = 0U;
+  uint8_t  atamsVersionMajor  {ATAMS_VERSION_MAJOR};
+  uint8_t  atamsVersionMinor  {ATAMS_VERSION_MINOR};
+  uint8_t  genDay             {0U};
+  uint8_t  genMonth           {0U};
+  uint16_t genYear            {0U};
+  uint8_t  genHour            {0U};
+  uint8_t  genMinute          {0U};
+  uint8_t  genSecond          {0U};
+  uint32_t genChecksum        {0U};
+  uint16_t noOfVars           {0U};
 
   bool operator==(const GenInfo_t &other)
   {
@@ -401,15 +401,15 @@ struct GenInfo_t
 
 struct NVMHeader_t
 {
-  uint32_t  identifier = NVM_HEADER_IDENTIFIER_INVALID;
-  uint32_t  length     = 0U;
+  uint32_t  identifier {NVM_HEADER_IDENTIFIER_INVALID};
+  uint32_t  length     {0U};
   GenInfo_t genInfo;
 };
 
 struct NVMFooter_t
 {
-  uint32_t identifier = NVM_HEADER_IDENTIFIER_INVALID;
-  uint32_t checksum   = 0U;
+  uint32_t identifier {NVM_HEADER_IDENTIFIER_INVALID};
+  uint32_t checksum   {0U};
 };
 
 template <typename T>
@@ -462,9 +462,9 @@ struct BusIDs_t
 
 struct TXMessage_t
 {
-  uint8_t      *bufferPtr    = nullptr;
-  uint16_t      bufferLength = 0U;
-  MessageType_t messageType  = MESSAGE_UNKNOWN;
+  uint8_t      *bufferPtr    {nullptr};
+  uint16_t      bufferLength {0U};
+  MessageType_t messageType  {MESSAGE_UNKNOWN};
 
   TXMessage_t(void)
   {

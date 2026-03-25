@@ -55,8 +55,8 @@ Atams::Error_t TestNode::initMemoryMap(const Node::MemoryMap_t &memoryMap)
 
 void TestNode::runFunctionArgTests(void)
 {
-  Atams::Error_t expectedError = Atams::ERROR_NONE;
-  Atams::Error_t error         = Atams::ERROR_NONE;
+  Atams::Error_t expectedError {Atams::ERROR_NONE};
+  Atams::Error_t error         {Atams::ERROR_NONE};
 
   /* Node::setVar Var Access Error Checks - Read Only Var */
   expectedError = Atams::ERROR_ACCESS_INVALID;
@@ -487,7 +487,10 @@ void TestNode::checkReadValue(const uint16_t varID, T &feedbackVar, T &writtenVa
   error = Node::getVar(varID, feedbackVar);
 
   if (error)                     errorHandler(error, "Node::getVar error in TestNode::checkReadValue On Node ");
-  if (feedbackVar != writtenVar) errorHandler(Atams::ERROR_NONE, "Feedback Mismatch on Node ");
+  if (feedbackVar != writtenVar) 
+  {
+    errorHandler(Atams::ERROR_NONE, "Feedback Mismatch on Node ");
+  }
 }
 
 } /* End Namespace - Atams */

@@ -30,7 +30,7 @@
 #include "string.h"
 
 #include "AppPlatform.hpp"
-#include "Atams/Node/Developer/NodeUtilities.hpp"
+#include "../Developer/NodeUtilities.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"
 #include "../../Shared/Utilities/AtamsUtilities.hpp"
 

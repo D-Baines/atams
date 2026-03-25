@@ -90,7 +90,11 @@ constexpr Atams::VarType_t getAtamsType(void)
     else if constexpr (std::is_same<T, uint32_t>::value) return (Atams::TYPE_UINT32);
     else if constexpr (std::is_same<T, int32_t>::value)  return (Atams::TYPE_INT32);
     else if constexpr (std::is_same<T, float>::value)    return (Atams::TYPE_FLOAT);
-    return (Atams::TYPE_NULL);
+    else
+    {
+      static_assert(!std::is_same<T, T>::value, "Variable type used is incompatible with Atams");
+      return (Atams::TYPE_NULL);
+    }
 }
 
 

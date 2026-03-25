@@ -19,31 +19,31 @@ This document balances style guidelines to keep the codebase consistent, and saf
 - **Rationale:** The C++ standard only guarantees defined behavior when sharing an object’s representation through std::memcpy (C++17). Type punning through unions or reinterpret_cast is undefined behavior and may result in non-portable code. This applies both to conversions between variables and to interpreting data received from external buffers.
 - **Compliant Example:**
 ```cpp
-float   f = 1.0F;
-int32_t i;
+float   floatVar {1.0F};
+int32_t intVar   {0.0F};
 
-std::memcpy(&i, &f, sizeof(i));
+std::memcpy(&floatVar, &intVar, sizeof(intVar)); // Compliant
 ```
 
 - **Non-compliant `reinterpret_cast` Example:**
 ```cpp
-float    f = 1.0F;
-uint32_t i = *reinterpret_cast<std::uint32_t*>(&f);
+float   floatVar {1.0F};
+int32_t intVar   {*reinterpret_cast<std::int32_t*>(&floatVar)}; // Non-compliant
 ```
 
 - **Non-compliant `union` Example:**
 ```cpp
-union U_t
+union UnionType_t
 { 
-  float    f; 
-  uint32_t i; 
+  float   floatField; 
+  int32_t intField; 
 };
 
-U_t u;
+UnionTyoe_t unionVar;
 
-u.f = 1.0F;
+unionVar.floatField = 1.0F;
 
-int32_t i = u.i;
+int32_t intVar {unionVar.intField}; // Non-compliant
 ```
 
 ### Array Declaration and Initialisation
@@ -64,20 +64,20 @@ uint8_t values[] = {0U, 0U, 0U, 0U};
 uint8_t data[]; 
 
 // Non-compliant: Size mismatch between declaration and initialiser list
-uint8_t numbers[BUFFER_SZIE] = {0U, 0U, 0U}; 
+uint8_t numbers[BUFFER_SIZE] = {0U, 0U, 0U}; 
 ```
 
 ### Serialising and Deserialising 
 - **Rule:** All byte arrays shared with other systems (external communications, non-volatile storage etc.) must be serialised and deserialised explicitly using bit-shifting and masking operations. Do not copy structs or objects directly into buffers.
-- **Rationale:** Explicit bit manipulation ensures deterministic layout and handles differences in system endianness automatically. Compiler-dependent padding, alignment, or member ordering in objects can break portability.
+- **Rationale:** Explicit bit manipulation ensures deterministic layout and handles differences in system endianness automatically. Compiler-dependent padding, alignment, or member ordering from alternative methods can break portability.
 - **Example:**
 ```cpp
-constexpr uint8_t  CONTAINER_SIZE   = 3U;
-constexpr uint8_t  ITEM_A_INDEX     = 0U;
-constexpr uint8_t  ITEMB_LO_INDEX   = 1U;
-constexpr uint8_t  ITEMB_HI_INDEX   = 2U;
-constexpr uint16_t ITEMB_BYTE_MASK  = 0xFFU;
-constexpr uint8_t  ITEMB_BYTE_SHIFT = 8U;
+constexpr uint8_t  CONTAINER_SIZE   {3U};
+constexpr uint8_t  ITEM_A_INDEX     {0U};
+constexpr uint8_t  ITEMB_LO_INDEX   {1U};
+constexpr uint8_t  ITEMB_HI_INDEX   {2U};
+constexpr uint16_t ITEMB_BYTE_MASK  {0xFFU};
+constexpr uint8_t  ITEMB_BYTE_SHIFT {8U};
 
 struct Container_t
 {
@@ -100,18 +100,17 @@ result.itemB = ((static_cast<uint16_t>(buffer[ITEMB_LO_INDEX] & ITEMB_BYTE_MASK)
                 (static_cast<uint16_t>(buffer[ITEMB_HI_INDEX] & ITEMB_BYTE_MASK) << ITEMB_BYTE_SHIFT) );
 
 // Non-compliant: Copying struct directly into buffer
-std::memcpy(buffer, &container, sizeof(Container_t)); // Not allowed
+std::memcpy(buffer, &container, sizeof(Container_t));
 
 // Non-compliant: Reinterpreting buffer as struct
-Container_t* ptr = reinterpret_cast<Container_t*>(buffer); // Not allowed
+Container_t* ptr = reinterpret_cast<Container_t*>(buffer); 
 ```
-
 
 ## 2. Constants, Variables, and Casting
 
 ### Reinterpret Casting
 - **Rule:** Reinterpret casts shall only be used to cast to type `uint8_t*`.
-- **Rationale:** Avoids type punning between unrelated types (`float*` -> `uint32_t*`).
+- **Rationale:** In the current target standard (C++17), reinterpret casting to and from `uint8_t*` is one of the few cases that results in defined and portable behavior. Restricting reinterpret casts to `uint8_t*` prevents unsafe type punning and undefined behavior that can occur when casting between unrelated types.
 - **Exception:** Casting hardware-defined addresses to pointers to the hardware’s specified type.
 
 ### Integer Types
@@ -135,9 +134,21 @@ static_assert(std::numeric_limits<float>::is_iec559, "Platform float representat
 - **Rule:** All float literals must include the decimal and use a capital `F` suffix (e.g., `1.0F`).  
 - **Rationale:** Ensures the literal is explicitly a float and prevents accidental interpretation as an integer or implicit conversion from double.
 
-### Variable Initialisation
-- **Rule:** Always intitialise variables using brace-initialisation `{}`.  
-- **Rationale:** Ensures compile-time checks catch accidental narrowing conversions, wrap-around, and overflow conditions.
+### Object Initialisation
+- **Rule:** Always intitialise an object.
+- **Rationale:** Avoids used-before-set errors and their associated undefined behavior.
+- **Example:** 
+```cpp
+// Non-compliant
+uint8_t testVar;
+
+// Compliant
+uint8_t testVar {0U};
+```
+
+### Scalar and POD Struct Type Initialisation Method
+- **Rule:** Always intitialise scalar types and POD structs using brace-initialisation `{}`.  
+- **Rationale:** Ensures compile-time checks catch accidental narrowing conversions.
 - **Example:**
 ```cpp
 // Non-compliant
@@ -146,7 +157,6 @@ uint8_t testVar = 15U;
 // Compliant
 uint8_t testVar {15U};
 ```
-
 - **Compile-time Warning Examples:**
 ```cpp
 uint8_t testVar1 {300U};      // ! narrowing conversion from unsigned int to uint8_t
@@ -156,9 +166,28 @@ uint8_t testVar4 {255U + 1U}; // ! narrowing conversion from unsigned int to uin
 uint8_t testVar4 {0.1F};      // ! narrowing conversion from float to uint8_t
 ```
 
+### Class Object Initialisation Method
+- **Rule:** Always initialise class objects using parentheses initialisation `()`.
+- **Rationale:** Using parentheses for class objects clearly indicates constructor calls and distinguishes object construction from simple value initialisation of scalars and PODs, improving code clarity and intent.
+- **Example:**
+```cpp
+class MyClass
+{
+  public:
+
+  MyClass(uint8_t a, uint8_t b) : x(a), y(b) {}
+
+  uint8_t x;
+  uint8_t y;
+};
+
+MyClass obj(1, 2);   // Compliant: class object initialised with constructor
+MyClass obj{1, 2};   // Not preferred for class objects
+```
+
 ### Namespace Constants
 - **Rule:** Use `constexpr` for all namespace values that are known at compile time.
-- **Rationale:** `constexpr` ensures compile-time evaluation and, at namespace scope, is implicitly `inline` in C++17 and later. This avoids multiple definition errors.
+- **Rationale:** `constexpr` ensures compile-time evaluation and, at namespace scope, is implicitly `inline` in C++17 and later.
 
 ### Class Shared Constants
 - **Rule:** Use `static constexpr` for class-wide constants that are the same for all instances.
@@ -209,12 +238,12 @@ void processData(Data_t *inputPtr)
 {
   if (dataPtr == nullptr)
   {
-    return; // Nullptr guard clause return
+    return; // Nullptr guard clause
   }
   
   // Compliant: Both methods of dereferencing safe after nullptr check
-  Data_t  localCopy = *inputPtr;   // Direct dereference
-  uint8_t value     = inputPtr->x; // Member access via pointer
+  Data_t  localCopy {*inputPtr};   // Direct dereference
+  uint8_t value     {inputPtr->x}; // Member access via pointer
 }
 ```
 
@@ -226,7 +255,7 @@ void processData(Data_t *inputPtr)
 ## 3. Structs, Classes, and Object Design
 
 ### POD Objects 
-- **Rule:** POD objects should be defined using structs and should be named with an `_t` suffix. Classes should be used for anything more complex.
+- **Rule:** POD objects should be defined using structs and should be named with an `_t` suffix. Operator overloads can be defined for POD structs (see Rule xxx).
 - **Rational:** Codebase simplicity and consistency.
 ```cpp
 // Compliant: POD object defined as a struct
@@ -250,31 +279,27 @@ class Data_t
   uint8_t  id;
   uint16_t value;
 };
-
-// Non-compliant: Non-POD object defined as a struct
-struct Counter_t
-{
-  void     increment() { count_++;      }
-  uint16_t get()       { return count_; }
-  uint16_t count_;
-};
 ```
 
+### Non-POD Structs 
+- **Rule:** Non-POD structs may be defined, but their member variables and functions must be public. If more complex behaviour or private member variables and functions are required, classes should be used. Non-POD structs must exclude the `_t` prefix.
+- **Rationale:** This results in a simple struct type that acts as an extension of POD structs. The use of simple public functions operating on public variables can minimise repetition of code blocks. 
+
 ### Special Member Functions
-- **Rule:** All non-POD classes must declare the four special member functions (constructor, destructor, copy constructor, move constructor). Un-defined special member functions should be declared as default or deleted.
+- **Rule:** All classes must declare the four special member functions (constructor, destructor, copy constructor, move constructor). Un-defined special member functions should be declared as default or deleted.
 - **Rationale:** Prevents generation of compiler-defined functions and limits unexpected object behaviours.
 
 ### Class Assignment Operators
-- **Rule:** All non-POD classes must declare copy assignment, and move assignment operators. Undefined operators should be declared as default or deleted.
+- **Rule:** All classes must declare copy assignment, and move assignment operators. Undefined operators should be declared as default or deleted.
 - **Rationale:** Prevents generation of compiler-defined functions and limits unexpected object behaviours.
+
+### Public Class Variables
+- **Rule:** Non-constexpr public member variables shall not be used. Setters and getters of private variables should be defined instead for more tightly specified object interactions.
+- **Rationale:** Clarifies expected class usage, and concurrency locks can be encapsulated in setter/getter functions to avoid race conditions.
 
 ### Composition vs Inheritance
 - **Rule:** Prefer composition over inheritance. 
 - **Rationale:** Complex inheritance can make a codebase harder to maintain.
-
-### Public Class Variables
-- **Rule:** Non-constant public member variables shall not be used. Setters and getters of private variables should be defined instead for more tightly specified object interactions.
-- **Rationale:** Clarifies expected class usage, and concurrency locks can be encapsulated in setter/getter functions to avoid race conditions.
 
 ### Operator Overloading
 - **Rule:** Overloads must be obvious & complete.  
@@ -289,14 +314,14 @@ struct Data_t
 
   bool operator==(const Data_t& other) const
   {
-      return ((a == other.a) &&
-              (b == other.b) &&
-              (c == other.c) ); // Compliant
+    return ((a == other.a) &&
+            (b == other.b) &&
+            (c == other.c) ); // Compliant
   }
 
   bool operator==(const Data_t& other) const 
   {
-      return (a == other.a);    // Non-compliant - ignores b and c
+    return (a == other.a);    // Non-compliant - ignores b and c
   }
 };
 ```
@@ -310,7 +335,7 @@ virtual void functionToOverride override;
 ```
 
 ### Virtual Function Chains
-- **Rule:** Limit virtual overrides to one level where possible. Mark overriding virtual functions with `final` to prevent further accidental overriding.
+- **Rule:** Limit virtual overrides to one level. Mark overriding virtual functions with `final` to prevent further accidental overriding.
 - **Rationale:** Deep override chains can create hard-to-follow call paths and increase maintenance complexity.
 - **Examle:**
 ```cpp
@@ -318,7 +343,7 @@ virtual void functionToOverride override final;
 ```
 
 ### Base Class Virtual Functions
-- **Rule:** Declare base class virtual functions as pure `(= 0)` if derived classes must override them. If overriding is optional, provide a default implementation and omit `= 0`.
+- **Rule:** Declare base class virtual functions as pure if derived classes must override them. If overriding is optional, provide a default implementation and omit `= 0`.
 - **Rationale:** Enforces required overrides at compile time while allowing safe default behaviour for optional overrides.
 - **Example:**
 ```cpp
@@ -401,8 +426,27 @@ void readBuffer(const uint8_t * const ptr);
 ### Pointer Function Arguments
 - **Rule:** Functions with pointers arguments must check whether the pointer arguments are nullptr at the start of the function.
 - **Exception:** If nullptr checks should be performed by the calling functions to avoid repetitive checks and improve efficiency, the function should be commented with a warning.
-- **Rationale:** 
+- **Rationale:** Greatly decreases the risk of invalid memory access.
 - **Example:**
+```cpp
+// Compliant
+void doTask(uint8_t * taskPtr)
+{
+  if (ptr == nullptr) return; /* Early Return */
+
+  TaskType_t taskType = taskPtr.getTaskType;
+
+  switch (taskType)
+  {
+    case TASK_1:
+      /* Do Something */
+      break;
+    default:
+      /* Do Nothing */
+      break;
+  }
+}
+```
 
 ### Unused Function Arguments
 - **Rule:** A function definition must not contain any unused arguments.
@@ -414,7 +458,7 @@ void readBuffer(const uint8_t * const ptr);
 - **Rationale:** Clarifies function intent and suppresses compiler warnings.
 
 ### Unused Function Returns
-- **Rule:** There should be a preference to use function returns appropriately. Any unused function returns must be cast to void.
+- **Rule:** Function returns must be used and handled appropriattely, or must be cast to void.
 - **Rationale:** Explicitly casting unused return values to void clarifies intent, prevents accidental omission of critical results, and suppresses compiler warnings.
 
 ### Early Returns
@@ -422,47 +466,64 @@ void readBuffer(const uint8_t * const ptr);
 - **Rationale:** Guard clauses improve readability by handling error cases early, reducing nesting and clarifying assumptions for the remaining function logic. Using early returns for general control flow can make code harder to follow and maintain.
 - **Example:** 
 ```cpp
+// Compliant - Return used as guard clause
+void doTask(uint8_t * taskPtr)
+{
+  if (ptr == nullptr) return; /* Early Return */
 
+  TaskType_t taskType = taskPtr.getTaskType;
+
+  switch (taskType)
+  {
+    case TASK_1:
+      /* Do Something */
+      break;
+    default:
+      /* Do Nothing */
+      break;
+  }
+}
+
+// Non-compliant - Unnecessary nesting
+void doTask(uint8_t * taskPtr)
+{
+  if (ptr != nullptr)
+  {
+    TaskType_t taskType = taskPtr.getTaskType;
+  
+    switch (taskType)
+    {
+      case TASK_1:
+        /* Do Something */
+        break;
+      default:
+        /* Do Nothing */
+        break;
+    }
+  }
+}
+
+// Non-compliant - Unnecessary use of returns for control flow
+bool getValueValid(const uint8_t value)
+{
+  if (value == 0U)
+  {
+    return (false);
+  }
+  else if (value == 1U)
+  {
+    return (true);
+  }
+  else
+  {
+    return (false);
+  }
+}
 ```
 
 ### `goto` statements
 - **Rule:** `goto` statements must not be used.
 - **Rationale:** `goto` statements make control flow difficult to follow and maintain. Safer, structured alternatives (such as loops and conditionals) should always be used.
-
-### Template Function
-- **Rule:** If a template function should only support a specific set of types, define its implementation in the `.cpp` file. Explicitly instantiate the template for each supported type immediately after the function definition.
-- **Rationale:** Defining template functions in the `.cpp` file and explicitly instantiating them for required types prevents accidental use with unsupported types. It also makes the set of supported types clear and maintainable.
-- **Note:** If the template is used with a type that is not explicitly instantiated, the code will compile but fail to link, resulting in a linker error rather than a compiler error.
-```cpp
-// Example.hpp
-static constexpr uint8_t BUFFER_SIZE = 2U;
-
-template<typename T>
-void serialiseToBuffer(const T& value, uint8_t &buffer[BUFFER_SIZE]);
-
-// Example.cpp
-template<typename T>
-void serialiseToBuffer(const T& value, uint8_t &buffer[BUFFER_SIZE]);
-{
-  std::memcpy(buffer, &value, sizeof(T));
-}
-
-template void serialiseToBuffer<uint8_t> (const uint8_t&,  uint8_t &buffer[BUFFER_SIZE]);
-template void serialiseToBuffer<int8_t>  (const int8_t&,   uint8_t &buffer[BUFFER_SIZE]);
-template void serialiseToBuffer<uint16_t>(const uint16_t&, uint8_t &buffer[BUFFER_SIZE]);
-template void serialiseToBuffer<int16_t> (const int16_t&,  uint8_t &buffer[BUFFER_SIZE]);
-
-// Usage
-uint8_t buffer[BUFFER_SIZE];
-
-uint16_t val16 {0x1234U};
-float    valF  {1.23F};
-uint32_t val32 {0x12345678U};
-
-serialiseToBuffer(val16, buffer); // OK: uint16_t is explicitly instantiated
-serialiseToBuffer(val32, buffer); // Linker error: uint32_t is not instantiated
-
-```
 
 ## 5. Casting Rules
 
@@ -523,7 +584,7 @@ enum VarID_t : uint8_t
 // Allowed in a .cpp source file or function:
 using namespace Atams::MapExample;
 
-uint8_t varID = BlockExample::VAR_EXAMPLE;
+uint8_t varID {BlockExample::VAR_EXAMPLE};
 ```
 
 ### Symbol Scope
@@ -541,22 +602,22 @@ Defining symbols within a namespace or class prevents name collisions, improves 
 //Compliant
 enum class Item : uint8_t
 {
-    Foo = 0U,
-    Bar = 1U,
-    Baz = 2U
+  Foo = 0U,
+  Bar = 1U,
+  Baz = 2U
 };
 
 //Non-compliant
 enum class Item
 {
-    Foo = 0U,
-    Bar = 1U,
-    Baz = 2U
+  Foo = 0U,
+  Bar = 1U,
+  Baz = 2U
 };
 ```
 
 ### Enum Asserts
-- **Rule:** Any developer enums that will be packed into buffers for transfer between systems shall have accompanying static asserts to ensure size consistency.
+- **Rule:** Any enums that will be packed into buffers for transfer between systems shall have accompanying static asserts to ensure size consistency.
 - **Rationale:** Provides compile-time enforcement of enum size, catching platform or developer errors that could harm interoperability.
 ```cpp
 enum MessageType_t: uint8_t
@@ -569,8 +630,8 @@ static_assert(sizeof(MessageType_t) == 1U, "MessageType_t size invalid");
 ```
 
 ### Enum Definition
-- **Rule:** Prefer class enums `(enum class)`. Use non-class enums only when class enums would require excessive casting that harms code readability (e.g., for loop indices or break conditions).
--- **Rationale:** Class enums provide strong type safety and prevent accidental implicit conversions, making code more robust and maintainable. Allowing non-class enums in specific cases avoids excessive casting and keeps the codebase readable.
+- **Rule:** Prefer class enums `(enum class)`. Use non-class enums only when class enums would require casting to integers (e.g., for loop indices and break conditions).
+- **Rationale:** Class enums provide strong type safety and prevent accidental implicit conversions, making code more robust and maintainable. Allowing non-class enums in specific cases avoids excessive casting and keeps the codebase readable.
 
 ### Class Enum Casting
 - **Rule:** Casting to a class enum type is not permitted. If casting from an integer to an enum is required, use a non-class enum instead.
@@ -582,39 +643,49 @@ enum class Item : uint8_t
   BAR = 1U, 
 };
 
-Item i {static_cast<Item>(1U)}; // Non-compliant: casting to class enum is prohibited
+Item newItem {static_cast<Item>(1U)}; // Non-compliant: casting to class enum is prohibited
 
-Item i {Item::BAR};             // Compliant: Explicit type usage
+Item newItem {Item::BAR};             // Compliant: Explicit type usage
 ```
 
 ### Non-Class Enum Function Arguments
 - **Rule:** Where a non-class enum is used as a function argument, the value of it must be range checked at the start of the function definition.
 - **Rationale:** Non-class enums can be implicitly converted from integers, which may result in invalid values being passed to functions. Range checking at the start of the function ensures only valid enum values are used for the remainder of the function logic.
 ```cpp
-enum CellID_t : uint8_t 
+enum ItemID_t : uint8_t 
 { 
-  FOO = 0U, 
-  BAR = 1U, 
-  NUMBER_OF_CELLS 
+  ITEM_A = 0U, 
+  ITEM_B = 1U, 
+  NUMBER_OF_ITEMS
 };
 
-static uint8_t cellList[NUMBER_OF_CELLS];
+static ItemType_t itemList[NUMBER_OF_ITEMS];
 
-void setCellValue(CellID_t cellID, uint8_t value)
+void setCellValue(ItemID_t itemID, ItemType_t value)
 {
-  if (cellID >= NUMBER_OF_CELLS)
+  if (itemID >= NUMBER_OF_ITEMS)
   {
-    // Handle invalid cell ID
+    // Handle invalid itemID
     return;
   }
 
-  // Safe to use cellID as a valid enum value
-  cellList[cellID] = value;
+  // Safe to use itemID as a valid enum value
+  itemList[itemID] = value;
 }
 ```
 
-## 9. Switch Statements
-- **Rule:** All switch statements must include a `default` case. If it is safe for the `default` case to perform no action, a `/* Do Nothing */` comment must be added to the body of the case. The `default` case should handle errors correctly if doing nothing is not appropriate.
+## 10. Formatting & Style
+
+### Indentation
+- **Rule:** All indentation should use 2 spaces.
+- **Rationale:** Improves readability on smaller screens and ensures codebase consistency.
+
+### Namespace Indentation
+- **Rule:** Namespace contents should not be indented.
+- **Rationale:** Atams namespaces are often declared file wide, the rule therefore avoids having the majority of file contents indented.
+
+### Switch Statement Default Case
+- **Rule:** All switch statements must include a `default` case. If it is safe for the `default` case to perform no action, a `/* Do Nothing */` comment must be added to the body of the case. The `default` case must handle error cases correctly if doing nothing is not appropriate.
 - **Rationale:**  Including a default case ensures all possible values are handled, making the code robust to future changes, and clarifying developer intent for unhandled or unexpected cases.
 - **Example:**
 ```cpp
@@ -630,43 +701,35 @@ switch (condition)
 }
 ```
 
+### Switch Statement Fall-through
 - **Rule:** A case may only fall-through to the next case if it has an empty body. The case body should be commented with `/* Fall-through */`. If any code is present in the case, an explicit break statement must be used.
 - **Rationale:** This avoids accidental fall-through bugs, clarifies developer intent, and improves code readability and maintainability.
 - **Example:**
 ```cpp
 switch (condition)
 {
-  case CONDITION_A: /* Fall-through */  // Compliant
+  case CONDITION_A: /* Fall-through */  // Compliant - fall-through with empty case and comment
   case CONDITION_B:
     foo();
     break;
-  case CONDITION_C:                     // Non-compliant
+  case CONDITION_C:                     // Non-compliant - fall-through without comment
+  case CONDITION_D:
+    bar();
+    break;
+  case CONDITION_E:                     // Non-compliant - fall-through with case contents
+    foo();
     bar();                              
     /* Fall-through */                 
-  case CONDITION_D:                     // Non-compliant
-    foo();
-    bar();
   default:
     handleError();
     break;
 }
 ```
 
-## 10. Formatting & Style
-
-### Indentation
-- **Rule:** All indentation should use 2 spaces.
-- **Rationale:** Improves readability on smaller screens and ensures codebase consistency.
-
-### Namespace Indentation
-- **Rule:** Namespace contents should not be indented.
-- **Rationale:** As Atams namespaces are file wide, this avoids having the majority of file contents indented.
-
-### Switch Statements
-
 ### Struct and Array Initialiser Lists
 - **Rule:** Struct and array-of-struct initialisation must be explicit and in declaration order. All values must be initialised in order, with none omitted. To clarify intent, comment each value with its corresponding member name.
-- **Rationale:** C++17 (the current target standard) does not support designated initialisers without GNU extensions, so struct members must be initialised in declaration order. Omitting or misordering values can lead to subtle bugs that the compiler may not warn about. Commenting each value with its member name improves code readability, helps reviewers spot mistakes, and compensates for the lack of compiler-checked designated initialisers. Using comments in this way also avoids the high volume of warnings from `-Wpedantic` that occur if GNU designated initialisers are used in standard C++17 code. In C++20 or later, designated initialisers can be used directly and comments may be omitted.
+- **Rationale:** Tthe current target standard (C++17) does not support designated initialisers without GNU extensions, so struct members must be initialised in declaration order. Omitting or misordering values can lead to subtle bugs that the compiler may not warn about. Commenting each value with its member name improves code readability, helps reviewers spot mistakes, and compensates for the lack of compiler-checked designated initialisers. Using comments in this way also avoids the high volume of warnings from `-Wpedantic` that occur if GNU designated initialisers are used in standard C++17 code. If the codebase moves to C++20 or later in future, designated initialisers can be used directly and comments can be omitted.
+- **Example:**
 ```cpp
 enum ContainerId_t : uint8_t
 {
@@ -696,17 +759,60 @@ itemList[NUMBER_OF_CONTAINERS] =
 }
 ```
 
-### Operator Alignment
-
+### Logical Operator Alignment
+- **Rule:** In multi-clause conditional statements (such as `if`, `while`), each logical clause must start on a new line and be vertically aligned with other clauses at the same logic level. The outer logical operators (`&&`, `||`) joining bracketed clauses must appear at the end of each line. All nested operations must be enclosed in parentheses, and the closing parenthesis for the outer condition must align vertically with the outer logical operator.
+- **Rationale:** This formatting makes the logical structure of complex conditions immediately clear, helping reviewers quickly verify correct grouping and intent.
+- **Example:**
 ```cpp
-if ((shortConditionA  && shortConditionB ) ||
-    (longerConditionC && longerConditionD) )
+// Compliant:
+if ((condA && condB) ||
+    (condC && condD) )
 {
   foo();
 }
 
-(((datagramHeader.command << DATAGRAM_HEADER_SHIFT_COMMAND  ) & DATAGRAM_HEADER_MASK_COMMAND  ) |
- ((datagramHeader.varID   >> DATAGRAM_HEADER_SHIFT_VAR_ID_HI) & DATAGRAM_HEADER_MASK_VAR_ID_HI) )
+// Non-compliant:
+if (condA && condB || condC && condD)
+{
+  foo();
+}
+
+// Compliant:
+if (((condA && condB) ||
+     (condC && condD) ) &&
+    ((condE && condF) ||
+     (condG && condH) ) ) 
+{
+  foo();
+}
+
+// Compliant:
+if ((shortA      && shortB      ) ||
+    (muchLongerC && muchLongerD ) )
+{
+  foo();
+}
+
+// Non-compliant:
+if ((shortA && shortB) ||
+    (muchLongerC && muchLongerD))
+{
+  foo();
+}
+```
+
+### Binary Operator Alignment
+- **Rule:** In complex binary operations (such as bit-shifting, masking, and bitwise logic), each major operand or clause must be vertically aligned with others at the same logic level. Operators (`<<`, `>>`, `&`, `|`, etc.) should be placed consistently within each clause, and nested operations must be enclosed in parentheses. Alignment of operands and operators is required for readability; newlines are optional but recommended for clarity in multi-clause expressions.
+- **Rationale:** Consistent alignment of operands and operators in complex binary expressions makes the structure and intent immediately clear, reduces the risk of logic errors, and simplifies code review. Parentheses clarify precedence, and vertical alignment helps reviewers verify correct grouping and logic at a glance.
+- **Example:**
+```cpp
+// Compliant:
+uint32_t datagramHeader {(((header.command << HEADER_SHIFT_COMMAND) & HEADER_MASK_COMMAND) |
+                          ((header.varID   >> HEADER_SHIFT_VAR_ID ) & HEADER_MASK_VAR_ID ) )}
+
+// Non-compliant:
+uint32_t datagramHeader {(((header.command << HEADER_SHIFT_COMMAND) & HEADER_MASK_COMMAND) |
+                          ((header.varID >> HEADER_SHIFT_VAR_ID) & HEADER_MASK_VAR_ID))}
 ```
 
 ### `return` statements
@@ -720,6 +826,7 @@ return (result); // Compliant
 ```
 
 **Rule:** Opening and closing curly braces should be placed on new lines. Curly braces must be used if the body of a statement does not sit on the same line as the condition. Curly braces are not required for single line statements.
+**Rationale:** Codebase styling consistency and clarity.
 **Exception:** Single line if statements.  
 **Example:**
 ```cpp
@@ -739,7 +846,7 @@ if (condition) {      /* Non-compliant */
 ```
 
 **Rule:** Else and else if statements should be placed on new lines. 
-
+**Rationale:** Codebase styling consistency and clarity.
 - **Example:**
 ```cpp
 if (conditionA)
@@ -755,19 +862,10 @@ else if (conditionB) /* Compliant */
 }
 ```
 
-
-## 11. Comments
-
-### Commenting Out Code
-
-### Descriptive Comments
-
-
-## 12. Naming and Name Format Conventions
-Minimal prefix/suffix definitions keep codebase cleaner. Prefixes for member and static variables alert programmers to potential out-of-function-scope effects. Multi-file scope global variables and public class variables are to be avoided entirely in the Atams codebase (excluding constant memoryMap globals).
+## 12. Naming Conventions
 
 ### Naming
-- **Rule:** Naming should provide context. Single character and overly shorted names should not be used.
+- **Rule:** Naming should provide context. Single character and overly shortened names should not be used.
 - **Rationale:** Descriptive names make code easier to read, understand, and maintain.
 - **Example:**
 ```cpp
@@ -780,34 +878,76 @@ uint8_t itemCount(void);    // Non-compliant: Function name does not indicate ac
 uint8_t cnt(void);          // Non-compliant: Excessive abbreviation
 ```
 
-### Variables Name Format
-camelCase
+### Naming Conventions Summary
 
-### Class Name Format
-ThisCase
+| Artifact Type | Convention | Example | Rationale |
+|---------------|------------|---------|-----------|
+| **Local Variables <br> (Incl. Const Member Variables)** | camelCase  | `itemCount`       | Improves readability and distinguishes from constants and types. |
+| **Constexpr Variables**             | SCREAMING_SNAKE_CASE      | `MAX_BUFFER_SIZE` | Makes constants easily identifiable and visually distinct. |
+| **Private Class Member Variables**  | camelCase + trailing `_`  | `value_`          | Trailing underscore signals instance-wide effect, clarifying scope within class methods. |
+| **Static Variables (All scopes)**   | `s_` prefix               | `s_counter`       | `s_` prefix highlights static storage duration and wider scope effect beyond function/class instance. |
+| **POD Struct Types**                | PascalCase + `_t` suffix  | `DataPacket_t`    | `_t` suffix distinguishes POD types, improving clarity and consistency. |
+| **Class/Non-POD Struct Types**      | PascalCase                | `MyClass`         | Standard C++ style for types; distinguishes from POD structs and variables. |
+| **Enum Class Types**                | PascalCase                | `UpdateState`     | Keeps type names visually consistent with class type definitions and improves readability with `::` access syntax.  |
+| **Non-Class Enum Types**            | PascalCase + `_t` suffix  | `Error_t`         | `_t` suffix signals non-class enum, indicating where bounds checking is required.|
+| **Files**                           | PascalCase                | `MyFile.cpp`      | Codebase consistency. |
+| **Namespaces**                      | PascalCase                | `Atams`           | Codebase consistency. |
 
-### File Name Format
-ThisCase
 
-### Constexpr Name Format
-THIS_CASE
+#### Examples
 
-### Class Enum Name Format
-This
+```cpp
+// Local variable
+uint8_t itemCount {0U};
 
-### Non-class Enum Name Format
-This_t
+// Constexpr variable
+constexpr uint8_t MAX_BUFFER_SIZE {16U};
+
+// Static variable
+static uint8_t s_counter {0U};
+
+// Class type + private class member variable
+class Example
+{
+  private:
+  uint8_t value_;
+};
+
+// POD struct type
+struct DataPacket_t
+{
+  uint8_t  id;
+  uint16_t value;
+};
+
+// Enum class type
+enum class State : uint8_t
+{
+  INIT = 0U,
+  RUN  = 1U
+};
+
+// Non-class enum type
+enum Error_t : uint8_t
+{
+  ERROR_NONE  = 0U,
+  ERROR_VALUE = 1U
+};
+
+// File name: MyFile.cpp
+
+// Namespace
+namespace Atams
+{
+  // ...
+}
+```
 
 ## 13. Error Handling
 
-### Explicit Status & Result Objects
-
 ### Exceptions
-- **Rule:** No exceptions.  
-- **Pros:** Deterministic execution, no hidden control flow.  
-- **Cons:** Must use error codes.  
-- **Rationale:** Embedded systems often can’t afford exceptions.
-
+- **Rule:** Do not use C++ exceptions. All error conditions must be handled explicitly using return codes, error objects, or guard clauses.
+- **Rationale:** Exceptions can disrupt control flow, making it unclear where execution will continue after an error. Catching exceptions only at high levels may leave the program in an unpredictable state. Return codes and guard clauses keep error handling straightforward and maintainable.
 
 ## 14. File Format & Structure
 
@@ -830,10 +970,10 @@ This_t
 
 ### Include Order
 - **Rule:** Files must be included in groups and in the following group order: Associated header file (in .cpp file) -> Library headers -> Project headers.
-- **Rationale:** TODO
+- **Rationale:** Consistent include order across the codebase improves readability and maintainability. 
 - **Example:** 
 ```cpp
-// Example.cpp
+// In Example.cpp
 
 #include "Example.hpp"
 
@@ -845,6 +985,7 @@ This_t
 
 ## Init Orders
 - **Rule:** Avoid global/static init order reliance.  
+- **Rationale:** The order in which global and static variables are initialized across different translation units is not guaranteed by the C++ standard. Relying on this order can lead to unpredictable behavior.
 
 ### Class Files
 - **Rule:** Classes that are large or intended to be reused between different modules must be defined in their own `.hpp` and `.cpp` file pair.

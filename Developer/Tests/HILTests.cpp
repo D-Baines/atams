@@ -39,8 +39,7 @@ namespace Atams { namespace HILTests {
 /* PRIVATE CONSTANTS                                                                 */
 /*************************************************************************************/
 
-inline constexpr uint8_t NUMBER_OF_ERRORS_TO_INJECT  = 5U;
-inline constexpr uint8_t ERROR_INJECTION_PROBABILITY = 20U;
+constexpr uint8_t NUMBER_OF_TEST_NODES = 2U;
 
 /*************************************************************************************/
 /* PRIVATE TYPEDEFS                                                                  */
@@ -76,11 +75,11 @@ static Atams::TestNode testNode2_(2U, errorHandler);
 static Atams::TestNode testNode3_(3U, errorHandler);
 static Atams::TestNode testNode4_(4U, errorHandler);
 
-static Atams::TestNode *testNodes_[] = 
+static Atams::TestNode *testNodes_[NUMBER_OF_TEST_NODES] = 
 {
   &testNode1_,
   &testNode2_,
-  &testNode3_
+  //&testNode3_
 };
 
 static bool syncAsyncToggle_ {false};
@@ -106,9 +105,9 @@ static void errorHandler(const Atams::Error_t error, const char * errorMessage)
 
 static void testBusInit(void)
 {
-  Atams::Error_t      error         = Atams::ERROR_NONE;
-  Atams::Error_t      expectedError = Atams::ERROR_NONE;
-  Atams::ProcessState initState     = Atams::ProcessState::IN_PROGRESS;
+  Atams::Error_t      error         {Atams::ERROR_NONE};
+  Atams::Error_t      expectedError {Atams::ERROR_NONE};
+  Atams::ProcessState initState     {Atams::ProcessState::IN_PROGRESS};
 
   expectedError = Atams::ERROR_BUS_EMPTY;
   error         = testBus_.beginBusInitProcess();
@@ -122,13 +121,12 @@ static void testBusInit(void)
   error         = testBus_.addNodeToBus(testNode1_);
   if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
 
-  expectedError = Atams::ERROR_NONE;
-  error         = testBus_.addNodeToBus(testNode2_);
-  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
-
-  expectedError = Atams::ERROR_NONE;
-  error         = testBus_.addNodeToBus(testNode3_);
-  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+  for (uint32_t nodeIndex {1U}; nodeIndex < NUMBER_OF_TEST_NODES; nodeIndex++)
+  {
+    expectedError = Atams::ERROR_NONE;
+    error         = testBus_.addNodeToBus(*testNodes_[nodeIndex]);
+    if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
+  }
 
   expectedError = Atams::ERROR_BUS_FULL;
   error         = testBus_.addNodeToBus(testNode4_);
@@ -220,7 +218,8 @@ static Atams::Error_t runUpdateCycleTests(void)
   { 
     Atams::ProcessState updateState {Atams::ProcessState::IN_PROGRESS};
 
-    if (syncAsyncToggle_) updateState = testBus_.runUpdateCycleSync(error);
+    if (syncAsyncToggle_) 
+    updateState = testBus_.runUpdateCycleSync(error);
     else                  updateState = testBus_.runUpdateCycleAsync(error);
 
     if (updateState != Atams::ProcessState::IN_PROGRESS)

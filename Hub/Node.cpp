@@ -143,7 +143,7 @@ uint8_t Node::getNodeID(void)
 template <typename T>
 Atams::Error_t Node::setVar(const uint16_t varID, const T writeValue)
 {
-  if (varID >= validVarCount_) return (Atams:: ERROR_VAR_ID); /* Early Return */
+  if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
   const Atams::VarInfo_t &varInfo = memoryMap_->varInfoList[varID];
 
@@ -1601,6 +1601,7 @@ Atams::Error_t Node::updateRequestPacketWriteData(void)
     
     if (listReturn.status != WriteList::ERROR_NONE)
     {
+      clearAllRequestPatterns();
       return (Atams::ERROR_REQUEST_PACKET_FATAL); /* Early Return */
     }
     else if (externalTransfer(Atams::ACCESS_READ,
@@ -1608,6 +1609,7 @@ Atams::Error_t Node::updateRequestPacketWriteData(void)
                               &requestPacket_.buffer[listReturn.writeConfig.requestPacketIndex], 
                               listReturn.writeConfig.dataLength)!= Atams::ERROR_NONE)
     {
+      clearAllRequestPatterns();
       return (Atams::ERROR_REQUEST_PACKET_FATAL); /* Early Return */
     }
   }
@@ -1716,23 +1718,15 @@ Atams::Error_t Node::getEncodedRequestPacket(const Atams::MessageType_t requestT
 
   requestPacketLock_.acquireLock();
 
-  if (updateRequestPacketWriteData() != Atams::ERROR_NONE)
-  {
-    clearAllRequestPatterns();
-    statusReturn = Atams::ERROR_REQUEST_PACKET_FATAL;
-  }
-  else 
-  {
-    requestPacket_.buffer[HEADER_INDEX_MSG_TYPE] = requestType;
-    requestPacket_.buffer[HEADER_INDEX_NODE_ID ] = nodeID_;
-    requestPacket_.buffer[HEADER_INDEX_SYNC]     = syncCount;
-  
-    statusReturn = encodeBusPacket(requestPacket_.buffer, 
-                                   requestPacket_.length, 
-                                   outputBuffer, 
-                                   outputBufferMaxLength, 
-                                   outputLength);
-  }
+  requestPacket_.buffer[HEADER_INDEX_MSG_TYPE] = requestType;
+  requestPacket_.buffer[HEADER_INDEX_NODE_ID ] = nodeID_;
+  requestPacket_.buffer[HEADER_INDEX_SYNC]     = syncCount;
+
+  statusReturn = encodeBusPacket(requestPacket_.buffer, 
+                                  requestPacket_.length, 
+                                  outputBuffer, 
+                                  outputBufferMaxLength, 
+                                  outputLength);
 
   requestPacketLock_.releaseLock();
 

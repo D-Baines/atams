@@ -788,12 +788,26 @@ Atams::Error_t Bus::beginUpdateCyclePrivate(void)
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
   }
 
-  clearAllBusErrors();
-  circularBuffer_.reset();
-  updateNodeIndex_ = 0U;
-  activeSyncCount_++;
-  updateProcessHandler_.readyProcess();
-  updateProcessHandler_.specificState = Bus::UpdateState::SEND_REQUESTS;
+  Atams::Error_t error {Atams::ERROR_NONE};
+
+  for (Node *&nodePtr : nodePtrs_)
+  {
+    if ((nodePtr != nullptr          ) &&
+        (error   == Atams::ERROR_NONE) )
+    {
+      error = static_cast<NodeCallbackHandler&>(*nodePtr).updateRequestPacketWriteData();
+    }
+  }
+
+  if (error == Atams::ERROR_NONE)
+  {
+    clearAllBusErrors();
+    circularBuffer_.reset();
+    updateNodeIndex_ = 0U;
+    activeSyncCount_++;
+    updateProcessHandler_.readyProcess();
+    updateProcessHandler_.specificState = Bus::UpdateState::SEND_REQUESTS;
+  }
 
   return (Atams::ERROR_NONE);
 }

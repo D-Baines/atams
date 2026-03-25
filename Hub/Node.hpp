@@ -275,7 +275,7 @@ public NodeCallbackHandler
 
   Atams::Error_t updateRequestPatternOnReceive(const uint16_t varID);
 
-  Atams::Error_t updateRequestPacketWriteData(void);
+  virtual Atams::Error_t updateRequestPacketWriteData(void);
 
   virtual bool validateGenInfo(void);
 

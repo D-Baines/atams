@@ -98,6 +98,8 @@ class NodeCallbackHandler
                                                  uint8_t * const            outputBuffer,
                                                  const uint16_t             outputBufferMaxLength, 
                                                  uint16_t                  &outputLength) = 0;
+
+  virtual Atams::Error_t updateRequestPacketWriteData(void) = 0;
 };
 
 } /* End Namespace - Atams */
