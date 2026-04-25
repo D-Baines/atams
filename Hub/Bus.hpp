@@ -75,8 +75,6 @@ private Platform::BusPeripheral
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
-  /*-- Public Helper Class Definitions ----------------------------------------------*/
-
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Constructor */
@@ -106,23 +104,23 @@ private Platform::BusPeripheral
 
   Atams::Error_t beginBusInitProcess(void);
 
-  Atams::ProcessState updateBusInitProcess(Atams::Error_t &error);
+  Atams::ProcessState_t updateBusInitProcess(Atams::Error_t &error);
 
   Atams::Error_t beginUpdateCycle(void);
 
   Atams::Error_t beginSingleNodeUpdateCycle(Atams::Node &node);
 
-  Atams::ProcessState runUpdateCycleSync(Atams::Error_t &error);
+  Atams::ProcessState_t runUpdateCycleSync(Atams::Error_t &error);
 
-  Atams::ProcessState runUpdateCycleAsync(Atams::Error_t &error);
+  Atams::ProcessState_t runUpdateCycleAsync(Atams::Error_t &error);
 
-  Atams::ProcessState runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::Node &node);
+  Atams::ProcessState_t runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::Node &node);
 
   Atams::Error_t processSyncBuffers(void);
 
-  Atams::Error_t beginSetNodeConfigProcess(const NodeConfig_t &userConfig);
+  Atams::Error_t beginSetNodeConfigProcess(const Atams::NodeConfig_t &userConfig);
 
-  Atams::ProcessState updateSetNodeConfigProcess(Atams::Error_t &error); 
+  Atams::ProcessState_t updateSetNodeConfigProcess(Atams::Error_t &error); 
 
   /*-- Private ----------------------------------------------------------------------*/
 
@@ -187,12 +185,12 @@ private Platform::BusPeripheral
 
   struct ProcessHandlerBase
   {
-    Atams::ProcessState processState     {Atams::ProcessState::ERROR};
-    Atams::ProcessState subProcessState  {Atams::ProcessState::ERROR};
-    Atams::Error_t      error            {Atams::ERROR_INIT_ORDER};
-    uint32_t            prevEventTime    {0U};
-    bool                allNodesComplete {false};
-    Atams::Node        *activeNodePtr    {nullptr};
+    Atams::ProcessState_t processState     {Atams::PROCESS_ERROR};
+    Atams::ProcessState_t subProcessState  {Atams::PROCESS_ERROR};
+    Atams::Error_t        error            {Atams::ERROR_INIT_ORDER};
+    uint32_t              prevEventTime    {0U};
+    bool                  allNodesComplete {false};
+    Atams::Node          *activeNodePtr    {nullptr};
   };
   
   template <typename T>

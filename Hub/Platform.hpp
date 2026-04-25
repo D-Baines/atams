@@ -42,7 +42,7 @@ namespace Atams { namespace Platform {
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-/** @brief The maximum number of Nodes added to on any of the application's Atams::Bus objects */
+/** @brief The maximum number of Nodes that can be added to any of the application's Atams::Bus objects */
 constexpr uint16_t NUMBER_OF_NODES_PER_BUS {2U};
 
 /** @brief The maximum number of Atams vars used by any of the application's Atams::Node objects */
@@ -58,14 +58,14 @@ constexpr uint16_t MAX_BUS_PACKET_SIZE {64U};
 constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};
 
 /** 
-*   @brief The maximum time period for an Atams::Bus object to wait for a response 
-*          from an Atams::Node device during a Bus update cycle
+*   @brief The maximum time period for an Atams::Bus object to wait wihout a response 
+*          from an Atams::Node device during a Bus update cycle in milliseconds.
 */
 constexpr uint64_t BUS_RESPONSE_TIMEOUT {500U};
 
 /** 
 *   @brief The maximum time period for an Atams::Bus object to wait without response while an 
-*          Atams::Node device completes a non-volatile memory storage task
+*          Atams::Node device completes a non-volatile memory storage task in milliseconds.
 */
 constexpr uint64_t NVM_STORAGE_TIMEOUT {5000U};
 
@@ -74,7 +74,7 @@ constexpr uint64_t NVM_STORAGE_TIMEOUT {5000U};
 /*************************************************************************************/
 
 /** 
- * @brief Platform comms peripheral class for transmit and receive of raw byte buffers. 
+ * @brief Platform comms peripheral class for the transmit and receive of raw byte buffers. 
  *        BusPeripheral is inherited and used by the Atams::Bus class. A single 
  *        BusPeripheral object is constructed for each Atams::Bus object.
  *
@@ -82,12 +82,16 @@ constexpr uint64_t NVM_STORAGE_TIMEOUT {5000U};
  */ 
 class BusPeripheral
 {
+  /*-- Public -----------------------------------------------------------------------*/
+
   public:
+
+  /*-- Required Public Typedefs -----------------------------------------------------*/
 
   /**
    * @brief   User data structure for the BusPeripheral class.
    *
-   * @details The user must populate this structure with any data required for
+   * @details The user should populate this structure with any data required for
    *          the platform comms peripheral to operate. This structure is passed
    *          to the Atams::Bus constructor.
    *
@@ -99,67 +103,34 @@ class BusPeripheral
     asio::serial_port &serialPort;
   };
 
-  /** @brief Constructor. */
+  /*-- Required Public Function Declarations ----------------------------------------*/
+
   BusPeripheral(UserData_t userData);
 
-  /** @brief   Start receiving data on the user comms peripheral. 
-   *
-   *  @details This function is called from the Atams::Bus class when a bus init or config update process is started.
-   *
-   *  @return  True if the user comms peripheral was started successfully, false otherwise.
-   *
-   *  @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
-   */
   bool startReceive(void);
 
-  /**
-   * @brief   Check if the user comms peripheral is ready to transmit data.
-   *
-   * @details This function is called from the Atams::Bus class during a bus update cycle.
-   *
-   * @return  True if the user comms peripheral is ready to transmit data, false otherwise.
-   *
-   * @note    ATAMS PLATFORM REQUIREMENT - ALL
-   */
   bool transmitReady(void);
 
-  /**
-   * @brief   Transmit bytes using the user comms peripheral.
-   *
-   * @details This function is called from the Atams::Bus class during a bus update cycle.
-   *
-   * @param   buffer Pointer to the data buffer to transmit.
-   *
-   * @param   length Length of the data buffer to transmit.
-   *
-   * @return  Transmission status.
-   *          true:  Transmission successfully started or all bytes successfully transmitted.
-   *          false: Transmission error occurred.
-   *
-   *  @note   ATAMS PLATFORM REQUIREMENT - ALL
-   */
   bool transmit(uint8_t *buffer, const uint16_t length);
 
-  /**
-   * @brief   Update or poll the user comms peripheral if required.
-   *
-   * @details This function is called from the Atams::Bus class during a bus update cycle.
-   *
-   * @note    ATAMS PLATFORM REQUIREMENT - POLLING COMMS
-   */
   void update(void);
 
   private: 
 
+  /*-- Required Private Variables ---------------------------------------------------*/
+
   /** @brief User data object initialised in the bus constructor */
   const UserData_t userData_;
 
-  /** @brief Receive buffer for the user comms peripheral to store incoming bytes. */
+  /*-- User Private Variables -------------------------------------------------------*/
+  
   uint8_t rxBuffer_[MAX_BUS_PACKET_SIZE];
 
   std::atomic<bool> transmitReady_ {true};
 
-  /**
+  /*-- Required Private Function Declarations ---------------------------------------*/
+
+   /**
    * @brief   Callback function for received bytes.
    *
    * @param   rxBufferPtr    Pointer to the received data buffer (optionally use rxBuffer_).
@@ -174,6 +145,8 @@ class BusPeripheral
    */
   virtual void rxCallback(      uint8_t  *rxBufferPtr,
                           const uint16_t  rxBufferLength) = 0;
+
+  /*-- User Private Function Declarations -------------------------------------------*/
 
   void rxHandler(asio::error_code ec, size_t xfr);
 
@@ -190,20 +163,21 @@ class BusPeripheral
  */
 class MemoryLock
 {
+  /*-- Public -----------------------------------------------------------------------*/
+
   public:
 
-  /** @brief Initialize the memory lock if required. */
+  /*-- Required Public Function Declarations ----------------------------------------*/
+
   bool init(void);
 
-  /** @brief Acquire the memory lock. */
   void acquireLock(void);
 
-  /** @brief Release the memory lock. */
   void releaseLock(void);
 
   private:
 
-  /* User objects can be placed here (mutex, semaphore, etc.) */
+  /*-- User Private Variables -------------------------------------------------------*/
 
   std::mutex _memoryLock;
 };
@@ -218,26 +192,27 @@ class MemoryLock
  */
 class CommsLock
 {
+  /*-- Public -----------------------------------------------------------------------*/
+
   public:
 
-  /** @brief Initialize the comms lock if required. */
+  /*-- Required Public Function Declarations ----------------------------------------*/
+
   bool init(void);
 
-  /** @brief Acquire the comms lock. */
   void acquireLock(void);
 
-  /** @brief Release the comms lock. */
   void releaseLock(void);
 
   private:
 
-  /* User objects can be placed here (mutex, semaphore, etc.) */
+  /*-- User Private Variables -------------------------------------------------------*/
 
   std::mutex _commsLock;
 };
 
 /*************************************************************************************/
-/* PUBLIC FUNCTION DEFINITIONS                                                       */
+/* INLINE PUBLIC FUNCTION DEFINITIONS                                                */
 /*************************************************************************************/
 
 /**

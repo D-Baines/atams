@@ -105,9 +105,9 @@ static void errorHandler(const Atams::Error_t error, const char * errorMessage)
 
 static void testBusInit(void)
 {
-  Atams::Error_t      error         {Atams::ERROR_NONE};
-  Atams::Error_t      expectedError {Atams::ERROR_NONE};
-  Atams::ProcessState initState     {Atams::ProcessState::IN_PROGRESS};
+  Atams::Error_t        error         {Atams::ERROR_NONE};
+  Atams::Error_t        expectedError {Atams::ERROR_NONE};
+  Atams::ProcessState_t initState     {Atams::PROCESS_IN_PROGRESS};
 
   expectedError = Atams::ERROR_BUS_EMPTY;
   error         = testBus_.beginBusInitProcess();
@@ -139,20 +139,20 @@ static void testBusInit(void)
   expectedError  = Atams::ERROR_INIT_ORDER;
   error          = Atams::ERROR_NONE;
   initState      = testBus_.runUpdateCycleAsync(error);
-  if ((initState != Atams::ProcessState::ERROR) ||
-      (error     != expectedError             ) ) errorHandler(error, "Unexpected Return from Bus::runUpdateCycleAsync");
+  if ((initState != Atams::PROCESS_ERROR) ||
+      (error     != expectedError       ) ) errorHandler(error, "Unexpected Return from Bus::runUpdateCycleAsync");
 
   expectedError  = Atams::ERROR_INIT_ORDER;
   error          = Atams::ERROR_NONE;
   initState      = testBus_.runUpdateCycleSync(error);
-  if ((initState != Atams::ProcessState::ERROR) ||
-      (error     != expectedError             ) ) errorHandler(error, "Unexpected Return from Bus::runUpdateCycleSync");
+  if ((initState != Atams::PROCESS_ERROR) ||
+      (error     != expectedError       ) ) errorHandler(error, "Unexpected Return from Bus::runUpdateCycleSync");
 
   expectedError = Atams::ERROR_INIT_ORDER;
   error         = Atams::ERROR_NONE;
   initState     = testBus_.updateBusInitProcess(error);
-  if ((initState != Atams::ProcessState::ERROR) ||
-      (error     != expectedError             ) ) errorHandler(error, "Unexpected Return from Bus::updateBusInitProcess");
+  if ((initState != Atams::PROCESS_ERROR) ||
+      (error     != expectedError       ) ) errorHandler(error, "Unexpected Return from Bus::updateBusInitProcess");
 
   expectedError = Atams::ERROR_NONE;
   error         = testBus_.beginBusInitProcess();
@@ -162,10 +162,10 @@ static void testBusInit(void)
   {
     initState = testBus_.updateBusInitProcess(error);
   }
-  while (initState == Atams::ProcessState::IN_PROGRESS);
+  while (initState == Atams::PROCESS_IN_PROGRESS);
 
-  if ((initState == Atams::ProcessState::ERROR) || 
-      (error     != expectedError             ) ) 
+  if ((initState == Atams::PROCESS_ERROR) || 
+      (error     != expectedError       ) ) 
   {
     for (TestNode *&testNodePtr : testNodes_)
     {
@@ -199,9 +199,9 @@ static void testBusInit(void)
   {
     initState = testBus_.runUpdateCycleSync(error);
   }
-  while (initState == Atams::ProcessState::IN_PROGRESS);
+  while (initState == Atams::PROCESS_IN_PROGRESS);
 
-  if ((initState == Atams::ProcessState::ERROR) || 
+  if ((initState == Atams::PROCESS_ERROR) || 
       (error     != expectedError             ) ) 
   {
     errorHandler(error, "Unexpected Return from Bus::runUpdateCycleSync");
@@ -216,15 +216,15 @@ static Atams::Error_t runUpdateCycleTests(void)
 
   for(;;)
   { 
-    Atams::ProcessState updateState {Atams::ProcessState::IN_PROGRESS};
+    Atams::ProcessState_t updateState {Atams::PROCESS_IN_PROGRESS};
 
     if (syncAsyncToggle_) 
     updateState = testBus_.runUpdateCycleSync(error);
     else                  updateState = testBus_.runUpdateCycleAsync(error);
 
-    if (updateState != Atams::ProcessState::IN_PROGRESS)
+    if (updateState != Atams::PROCESS_IN_PROGRESS)
     { 
-      if (updateState != Atams::ProcessState::COMPLETE) errorHandler(error, "Unexpected Update Cycle Error");
+      if (updateState != Atams::PROCESS_COMPLETE) errorHandler(error, "Unexpected Update Cycle Error");
 
       if (syncAsyncToggle_) testBus_.processSyncBuffers();
 
@@ -267,9 +267,9 @@ void runTests(void)
 
   Atams::Error_t error = testNode1_.initMemoryMap(Atams::MapTest::memoryMap);
 
-  if (!error)    error = testNode2_.initMemoryMap(Atams::MapTest::memoryMap);
+  if (!error) error = testNode2_.initMemoryMap(Atams::MapTest::memoryMap);
 
-  if (!error)    error = testNode3_.initMemoryMap(Atams::MapTest::memoryMap);
+  if (!error) error = testNode3_.initMemoryMap(Atams::MapTest::memoryMap);
 
   if (error) errorHandler(error, "Node Init Failed");
 

@@ -34,8 +34,7 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams
-{
+namespace Atams {
 
 /*************************************************************************************/
 /* PRE-PROCESSOR MACROS                                                              */
@@ -89,11 +88,11 @@ static_assert(std::numeric_limits<float>::is_iec559, "Platform float representat
 /* TYPEDEFS                                                                          */
 /*************************************************************************************/
 
-enum class ProcessState: uint8_t
+enum ProcessState_t: uint8_t
 {
-  IN_PROGRESS = 0U,
-  ERROR       = 1U,
-  COMPLETE    = 2U
+  PROCESS_ERROR       = 0U,
+  PROCESS_IN_PROGRESS = 1U,
+  PROCESS_COMPLETE    = 2U
 };
 
 enum MessageType_t: uint8_t

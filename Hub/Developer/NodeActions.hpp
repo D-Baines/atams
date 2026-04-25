@@ -95,31 +95,31 @@ class NodeActions
 
   void beginSetBusIDs(Node &node, const Atams::BusIDs_t busIDs);
 
-  Atams::ProcessState updateConfigurationStateEntry(Atams::Error_t &error);
+  Atams::ProcessState_t updateConfigurationStateEntry(Atams::Error_t &error);
 
-  Atams::ProcessState updateConfigurationStateExit(Atams::Error_t &error);
+  Atams::ProcessState_t updateConfigurationStateExit(Atams::Error_t &error);
 
-  Atams::ProcessState updateSetNodeID(Atams::Error_t &error);
+  Atams::ProcessState_t updateSetNodeID(Atams::Error_t &error);
 
-  Atams::ProcessState updateSetBitrate(Atams::Error_t &error);
+  Atams::ProcessState_t updateSetBitrate(Atams::Error_t &error);
 
-  Atams::ProcessState updateSetWatchdogPeriod(Atams::Error_t &error);
+  Atams::ProcessState_t updateSetWatchdogPeriod(Atams::Error_t &error);
 
-  Atams::ProcessState updateSetNodeConfig(Atams::Error_t &error);
+  Atams::ProcessState_t updateSetNodeConfig(Atams::Error_t &error);
 
-  Atams::ProcessState updateStoreAll(Atams::Error_t &error);
+  Atams::ProcessState_t updateStoreAll(Atams::Error_t &error);
 
-  Atams::ProcessState updateRestoreAll(Atams::Error_t &error);
+  Atams::ProcessState_t updateRestoreAll(Atams::Error_t &error);
 
-  Atams::ProcessState updateRestoreUserBlocks(Atams::Error_t &error);
+  Atams::ProcessState_t updateRestoreUserBlocks(Atams::Error_t &error);
 
-  Atams::ProcessState updateResetNode(Atams::Error_t &error);
+  Atams::ProcessState_t updateResetNode(Atams::Error_t &error);
 
-  Atams::ProcessState updateValidateGenInfo(Atams::Error_t &error, bool &genInfoIsValid);
+  Atams::ProcessState_t updateValidateGenInfo(Atams::Error_t &error, bool &genInfoIsValid);
 
-  Atams::ProcessState updateValidateBusIDs(Atams::Error_t &error, bool &allIDsValid);
+  Atams::ProcessState_t updateValidateBusIDs(Atams::Error_t &error, bool &allIDsValid);
 
-  Atams::ProcessState updateSetBusIDs(Atams::Error_t &error);
+  Atams::ProcessState_t updateSetBusIDs(Atams::Error_t &error);
 
   private:
 
@@ -252,14 +252,14 @@ class NodeActions
     ProcessHandler(ProcessHandler &&other)                  = delete;
     ProcessHandler & operator=(ProcessHandler &&other)      = delete;;
 
-    Node               *nodePtr         = nullptr;
-    Atams::ProcessState processState    = Atams::ProcessState::COMPLETE;
-    Atams::ProcessState subProcessState = Atams::ProcessState::COMPLETE;
-    T                   specificState   = T::START;
-    Atams::Error_t      error           = Atams::ERROR_NONE;
-    Atams::Error_t      cancelError     = Atams::ERROR_NONE;
-    uint32_t            prevEventTime   = 0U;
-    uint32_t            startTime       = 0U;
+    Node                 *nodePtr         = nullptr;
+    Atams::ProcessState_t processState    = Atams::PROCESS_COMPLETE;
+    Atams::ProcessState_t subProcessState = Atams::PROCESS_COMPLETE;
+    T                     specificState   = T::START;
+    Atams::Error_t        error           = Atams::ERROR_NONE;
+    Atams::Error_t        cancelError     = Atams::ERROR_NONE;
+    uint32_t              prevEventTime   = 0U;
+    uint32_t              startTime       = 0U;
 
     void resetAndAssignNode(Node &node);
     void terminate(Atams::Error_t error);
@@ -304,15 +304,15 @@ class NodeActions
   void updateCancelConfigState(ProcessHandler<T> &process);
 
   template<typename T>
-  Atams::ProcessState updateSetConfigVar(Atams::Error_t &error, const uint16_t varID, const T value);
+  Atams::ProcessState_t updateSetConfigVar(Atams::Error_t &error, const uint16_t varID, const T value);
 
-  Atams::ProcessState updateStorageProcess(Atams::Error_t &error, const uint16_t varID, uint32_t passcode);
+  Atams::ProcessState_t updateStorageProcess(Atams::Error_t &error, const uint16_t varID, uint32_t passcode);
 
-  Atams::ProcessState updateValidateMultipleConfig(Atams::Error_t            &error, 
-                                                   bool                      &allVarsValid, 
-                                                   ValidateMultiConfigFtns_t &specificFunctions);
+  Atams::ProcessState_t updateValidateMultipleConfig(Atams::Error_t            &error, 
+                                                     bool                      &allVarsValid, 
+                                                     ValidateMultiConfigFtns_t &specificFunctions);
 
-  Atams::ProcessState updateSetMultipleConfig(Atams::Error_t &error, SetMultiConfigFtns_t &specificFunctions);
+  Atams::ProcessState_t updateSetMultipleConfig(Atams::Error_t &error, SetMultiConfigFtns_t &specificFunctions);
   
   static void validateGenInfoRead(Atams::Node &node);
 

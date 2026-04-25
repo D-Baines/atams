@@ -107,7 +107,7 @@ void NodeActions::beginSetBusIDs(Node &node, const Atams::BusIDs_t busIDs)
   setMultiConfigProcess_.resetAndAssignNode(node);
 }
 
-Atams::ProcessState NodeActions::updateConfigurationStateEntry(Atams::Error_t &error)
+Atams::ProcessState_t NodeActions::updateConfigurationStateEntry(Atams::Error_t &error)
 {
   NodeActions::ProcessHandler<ConfigEntryState> &process = configEntryProcess_;
 
@@ -166,7 +166,7 @@ Atams::ProcessState NodeActions::updateConfigurationStateEntry(Atams::Error_t &e
   return (process.processState);
 }
 
-Atams::ProcessState NodeActions::updateConfigurationStateExit(Atams::Error_t &error)
+Atams::ProcessState_t NodeActions::updateConfigurationStateExit(Atams::Error_t &error)
 {
   NodeActions::ProcessHandler<ConfigExitState> &process = configExitProcess_;
 
@@ -228,42 +228,42 @@ Atams::ProcessState NodeActions::updateConfigurationStateExit(Atams::Error_t &er
   return (process.processState);
 }
 
-Atams::ProcessState NodeActions::updateSetNodeID(Atams::Error_t &error)
+Atams::ProcessState_t NodeActions::updateSetNodeID(Atams::Error_t &error)
 {
   return (updateSetConfigVar<uint8_t>(error, BlockUniversal::VAR_NODE_ID, nodeIDToSet_));
 }
 
-Atams::ProcessState NodeActions::updateSetBitrate(Atams::Error_t &error)
+Atams::ProcessState_t NodeActions::updateSetBitrate(Atams::Error_t &error)
 {
   return (updateSetConfigVar<uint8_t>(error, BlockUniversal::VAR_BITRATE, static_cast<uint8_t>(bitrateOptionToSet_)));
 }
 
-Atams::ProcessState NodeActions::updateSetWatchdogPeriod(Atams::Error_t &error)
+Atams::ProcessState_t NodeActions::updateSetWatchdogPeriod(Atams::Error_t &error)
 {
   return (updateSetConfigVar<uint32_t>(error, BlockUniversal::VAR_WATCHDOG_PERIOD, watchdogPeriodToSet_));
 }
 
-Atams::ProcessState NodeActions::updateSetNodeConfig(Atams::Error_t &error)
+Atams::ProcessState_t NodeActions::updateSetNodeConfig(Atams::Error_t &error)
 {
   return (updateSetMultipleConfig(error, setUserConfigFunctions_));
 }
 
-Atams::ProcessState NodeActions::updateStoreAll(Atams::Error_t &error)
+Atams::ProcessState_t NodeActions::updateStoreAll(Atams::Error_t &error)
 {
   return(updateStorageProcess(error, BlockUniversal::VAR_STORE_ALL, Atams::STORE_ALL_PASSCODE));
 }
 
-Atams::ProcessState NodeActions::updateRestoreAll(Atams::Error_t &error)
+Atams::ProcessState_t NodeActions::updateRestoreAll(Atams::Error_t &error)
 {
   return(updateStorageProcess(error, BlockUniversal::VAR_RESTORE_ALL, Atams::RESTORE_ALL_PASSCODE));
 }
 
-Atams::ProcessState NodeActions::updateRestoreUserBlocks(Atams::Error_t &error)
+Atams::ProcessState_t NodeActions::updateRestoreUserBlocks(Atams::Error_t &error)
 {
   return(updateStorageProcess(error, BlockUniversal::VAR_RESTORE_USER_BLOCKS, Atams::RESTORE_USER_BLOCKS_PASSCODE));
 }
 
-Atams::ProcessState NodeActions::updateResetNode(Atams::Error_t &error)
+Atams::ProcessState_t NodeActions::updateResetNode(Atams::Error_t &error)
 {
   NodeActions::ProcessHandler<ResetNodeState> &process = resetNodeProcess_;
 
@@ -273,9 +273,9 @@ Atams::ProcessState NodeActions::updateResetNode(Atams::Error_t &error)
     return (process.processState); /* Early Return */
   }
 
-  Node                &node            = *process.nodePtr;
-  Atams::ProcessState &subProcessState = process.subProcessState;
-  bool                 ackReceived     = false;
+  Node                  &node            = *process.nodePtr;
+  Atams::ProcessState_t &subProcessState = process.subProcessState;
+  bool                   ackReceived     = false;
 
   switch (process.specificState)
   {
@@ -285,8 +285,8 @@ Atams::ProcessState NodeActions::updateResetNode(Atams::Error_t &error)
       break;
     case ResetNodeState::ENTER_CONFIG:
       subProcessState = updateConfigurationStateEntry(process.error);
-      if      (subProcessState == Atams::ProcessState::COMPLETE) process.specificState = ResetNodeState::WRITE_PASSCODE;
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);
+      if      (subProcessState == Atams::PROCESS_COMPLETE) process.specificState = ResetNodeState::WRITE_PASSCODE;
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);
       break;
     case ResetNodeState::WRITE_PASSCODE:
       static_cast<void>(node.clearAckSetWriteStream(BlockUniversal::VAR_RESET_NODE, Atams::RESET_NODE_PASSCODE));
@@ -314,17 +314,17 @@ Atams::ProcessState NodeActions::updateResetNode(Atams::Error_t &error)
   return (process.processState);
 }
 
-Atams::ProcessState NodeActions::updateValidateGenInfo(Atams::Error_t &error, bool &genInfoIsValid)
+Atams::ProcessState_t NodeActions::updateValidateGenInfo(Atams::Error_t &error, bool &genInfoIsValid)
 {
   return (updateValidateMultipleConfig(error, genInfoIsValid, validateGenInfoFunctions_));
 }
 
-Atams::ProcessState NodeActions::updateValidateBusIDs(Atams::Error_t &error, bool &allIDsValid)
+Atams::ProcessState_t NodeActions::updateValidateBusIDs(Atams::Error_t &error, bool &allIDsValid)
 {
   return (updateValidateMultipleConfig(error, allIDsValid, validateBusIDsFunctions_));
 }
 
-Atams::ProcessState NodeActions::updateSetBusIDs(Atams::Error_t &error)
+Atams::ProcessState_t NodeActions::updateSetBusIDs(Atams::Error_t &error)
 {
   return (updateSetMultipleConfig(error, setBusIDsFunctions_));
 }
@@ -346,12 +346,12 @@ template<typename T>
 void NodeActions::updateCancelConfigState(ProcessHandler<T> &process)
 {
   process.subProcessState = updateConfigurationStateExit(process.error);
-  if      (process.subProcessState == Atams::ProcessState::COMPLETE) process.terminate(process.cancelError);
-  else if (process.subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);       
+  if      (process.subProcessState == Atams::PROCESS_COMPLETE) process.terminate(process.cancelError);
+  else if (process.subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);       
 }
 
 template<typename T>
-Atams::ProcessState NodeActions::updateSetConfigVar(Atams::Error_t &error, const uint16_t varID, const T value)
+Atams::ProcessState_t NodeActions::updateSetConfigVar(Atams::Error_t &error, const uint16_t varID, const T value)
 {
   NodeActions::ProcessHandler<SetConfigVarState> &process = setConfigVarProcess_;
 
@@ -362,7 +362,7 @@ Atams::ProcessState NodeActions::updateSetConfigVar(Atams::Error_t &error, const
   }
 
   Node                  &node            {*process.nodePtr};
-  Atams::ProcessState   &subProcessState {process.subProcessState};
+  Atams::ProcessState_t &subProcessState {process.subProcessState};
   bool                   ackReceived     {false};
   T                      readConfigVar;    
   std::optional<uint8_t> newNodeID;     
@@ -375,8 +375,8 @@ Atams::ProcessState NodeActions::updateSetConfigVar(Atams::Error_t &error, const
       break;
     case SetConfigVarState::ENTER_CONFIG:
       subProcessState = updateConfigurationStateEntry(process.error);
-      if      (subProcessState == Atams::ProcessState::COMPLETE) process.specificState = SetConfigVarState::WRITE;
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);
+      if      (subProcessState == Atams::PROCESS_COMPLETE) process.specificState = SetConfigVarState::WRITE;
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);
       break;
     case SetConfigVarState::WRITE:
       static_cast<void>(node.clearAckSetWriteStream(varID, value));
@@ -397,8 +397,8 @@ Atams::ProcessState NodeActions::updateSetConfigVar(Atams::Error_t &error, const
       break;
     case SetConfigVarState::APPLY_CONFIG:
       subProcessState = updateConfigurationStateExit(process.error);
-      if      (subProcessState == Atams::ProcessState::COMPLETE) process.specificState = SetConfigVarState::READ;
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);   
+      if      (subProcessState == Atams::PROCESS_COMPLETE) process.specificState = SetConfigVarState::READ;
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);   
       break;
     case SetConfigVarState::READ:
       static_cast<void>(node.clearDataReadySetReadStream(varID));
@@ -424,7 +424,7 @@ Atams::ProcessState NodeActions::updateSetConfigVar(Atams::Error_t &error, const
   return (process.processState);
 }
 
-Atams::ProcessState NodeActions::updateStorageProcess(Atams::Error_t &error, const uint16_t passcodeVarID, uint32_t passcode)
+Atams::ProcessState_t NodeActions::updateStorageProcess(Atams::Error_t &error, const uint16_t passcodeVarID, uint32_t passcode)
 {
   NodeActions::ProcessHandler<StorageProcessState> &process = storageProcess_;
 
@@ -434,11 +434,11 @@ Atams::ProcessState NodeActions::updateStorageProcess(Atams::Error_t &error, con
     return (process.processState); /* Early Return */
   }
 
-  Node                &node            {*process.nodePtr};
-  Atams::ProcessState &subProcessState {process.subProcessState};
-  uint8_t              storeComplete   {Atams::ATAMS_FALSE};
-  uint8_t              storageStatus   {Atams::ERROR_STORAGE_PROCESS_FAILED};
-  uint32_t             currentTime     {Platform::getMillis()};
+  Node                  &node            {*process.nodePtr};
+  Atams::ProcessState_t &subProcessState {process.subProcessState};
+  uint8_t                storeComplete   {Atams::ATAMS_FALSE};
+  uint8_t                storageStatus   {Atams::ERROR_STORAGE_PROCESS_FAILED};
+  uint32_t               currentTime     {Platform::getMillis()};
 
   switch (process.specificState)
   {
@@ -448,8 +448,8 @@ Atams::ProcessState NodeActions::updateStorageProcess(Atams::Error_t &error, con
       break;
     case StorageProcessState::ENTER_CONFIG:
       subProcessState = updateConfigurationStateEntry(process.cancelError);
-      if      (subProcessState == Atams::ProcessState::COMPLETE) process.specificState = StorageProcessState::PROGRESS_CLEAR;
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.cancelError);
+      if      (subProcessState == Atams::PROCESS_COMPLETE) process.specificState = StorageProcessState::PROGRESS_CLEAR;
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.cancelError);
       break;
     case StorageProcessState::PROGRESS_CLEAR:
       static_cast<void>(node.clearDataReadySetReadStream(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE));
@@ -506,8 +506,8 @@ Atams::ProcessState NodeActions::updateStorageProcess(Atams::Error_t &error, con
       break;
     case StorageProcessState::EXIT_CONFIG:
       subProcessState = updateConfigurationStateExit(process.cancelError);
-      if      (subProcessState == Atams::ProcessState::COMPLETE) process.setProcessComplete();
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.cancelError);   
+      if      (subProcessState == Atams::PROCESS_COMPLETE) process.setProcessComplete();
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.cancelError);   
       break;
     case StorageProcessState::COMPLETE:
     case StorageProcessState::ERROR:
@@ -523,9 +523,9 @@ Atams::ProcessState NodeActions::updateStorageProcess(Atams::Error_t &error, con
   return (process.processState);
 }
 
-Atams::ProcessState NodeActions::updateValidateMultipleConfig(Atams::Error_t            &error, 
-                                                              bool                      &allVarsValid, 
-                                                              ValidateMultiConfigFtns_t &specificFunctions)
+Atams::ProcessState_t NodeActions::updateValidateMultipleConfig(Atams::Error_t            &error, 
+                                                                bool                      &allVarsValid, 
+                                                                ValidateMultiConfigFtns_t &specificFunctions)
 {
   NodeActions::ProcessHandler<ValidateMultiConfigState> &process = validateMultiConfigProcess_;
 
@@ -565,7 +565,7 @@ Atams::ProcessState NodeActions::updateValidateMultipleConfig(Atams::Error_t    
   return (process.processState);
 }
 
-Atams::ProcessState NodeActions::updateSetMultipleConfig(Atams::Error_t &error, SetMultiConfigFtns_t &specificFunctions)
+Atams::ProcessState_t NodeActions::updateSetMultipleConfig(Atams::Error_t &error, SetMultiConfigFtns_t &specificFunctions)
 {
   NodeActions::ProcessHandler<SetMultiConfigState> &process {setMultiConfigProcess_};
 
@@ -575,9 +575,9 @@ Atams::ProcessState NodeActions::updateSetMultipleConfig(Atams::Error_t &error, 
     return (process.processState); /* Early Return */
   }
 
-  Node                &node            = *process.nodePtr;
-  Atams::ProcessState &subProcessState =  process.subProcessState;
-  bool                 successFlag     =  false;      
+  Node                  &node            = *process.nodePtr;
+  Atams::ProcessState_t &subProcessState =  process.subProcessState;
+  bool                   successFlag     =  false;      
 
   switch (process.specificState)
   {
@@ -587,8 +587,8 @@ Atams::ProcessState NodeActions::updateSetMultipleConfig(Atams::Error_t &error, 
       break;
     case SetMultiConfigState::ENTER_CONFIG:
       subProcessState = updateConfigurationStateEntry(process.error);
-      if      (subProcessState == Atams::ProcessState::COMPLETE) process.specificState = SetMultiConfigState::WRITE;
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);
+      if      (subProcessState == Atams::PROCESS_COMPLETE) process.specificState = SetMultiConfigState::WRITE;
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);
       break;
     case SetMultiConfigState::WRITE:
       specificFunctions.writeFunction(*this, node);
@@ -608,8 +608,8 @@ Atams::ProcessState NodeActions::updateSetMultipleConfig(Atams::Error_t &error, 
       break;
     case SetMultiConfigState::APPLY_CONFIG:
       subProcessState = updateConfigurationStateExit(process.error);
-      if      (subProcessState == Atams::ProcessState::COMPLETE) process.specificState = SetMultiConfigState::READ;
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);   
+      if      (subProcessState == Atams::PROCESS_COMPLETE) process.specificState = SetMultiConfigState::READ;
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);   
       break;
     case SetMultiConfigState::READ:
       specificFunctions.readFunction(node);
@@ -799,7 +799,7 @@ void NodeActions::ProcessHandler<T>::resetAndAssignNode(Node &node)
   this->nodePtr       = &node;
   this->error         = Atams::ERROR_NONE;
   this->specificState = T::START;
-  this->processState  = Atams::ProcessState::IN_PROGRESS;
+  this->processState  = Atams::PROCESS_IN_PROGRESS;
   this->nodePtr->clearAllRequestPatterns();
 }
 
@@ -808,7 +808,7 @@ void NodeActions::ProcessHandler<T>::terminate(Atams::Error_t exitError)
 {
   this->error         = exitError;
   this->specificState = T::ERROR;
-  this->processState  = Atams::ProcessState::ERROR;
+  this->processState  = Atams::PROCESS_ERROR;
   if (this->nodePtr != nullptr) this->nodePtr->clearAllRequestPatterns();
 }
 
@@ -817,20 +817,20 @@ void NodeActions::ProcessHandler<T>::setProcessComplete(void)
 {
   this->error         = Atams::ERROR_NONE;
   this->specificState = T::COMPLETE;
-  this->processState  = Atams::ProcessState::COMPLETE;
+  this->processState  = Atams::PROCESS_COMPLETE;
   if (this->nodePtr != nullptr) this->nodePtr->clearAllRequestPatterns();
 }
 
 template <typename T>
 bool NodeActions::ProcessHandler<T>::getProcessTerminated(void)
 {
-  return (this->processState == Atams::ProcessState::ERROR);
+  return (this->processState == Atams::PROCESS_ERROR);
 }
 
 template <typename T>
 bool NodeActions::ProcessHandler<T>::nullptrCheck(void)
 {
-  bool ptrIsNull = false;
+  bool ptrIsNull {false};
 
   if (this->nodePtr == nullptr) 
   {

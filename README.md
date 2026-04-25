@@ -18,9 +18,7 @@
 
 Atams is a C++ framework designed for use in embedded systems where a single central device ("Hub") communicates with and manages multiple distributed devices ("Nodes"). It simplifies variable sharing, synchronisation, and non-volatile storage, making it ideal for robotics, automation, and control applications.
 
-Atams is split into three sections: Autogen tooling, a Hub library, and a Node library.
-
-To accelerate development, Atams provides tools for auto-generating device-specific "Memory Maps" for the Hub and Node libraries. These Memory Maps hold information for each Node variable, including type, access permission, storage option, and factory default. 
+Atams is split into three sections: Autogen tooling, a Hub library, and a Node library. 
 
 The Atams Hub and Node libraries support the following features:
 
@@ -46,7 +44,7 @@ The Atams Hub and Node libraries support the following features:
 ### Not Yet Supported:
 
 - Automatic migration of Node non-volatile storage between compatible Memory Map versions.
-- Variable value maximum and minimum limits on request packet parsing.
+- Variable value maximum and minimum limits at the point of request packet parsing.
 - Large raw buffer transport.
 
 # Communications Hardware Requirements
@@ -70,19 +68,23 @@ Atams is compatible with C++17 and above, does not use any non-ISO C++ features,
 
 
 # Memory Maps
+
 Memory Map C++ files are required for operation of the Node and Hub libraries. They provide Atams with the information it needs to initialise and regulate interactions with the Atams variable storage.
 
-- **Data Blocks:** Memory Maps are divided into variable groups, or "Data Blocks", to enable users to loosely limit access to certain blocks of variables to specific user files.
-- **Variable IDs:** Each of the auto-generated Data Block `.hpp` files includes an enum list of the variable IDs contained within that Block. These variable IDs are used as input arguments to Atams functions to specify variable access:
+### Data Blocks 
+Memory Maps are divided into variable groups, or "Data Blocks", to enable users to loosely limit access to certain blocks of variables to specific user files.
+
+- **Variable IDs:** Each of the auto-generated Data Block `.hpp` files includes an enum list of the variable IDs contained within that Block. These variable IDs are used as input arguments to Atams functions to specify variable access.
     ```cpp
     enum VarID_t: uint16_t
     {
-      VAR_EXAMPLE_1 = 28U,
-      VAR_EXAMPLE_2 = 29U,
-      VAR_EXAMPLE_3 = 30U,
+        VAR_EXAMPLE_1 = 28U,
+        VAR_EXAMPLE_2 = 29U,
+        VAR_EXAMPLE_3 = 30U,
     };
     ```
-- **Variable Information:** Each Data Block file also contains an array of `Atams::VarInfo_t` structs holding information related to each variable. The information includes the variables type, access permission, and non-volatile storage option. Atams is compatible with the following variable types:
+
+- **Variable Information:** Each Data Block file also contains an array of structs holding information related to each variable. The information includes the variables type, access permission, and non-volatile storage option. Atams is compatible with the following variable types:
     ```cpp
     uint8_t
     int8_t
@@ -92,18 +94,39 @@ Memory Map C++ files are required for operation of the Node and Hub libraries. T
     int32_t
     float
     ```
-- **Initialisation Functions:** The Node library Memory Map also holds function references used to initialise the Universal Data Block, and restore factory defaults when required.
-- **The Universal Data Block:** The Universal Data Block is included in all Memory Maps, and is used by the Atams libraries to implement Atams functionality.
 
+### Initialisation Functions 
+The Node library Memory Map also holds function references used to initialise the Universal Data Block, and restore variable values to factory defaults when required.
 
-# Auto-generation
-GUI tooling is provided for auto-generating device specific Memory Map C++ files for use in the Hub and Node libraries. 
+### The Universal Data Block
+The Universal Data Block is included in all Memory Maps, and is used by the Atams libraries to implement Atams functionality.
+
+### Gen Info 
+An Atams::GenInfo_t struct will is generated with every Memory Map. This is used to track when the Memory Map files were generated, what Atams version they were generated for, and includes a checksum. This data is used by the Hub library during Bus initialisation to ensure the Hub device and Node device versions of the Memory Map are fully compatible.
+```cpp
+struct GenInfo_t
+{
+  uint8_t  atamsVersionMajor  {ATAMS_VERSION_MAJOR};
+  uint8_t  atamsVersionMinor  {ATAMS_VERSION_MINOR};
+  uint8_t  genDay             {0U};
+  uint8_t  genMonth           {0U};
+  uint16_t genYear            {0U};
+  uint8_t  genHour            {0U};
+  uint8_t  genMinute          {0U};
+  uint8_t  genSecond          {0U};
+  uint32_t genChecksum        {0U};
+  uint16_t noOfVars           {0U};
+}
+```
+
+# Memory Map Auto-generation
+GUI tooling is provided for auto-generating device specific Memory Map C++ files for use with the Hub and Node libraries. 
 
 ### Memory Map Tables
 
 ![alt text](Developer/Documentation/Images/MemoryMapExampleTable.png)
 
-To use the auto-generation application, a user needs to fill out an Atams Memory Map table in the provided `.xlsx` format to define use information for each device variable. The table is used by the autogen tool to create the Memory Map C++ files, and doubles as documentation for the device Memory Map. The template is available at the following directory path:  
+To use the auto-generation application, a user needs to fill out an Atams Memory Map table in the provided `.xlsx` format to define the required information for each device variable. The table is used by the autogen tool to create the Memory Map C++ files, and doubles as documentation for the device Memory Map. The template is available at the following directory path:  
 `Atams/Autogen/TemplateMap.xlsx`.
 
 - **Data Blocks:** Each Data Block should be defined in a separate sheet of the `.xlsx` file. Copy the original template sheet to maintain the correct table formatting. Data Block names will be taken from the name of each sheet and converted to `PascalCase` namespaces with a `Block` prefix in the generated C++ files.
@@ -137,15 +160,15 @@ Follow these steps to start auto-generating Memory Maps with the Atams Memory Ma
     `pip install -r PATH_TO_USER_PROJECT_FOLDER/Atams/Autogen/requirements.txt`.   
 - **Step 2:** Open the application by running `AtamsAutogen.py` from the `Atams/Autogen` folder.
 - **Step 3:** Browse and select the Memory Map Table `.xlsx` file specific to the Node device in development.
-- **Step 4:** Browse and select the Atams Node library directory path (`Atams/Node`) used by the Node device C++ project. The auto-generation tool will place a Memory Map folder in the `Atams/Node/Maps` folder, containing all the generated Data Block and Memory Map files specific to the Node library.
-- **Step 5:** Browse and select the Atams Hub library directory path (`Atams/Hub`) used by the Hub device C++ project. The auto-generation tool will place a Memory Map folder in the `Atams/Hub/Maps` folder, containing all generated Data Block and Memory Map files specific to the Hub library.
+- **Step 4:** Browse and select the Atams Node library directory path (`Atams/Node`) used by the Node device C++ project. The auto-generation tool will create a Memory Map folder in the `Atams/Node/Maps` folder, containing the Memory Map and Data Block files specific to the device-in-development.
+- **Step 5:** Browse and select the Atams Hub library directory path (`Atams/Hub`) used by the Hub device C++ project. The auto-generation tool will place a Memory Map folder in the `Atams/Hub/Maps` folder, containing the Memory Map and Data Block files specific to the device-in-development.
 - **Step 6:** Enter a name for the Memory Map and click the *Generate* button. A popup may appear with a warning if there is a risk of over-writing previously generated Memory Map files. Generation status information will be provided towards the bottom of the application. Memory Map names will be converted to `PascalCase` namespaces with a `Map` prefix in the generated C++ files.
 
 > [!NOTE]  
 > The application will remember any previously selected paths when restarted.
 
 > [!TIP]  
-> If the Hub and Node are not being developed on the same device, consider generating to local repositories and using version control to efficiently synchronise Memory Map files between development environments. The Atams Bus initialisation process will effectively catch and return errors if the Hub and Node Memory Maps are not synchronised.
+> If the Hub and Node are not being developed on the same device, consider generating to local repositories and using version control to efficiently synchronise Memory Map files between development environments. The Hub library Bus initialisation process will effectively catch and return errors if the Hub and Node Memory Maps are not synchronised.
 
 
 # Memory Map Access
@@ -194,7 +217,7 @@ Once the Memory Map C++ files have been generated, they are ready to be used in 
     Atams::write(VAR_EXAMPLE_1, variableToWrite);
     ```
 > [!CAUTION]   
-> Block-only header inclusion provides a loose limit on variable access. The compiler will provide warnings should the user try to use a variable ID that is not provided by the included file, or if a variable ID does not exist in the specified Block namespace. However, users should be cautious of hidden includes of other Block or Map files, or using raw `uint16_t` variables instead of the provided enum named constants as input arguments to Atams functions. Atams functions will always return an error if the variable ID is outside the bounds of the entire Memory Map.
+> Block-only header inclusion provides a loose limit on variable access. The compiler will provide warnings should the user try to use a variable ID that is not provided by the included file, or if a variable ID does not exist in the specified Block namespace. However, users should be cautious of hidden includes of other Block or Map files when using `using namespace`, or when using raw `uint16_t` variables instead of the provided enum IDs as input arguments to Atams functions. Atams functions will always return an error if the variable ID is outside the bounds of the entire Memory Map.
 
 
 # Node Library
@@ -236,22 +259,24 @@ The Node library is compatible with single and dual-core micro-controllers. The 
 
 - **Initialisation:** 
 
-    The communications core should be initialised with the Memory Map generated for the device-in-development. During initialiation, the Memory Map is validated, before the default values are loaded into the Atams variable storage. If compatible values exist in non-volatile memory (NVM), they are restored - replacing the default values where applicable. If all checks pass, and the init function returns `Atams::ERROR_NONE`, the Comms Core is ready for operation. 
+    The Comms Core should be initialised with the Memory Map generated for the device-in-development. During initialisation, the Memory Map is validated, before the default values are loaded into the Atams variable storage. If compatible values exist in non-volatile memory (NVM), they are restored - replacing the default values where applicable. If all checks pass, and the init function returns `Atams::ERROR_NONE`, the Comms Core is ready for operation. 
+    
+    The NVM restoration status can be checked by passing a second Atams::Error_t variable by reference to the init functions. This error is separated from the main error return, so that the Node can continue to operate if non-volatile storage cannot be restored. It is currently not possible to restore data from non-volatile memory if the version of the Node's Memory Map has changed since the values were stored.
 
     There are two versions of the Comms Core init function found in `Atams/Node/CommsCore.hpp`:
 
     Single-core function:
     ```cpp
-    Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap);
+    Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmError)
     ```
 
     Dual-core function (Dual-core only):
     ```cpp
-    Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap);
+    Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmError)
     ```
 
     > [!NOTE]  
-    > The dual-core init function handles synchronisation with the application core. The function will hang if the application core init is never run or does not complete successfully.
+    > The dual-core init function handles synchronisation with the App Core. The function will hang if the App Core init is never run or does not complete successfully.
 
     Single-core initialisation example:
 
@@ -261,16 +286,26 @@ The Node library is compatible with single and dual-core micro-controllers. The 
     #include "Atams/Node/CommsCore/CommsCore.hpp"
     #include "Atams/Node/Maps/MapExample/MapExample.hpp"
 
-    Atams::Error_t error;
-
-    error = initSingleCore(Atams::MapExample::memoryMap);
-
-    if (error != Atams::ERROR_NONE)
+    void foo(void)
     {
-      // Handle error case
-      printf("Atams Node initialisation error: ");
-      printf(Atams::getErrorString(error));
-      printf("\n");
+      Atams::Error_t nvmStatus {Atams::ERROR_NONE};
+  
+      Atams::Error_t initStatus = Atams::initSingleCore(Atams::MapTest::memoryMap, nvmStatus);
+  
+      if (initStatus != Atams::ERROR_NONE)
+      {
+        // An error occured during Node initialisation
+        printf("Atams Node initialisation error: ");
+        printf(Atams::getErrorString(initStatus));
+        printf("\n");
+      }
+      else if (nvmStatus != Atams::ERROR_NONE)
+      {
+        // An error occured during restoration from non-volatile storage
+        printf("Atams non-volatile: ");
+        printf(Atams::getErrorString(initStatus));
+        printf("\n");
+      }
     }
     ```
     <p align="center">
@@ -279,17 +314,21 @@ The Node library is compatible with single and dual-core micro-controllers. The 
 
 - **Setting and Getting Variables:** 
 
-    The Node library `Atams::getVar` and `Atams::setVar` functions can be used to read from and write to the Atams variable storage from the user application code. The functions will return an error if variable ID is outside of the Memory Map range, if the Memory Map has not be initialised successfully, or if the template argument variable type does not match the type specified for the variable in the Memory Map. A return of `Atams::ERROR_NONE` indicates a successful transfer.
+    The Node library `Atams::getVar` and `Atams::setVar` functions can be used to read from, and write to, the Atams variable storage from the user application code. The functions will return an error if the Memory Map has not be initialised successfully, if the variable ID is outside of the Memory Map range, or if the template argument variable type does not match the type specified for the variable in the Memory Map. A return of `Atams::ERROR_NONE` indicates a successful transfer.
 
-    Getter Example:
+    Getter example:
     ```cpp
+    #include "Atams/Node/CommsCore/CommsCore.hpp"
+    #include "Atams/Node/Maps/MapExample/MapExample.hpp"
+
     using namespace Atams::MapExample;
 
-    Atams::Error_t error;
-
-    uint32_t exampleVar {0U};
-
-    error = getVar(BlockExample::VAR_ID_EXAMPLE_GET, varToGet);
+    void foo(void)
+    {
+      uint32_t exampleVar = 0U;
+  
+      Atams::Error_t error = getVar(BlockExample::VAR_ID_EXAMPLE_GET, exampleVar);
+    }
     ```
 
     <p align="center">
@@ -298,13 +337,17 @@ The Node library is compatible with single and dual-core micro-controllers. The 
 
     Setter example:
     ```cpp
+    #include "Atams/Node/CommsCore/CommsCore.hpp"
+    #include "Atams/Node/Maps/MapExample/MapExample.hpp"
+
     using namespace Atams::MapExample;
 
-    Atams::Error_t error;
-
-    int8_t exampleVar {-1};
-
-    error = setVar(BlockExample::VAR_ID_EXAMPLE_SET, exampleVar);
+    void foo(void)
+    {
+      int8_t exampleVar = -1;
+  
+      Atams::Error_t error = setVar(BlockExample::VAR_ID_EXAMPLE_SET, exampleVar);
+    }
     ```
 
     <p align="center">
@@ -337,7 +380,7 @@ The Node library is compatible with single and dual-core micro-controllers. The 
 
 - **Initialisation:** 
 
-    The App Core must be initialised using the same Memory Map as the communications core. The following function from `Atams/Node/AppCore/AppCore.hpp` is used to initialise the application core. The function will validate the provided Memory Map, and then perform a blocking wait until the communication core init is complete. The function will return `Atams::ERROR_NONE` if initialisation is successful.
+    The App Core must be initialised using the same Memory Map as the Comms Core. The following function from `Atams/Node/AppCore/AppCore.hpp` is used to initialise the application core. The function will validate the provided Memory Map, and then perform a blocking wait until the Comms Core initialisation completes. The function will return `Atams::ERROR_NONE` if initialisation is successful.
 
     ```cpp
     Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap);
@@ -345,21 +388,24 @@ The Node library is compatible with single and dual-core micro-controllers. The 
 
 - **Setting and Getting Variables:**
 
-    The application core `getVar` and `setVar` functions operate identically to the communications core versions. Atams handles variable storage locks to prevent race conditions from occurring if both cores attempt to access variables simultaneously.
+    The App Core `getVar` and `setVar` functions operate identically to the communications core versions. Atams handles variable storage locks to prevent race conditions from occurring if both cores attempt to access variables simultaneously.
 
 ### Platform Setup
 
-The Node library is written to maximise compatibility with different user application setups. This includes single or multi-threaded applications running on single or dual-core microcontrollers, alongside polling or event-driven communications peripheral setups. Atams provides platform files that contain all the required user constants, function declarations, and empty function definitions. The required platform function definitions change depending upon the users application setup. Comments are provided above each constant and function definition to help with implementation. The following Node library files need to be completed by the user:
+The Node library is written to maximise compatibility with different user application setups. This includes single or multi-threaded applications running on single or dual-core microcontrollers, alongside polling or event-driven communications peripheral setups. Atams provides platform files that contain all the required user constants, function declarations, and empty function definitions. The required platform function definitions change depending upon the users application setup. Comments are provided above each constant and function definition to help with implementation. 
 
-Single and dual-core:  
-`Atams/Node/CommsCore/CommsPlatform.hpp`  
-`Atams/Node/CommsCore/CommsPlatform.cpp`  
+- **Platform Files:** The following Node library files need to be completed by the user:
 
-Dual-core only:  
-`Atams/Node/AppCore/AppPlatform.hpp`  
-`Atams/Node/AppCore/AppPlatform.cpp`  
+    Single and dual-core:  
+    `Atams/Node/SharedPlatform.cpp`\
+    `Atams/Node/CommsCore/CommsPlatform.hpp`\
+    `Atams/Node/CommsCore/CommsPlatform.cpp`  
+    
+    Dual-core only:  
+    `Atams/Node/AppCore/AppPlatform.hpp`\
+    `Atams/Node/AppCore/AppPlatform.cpp`  
 
-- **Function Comments:** The following tags are present in the `.cpp` file function comments to indicate when completion of the definition is required. Non-applicable function definitions can be left empty; it is recommended to cast any unused function arguments to void to avoid compiler warnings.
+- **Function Comments:** The following tags are present in the `.cpp` file function comments to indicate when completion of the definition is required. Non-applicable function definitions can be left empty. It is recommended to cast any unused function arguments to `void` to avoid compiler warnings.
 
 | Comment Tag                        | Requirement Condition |  
 | :--------------------------------- | :---------- |  
@@ -370,7 +416,7 @@ Dual-core only:
 | EVENT DRIVEN COMMS                 | Required when incoming bytes are received into an interrupt or event context separate from the context running the Atams comms update function. |
 | MULTI-THREAD + EVENT DRIVEN COMMS  | Required when Atams::updateCommsBlocking() is used in combination with an event driven receive setup. |
 
-- **Platform Byte Pre-Processing:** No pre-processing of incoming bytes is required at the platform level; all incoming bytes can be passed directly to Atams using the provided receive callback functions. The incoming bytes must be passed to Atams in order, and the same bytes should not be passed to Atams more than once.
+- **Platform Byte Pre-Processing:** No pre-processing of incoming bytes is required at the platform level. All incoming bytes can be passed directly to Atams using the provided receive callback functions. The incoming bytes must be passed to Atams in order, and the same bytes should not be passed to Atams more than once.
 
 - **Platform Reception Methods:** Atams packets are compatible with polling, character delimited, or idle line reception methods. If a user wants to use character delimited reception methods - the delimiter should be set to hex `0x00`. 
 
@@ -384,11 +430,48 @@ Care should be taken when using Atams alongside user code containing high-priori
 
 # Hub Library
 
+<p align="center">
+    <img height="500" src="Developer/Documentation/Images/BusConstruction.gif">
+</p>
+
 The Hub library includes two key classes: a Node class, and a Bus class. 
 
-**Node Class:** The Hub device user code must construct a Node class instance for each physical Node connected to the Hub. Each Node object must be initialised with a Memory Map from `Atams/Hub/Maps` that was generated with the Node Memory Map used to initialise the Node device. 
+**Node Class:** The Hub device user code must construct a Node class instance for each physical Node connected to the Hub. The Node class public interfaces allow the user to set and get variables stored in the Node instances variable storage. It also allows users to control the method and frequency by which the Node instance variable storage is synchronised with the variable storage on the physical Node devices on the Bus.
 
-**Bus Class:** A Bus class instance is required to enable communication and variable exchange with the connected Nodes. Each Node object must be linked to the Bus instance that mirrors the physical connection.
+**Bus Class:** A Bus class instance is required to enable communication and variable exchange with connected Node devices. Each Node class instance must be linked to the Bus instance that mirrors the physical device connections. The Bus class public interfaces include easy to update processes - abstracting away packet handling, compatibility checks, Node storage processes, Bus arbitration, Node configuration, Node sychronisation, and error handling. This lets the user focus almost entirely on their application specific functionality.
+
+### Common Return Types
+The majority of Hub library functions return one of the two following types:
+
+- **Atams::Error_t**\
+This enum type is used to notify the user of any function or process errors.\
+The following function included from `Atams/Shared/AtamsTypedefs.hpp` converts the error value into a `const char *` string description:
+  ```cpp
+  const char *getErrorString(const Atams::Error_t error);
+  ```
+
+- **Atams::ProcessState_t**\
+This enum type is returned from any Atams function that includes a polled update process. The enum options are as follows:
+    ```cpp
+    enum ProcessState_t: uint8_t
+    {
+      PROCESS_ERROR       = 0U, /* - The process reached an error condition and has stopped.
+                                 * - Check the Atams::Error_t passed by reference to the process
+                                 *   update function for error details. 
+                                 * - Restart the process using the appropriate `begin` function.
+                                 */
+
+      PROCESS_IN_PROGRESS = 1U, /* - The process is in progress, keep polling the process update 
+                                 *   function until either PROCESS_ERROR or PROCESS_COMPLETE is
+                                 *   returned.
+                                 */
+
+      PROCESS_COMPLETE    = 2U  /* - The process has completed successfully.
+                                 * - If required, restart the process using the appropriate 
+                                 *   `begin` function.
+                                 */
+    };
+    ```
 
 ### Includes
 
@@ -407,15 +490,126 @@ The Hub library includes two key classes: a Node class, and a Bus class.
     `Atams/Hub/Node.hpp`\
     `Atams/Hub/Bus.hpp`
 
-References to Node objects can be passed to functions or objects in files that are not responsible for updating the Bus. The platform files must be filled out appropriately to use Node public functions (setVar, getVar, and updateRequestPattern etc.) safely across multiple threads. See [Hub Platform Implementation](#platform-implementation).
+### Node Configuration
+Before a Node device can be used with the Hub library, the user must set up the Node configuration. Most importantly, this includes the unique Node ID used for Node addressing during the Bus update cycle. Each physical Node on an Atams Bus must be configured with it's own unique ID ranging from 1-254. All unconfigured Nodes will start with a Node ID of 0. The Node configuration also includes the Node bitrate option, and watchdog period:
+```cpp
+struct NodeConfig_t
+{
+  uint8_t                currentNodeID;
+  uint8_t                newNodeID;
+  Atams::BitrateOption_t bitrateOption;
+  uint32_t               watchdogPeriod;
+};
+```
 
-### Node Initialisation
+- **Node ID:**\
+Most importantly, the Node configuration includes the unique Node ID used for Node addressing during the Bus update cycle. Each physical Node on an Atams Bus must be configured with it's own unique ID ranging from 1-254. All unconfigured Nodes will start with a current Node ID of 0.
 
-### Bus Configuration Process
+- **Bitrate Option:**\
+How the Bitrate Option affects the Node's hardware peripheral bitrate is defined by the developer of the Node device in the Node library platform setup. All Node's on the same bus must have the same hardware peripheral bitrate as a result of setting each Bitrate Option.
+
+- **Watchdog Period:**\
+The Node library monitors the time between reception of messages from the Hub. If the time spent waiting for a new message exceeds the watchdog period, the Node library will alert the user code so the Node device can enter a safe state. The period is measured in milliseconds. Set the value to 0 to disable the watchdog functionality.
+
+- **Hardware Connections:**\
+If multiple unconfigured Node's need to be added to a physical bus, they must be physically connected and configured one by one. If a Node already has a unique ID, it can be re-configured without having to remove any other Nodes from the bus, so long as the new Node ID does not conflict with an existing Node ID on the bus.
+
+- **Starting the Configuration Process:**\
+The following example shows how to start the configuration process for an un-configured Node on the bus.
+
+    ```cpp
+    #include "Atams/Hub/Bus.hpp"
+
+    void foo(void)
+    {
+      Atams::Error_t error = bus.beginSetNodeConfigProcess(nodeConfig);
+  
+      if (error != Atams::ERROR_NONE)
+      {
+        // An error occured while attempting to start the Node configuration process
+        printf("Atams Node configuration process error: ");
+        printf(Atams::getErrorString(error));
+        printf("\n");
+      }
+    }
+    ```
+
+- **Updating the Configuration Process:**\
+During the Node configuration process, the new configuration values will be written to the Universal Data Block of the Node device. Ones the Hub confirms the values are written successfully, it will trigger an NVM storage operation on the Node. If the Hub confirms the NVM storage operation completes successfully, the update function will return `Atams::PROCESS_COMPLETE`. If an error occurs during the configuration process, the update function will return `Atams::PROCESS_ERROR`. In this case, the value of the `Atams::Error_t` passed to the update function can be checked for further details.
+
+    Example:
+
+    ```cpp
+    #include "Atams/Hub/Bus.hpp"
+    
+    void foo(void)
+    {
+      Atams::Error_t        error {Atams::ERROR_NONE};
+      Atams::ProcessState_t processState;
+  
+      do 
+      {
+        processState = bus.updateSetNodeConfigProcess(error);
+      }
+      while (processState == Atams::PROCESS_IN_PROGRESS);
+  
+      if (processState == Atams::ProcessState::COMPLETE) 
+      {
+        printf ("Node Configuration Successful\n");
+      }
+      else if (processState == Atams::ProcessState::ERROR)    
+      {
+        // An error occured during the Node configuration process
+        printf("Atams Node configuration process error: ");
+        printf(Atams::getErrorString(error));
+        printf("\n");
+      }
+    }
+    ```
+  
+
+### Node Class
+
+- **Construction:** The Node
+
+    <p align="center">
+      <img height="500" src="Developer/Documentation/Images/HubNodeConstruction.gif">
+    </p>
+
+- **Initialisation:** Each Node instance needs to be initialised with a Memory Map from `Atams/Hub/Maps` that was previously generated with the Node Memory Map used to initialise the associated Node device. If a valid Memory Map is provided to the initialisation function, the function will return `Atams::ERROR_NONE`.
+
+    **Initialisation example:**
+    ```cpp
+    #include "Atams/Hub/Node.hpp"
+    #include "Atams/Hub/Maps/MapExample/MapExample.hpp"
+
+    static Atams::Node exampleNode(1);
+
+    error = driveNode.init(Atams::MapDrive::memoryMap);
+
+
+    ```
+
+- **Variable Access:** The Node class `getVar` and `setVar` functions can be used to read from, and write to, a local Node instances variable storage from the user application code. The functions will return an error if the Node instance has not be initialised successfully, if the variable ID is outside of the Node instance's Memory Map range, or if the template argument variable type does not match the type specified in the Memory Map. A return of `Atams::ERROR_NONE` indicates a successful transfer.
+
+    Getter example:
+    ```cpp
+    using namespace Atams::MapExample;
+
+    uint32_t exampleVar {0U};
+
+    Atams::Error_t error = getVar(BlockExample::VAR_ID_EXAMPLE_GET, exampleVar);
+    ```
+
+### Node Request Pattern Control
+
+### Node Helper Functions
 
 ### Bus Initialisation Process
 
-### Bus Update Cycle
+### Synchronous Bus Update Cycle
+
+### Asynchronous Bus Update Cycle
 
 ### Platform Implementation
 

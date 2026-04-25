@@ -151,7 +151,7 @@ Atams::Error_t Bus::removeNodeFromBus(Node &node)
   else 
   {
     initProcessHandler_.specificState = Bus::InitState::ERROR;
-    initProcessHandler_.processState  = Atams::ProcessState::ERROR;
+    initProcessHandler_.processState  = Atams::PROCESS_ERROR;
     initProcessHandler_.error         = Atams::ERROR_INIT_ORDER;
     statusReturn                      = Atams::ERROR_NONE;
   }
@@ -239,11 +239,11 @@ Atams::Error_t Bus::beginBusInitProcess(void)
  *
  * @note The Bus initialisation process must be completed before running any Bus update cycles.
  */
-Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
+Atams::ProcessState_t Bus::updateBusInitProcess(Atams::Error_t &error)
 {
   Bus::ProcessHandler<Bus::InitState> &process         {initProcessHandler_};
-  Atams::ProcessState                 &processState    {process.processState};
-  Atams::ProcessState                 &subProcessState {process.subProcessState};
+  Atams::ProcessState_t               &processState    {process.processState};
+  Atams::ProcessState_t               &subProcessState {process.subProcessState};
   Bus::InitState                      &initState       {process.specificState};
   Atams::Error_t                       cycleError      {Atams::ERROR_NONE};
   bool                                 dataIsValid     {false}; 
@@ -258,8 +258,8 @@ Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
 
   Atams::Node &node {*initNodePtr};
 
-  if ((runSingleNodeUpdateCycle(cycleError, node) == Atams::ProcessState::IN_PROGRESS) ||
-      (processState                               != Atams::ProcessState::IN_PROGRESS) )
+  if ((runSingleNodeUpdateCycle(cycleError, node) == Atams::PROCESS_IN_PROGRESS) ||
+      (processState                               != Atams::PROCESS_IN_PROGRESS) )
   {
     error = process.error;
     return (processState); /* Early Return */
@@ -272,31 +272,31 @@ Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
       break;
     case Bus::InitState::VALIDATE_GEN_INFO:
       subProcessState = nodeProcessHandler_.updateValidateGenInfo(process.error, dataIsValid);
-      if      (dataIsValid     == true)                          beginInitValidateIDs(node, true, busIDsToSet_);
-      else if (subProcessState == Atams::ProcessState::COMPLETE) process.terminate(Atams::ERROR_GEN_INFO_MISMATCH);
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);                                 
+      if      (dataIsValid     == true)                    beginInitValidateIDs(node, true, busIDsToSet_);
+      else if (subProcessState == Atams::PROCESS_COMPLETE) process.terminate(Atams::ERROR_GEN_INFO_MISMATCH);
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);                                 
       break;
     case Bus::InitState::VALIDATE_IDS_PRE:
       subProcessState = nodeProcessHandler_.updateValidateBusIDs(process.error, dataIsValid);
-      if      (dataIsValid     == true)                          startNextNodeInit();
-      else if (subProcessState == Atams::ProcessState::COMPLETE) beginInitSetBusIDs(node, busIDsToSet_);
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);
+      if      (dataIsValid     == true)                    startNextNodeInit();
+      else if (subProcessState == Atams::PROCESS_COMPLETE) beginInitSetBusIDs(node, busIDsToSet_);
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);
       break;
     case Bus::InitState::SET_BUS_IDS:
       subProcessState = nodeProcessHandler_.updateSetBusIDs(process.error);
-      if      (subProcessState == Atams::ProcessState::COMPLETE) beginInitStore(node);
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);
+      if      (subProcessState == Atams::PROCESS_COMPLETE) beginInitStore(node);
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);
       break;
     case Bus::InitState::STORE_BUS_IDS:
       subProcessState = nodeProcessHandler_.updateStoreAll(process.error);
-      if      (subProcessState == Atams::ProcessState::COMPLETE) beginInitValidateIDs(node, false, busIDsToSet_);
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);
+      if      (subProcessState == Atams::PROCESS_COMPLETE) beginInitValidateIDs(node, false, busIDsToSet_);
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);
       break;
     case Bus::InitState::VALIDATE_IDS_POST:
       subProcessState = nodeProcessHandler_.updateValidateBusIDs(process.error, dataIsValid);
-      if      (dataIsValid     == true)                          startNextNodeInit();
-      else if (subProcessState == Atams::ProcessState::COMPLETE) process.terminate(Atams::ERROR_GEN_INFO_MISMATCH);
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);
+      if      (dataIsValid     == true)                    startNextNodeInit();
+      else if (subProcessState == Atams::PROCESS_COMPLETE) process.terminate(Atams::ERROR_GEN_INFO_MISMATCH);
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);
       break;
     case Bus::InitState::COMPLETE:
     case Bus::InitState::ERROR:
@@ -307,8 +307,8 @@ Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
       break;
   }
 
-  if ((process.error == Atams::ERROR_NONE               ) &&
-      (processState  == Atams::ProcessState::IN_PROGRESS) ) 
+  if ((process.error == Atams::ERROR_NONE         ) &&
+      (processState  == Atams::PROCESS_IN_PROGRESS) ) 
   {
     static_cast<void>(beginSingleNodeUpdateCyclePrivate(node));
   }
@@ -335,7 +335,7 @@ Atams::ProcessState Bus::updateBusInitProcess(Atams::Error_t &error)
  */
 Atams::Error_t Bus::beginUpdateCycle(void)
 {
-  if (initProcessHandler_.processState != Atams::ProcessState::COMPLETE)
+  if (initProcessHandler_.processState != Atams::PROCESS_COMPLETE)
   {
     return (Atams::ERROR_INIT_ORDER); /* Early Return */
   }
@@ -359,7 +359,7 @@ Atams::Error_t Bus::beginUpdateCycle(void)
  */
 Atams::Error_t Bus::beginSingleNodeUpdateCycle(Atams::Node &node)
 {
-  if (initProcessHandler_.processState != Atams::ProcessState::COMPLETE)
+  if (initProcessHandler_.processState != Atams::PROCESS_COMPLETE)
   {
     return (Atams::ERROR_INIT_ORDER); /* Early Return */
   }
@@ -397,10 +397,10 @@ Atams::Error_t Bus::beginSingleNodeUpdateCycle(Atams::Node &node)
  *
  * @note The update cycle must be started by calling @ref Bus::beginUpdateCycle before calling this function.
  */
-Atams::ProcessState Bus::runUpdateCycleSync(Atams::Error_t &error)
+Atams::ProcessState_t Bus::runUpdateCycleSync(Atams::Error_t &error)
 {
   Bus::ProcessHandler<Bus::UpdateState> &process       = updateProcessHandler_;
-  Atams::ProcessState                   &processState  = process.processState;
+  Atams::ProcessState_t                 &processState  = process.processState;
   Bus::UpdateState                      &updateState   = process.specificState;
   Atams::Node                          *&activeNodePtr = process.activeNodePtr;
   Bus::PollResult                        rxPollResult  = Bus::PollResult::WAITING;
@@ -443,7 +443,7 @@ Atams::ProcessState Bus::runUpdateCycleSync(Atams::Error_t &error)
       break;
   }
 
-  if (processState == Atams::ProcessState::ERROR) error = process.error;
+  if (processState == Atams::PROCESS_ERROR) error = process.error;
 
   return (processState);
 }
@@ -472,10 +472,10 @@ Atams::ProcessState Bus::runUpdateCycleSync(Atams::Error_t &error)
  *
  * @note The update cycle must be started by calling @ref Bus::beginUpdateCycle before calling this function.
  */
-Atams::ProcessState Bus::runUpdateCycleAsync(Atams::Error_t &error)
+Atams::ProcessState_t Bus::runUpdateCycleAsync(Atams::Error_t &error)
 { 
   Bus::ProcessHandler<Bus::UpdateState> &process                = updateProcessHandler_;
-  Atams::ProcessState                   &processState           = process.processState;
+  Atams::ProcessState_t                 &processState           = process.processState;
   Bus::UpdateState                      &updateState            = process.specificState;
   Atams::Node                          *&activeNodePtr          = process.activeNodePtr;
   NodeCallbackHandler                   *nodeCallbackHandlerPtr = activeNodePtr;
@@ -516,7 +516,7 @@ Atams::ProcessState Bus::runUpdateCycleAsync(Atams::Error_t &error)
       break;
   } 
 
-  if (processState == Atams::ProcessState::ERROR) error = process.error;
+  if (processState == Atams::PROCESS_ERROR) error = process.error;
 
   return (processState);
 }
@@ -546,10 +546,10 @@ Atams::ProcessState Bus::runUpdateCycleAsync(Atams::Error_t &error)
  *
  * @note The update cycle must be started by calling @ref Bus::beginSingleNodeUpdateCycle before calling this function.
  */
-Atams::ProcessState Bus::runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::Node &node)
+Atams::ProcessState_t Bus::runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::Node &node)
 { 
   Bus::ProcessHandler<Bus::UpdateState> &process             = singleNodeUpdateProcessHandler_;
-  Atams::ProcessState                   &processState        = process.processState;
+  Atams::ProcessState_t                 &processState        = process.processState;
   Bus::UpdateState                      &updateState         = process.specificState;
   NodeCallbackHandler                   &nodeCallbackHandler = node;
   Bus::PollResult                        rxPollResult        = Bus::PollResult::WAITING;
@@ -592,7 +592,7 @@ Atams::ProcessState Bus::runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::
       break;
   } 
 
-  if (processState == Atams::ProcessState::ERROR) error = process.error;
+  if (processState == Atams::PROCESS_ERROR) error = process.error;
 
   return (processState);
 }
@@ -618,7 +618,7 @@ Atams::ProcessState Bus::runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::
  */
 Atams::Error_t Bus::processSyncBuffers(void)
 {
-  if (updateProcessHandler_.processState == Atams::ProcessState::IN_PROGRESS) 
+  if (updateProcessHandler_.processState == Atams::PROCESS_IN_PROGRESS) 
   {
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
   }
@@ -656,9 +656,9 @@ Atams::Error_t Bus::processSyncBuffers(void)
  * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS An update cycle is currently in progress; configuration cannot be started.
  * @retval @c ERROR_PLATFORM                 Failed to start data reception on the platform bus peripheral.
  */
-Atams::Error_t Bus::beginSetNodeConfigProcess(const NodeConfig_t &userConfig)
+Atams::Error_t Bus::beginSetNodeConfigProcess(const Atams::NodeConfig_t &userConfig)
 {
-  if (updateProcessHandler_.processState == Atams::ProcessState::IN_PROGRESS)
+  if (updateProcessHandler_.processState == Atams::PROCESS_IN_PROGRESS)
   {
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); 
   }
@@ -698,16 +698,16 @@ Atams::Error_t Bus::beginSetNodeConfigProcess(const NodeConfig_t &userConfig)
  * @note The configuration process must be started by calling @ref Bus::beginSetNodeConfigProcess before calling this function.
  *       New Nodes default to a Node ID of 0 if configuration has never been set, allowing them to be added and reconfigured one at a time.
  */
-Atams::ProcessState Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
+Atams::ProcessState_t Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
 {
   Bus::ProcessHandler<Bus::ConfigUpdateState> &process           {configUpdateProcessHandler_};
-  Atams::ProcessState                         &processState      {process.processState};
-  Atams::ProcessState                         &subProcessState   {process.subProcessState};
+  Atams::ProcessState_t                       &processState      {process.processState};
+  Atams::ProcessState_t                       &subProcessState   {process.subProcessState};
   Bus::ConfigUpdateState                      &configUpdateState {process.specificState};
   Atams::Error_t                               cycleError        {Atams::ERROR_NONE};
 
-  if ((runSingleNodeUpdateCycle(cycleError, dummyNode_) == Atams::ProcessState::IN_PROGRESS) ||
-      (processState                                     != Atams::ProcessState::IN_PROGRESS) )
+  if ((runSingleNodeUpdateCycle(cycleError, dummyNode_) == Atams::PROCESS_IN_PROGRESS) ||
+      (processState                                     != Atams::PROCESS_IN_PROGRESS) )
   {
     error = process.error;
     return (processState); /* Early Return */
@@ -722,13 +722,13 @@ Atams::ProcessState Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
       break;
     case Bus::ConfigUpdateState::WRITE_CONFIG:
       subProcessState = nodeProcessHandler_.updateSetNodeConfig(process.error);
-      if      (subProcessState == Atams::ProcessState::COMPLETE) beginSetConfigStore();
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);
+      if      (subProcessState == Atams::PROCESS_COMPLETE) beginSetConfigStore();
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);
       break;
     case Bus::ConfigUpdateState::STORE_CONFIG:
       subProcessState = nodeProcessHandler_.updateStoreAll(process.error);
-      if      (subProcessState == Atams::ProcessState::COMPLETE) process.setProcessComplete();
-      else if (subProcessState == Atams::ProcessState::ERROR)    process.terminate(process.error);
+      if      (subProcessState == Atams::PROCESS_COMPLETE) process.setProcessComplete();
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);
       break;
     case Bus::ConfigUpdateState::SEND_REQUEST:
       updateSetConfigSendRequest();
@@ -745,8 +745,8 @@ Atams::ProcessState Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
       break;
   }
     
-  if ((process.error == Atams::ERROR_NONE               ) &&
-      (processState  == Atams::ProcessState::IN_PROGRESS) ) 
+  if ((process.error == Atams::ERROR_NONE         ) &&
+      (processState  == Atams::PROCESS_IN_PROGRESS) ) 
   {
     static_cast<void>(beginSingleNodeUpdateCyclePrivate(dummyNode_));
   }
@@ -762,10 +762,10 @@ Atams::ProcessState Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
 
 bool Bus::safeToRemoveNode(void) 
 {
-    return ((updateProcessHandler_.processState           != Atams::ProcessState::IN_PROGRESS) &&
-            (singleNodeUpdateProcessHandler_.processState != Atams::ProcessState::IN_PROGRESS) &&
-            (initProcessHandler_.processState             != Atams::ProcessState::IN_PROGRESS) &&
-            (configUpdateProcessHandler_.processState     != Atams::ProcessState::IN_PROGRESS) );
+    return ((updateProcessHandler_.processState           != Atams::PROCESS_IN_PROGRESS) &&
+            (singleNodeUpdateProcessHandler_.processState != Atams::PROCESS_IN_PROGRESS) &&
+            (initProcessHandler_.processState             != Atams::PROCESS_IN_PROGRESS) &&
+            (configUpdateProcessHandler_.processState     != Atams::PROCESS_IN_PROGRESS) );
 }
 
 bool Bus::findNodeOnBus(Node &node)
@@ -782,8 +782,8 @@ bool Bus::findNodeOnBus(Node &node)
 
 Atams::Error_t Bus::beginUpdateCyclePrivate(void)
 {
-  if ((updateProcessHandler_.processState           == Atams::ProcessState::IN_PROGRESS) ||
-      (singleNodeUpdateProcessHandler_.processState == Atams::ProcessState::IN_PROGRESS) )
+  if ((updateProcessHandler_.processState           == Atams::PROCESS_IN_PROGRESS) ||
+      (singleNodeUpdateProcessHandler_.processState == Atams::PROCESS_IN_PROGRESS) )
   {
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
   }
@@ -814,8 +814,8 @@ Atams::Error_t Bus::beginUpdateCyclePrivate(void)
 
 Atams::Error_t Bus::beginSingleNodeUpdateCyclePrivate(Atams::Node &node)
 {
-  if ((updateProcessHandler_.processState           == Atams::ProcessState::IN_PROGRESS) ||
-      (singleNodeUpdateProcessHandler_.processState == Atams::ProcessState::IN_PROGRESS) )
+  if ((updateProcessHandler_.processState           == Atams::PROCESS_IN_PROGRESS) ||
+      (singleNodeUpdateProcessHandler_.processState == Atams::PROCESS_IN_PROGRESS) )
   {
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
   }
@@ -1174,7 +1174,7 @@ void Bus::ProcessHandler<T>::terminate(Atams::Error_t exitError)
 {
   this->error         = exitError;
   this->specificState = T::ERROR;
-  this->processState  = Atams::ProcessState::ERROR;
+  this->processState  = Atams::PROCESS_ERROR;
 
   if (this->activeNodePtr != nullptr) 
   {
@@ -1187,21 +1187,21 @@ void Bus::ProcessHandler<T>::setProcessComplete(void)
 {
   this->error         = Atams::ERROR_NONE;
   this->specificState = T::COMPLETE;
-  this->processState  = Atams::ProcessState::COMPLETE;
+  this->processState  = Atams::PROCESS_COMPLETE;
 }
 
 template <typename T>
 bool Bus::ProcessHandler<T>::getProcessTerminated(void)
 {
-  return (this->processState == Atams::ProcessState::ERROR);
+  return (this->processState == Atams::PROCESS_ERROR);
 }
 
 template <typename T>
 void Bus::ProcessHandler<T>::readyProcess(void)
 {
   this->error           = Atams::ERROR_NONE;
-  this->processState    = Atams::ProcessState::IN_PROGRESS;
-  this->subProcessState = Atams::ProcessState::IN_PROGRESS;
+  this->processState    = Atams::PROCESS_IN_PROGRESS;
+  this->subProcessState = Atams::PROCESS_IN_PROGRESS;
 }
 
 

@@ -40,7 +40,7 @@
 namespace Atams { namespace Platform {
 
 /*************************************************************************************/
-/* BusPeripheral - PUBLIC FUNCTION DEFINITIONS                                       */
+/* BusPeripheral - REQUIRED PUBLIC FUNCTION DEFINITIONS                              */
 /*************************************************************************************/
 
 /** @brief Constructor. */
@@ -78,7 +78,7 @@ bool BusPeripheral::startReceive(void)
  */
 bool BusPeripheral::transmitReady(void)
 {
-  return (transmitReady_.load());
+  return (transmitReady_);
 }
 
 /** @brief   Transmit bytes using the user comms peripheral.
@@ -117,7 +117,7 @@ void BusPeripheral::update(void)
 }
 
 /*************************************************************************************/
-/* BusPeripheral - PRIVATE FUNCTION DEFINITIONS                                      */
+/* BusPeripheral - USER PRIVATE FUNCTION DEFINITIONS                                 */
 /*************************************************************************************/
 
 void BusPeripheral::rxHandler(asio::error_code ec, size_t xfr)
@@ -145,7 +145,7 @@ void BusPeripheral::txHandler(asio::error_code ec, size_t xfr)
 }
 
 /*************************************************************************************/
-/* MemoryLock  - PUBLIC FUNCTION DEFINITIONS                                         */
+/* MemoryLock  - REQUIRED PUBLIC FUNCTION DEFINITIONS                                */
 /*************************************************************************************/
 
 /** 
@@ -179,7 +179,7 @@ void MemoryLock::releaseLock(void)
 }
 
 /*************************************************************************************/
-/* CommsLock - PUBLIC FUNCTION DEFINITIONS                                           */
+/* CommsLock - REQUIRED PUBLIC FUNCTION DEFINITIONS                                  */
 /*************************************************************************************/
 
 /** 
