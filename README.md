@@ -75,16 +75,16 @@ Memory Map C++ files are required for operation of the Node and Hub libraries. T
 Memory Maps are divided into variable groups, or "Data Blocks", to enable users to loosely limit access to certain blocks of variables to specific user files.
 
 - **Variable IDs:** Each of the auto-generated Data Block `.hpp` files includes an enum list of the variable IDs contained within that Block. These variable IDs are used as input arguments to Atams functions to specify variable access.
-    ```cpp
-    enum VarID_t: uint16_t
-    {
-        VAR_EXAMPLE_1 = 28U,
-        VAR_EXAMPLE_2 = 29U,
-        VAR_EXAMPLE_3 = 30U,
-    };
-    ```
+  ```cpp
+  enum VarID_t: uint16_t
+  {
+    VAR_EXAMPLE_1 = 28U,
+    VAR_EXAMPLE_2 = 29U,
+    VAR_EXAMPLE_3 = 30U,
+  };
+  ```
 
-- **Variable Information:** Each Data Block file also contains an array of structs holding information related to each variable. The information includes the variables type, access permission, and non-volatile storage option. Atams is compatible with the following variable types:
+- **Variable Information:** Each Data Block file also contains an array of structs holding information related to each variable. The information includes the variables type, access permission, and non-volatile storage option. Atams is compatible with the following variable types from `<stdint.h>`, as well as floats:
     ```cpp
     uint8_t
     int8_t
@@ -92,6 +92,7 @@ Memory Maps are divided into variable groups, or "Data Blocks", to enable users 
     int16_t
     uint32_t
     int32_t
+
     float
     ```
 
@@ -99,7 +100,7 @@ Memory Maps are divided into variable groups, or "Data Blocks", to enable users 
 The Node library Memory Map holds function references used to initialise the Universal Data Block, and restore variable values to factory defaults when required.
 
 ### The Universal Data Block
-The Universal Data Block is included in all Memory Maps, and is used by the Atams libraries to implement Atams functionality.
+The Universal Data Block is included in all Memory Maps, and is used by the Atams libraries to implement Atams functionality. Hub access to important variables in the Universal Data Block is password protected, preventing accidental changes to key Node configuration values.
 
 ### Gen Info 
 An Atams::GenInfo_t struct is generated with every Memory Map. This is used to track when the Memory Map files were generated, what Atams version they were generated for, and includes a checksum. This data is used by the Hub library during Bus initialisation to ensure the Hub device and Node device versions of the Memory Map are fully compatible.
@@ -203,6 +204,8 @@ Once the Memory Map C++ files have been generated, they are ready to be used in 
     This nested namespace access can result in long variable names. It is recommended to use `using namespace` to access the required Memory Map or Data Block where sensible. Extra care must be taken when using `using namespace` in files that directly, or indirectly, includes multiple Memory Map or Data Block headers. 
 
     ```cpp
+    "Atams/Node/Maps/MapExample/BlockExample1.hpp"
+
     uint8_t variableToWrite {0U};
 
     // Recommended 
@@ -286,7 +289,7 @@ The Node library is compatible with single and dual-core micro-controllers. The 
     #include "Atams/Node/CommsCore/CommsCore.hpp"
     #include "Atams/Node/Maps/MapExample/MapExample.hpp"
 
-    void foo(void)
+    void userFunc(void)
     {
       Atams::Error_t nvmStatus  {Atams::ERROR_NONE};
       Atams::Error_t initStatus {Atams::ERROR_NONE};
@@ -317,14 +320,14 @@ The Node library is compatible with single and dual-core micro-controllers. The 
 
     The Node library `Atams::getVar` and `Atams::setVar` functions can be used to read from, and write to, the Atams variable storage from the user application code. The functions will return an error if the Memory Map has not be initialised successfully, if the variable ID is outside of the Memory Map range, or if the template argument variable type does not match the type specified for the variable in the Memory Map. A return of `Atams::ERROR_NONE` indicates a successful transfer.
 
-    Getter example:
+    **Getter example:**
     ```cpp
     #include "Atams/Node/CommsCore/CommsCore.hpp"
     #include "Atams/Node/Maps/MapExample/MapExample.hpp"
 
     using namespace Atams::MapExample;
 
-    void foo(void)
+    void userFunc(void)
     {
       uint32_t exampleVar {0U};
   
@@ -336,16 +339,16 @@ The Node library is compatible with single and dual-core micro-controllers. The 
       <img height="500" src="Developer/Documentation/Images/NodeGetVar.gif">
     </p>
 
-    Setter example:
+    **Setter example:**
     ```cpp
     #include "Atams/Node/CommsCore/CommsCore.hpp"
     #include "Atams/Node/Maps/MapExample/MapExample.hpp"
 
     using namespace Atams::MapExample;
 
-    void foo(void)
+    void userFunc(void)
     {
-      int8_t exampleVar = -1;
+      int8_t exampleVar {-1};
   
       Atams::Error_t error = setVar(BlockExample::VAR_ID_EXAMPLE_SET, exampleVar);
     }
@@ -437,7 +440,7 @@ Care should be taken when using Atams alongside user code containing high-priori
 
 The Hub library includes two key classes: a Node class, and a Bus class. 
 
-**Node Class:** The Hub device user code needs to construct a Node class instance for each physical Node connected to the Hub. The Node class public interfaces allow the user to set and get variables stored in the Node instances variable storage. It also allows users to control the method and frequency by which the variables are transferred to and from the variable storage on the physical Node device.
+**Node Class:** The Hub device user code needs to construct a Node class instance for each physical Node connected to the Hub. The Node class public interfaces allow the user to set and get variables stored in a Node instances variable storage. It also allows users to control the method and frequency by which the variables are transferred to and from the variable storage on the physical Node device.
 
 **Bus Class:** A Bus class instance is required to enable communication and variable exchange with connected Node devices. Each Node class instance must be linked to the Bus instance that mirrors the physical device connections. The Bus class public interfaces include easy to update processes - abstracting away packet handling, compatibility checks, Node storage processes, Bus arbitration, Node configuration, Node sychronisation, and error handling. This lets the user focus almost entirely on their application specific functionality.
 
@@ -493,10 +496,36 @@ This enum type is returned from any Atams function that includes a polled update
     `Atams/Hub/Bus.hpp`
 
 ### Bus Construction
-!!!TODO:: Bus construction description and example
+The Atams Bus constructor accepts an `Atams::Platform::BusPeripheral::UserData_t` instance. When the user completes the definition of the `Atams::Platform::BusPeripheral` class in the Hub Platform files, they may need to access data that is set, or objects that are constructed, at a wider application scope. Any variables or references that need to be used by the `BusPeripheral` class can be added to the `BusPeripheral::UserData_t` definition, and passed to the class during construction.
+
+**Example:**\
+The following example uses Asio - a common cross-platform C++ library for network and low-level I/O programming.
+Asio is not part of the Atams libraries and is used as an example low level interface only.
+
+```cpp
+// In the Atams::Platform::BusPeripheral class definition in Hub/Platform.hpp:
+struct UserData_t
+{
+  // Example contents
+  asio::io_context  &ioContext;
+  asio::serial_port &serialPort;
+};
+
+// In the user setup files:
+static asio::io_context  ioContext;
+static asio::serial_port serialPort(ioContext);
+
+static const Atams::Platform::BusPeripheral::UserData_t userData 
+{
+  .ioContext  {ioContext},
+  .serialPort {serialPort}
+};
+
+static Atams::Bus bus(userData);
+```
 
 ### The Node Configuration Process
-Before a Node device can be used with the Hub library, the user must set up the Node configuration.
+Before a Node device can be used with the Hub library, the user must set up the Node configuration. The Node configuration is saved to non-volatile memory on the Node device during the Node Configuration Process, so the process only needs to be run once when a new Node device is being commissioned, or when a change to the Node configuration is required.
 ```cpp
 struct NodeConfig_t
 {
@@ -508,10 +537,10 @@ struct NodeConfig_t
 ```
 
 - **Node ID:**\
-Most importantly, the Node configuration includes the unique Node ID used for Node addressing during the Bus update cycle. Each physical Node on an Atams Bus must be configured with it's own unique ID ranging from 1-254. All unconfigured Nodes will start with a Node ID of 0.
+The Node configuration includes the unique Node ID used for Node addressing during the Bus update cycle. Each physical Node on an Atams Bus must be configured with it's own unique ID ranging from 1-254. All unconfigured Nodes will start with a Node ID of 0.
 
 - **Bitrate Option:**\
-How the Bitrate Option affects the Node's hardware peripheral bitrate is defined by the developer of the Node device in the Node library platform setup. All Node's on the same bus must have the same hardware peripheral bitrate as a result of setting each Bitrate Option.
+How the Bitrate Option affects the Node's hardware peripheral bitrate is defined by the developer of the Node device in the Node library platform setup. All Node's on the same bus must have the same hardware peripheral bitrate as a result of setting each of the Node's Bitrate Options.
 
 - **Watchdog Period:**\
 The Node library measures the time between messages received from the Hub. If the time spent waiting for a new message exceeds the watchdog period, the Node library will alert the Node device user code so the device can enter a safe state. The period is measured in milliseconds. Set the value to 0 to disable the watchdog functionality.
@@ -520,18 +549,33 @@ The Node library measures the time between messages received from the Hub. If th
 If multiple unconfigured Node's need to be added to a physical bus, they must be physically connected and configured one by one. If a Node already has a unique ID, it can be re-configured without having to remove any other Nodes from the bus, so long as the new Node ID does not conflict with an existing Node ID on the bus.
 
 - **Starting the Configuration Process:**\
-The following example shows how to start the configuration process for an un-configured Node on the bus.
+The following example shows how to start the Node Configuration Process for an un-configured Node on the bus.
 
   ```cpp
   #include "Atams/Hub/Bus.hpp"
 
-  void foo(void)
+  constexpr uint8_t NODE_ONE_ID {1U};
+  
+  static const Atams::Platform::BusPeripheral::UserData_t userData;
+  
+  static Atams::Bus bus(userData);
+
+  void userFunc(void)
   {
-    Atams::Error_t error = bus.beginSetNodeConfigProcess(nodeConfig);
+    Atams::NodeConfig_t nodeConfig 
+    { 0U,                      // Current Node ID 
+      NODE_ONE_ID,             // New Node ID
+      Atams::BITRATE_OPTION_0, // Bitrate option
+      0U                       // Disable watchdog
+    };
+
+    Atams::Error_t error {Atams::ERROR_NONE};
+    
+    error = bus.beginSetNodeConfigProcess(nodeConfig);
 
     if (error != Atams::ERROR_NONE)
     {
-      // An error occured while attempting to start the Node configuration process
+      // An error occured while attempting to start the Node Configuration Process
       printf("Atams Node configuration process error: ");
       printf(Atams::getErrorString(error));
       printf("\n");
@@ -540,14 +584,18 @@ The following example shows how to start the configuration process for an un-con
   ```
 
 - **Updating the Configuration Process:**\
-During the Node configuration process, the new configuration values will be written to the Universal Data Block of the Node device. Once the Hub confirms the values are written successfully, it will trigger an NVM storage operation on the Node. If the Hub confirms the NVM storage operation completes successfully, the update function will return `Atams::PROCESS_COMPLETE`. If an error occurs during the configuration process, the update function will return `Atams::PROCESS_ERROR`. In this case, the value of the `Atams::Error_t` passed to the update function can be checked for further details.
+During the Node Configuration Process, the new configuration values will be written to the Universal Data Block of the Node device. Once the Hub confirms the values are written successfully, it will trigger an NVM storage operation on the Node. If the Hub confirms the NVM storage operation completes successfully, the update function will return `Atams::PROCESS_COMPLETE`. If an error occurs during the configuration process, the update function will return `Atams::PROCESS_ERROR`. In this case, the value of the `Atams::Error_t` passed to the update function can be checked for further details.
 
-  Example:
+  **Example:**
 
   ```cpp
   #include "Atams/Hub/Bus.hpp"
 
-  void foo(void)
+  static const Atams::Platform::BusPeripheral::UserData_t userData;
+  
+  static Atams::Bus bus(userData);
+
+  void userFunc(void)
   {
     Atams::Error_t        error {Atams::ERROR_NONE};
     Atams::ProcessState_t processState;
@@ -558,13 +606,13 @@ During the Node configuration process, the new configuration values will be writ
     }
     while (processState == Atams::PROCESS_IN_PROGRESS);
 
-    if (processState == Atams::ProcessState::COMPLETE) 
+    if (processState == Atams::PROCESS_COMPLETE) 
     {
-      printf ("Node Configuration Successful\n");
+      printf ("Node Configuration Successful!\n");
     }
-    else if (processState == Atams::ProcessState::ERROR)    
+    else if (processState == Atams::PROCESS_ERROR)    
     {
-      // An error occured during the Node configuration process
+      // An error occured during the Node Configuration Process
       printf("Atams Node configuration process error: ");
       printf(Atams::getErrorString(error));
       printf("\n");
@@ -574,81 +622,329 @@ During the Node configuration process, the new configuration values will be writ
   
 ### Node Construction
 
-When all Node's on the Bus are appropriately configured (See [Node Configuration](#node-configuration)), Node class instances can be constructed using their unique Node ID. The ID can be changed at runtime using the `setNodeID` function, but keep in mind that the Node device must be re-configured before changing the Node ID of the class instance.
+If all Node's on the Bus are appropriately configured (See [Node Configuration](#node-configuration)), Node class instances can be constructed using their unique Node ID. The ID can be changed at runtime using the Node class `setNodeID` function, but keep in mind that the Node device must be re-configured before changing the Node ID of the Node class instance.
 
+**Example:**
+```cpp
+#include "Atams/Hub/Node.hpp"
+#include "Atams/Hub/Maps/MapExample/MapExample.hpp"
+
+constexpr uint8_t NODE_ONE_ID {1U};
+
+static Atams::Node node1 (NODE_ONE_ID);
+```
 <p align="center">
   <img height="500" src="Developer/Documentation/Images/HubNodeConstruction.gif">
 </p>
 
 ### Node Initialisation
-Each Node instance needs to be initialised with a Memory Map from `Atams/Hub/Maps` that was generated with the Memory Map used to initialise the associated Node device. If a valid Memory Map is provided to the initialisation function, the function will return `Atams::ERROR_NONE`.
+Each Node class instance needs to be initialised with a Memory Map from `Atams/Hub/Maps` that was generated with the Memory Map used to initialise the associated Node device. If a valid Memory Map is provided to the initialisation function, the function will return `Atams::ERROR_NONE`.
 
-**Initialisation example:**
+**Example:**
 ```cpp
 #include "Atams/Hub/Node.hpp"
 #include "Atams/Hub/Maps/MapExample/MapExample.hpp"
 
-static Atams::Node exampleNode(1);
+constexpr uint8_t NODE_ONE_ID {1U};
 
-error = driveNode.init(Atams::MapDrive::memoryMap);
+static Atams::Node node1(NODE_ONE_ID);
+
+void userFunc(void)
+{
+  Atams::Error_t {Atams::ERROR_NONE};
+  
+  error = node1.init(Atams::MapExample::memoryMap);
+}
 ```
 <p align="center">
   <img height="500" src="Developer/Documentation/Images/HubNodeInit.gif">
 </p>
 
 ### Linking Nodes to a Bus
+The Bus class `addNodeToBus` function needs to be used to link each Node class instance to a Bus instance. This allows the Bus instance to control the transfer of request and response packets between the Node class instances, and the physical Node devices, during Bus update cycles. The `addNodeToBus` function will return errors if the Node has already been added to the Bus, or if the Bus is full.
+
+**Example**
+```cpp
+#include "Atams/Hub/Node.hpp"
+#include "Atams/Hub/Maps/MapExample/MapExample.hpp"
+
+constexpr uint8_t NODE_ONE_ID {1U};
+
+static const Atams::Platform::BusPeripheral::UserData_t userData;
+
+static Atams::Bus  bus(userData)
+static Atams::Node node1(NODE_ONE_ID);
+
+void userFunc(void)
+{
+  Atams::Error_t {Atams::ERROR_NONE};
+  
+  error = bus.addNodeToBus(node1);
+}
+```
+
 <p align="center">
   <img height="500" src="Developer/Documentation/Images/HubAddNodeToBus.gif">
 </p>
 
 ### The Bus Initialisation Process
+Atam's uses dynamic packets that are generated at runtime. For this to work safely, the Hub device must confirm that the version of the Memory Map it holds for each initialised Node class instance is compatible with the version of the Memory Map used to initialise each Node device on the Bus.
+
+Additionally, the Synchronous Bus Update Cycle is designed to use the Bus as efficiently as possible. For this to work, each Node needs to be aware of the Node IDs of the first, last, and previous Node's on the same Bus.
+
+The Bus Initialisation Process handles Memory Map compatibility checking, and storage of the necessary Node IDs into the Node device Universal Data Blocks. The process is simple to start and update, and it ensures the Bus Update Cycles are safe and time efficient. As long as the Bus configuration has not changed, the Bus Initialisation Process will be significantly quicker after the first successful completion.
+
+The Bus Initialisation process cannot be skipped, and must be completed to use the Bus Update Cycles.
+
+- **Starting the Bus Initialisation Process:**\
+The following example shows how to start the Bus Initialisation Process. The function will return errors if no Node class instances have been added to the Bus, or if the `BusPeripheral::startReceive()` function fails to complete successfully.
+  ```cpp
+  #include "Atams/Hub/Bus.hpp"
+  
+  static const Atams::Platform::BusPeripheral::UserData_t userData;
+  
+  static Atams::Bus bus(userData);
+
+  void userFunc(void)
+  {
+    Atams::Error_t error {Atams::ERROR_NONE};
+    
+    error = bus.beginBusInitProcess();
+
+    if (error != Atams::ERROR_NONE)
+    {
+      // An error occured while attempting to start the Bus Initialisation Process
+      printf("Atams Bus initialisation process error: ");
+      printf(Atams::getErrorString(error));
+      printf("\n");
+    }
+  }
+  ```
+
+- **Updating the Bus Initialisation Process:**
+
+  During the Bus Initialisation Process, Memory Map compatibility checks are be performed for the first Node. The process will then check the Update Cycle Node IDs stored in the Node device's Universal Data Block. If the IDs are already correct, the process will continue to verify the next Node. If the stored IDs are not correct, the process will correct them, before triggering a non-volatile memory storage operation on the given Node device. If the NVM storage operation is successful, the process will continue to verify the next Node. The process continues until all Node's on the Bus have been verified.
+  
+  If any of the Node device Memory Maps are incompatible, if any NVM storage operations fail, or if communications errors occur with any of the Node's, the update function will return `Atams::PROCESS_ERROR`. The error variable passed to the function by reference will be set appropriately and can be checked for error details.
+  
+  **Example:**
+
+  ```cpp
+  #include "Atams/Hub/Bus.hpp"
+
+  static const Atams::Platform::BusPeripheral::UserData_t userData;
+  
+  static Atams::Bus bus(userData);
+
+  void userFunc(void)
+  {
+    Atams::Error_t        error {Atams::ERROR_NONE};
+    Atams::ProcessState_t processState;
+
+    do 
+    {
+      processState = bus.updateBusInitProcess(error);
+    }
+    while (processState == Atams::PROCESS_IN_PROGRESS);
+
+    if (processState == Atams::PROCESS_COMPLETE) 
+    {
+      printf ("Bus Initialisation Successful!\n");
+    }
+    else if (processState == Atams::PROCESS_ERROR)    
+    {
+      // An error occured during the Bus Initialisation Process
+      printf("Atams Node configuration process error: ");
+      printf(Atams::getErrorString(error));
+      printf("\n");
+    }
+  }
+  ```
 
 <p align="center">
   <img height="500" src="Developer/Documentation/Images/BusInitProcess.gif">
 </p>
 
 ### Node Request Pattern Control
-!!!TODO:: setRequestPattern description and example
-!!!TODO:: Helper function examples
+
+- **Node Request Packets:**
+Each Node class instance owns a Request Packet. This is a runtime adjusted packet sent to the Node devices during the Bus update cycle. The payload of the Request Packet is initially empty, and varies depending upon the Request Pattern settings for each Node variable.
+
+- **Request Packet Datagrams:**
+Each variable with an active Request Pattern will have a datagram in the Node Request Packet. When sent to the Node device, a Read Datagram in a Request Packet will trigger the external Node device to return it's stored variable value in it's Response Packet. Similarly, a Write Datagram in a Request Packet, will trigger the external Node device to store the received value in it's variable storage, and return a write acknowledgement to the Hub.
+
+- **How to Change Request Patterns:**
+  Request Pattern and Access controls determine which datagrams are added to or removed from the Node instance's Request Packet. The Request Packet cannot contain a Read Datagram and a Write Datagram for the same variable simultaneously. The following Node class function is used to set the Request Pattern for a given variable.
+  ```cpp
+  Atams::Error_t setRequestPattern(const uint16_t         varID,
+                                   const Atams::Access_t  accessRequest,
+                                   const RequestPattern_t requestPattern);
+  ```
+  
+  The Request Pattern and Access options have the following effects:
+  
+  ```cpp
+  enum Access_t: uint8_t
+  {
+    ACCESS_NONE  = 0U, // Remove any existing datagram for this variable.
+  
+    ACCESS_READ  = 1U, // Add a Read Datagram for this variable to the Node Request Packet. 
+                       // If a Write Datagram exists, it will be replaced.
+  
+    ACCESS_WRITE = 2U, // Add a Write Datagram for this variable to the Node Request Packet. 
+                       // If a read Datagram exists, it will be replaced.
+  };
+  
+  enum RequestPattern_t: uint8_t
+  {
+    REQUEST_INACTIVE           = 0U, // Remove any existing Datagram for this variable.
+  
+    REQUEST_STREAM             = 1U, // The Datagram will remain in the Node Request Packet until explicitly cleared or changed.
+  
+    REQUEST_UNTIL_ACK          = 2U, // Add the Datagram to the Node Request Packet until a write 
+                                     // acknowledgement or new read data is received.
+  };
+  ```
+
+<p align="center">
+  <img height="500" src="Developer/Documentation/Images/HubRequestPatterns.gif">
+</p>
+
+- **Helper Function:**
+Helper functions are provided to clean up the syntax for setting Request Patterns. They can be used to call the Node class `setRequestPattern` function with pre-determined arguments:
+
+  ```cpp
+  // ACCESS_WRITE + REQUEST_UNTIL_ACK + Node::setVar
+  template <typename T>
+  Atams::Error_t setWriteUntilAck(const uint16_t varID, const T writeValue);
+
+  // ACCESS_READ + REQUEST_UNTIL_ACK
+  Atams::Error_t setReadUntilAck(const uint16_t varID);
+
+  // ACCESS_WRITE + REQUEST_STREAM
+  Atams::Error_t setWriteStream(const uint16_t varID);
+
+  // ACCESS_READ + REQUEST_STREAM
+  Atams::Error_t setReadStream(const uint16_t varID);
+
+  // ACCESS_NONE + REQUEST_INACTIVE
+  Atams::Error_t stopStream(const uint16_t varID);
+  ```
 
 ### Node Variable Access
 The Node class `getVar` and `setVar` functions can be used to read from, and write to, a Node instances variable storage from the user application code. The functions will return an error if the Node instance has not be initialised successfully, if the variable ID is outside of the Node instance's Memory Map range, or if the template argument variable type does not match the type specified in the Memory Map. A return of `Atams::ERROR_NONE` indicates a successful transfer.
 
-Getter example:
+**Setter example:**
 ```cpp
 using namespace Atams::MapExample;
 
-uint32_t exampleVar {0U};
+void userFunc()
+{
+  uint32_t exampleVarToSet {23U};
 
-Atams::Error_t error = getVar(BlockExample::VAR_ID_EXAMPLE_GET, exampleVar);
+  Atams::Error_t error {Atams::ERROR_NONE};
+
+  error = setVar(BlockExample::VAR_ID_EXAMPLE_SET, exampleVarToSet);
+}
+```
+
+<p align="center">
+  <img height="500" src="Developer/Documentation/Images/HubSetVar.gif">
+</p>
+
+**Getter example:**
+```cpp
+using namespace Atams::MapExample;
+
+void userFunc()
+{
+  int16_t exampleVarToGet {0};
+
+  Atams::Error_t error {Atams::ERROR_NONE};
+
+  error = getVar(BlockExample::VAR_ID_EXAMPLE_SET, exampleVarToGet);
+}
 ```
 
 ### Node Acknowledgement and New Data Ready Flags
-!!!TODO:: Description and examples of checking acknowledgement and new data ready flags
 
-### Node Helper Functions
-!!!TODO:: Description of combined helper functions
+The Node class variable storage holds write acknowledgement and new data ready flags for each variable. If a Node device Response Packet acknowledged that data was written to a given variable, that variable's Write Acknowldgement Flag is set. If the Response Packet contained new variable data that was successfully copied into the Node instances variable storage, the New Data Ready Flag is set. 
+
+The flags can be retrieved with the following functions:
+```cpp
+Atams::Error_t isWriteAcked(const uint16_t varID, bool &ackReceived);
+Atams::Error_t isDataReady(const uint16_t varID, bool &newDataReady); 
+```
+
+The flags can be cleared with the following functions:
+```cpp
+Atams::Error_t clearWriteAck(const uint16_t varID);
+Atams::Error_t clearDataReady(const uint16_t varID);
+```
+
+The functions will return an error if the varID is outside the bounds of the Memory Map used to initialise the Node instance.
+
+### Node Combined Helper Functions
+The Node class contains helper functions to clean up the syntax for compounding operations. The helper functions use a combination of the Request Pattern setter, variable setter/getter, and flag checking/clearing functions to help keep user code clean.
+
+Examples:
+```cpp
+// clearDataReady + ACCESS_READ + REQUEST_PATTERN_STREAM;
+Atams::Error_t clearDataReadySetReadStream(const uint16_t varID)
+
+// isDataReady + ACCESS_NONE + REQUEST_PATTERN_INACTIVE
+Atams::Error_t stopStreamIsDataReady(const uint16_t varID, bool &newDataReady);
+
+// isDataReady + getVar (if new data is ready)
+// Function will return Atams::ERROR_NEW_DATA_NOT_READY if new data is not ready
+template <typename T>
+Atams::Error_t getVarIfDataReady(const uint16_t varID, T &outputRef);
+
+// ACCESS_NONE + REQUEST_PATTERN + isDataReady + getVar (if new data is ready)
+// Function will return Atams::ERROR_NEW_DATA_NOT_READY if new data is not ready
+template<typename T>
+Atams::Error_t stopStreamGetVarIfDataReady(const uint16_t varID, T &readData);
+
+// clearWriteAck + ACCESS_WRITE + REQUEST_PATTERN_STREAM
+template<typename T>
+Atams::Error_t clearAckSetWriteStream(const uint16_t varID, const T writeData);
+
+// ACCESS_NONE + REQUEST_PATTERN_INACTIVE + isWriteAcked
+Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
+```
 
 ### Synchronous Bus Update Cycle
 - **Overview**\
-!!!TODO: Description of the synchronous update cycle
+  During the Synchronous Update Cycle, Request Packets are sent to all Node devices, which store them in a Sync Buffer. Once the final Node device receives it's Request Packet, all Nodes process their stored Request Packets simultaneously: variables are written to variable storage, and read data and write acknowledgments are transferred to Response Packets. The first Node transmits it's Response Packet immediately and each subsequent Node device transmits it's response after receiving the previous Node's Response Packet. If a Node does not respond before a timeout, the Hub's Bus Update Cycle detects the timeout and sends a Jog Packet
+  to the next Node device in the response order, ensuring the Update Cycle continues.
+  
+  Unlike the asynchronous and single-node update cycles, the Synchronous Update Cucle does not process incoming response data during the update. This is does once the update cycle is complete, using the `Bus::processSyncBuffers` function.
 
-- **Starting the Synchronous Update Cycle:**\
-!!!TODO: Example of starting the synchronous update cycle
+- **Starting the Synchronous Update Cycle Example:**
 
-- **Updating the Synchronous Update Cycle:**\
-!!!TODO: Example of updating the synchronous update cycle
+<p align="center">
+  <img height="500" src="Developer/Documentation/Images/HubBeginUpdateCycle.gif">
+</p>
 
+- **Updating the Synchronous Update Cycle Example:**
+
+
+- **Processing Response Packets:**
+  If the Sychronous Update Cycle completes successfully, each Node class instance linked to the updated Bus will contain a new Response Packet. The use can call the `Bus::processSyncBuffers` to trigger the processing of all Node instance Response Packets on the Bus. By the end of this function, all the read values received from the Node devices will be written to the Node class instances' variable storage, and the data ready and write acknowledgement flags will be set appropriately.
+  **Example:**
+
+- **Handling Errors:**
+
+//!!! TODO:: HOW TO HANDLE ERRORS WITH THE UPDATE CYCLE OR PROCESSING
 
 ### Asynchronous Bus Update Cycle
 - **Overview**\
-!!!TODO: Description of the asynchronous update cycle
+In the Asynchronous Update Cycle, each Node responds immediately to it's Request Packet with a Response Packet. Node transactions
+are handled one after another: the Bus sends a request to a Node, waits for and processes it's response, then proceeds to the next Node.
 
-- **Starting the Asynchronous Update Cycle:**\
-!!!TODO: Example of starting the asynchronous update cycle
+- **Starting the Asynchronous Update Cycle:**
 
-- **Updating the Asynchronous Update Cycle:**\
-!!!TODO: Example of updating the asynchronous update cycle
+- **Updating the Asynchronous Update Cycle:**
 
 ### Platform Implementation
 !!!TODO: Explanation on how to set up the Hub library platform files

@@ -249,9 +249,9 @@ template Atams::Error_t Node::getVar<float   >(const uint16_t varID, float    &o
  *
  * @note The function checks access permissions before updating the request packet.
  */
-Atams::Error_t Node::setRequestPattern(const uint16_t         varID,
-                                       const Access_t         accessRequest,
-                                       const RequestPattern_t requestPattern)
+Atams::Error_t Node::setRequestPattern(const uint16_t                varID,
+                                       const Atams::Access_t         accessRequest,
+                                       const Atams::RequestPattern_t requestPattern)
 { 
   if (varID          >= validVarCount_)                    return (Atams::ERROR_VAR_ID);                  /* Early Return */
   if (requestPattern >= Atams::NUMBER_OF_REQUEST_PATTERNS) return (Atams::ERROR_REQUEST_PATTERN_INVALID); /* Early Return */
@@ -300,9 +300,9 @@ Atams::Error_t Node::setRequestPattern(const uint16_t         varID,
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-Atams::Error_t Node::getRequestPattern(const uint16_t   varID,
-                                       Access_t         &accessRequest,
-                                       RequestPattern_t &requestPattern)
+Atams::Error_t Node::getRequestPattern(const uint16_t           varID,
+                                       Atams::Access_t         &accessRequest,
+                                       Atams::RequestPattern_t &requestPattern)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -1071,10 +1071,10 @@ inline void Node::readFromVarStorage(T &outputVar, const Node::Var_t &nodeVar)
   else                                         outputVar = static_cast<T>(tempVar);
 }
 
-Atams::Error_t Node::externalTransfer(const Access_t  accessRequest,
-                                      const uint16_t  varID,
-                                      uint8_t * const bytesPtr,
-                                      const uint8_t   length)
+Atams::Error_t Node::externalTransfer(const Atams::Access_t accessRequest,
+                                      const uint16_t        varID,
+                                      uint8_t * const       bytesPtr,
+                                      const uint8_t         length)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -1501,9 +1501,9 @@ void Node::resetRequestPacketNoLock(void)
 }
 
 /* Warning - No OOR checks, should be completed by calling function */
-Atams::Error_t Node::processRequestPacketChange(const uint16_t         varID,
-                                                const Access_t         accessRequest,
-                                                const RequestPattern_t requestPattern)
+Atams::Error_t Node::processRequestPacketChange(const uint16_t                varID,
+                                                const Atams::Access_t         accessRequest,
+                                                const Atams::RequestPattern_t requestPattern)
 {
   if (varID >= validVarCount_) 
   {
@@ -1569,8 +1569,8 @@ Atams::Error_t Node::updateRequestPatternOnReceive(const uint16_t varID)
 
   Node::Var_t &var = varStorage_[varID];
 
-  Atams::Error_t   statusReturn          = Atams::ERROR_NONE;
-  RequestPattern_t currentRequestPattern = var.requestPattern;
+  Atams::Error_t          statusReturn          = Atams::ERROR_NONE;
+  Atams::RequestPattern_t currentRequestPattern = var.requestPattern;
   
   if (currentRequestPattern == Atams::REQUEST_UNTIL_ACK)
   {

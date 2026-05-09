@@ -97,13 +97,13 @@ public NodeCallbackHandler
   template <typename T>
   Atams::Error_t getVar(const uint16_t varID, T &readData);
 
-  Atams::Error_t setRequestPattern(const uint16_t         varID,
-                                   const Access_t         accessRequest,
-                                   const RequestPattern_t requestPattern);
+  Atams::Error_t setRequestPattern(const uint16_t                varID,
+                                   const Atams::Access_t         accessRequest,
+                                   const Atams::RequestPattern_t requestPattern);
 
-  Atams::Error_t getRequestPattern(const uint16_t   varID,
-                                  Access_t         &accessRequest,
-                                  RequestPattern_t &requestPattern);
+  Atams::Error_t getRequestPattern(const uint16_t           varID,
+                                   Atams::Access_t         &accessRequest,
+                                   Atams::RequestPattern_t &requestPattern);
   
   void clearAllRequestPatterns(void);
 
@@ -172,15 +172,15 @@ public NodeCallbackHandler
 
   struct RequestChangeConfig_t
   {
-    Access_t         accessRequest;
-    RequestPattern_t requestPattern;
-    DatagramHeader_t newDatagramHeader;
-    uint8_t          newDatagramBuffer[DATAGRAM_SIZE_HEADER + MAX_TYPE_SIZE];
-    uint8_t          newDatagramLength      {0U};
-    DatagramHeader_t currentDatagramHeader;
-    uint8_t          currentDatagramLength  {0U};
-    uint16_t         datagramStartIndex     {0U};
-    uint8_t          writePayloadLength     {0U};
+    Atams::Access_t         accessRequest;
+    Atams::RequestPattern_t requestPattern;
+    Atams::DatagramHeader_t newDatagramHeader;
+    uint8_t                 newDatagramBuffer[DATAGRAM_SIZE_HEADER + MAX_TYPE_SIZE];
+    uint8_t                 newDatagramLength      {0U};
+    Atams::DatagramHeader_t currentDatagramHeader;
+    uint8_t                 currentDatagramLength  {0U};
+    uint16_t                datagramStartIndex     {0U};
+    uint8_t                 writePayloadLength     {0U};
   };
 
   struct Var_t
@@ -269,9 +269,9 @@ public NodeCallbackHandler
   
   void resetRequestPacketNoLock(void);
 
-  Atams::Error_t processRequestPacketChange(const uint16_t         varID,
-                                            const Access_t         accessRequest,
-                                            const RequestPattern_t requestPattern);
+  Atams::Error_t processRequestPacketChange(const uint16_t                varID,
+                                            const Atams::Access_t         accessRequest,
+                                            const Atams::RequestPattern_t requestPattern);
 
   Atams::Error_t updateRequestPatternOnReceive(const uint16_t varID);
 

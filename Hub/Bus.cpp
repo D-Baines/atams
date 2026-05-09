@@ -368,17 +368,18 @@ Atams::Error_t Bus::beginSingleNodeUpdateCycle(Atams::Node &node)
 }
 
 /**
- * @brief Progresses the synchronous update cycle for all Nodes on the Bus.
+ * @brief Progresses the Synchronous Update Cycle for all Nodes on the Bus.
  *
  * Advances the update cycle started by @ref Bus::beginUpdateCycle in synchronous mode. This function should be called repeatedly
  * until the update cycle completes or an error occurs. Each call advances the internal state machine by a single step, such as
  * sending a request, waiting for a response, or jogging a Node if a timeout occurs.
  *
- * In the synchronous update cycle, request packets are sent to all Nodes, which store them in a sync buffer. Once the final Node
- * receives its request, all Nodes process their stored requests simultaneously: writes are performed, and read data is prepared for
- * response packets. The first Node transmits its response immediately and each subsequent Node transmits its response after receiving
- * the previous Node's response. If a Node does not respond before a timeout, this function detects the timeout and sends a jog packet
- * to the next Node in the response order, ensuring the cycle continues.
+ * During the Synchronous Update Cycle, Request Packets are sent to all Node devices, which store them in a Sync Buffer. Once the 
+ * final Node device receives it's Request Packet, all Nodes process their stored Request Packets simultaneously: variables are 
+ * written to variable storage, and read data and write acknowledgments are transferred to Response Packets. The first Node 
+ * transmits it's Response Packet immediately and each subsequent Node device transmits its response after receiving the previous 
+ * Node's Response Packet. If a Node does not respond before a timeout, the Hub's Bus Update Cycle detects the timeout and sends 
+ * a Jog Packet to the next Node device in the response order, ensuring the Update Cycle continues.
  *
  * Unlike the asynchronous and single-node update cycles, this function does not process incoming response data during the update.
  * To process all received response packets at a time of your choosing, call @ref Bus::processSyncBuffers after the update cycle completes.
@@ -569,7 +570,6 @@ Atams::ProcessState_t Bus::runSingleNodeUpdateCycle(Atams::Error_t &error, Atams
       break;
 
     case Bus::UpdateState::COLLECT_RESPONSES:
-      
       rxPollResult = pollForResponse(node, process, Atams::MESSAGE_RESPONSE);
 
       if (rxPollResult != Bus::PollResult::WAITING)
