@@ -241,7 +241,7 @@ The Node library is compatible with single and dual-core micro-controllers. The 
     ```
 
     <p align="center">
-      <img height="500" src="Developer/Documentation/Images/CommsCoreInclude.gif">
+      <img height="500" src="https://atams.io/CommsCoreInclude.gif">
     </p>
 
 - **Dual-Core Includes:** 
@@ -313,7 +313,7 @@ The Node library is compatible with single and dual-core micro-controllers. The 
     }
     ```
     <p align="center">
-      <img height="500" src="Developer/Documentation/Images/NodeInit.gif">
+      <img height="500" src="https://atams.io/NodeInit.gif">
     </p>
 
 - **Setting and Getting Variables:** 
@@ -329,14 +329,16 @@ The Node library is compatible with single and dual-core micro-controllers. The 
 
     void userFunc(void)
     {
+      Atams::Error_t error {Atams::ERROR_NONE};
+
       uint32_t exampleVar {0U};
-  
-      Atams::Error_t error = getVar(BlockExample::VAR_ID_EXAMPLE_GET, exampleVar);
+      
+      error = getVar(BlockExample::VAR_ID_EXAMPLE_GET, exampleVar);
     }
     ```
 
     <p align="center">
-      <img height="500" src="Developer/Documentation/Images/NodeGetVar.gif">
+      <img height="500" src="https://atams.io/NodeGetVar.gif">
     </p>
 
     **Setter example:**
@@ -348,14 +350,16 @@ The Node library is compatible with single and dual-core micro-controllers. The 
 
     void userFunc(void)
     {
+      Atams::Error_t error {Atams::ERROR_NONE};
+
       int8_t exampleVar {-1};
   
-      Atams::Error_t error = setVar(BlockExample::VAR_ID_EXAMPLE_SET, exampleVar);
+      error = setVar(BlockExample::VAR_ID_EXAMPLE_SET, exampleVar);
     }
     ```
 
     <p align="center">
-      <img height="500" src="Developer/Documentation/Images/NodeSetVar.gif">
+      <img height="500" src="https://atams.io/NodeSetVar.gif">
     </p>
 
 - **Communications Update:** 
@@ -373,7 +377,7 @@ The Node library is compatible with single and dual-core micro-controllers. The 
     ```
 
     <p align="center">
-      <img height="500" src="Developer/Documentation/Images/NodeCommsUpdate.gif">
+      <img height="500" src="https://atams.io/NodeCommsUpdate.gif">
     </p>
 
 ### App Core (Dual-Core Only)
@@ -435,7 +439,7 @@ Care should be taken when using Atams alongside user code containing high-priori
 # Hub Library
 
 <p align="center">
-    <img height="500" src="Developer/Documentation/Images/BusConstruction.gif">
+    <img height="500" src="https://atams.io/BusConstruction.gif">
 </p>
 
 The Hub library includes two key classes: a Node class, and a Bus class. 
@@ -634,7 +638,7 @@ constexpr uint8_t NODE_ONE_ID {1U};
 static Atams::Node node1 (NODE_ONE_ID);
 ```
 <p align="center">
-  <img height="500" src="Developer/Documentation/Images/HubNodeConstruction.gif">
+  <img height="500" src="https://atams.io/HubNodeConstruction.gif">
 </p>
 
 ### Node Initialisation
@@ -657,7 +661,7 @@ void userFunc(void)
 }
 ```
 <p align="center">
-  <img height="500" src="Developer/Documentation/Images/HubNodeInit.gif">
+  <img height="500" src="https://atams.io/HubNodeInit.gif">
 </p>
 
 ### Linking Nodes to a Bus
@@ -684,7 +688,7 @@ void userFunc(void)
 ```
 
 <p align="center">
-  <img height="500" src="Developer/Documentation/Images/HubAddNodeToBus.gif">
+  <img height="500" src="https://atams.io/HubAddNodeToBus.gif">
 </p>
 
 ### The Bus Initialisation Process
@@ -762,7 +766,7 @@ The following example shows how to start the Bus Initialisation Process. The fun
   ```
 
 <p align="center">
-  <img height="500" src="Developer/Documentation/Images/BusInitProcess.gif">
+  <img height="500" src="https://atams.io/BusInitProcess.gif">
 </p>
 
 ### Node Request Pattern Control
@@ -807,7 +811,7 @@ Each variable with an active Request Pattern will have a datagram in the Node Re
   ```
 
 <p align="center">
-  <img height="500" src="Developer/Documentation/Images/HubRequestPatterns.gif">
+  <img height="500" src="https://atams.io/HubRequestPatterns.gif">
 </p>
 
 - **Helper Function:**
@@ -849,7 +853,7 @@ void userFunc()
 ```
 
 <p align="center">
-  <img height="500" src="Developer/Documentation/Images/HubSetVar.gif">
+  <img height="500" src="https://atams.io/HubSetVar.gif">
 </p>
 
 **Getter example:**
@@ -865,6 +869,10 @@ void userFunc()
   error = getVar(BlockExample::VAR_ID_EXAMPLE_SET, exampleVarToGet);
 }
 ```
+
+<p align="center">
+  <img height="500" src="https://atams.io/HubGetVar.gif">
+</p>
 
 ### Node Acknowledgement and New Data Ready Flags
 
@@ -900,7 +908,7 @@ Atams::Error_t stopStreamIsDataReady(const uint16_t varID, bool &newDataReady);
 template <typename T>
 Atams::Error_t getVarIfDataReady(const uint16_t varID, T &outputRef);
 
-// ACCESS_NONE + REQUEST_PATTERN + isDataReady + getVar (if new data is ready)
+// ACCESS_NONE + REQUEST_PATTERN_INACTIVE + isDataReady + getVar (if new data is ready)
 // Function will return Atams::ERROR_NEW_DATA_NOT_READY if new data is not ready
 template<typename T>
 Atams::Error_t stopStreamGetVarIfDataReady(const uint16_t varID, T &readData);
@@ -915,23 +923,32 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
 
 ### Synchronous Bus Update Cycle
 - **Overview**\
-  During the Synchronous Update Cycle, Request Packets are sent to all Node devices, which store them in a Sync Buffer. Once the final Node device receives it's Request Packet, all Nodes process their stored Request Packets simultaneously: variables are written to variable storage, and read data and write acknowledgments are transferred to Response Packets. The first Node transmits it's Response Packet immediately and each subsequent Node device transmits it's response after receiving the previous Node's Response Packet. If a Node does not respond before a timeout, the Hub's Bus Update Cycle detects the timeout and sends a Jog Packet
-  to the next Node device in the response order, ensuring the Update Cycle continues.
+  During the Synchronous Update Cycle, Request Packets are sent to all Node devices, which store them in a Sync Buffer. Once the final Node device receives it's Request Packet, all Nodes process their stored Sync Buffers simultaneously: variables are written to variable storage, and read data and write acknowledgments are transferred to Response Packets. The first Node transmits it's Response Packet immediately, and each subsequent Node device transmits it's response after receiving the previous Node's Response Packet. If a Node does not respond within a given timeout window, the Bus Update Cycle running on the Hub, detects the timeout and sends a Jog Packet to the next Node device in the response order, ensuring the cycle continues.
   
-  Unlike the asynchronous and single-node update cycles, the Synchronous Update Cucle does not process incoming response data during the update. This is does once the update cycle is complete, using the `Bus::processSyncBuffers` function.
+  Unlike the asynchronous and single-node update cycles, the Synchronous Update Cycle does not process incoming response data during the update. This is triggered by the user once the update cycle is complete with the `Bus::processSyncBuffers` function.
 
 - **Starting the Synchronous Update Cycle Example:**
+  The `Bus::beginUpUpdateCycle(void)` function is used to start an update cycle. On calling the function, write values for each Node instance on the Bus are transferred from Var Storage into the Request Packets. This means that calls to change a variable's Request Pattern to a Write Stream don't need to be made between every Bus Update Cycle - the user only needs to ensure that the most recent data is written to the Node instance variable storage.
 
 <p align="center">
-  <img height="500" src="Developer/Documentation/Images/HubBeginUpdateCycle.gif">
+  <img height="500" src="https://atams.io/HubBeginUpdateCycle.gif">
 </p>
 
 - **Updating the Synchronous Update Cycle Example:**
 
+<p align="center">
+  <img height="500" src="https://atams.io/HubRunUpdateCycle.gif">
+</p>
 
 - **Processing Response Packets:**
-  If the Sychronous Update Cycle completes successfully, each Node class instance linked to the updated Bus will contain a new Response Packet. The use can call the `Bus::processSyncBuffers` to trigger the processing of all Node instance Response Packets on the Bus. By the end of this function, all the read values received from the Node devices will be written to the Node class instances' variable storage, and the data ready and write acknowledgement flags will be set appropriately.
+
+  If the Sychronous Update Cycle completes successfully, each Node class instance linked to the Bus will contain a new Response Packet. The user can call the `Bus::processSyncBuffers` to trigger the processing of all Node instance Response Packets on the Bus. By the end of this function, all the read values received from all the Node devices will be written to the Node class instances' variable storage, and the data ready and write acknowledgement flags will be set appropriately.
+  
   **Example:**
+
+<p align="center">
+  <img height="500" src="https://atams.io/HubProcessSyncBuffers.gif">
+</p>
 
 - **Handling Errors:**
 

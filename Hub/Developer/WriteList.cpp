@@ -52,8 +52,8 @@ WriteList::SearchResult_t WriteList::findConfig(const uint16_t varID)
 {
   SearchResult_t searchResult = 
   {
-    .configFound = false,
-    .configIndex = 0U
+    /* .configFound = */ false,
+    /* .configIndex = */ 0U
   };
 
   for (uint16_t listIndex = 0U; listIndex < _configCount; listIndex++)

@@ -300,6 +300,8 @@ void TestNode::runUpdateCycleTests(void)
         case BlockTest1::VAR_WRITE_UINT32: updateWriteValue(varID, feedbackUint32_, testUint32_); break;
         case BlockTest1::VAR_WRITE_INT32:  updateWriteValue(varID, feedbackInt32_,  testInt32_);  break;
         case BlockTest1::VAR_WRITE_FLOAT:  updateWriteValue(varID, feedbackFloat_,  testFloat_);  break;
+
+        default: errorHandler(Atams::ERROR_VAR_ID, "Unexpected default case on Node "); break;
       }
 
       /* Check acknowledgement flag is false before starting setVar */
@@ -370,6 +372,8 @@ void TestNode::runUpdateCycleTests(void)
         case BlockTest1::VAR_WRITE_UINT32: checkReadValue(varID, feedbackUint32_, testUint32_); break;
         case BlockTest1::VAR_WRITE_INT32:  checkReadValue(varID, feedbackInt32_,  testInt32_);  break;
         case BlockTest1::VAR_WRITE_FLOAT:  checkReadValue(varID, feedbackFloat_,  testFloat_);  break;
+        
+        default: errorHandler(Atams::ERROR_VAR_ID, "Unexpected default case on Node "); break;
       }
 
       error = Node::setRequestPattern(varID, Atams::ACCESS_NONE, Atams::REQUEST_INACTIVE);
@@ -471,7 +475,9 @@ void TestNode::updateWriteValue(const uint16_t varID, T &feedbackVar, T &writeVa
   if (error) errorHandler(error, "Node::getVar error in TestNode::updateWriteValue On Node ");
 
   writeVar = static_cast<T>(std::rand());
+
   if (writeVar == feedbackVar) writeVar++;
+
   error = Node::setVar(varID, writeVar);
 
   if (error) errorHandler(error, "Node::setVar error in TestNode::updateWriteValue On Node ");
@@ -486,7 +492,11 @@ void TestNode::checkReadValue(const uint16_t varID, T &feedbackVar, T &writtenVa
 
   error = Node::getVar(varID, feedbackVar);
 
-  if (error)                     errorHandler(error, "Node::getVar error in TestNode::checkReadValue On Node ");
+  if (error) 
+  {
+    errorHandler(error, "Node::getVar error in TestNode::checkReadValue On Node ");
+  }
+
   if (feedbackVar != writtenVar) 
   {
     errorHandler(Atams::ERROR_NONE, "Feedback Mismatch on Node ");

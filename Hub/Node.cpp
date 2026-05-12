@@ -941,7 +941,7 @@ void Node::injectBusError(const Atams::Error_t errorToInject,
   {
     case Atams::ERROR_VAR_ID:
       requestPacketLock_.acquireLock();
-      if ((requestPacket_.length + Atams::DATAGRAM_SIZE_HEADER) < sizeof(requestPacket_.buffer))
+      if ((requestPacket_.length + Atams::DATAGRAM_SIZE_HEADER) < static_cast<uint16_t>(sizeof(requestPacket_.buffer)))
       {
         datagramHeader.varID   = Atams::VAR_ID_NULL;
         datagramHeader.command = Atams::ACCESS_READ;
@@ -969,7 +969,7 @@ void Node::injectBusError(const Atams::Error_t errorToInject,
       datagramHeader.command = Atams::ACCESS_READ;
       datagramHeader.varID   = readOnlyVarID;
       varIDUsed              = readOnlyVarID;
-      if ((requestPacket_.length + Atams::DATAGRAM_SIZE_HEADER) < sizeof(requestPacket_.buffer))
+      if ((requestPacket_.length + Atams::DATAGRAM_SIZE_HEADER) < static_cast<uint16_t>(sizeof(requestPacket_.buffer)))
       {
         Atams::datagramHeaderToBuffer(datagramHeader, &requestPacket_.buffer[requestPacket_.length]);
         requestPacket_.length += Atams::DATAGRAM_SIZE_HEADER;

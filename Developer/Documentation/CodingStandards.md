@@ -825,10 +825,10 @@ return result;   // Non-compliant
 return (result); // Compliant
 ```
 
-**Rule:** Opening and closing curly braces should be placed on new lines. Curly braces must be used if the body of a statement does not sit on the same line as the condition. Curly braces are not required for single line statements.
-**Rationale:** Codebase styling consistency and clarity.
-**Exception:** Single line if statements.  
-**Example:**
+- **Rule:** Opening and closing curly braces should be placed on new lines. Curly braces must be used if the body of a statement does not sit on the same line as the condition. Curly braces are not required for single line statements.
+- **Rationale:** Codebase styling consistency and clarity.
+- **Exception:** Single line if statements.  
+- **Example:**
 ```cpp
 if (condition) foo(); /* Compliant */
 
@@ -845,8 +845,8 @@ if (condition) {      /* Non-compliant */
 }
 ```
 
-**Rule:** Else and else if statements should be placed on new lines. 
-**Rationale:** Codebase styling consistency and clarity.
+- **Rule:** Else and else if statements should be placed on new lines. 
+- **Rationale:** Codebase styling consistency and clarity.
 - **Example:**
 ```cpp
 if (conditionA)

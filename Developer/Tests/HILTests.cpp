@@ -53,10 +53,10 @@ static asio::io_context ioContext_;
 
 static asio::serial_port serialPort_(ioContext_);
 
-static const Atams::Platform::BusPeripheral::UserData_t userData_ = 
+static const Atams::Platform::BusPeripheral::UserData_t userData_ 
 {
-  .ioContext  {ioContext_},
-  .serialPort {serialPort_}
+  /* .ioContext  */ {ioContext_},
+  /* .serialPort */ {serialPort_}
 };
 
 /*************************************************************************************/
