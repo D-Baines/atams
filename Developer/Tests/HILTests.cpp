@@ -225,7 +225,7 @@ static Atams::Error_t runUpdateCycleTests(void)
     { 
       if (updateState != Atams::PROCESS_COMPLETE) errorHandler(error, "Unexpected Update Cycle Error");
 
-      if (syncAsyncToggle_) testBus_.processSyncBuffers();
+      if (syncAsyncToggle_) testBus_.processResponseBuffers();
 
       syncAsyncToggle_ = !syncAsyncToggle_;
      

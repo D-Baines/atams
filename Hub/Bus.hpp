@@ -116,7 +116,7 @@ private Platform::BusPeripheral
 
   Atams::ProcessState_t runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::Node &node);
 
-  Atams::Error_t processSyncBuffers(void);
+  Atams::Error_t processResponseBuffers(void);
 
   Atams::Error_t beginSetNodeConfigProcess(const Atams::NodeConfig_t &userConfig);
 
