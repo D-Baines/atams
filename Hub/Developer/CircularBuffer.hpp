@@ -29,6 +29,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+
 #include "../Platform.hpp"
 
 /*************************************************************************************/
@@ -48,7 +49,7 @@ private Platform::CommsLock
 
   /*-- Public Constants -------------------------------------------------------------*/
 
-  static inline constexpr uint8_t DEFAULT_EOL_CHAR = 0U;
+  static constexpr uint8_t DEFAULT_EOL_CHAR {0U};
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
@@ -69,11 +70,11 @@ private Platform::CommsLock
   /* Default Constructor */
   CircularBuffer(void);
 
-  /* Constructor */
+  /* Paramaterised Constructor */
   CircularBuffer(const uint8_t endOfLineChar);
 
   /* Destructor */
-  virtual ~CircularBuffer(void);
+  virtual ~CircularBuffer(void) = default;
 
   /* Copy Constructor */
   CircularBuffer(const CircularBuffer &other) = delete;
@@ -102,8 +103,8 @@ private Platform::CommsLock
 
   /*-- Private Static Constants -----------------------------------------------------*/
 
-  static inline constexpr uint16_t STATIC_BUFFER_SIZE = Platform::CIRCULAR_BUFFER_SIZE;
-  static inline constexpr uint8_t  NEW_DATA_READY     = 1U;
+  static constexpr uint16_t STATIC_BUFFER_SIZE {Platform::CIRCULAR_BUFFER_SIZE};
+  static constexpr uint8_t  NEW_DATA_READY     {1U};
 
   /*-- Private Constants ------------------------------------------------------------*/
 
@@ -113,16 +114,17 @@ private Platform::CommsLock
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  volatile uint16_t headIndex_       = 0U;
-  volatile uint16_t tailIndex_       = 0U;
-  volatile uint16_t eolSearchIndex_  = 0U;
-  volatile uint16_t byteCount_       = 0U;
-  volatile uint16_t eolToHead_       = 0U;
-  volatile uint16_t eolToTail_       = 0U;
-  volatile uint8_t  newDataReady_    = !CircularBuffer::NEW_DATA_READY; /* UINT8_T MUST BE ATOMIC ON TARGET PLATFORM */
+  volatile uint16_t headIndex_      {0U};
+  volatile uint16_t tailIndex_      {0U};
+  volatile uint16_t eolSearchIndex_ {0U};
+  volatile uint16_t byteCount_      {0U};
+  volatile uint16_t eolToHead_      {0U};
+  volatile uint16_t eolToTail_      {0U};
+ 
+  std::atomic<uint32_t> newDataReady_ {!CircularBuffer::NEW_DATA_READY};
 
   uint8_t buffer_[STATIC_BUFFER_SIZE];
-  uint8_t eolChar_ = DEFAULT_EOL_CHAR;
+  uint8_t eolChar_ {DEFAULT_EOL_CHAR};
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
