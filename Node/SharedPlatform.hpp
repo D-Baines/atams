@@ -49,13 +49,17 @@ namespace Atams { namespace Platform {
 *
 *   @details The size of the shared memory section must be at least:
 *            2 + (4 * Platform::NODE_NUMBER_OF_VARS) bytes.
+*
+*   @note    ATAMS PLATFORM REQUIREMENT - DUAL-CORE
 */
 #define ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE __attribute__((section(".atamsSharedRAM")))
 
 /**
-*   @brief Define used in dual-core applications to determine which core is
+*   @brief Define used in dual-core applications to allow Atams to determine which core is
 *          responsible for handling Atams communications. The define should only
 *          exist on compilation of the code for the core handling Atams communications.
+*
+*   @note  ATAMS PLATFORM REQUIREMENT - DUAL-CORE
 */
 #define COMMS_CORE_DETECT CORE_CM4
 

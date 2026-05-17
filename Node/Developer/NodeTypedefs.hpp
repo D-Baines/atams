@@ -41,7 +41,7 @@ namespace Atams {
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-static constexpr uint32_t CORE_STATUS_CHECK_PERIOD = 10U;
+constexpr uint32_t CORE_STATUS_CHECK_PERIOD {10U};
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
@@ -52,24 +52,24 @@ using VarStorage_t = uint8_t[Atams::MAX_TYPE_SIZE];
 typedef Atams::Error_t (&InitUniversalDataFn_t)(void);
 typedef Atams::Error_t (&InitDefaultsFn_t)(void);
 
-enum CoreInitStatus_t: uint8_t
+enum CoreInitStatus_t: uint32_t
 {
   CORE_INIT_IN_PROGRESS = 0U,
   CORE_INIT_COMPLETE    = 1U
 };
 
-struct MemoryMap_t :
-public SharedMemoryMap_t
+struct MemoryMap_t
 {
-  const InitUniversalDataFn_t initGenInfo;
-  const InitDefaultsFn_t      initUserDefaults;
+  const SharedMemoryMap_t     sharedMap;
+  const InitUniversalDataFn_t genInfoInitFn;
+  const InitDefaultsFn_t      userDefaultsInitFn;
 
-  MemoryMap_t(const SharedMemoryMap_t    &initSharedMemoryMap,
-              const InitUniversalDataFn_t initGenInfoFn,
-              const InitDefaultsFn_t      initUserDefaultsFn) :
-  SharedMemoryMap_t(initSharedMemoryMap),
-  initGenInfo(initGenInfoFn),
-  initUserDefaults(initUserDefaultsFn){};
+  MemoryMap_t(const SharedMemoryMap_t    &sharedMemoryMapInput,
+              const InitUniversalDataFn_t genInfoInitFnInput,
+              const InitDefaultsFn_t      initUserDefaultsFnInput) :
+  sharedMap(sharedMemoryMapInput),
+  genInfoInitFn(genInfoInitFnInput),
+  userDefaultsInitFn(initUserDefaultsFnInput){};
 
   /* Default Constructor */
   MemoryMap_t(void) = delete;

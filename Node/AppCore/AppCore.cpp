@@ -27,7 +27,8 @@
 
 #include "AppCore.hpp"
 
-#include "string.h"
+#include <string.h>
+#include <atomic>
 
 #include "AppPlatform.hpp"
 #include "../Developer/NodeUtilities.hpp"
@@ -68,6 +69,9 @@ static CoreInitStatus_t s_coreInitComplete[Atams::NUMBER_OF_CORES] {CORE_INIT_IN
 
 ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 static Atams::VarStorage_t s_varStorage[Platform::NODE_NUMBER_OF_VARS];
+
+ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
+static std::atomic<uint32_t> s_watchdogFault {0U};
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -250,6 +254,22 @@ template Atams::Error_t getVar<int16_t >(const uint16_t varID, int16_t  &outputR
 template Atams::Error_t getVar<uint32_t>(const uint16_t varID, uint32_t &outputRef);
 template Atams::Error_t getVar<int32_t >(const uint16_t varID, int32_t  &outputRef);
 template Atams::Error_t getVar<float   >(const uint16_t varID, float    &outputRef);
+
+/**
+ * @brief Get the watchdog fault status from the Comms Core.
+ *
+ * Returns @c true if the time since the last valid message received
+ * from an Atams Hub exceeds the configured watchdog period.
+ *
+ * @retval @c true  Watchdog fault active.
+ * @retval @c false Watchdog fault inactive.
+ *
+ */
+bool getWatchdogFault(void)
+{
+  return (static_cast<bool>(s_watchdogFault.load(std::memory_order_relaxed)));
+}
+
 
 } /* End Namespace - Atams */
 

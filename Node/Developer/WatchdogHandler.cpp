@@ -65,7 +65,7 @@ void WatchdogHandler::update(const uint32_t currentTime)
 
         if (m_watchdogCount < Atams::MAX_UINT32) m_watchdogCount++;
 
-        if ((m_watchdogPeriod > 0U             ) &&
+        if ((m_watchdogPeriod > 0U              ) &&
             (m_watchdogCount  > m_watchdogPeriod) )
         {
           m_watchdogStatus = WATCHDOG_FAULT_ACTIVE;
@@ -75,7 +75,7 @@ void WatchdogHandler::update(const uint32_t currentTime)
 
       case WATCHDOG_FAULT_ACTIVE:
       {
-        uint32_t watchdogReset{0U};
+        uint32_t watchdogReset {0U};
 
         static_cast<void>(Atams::getVar(BlockUniversal::VAR_WATCHDOG_RESET, watchdogReset));
 
@@ -90,7 +90,9 @@ void WatchdogHandler::update(const uint32_t currentTime)
         break;
       }
       default:
+
         m_watchdogStatus = WATCHDOG_FAULT_ACTIVE;
+
         break;
     }
 
@@ -100,7 +102,7 @@ void WatchdogHandler::update(const uint32_t currentTime)
   }
 }
 
-bool WatchdogHandler::getWatchdogFault(void)
+uint32_t WatchdogHandler::getWatchdogFault(void)
 {
   return (m_watchdogStatus == WATCHDOG_FAULT_ACTIVE);
 }

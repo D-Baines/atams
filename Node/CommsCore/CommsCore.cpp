@@ -27,7 +27,8 @@
 
 #include "CommsCore.hpp"
 
-#include "string.h"
+#include <string.h>
+#include <atomic>
 
 #include "../../Shared/Utilities/AtamsUtilities.hpp"
 #include "../Developer/UniversalBlockManager.hpp"
@@ -41,8 +42,6 @@
 #include "../Developer/CircularBuffer.hpp"
 #include "../Developer/WatchdogHandler.hpp"
 #include "../Developer/NVMUnitHandler.hpp"
-
-#include "main.h"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -94,13 +93,13 @@ struct ChannelSyncPacket_t
 /* PRIVATE CLASS OBJECTS                                                             */
 /*************************************************************************************/
 
-static const MemoryMap_t   *s_memoryMapPtr;
-static CRC32                s_nodeCRC(Atams::CRC32_POLYNOMIAL);
-static CircularBuffer       s_circularBuffers[Platform::NUMBER_OF_COMMS_PERIPHERALS];
+static const MemoryMap_t     *s_memoryMapPtr;
+static CRC32                  s_nodeCRC(Atams::CRC32_POLYNOMIAL);
+static CircularBuffer         s_circularBuffers[Platform::NUMBER_OF_COMMS_PERIPHERALS];
 
-static WatchdogHandler      s_watchdogHandler;
-static UniversalBlockManager s_uniBlockManager(s_watchdogHandler);
-static NVMUnitHandler       s_nvmUnitHandler(s_nodeCRC);
+static WatchdogHandler        s_watchdogHandler;
+static UniversalBlockManager  s_uniBlockManager(s_watchdogHandler);
+static NVMUnitHandler         s_nvmUnitHandler(s_nodeCRC);
 
 /*************************************************************************************/
 /* PRIVATE VARIABLES                                                                 */
@@ -116,6 +115,9 @@ static CoreInitStatus_t s_coreInitComplete[Atams::NUMBER_OF_CORES] {CORE_INIT_IN
 
 ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 static Atams::VarStorage_t s_varStorage[Platform::NODE_NUMBER_OF_VARS];
+
+ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
+static std::atomic<uint32_t> s_watchdogFault {0U};
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -141,13 +143,13 @@ static void invalidateMemoryMap(void)
 }
 
 static Atams::Error_t externalTransfer(const Access_t  accessRequest,
-                                const uint16_t  varID,
-                                uint8_t * const bytesPtr,
-                                const uint8_t   length)
+                                       const uint16_t  varID,
+                                       uint8_t * const bytesPtr,
+                                       const uint8_t   length)
 {
   if (varID >= s_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
+  const Atams::VarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
 
   if (TYPE_LENGTHS[varInfo.type] != length)                 return (Atams::ERROR_VAR_TYPE);       /* Early Return */
   if (bytesPtr                   == nullptr)                return (Atams::ERROR_NULLPTR);        /* Early Return */
@@ -188,7 +190,7 @@ static DataStatusReturn_t<uint8_t> getVarLength(const uint16_t varID)
     return (lengthReturn); /* Early Return */
   }
 
-  const VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
+  const VarInfo_t &varInfo = s_memoryMapPtr->sharedMap.varInfoList[varID];
 
   lengthReturn.data   = TYPE_LENGTHS[varInfo.type];
   lengthReturn.status = ERROR_NONE;
@@ -254,10 +256,10 @@ static void processDatagramRead(ChannelResponse_t &response,
                                 uint16_t          &requestPacketDatagramIndex,
                                 const uint8_t      payloadLength)
 {
-  Atams::Error_t transferStatus = externalTransfer(ACCESS_READ,
-                                                   datagramHeader.varID,
-                                                   &response.buffer[response.index + DATAGRAM_SIZE_HEADER],
-                                                   payloadLength);
+  Atams::Error_t transferStatus {externalTransfer(ACCESS_READ,
+                                                  datagramHeader.varID,
+                                                  &response.buffer[response.index + DATAGRAM_SIZE_HEADER],
+                                                  payloadLength)};
 
   if (transferStatus != Atams::ERROR_NONE)
   {
@@ -282,10 +284,10 @@ static void processDatagramWrite(ChannelResponse_t &response,
   if ((datagramHeader.varID >= BlockUniversal::NUMBER_OF_VARS          ) ||
       (s_uniBlockManager.checkWriteAccess(datagramHeader.varID) == true) )
   {
-    Atams::Error_t transferStatus = externalTransfer(ACCESS_WRITE,
-                                                     datagramHeader.varID,
-                                                     datagramPayload,
-                                                     payloadLength);
+    Atams::Error_t transferStatus {externalTransfer(ACCESS_WRITE,
+                                                    datagramHeader.varID,
+                                                    datagramPayload,
+                                                    payloadLength)};
 
     if (transferStatus == Atams::ERROR_NONE)
     {
@@ -318,8 +320,8 @@ static void validateRequestPacket(ChannelResponse_t &response,
                                   const uint16_t     requestPacketLength)
 {
   DatagramHeader_t datagramHeader;
-  uint16_t         datagramStartIndex     = HEADER_INDEX_FIRST_DATAGRAM;
-  uint16_t         requiredResponseLength = HEADER_SIZE_HEADER;
+  uint16_t         datagramStartIndex     {HEADER_INDEX_FIRST_DATAGRAM};
+  uint16_t         requiredResponseLength {HEADER_SIZE_HEADER};
 
   while ((datagramStartIndex + DATAGRAM_SIZE_HEADER <= requestPacketLength) &&
          (response.aborted                          == false              ) )
@@ -365,7 +367,7 @@ static void processRequestPacket(ChannelResponse_t &response,
                                  const uint16_t     requestPacketLength)
 {
   DatagramHeader_t datagramHeader;
-  uint16_t         datagramStartIndex = HEADER_INDEX_FIRST_DATAGRAM;
+  uint16_t         datagramStartIndex {HEADER_INDEX_FIRST_DATAGRAM};
 
   resetResponse(response, requestPacket[HEADER_INDEX_SYNC]);
 
@@ -377,7 +379,7 @@ static void processRequestPacket(ChannelResponse_t &response,
     bufferToDatagramHeader(&requestPacket[datagramStartIndex], datagramHeader);
 
     /* Var ID and Memory Map validity confirmed in validateRequestPacket */
-    uint8_t varLength = TYPE_LENGTHS[s_memoryMapPtr->varInfoList[datagramHeader.varID].type];
+    uint8_t varLength {TYPE_LENGTHS[s_memoryMapPtr->sharedMap.varInfoList[datagramHeader.varID].type]};
 
     switch (static_cast<Access_t>(datagramHeader.command))
     {
@@ -435,7 +437,7 @@ static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsCh
                                      const uint16_t                      packetLength)
 {
   static uint8_t             decodedPacket[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
-  static uint16_t            decodedLength = 0U;
+  static uint16_t            decodedLength {0U};
   static ChannelSyncPacket_t commsChannelSyncPackets[Platform::NUMBER_OF_COMMS_PERIPHERALS];
   static ChannelResponse_t   commsChannelResponses[Platform::NUMBER_OF_COMMS_PERIPHERALS];
 
@@ -445,15 +447,15 @@ static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsCh
                       sizeof(decodedPacket),
                       decodedLength         ) == Atams::ERROR_NONE)
   {
-    MessageType_t        messageType     = static_cast<MessageType_t>(decodedPacket[HEADER_INDEX_MSG_TYPE]);
-    uint8_t              packetNodeID    = decodedPacket[HEADER_INDEX_NODE_ID];
-    ChannelSyncPacket_t &syncPacket      = commsChannelSyncPackets[commsChannel];
-    ChannelResponse_t   &response        = commsChannelResponses[commsChannel];
-    uint8_t              localNodeID     = s_uniBlockManager.getLocalNodeID();
-    uint8_t              firstSyncNodeID = s_uniBlockManager.getFirstSyncNodeID();
-    uint8_t              finalSyncNodeID = s_uniBlockManager.getFinalSyncNodeID();
-    uint8_t              prevSyncNodeID  = s_uniBlockManager.getPrevSyncNodeID();
-    uint8_t              packetSyncCount = decodedPacket[HEADER_INDEX_SYNC];
+    MessageType_t        messageType     {static_cast<MessageType_t>(decodedPacket[HEADER_INDEX_MSG_TYPE])};
+    uint8_t              packetNodeID    {decodedPacket[HEADER_INDEX_NODE_ID]};
+    ChannelSyncPacket_t &syncPacket      {commsChannelSyncPackets[commsChannel]};
+    ChannelResponse_t   &response        {commsChannelResponses[commsChannel]};
+    uint8_t              localNodeID     {s_uniBlockManager.getLocalNodeID()};
+    uint8_t              firstSyncNodeID {s_uniBlockManager.getFirstSyncNodeID()};
+    uint8_t              finalSyncNodeID {s_uniBlockManager.getFinalSyncNodeID()};
+    uint8_t              prevSyncNodeID  {s_uniBlockManager.getPrevSyncNodeID()};
+    uint8_t              packetSyncCount {decodedPacket[HEADER_INDEX_SYNC]};
 
     setAbortMessageType(response, messageType);
 
@@ -508,7 +510,7 @@ static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsCh
   }
   else
   {
-    static uint32_t errorCount = 0U;
+    static uint32_t errorCount {0U};
     errorCount++;
     Atams::setVar(BlockUniversal::VAR_CRC_ERROR_COUNT, errorCount);
   }
@@ -519,7 +521,7 @@ static void processRawMeshData(void)
   static uint8_t  meshPacketRXBuffer[Platform::MAX_BUS_PACKET_SIZE];
   static uint16_t meshPacketRXLength {0U};
 
-  for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_PERIPHERALS; commsChannel++)
+  for (uint8_t commsChannel {0U}; commsChannel < Platform::NUMBER_OF_COMMS_PERIPHERALS; commsChannel++)
   {
     CircularBuffer::Error_t bufferStatus = s_circularBuffers[commsChannel].getPacket(meshPacketRXBuffer,
                                                                                      sizeof(meshPacketRXBuffer),
@@ -555,8 +557,8 @@ static Atams::Error_t getMemoryMapIsValid(void)
 
 static void waitForAppCoreInit(void)
 {
-  uint32_t                  previousCoreCheckTime = 0U;
-  volatile CoreInitStatus_t coreInitStatus        = CORE_INIT_IN_PROGRESS;
+  uint32_t                  previousCoreCheckTime {0U};
+  volatile CoreInitStatus_t coreInitStatus        {CORE_INIT_IN_PROGRESS};
 
   Platform::acquireVarStorageLock();
   s_coreInitComplete[CORE_APP] = CORE_INIT_IN_PROGRESS;
@@ -588,12 +590,12 @@ static void signalCommsCoreInitComplete(void)
 
 static Atams::Error_t validateNVMChecksum(const NVMHeader_t &nvmHeader, const NVMFooter_t &nvmFooter)
 {
-  Atams::Error_t error           = Atams::ERROR_NONE;
-  uint32_t       endOfVarStorage = nvmHeader.length - sizeof(nvmFooter);
+  Atams::Error_t error           {Atams::ERROR_NONE};
+  uint32_t       endOfVarStorage {nvmHeader.length - sizeof(nvmFooter)};
 
   s_nodeCRC.beginRollingCRC();
 
-  for (uint32_t nvmIndex = 0U; nvmIndex < endOfVarStorage; nvmIndex++)
+  for (uint32_t nvmIndex {0U}; nvmIndex < endOfVarStorage; nvmIndex++)
   {
     uint8_t nvmByte;
 
@@ -617,11 +619,11 @@ static Atams::Error_t validateNVMChecksum(const NVMHeader_t &nvmHeader, const NV
 
 static uint32_t getNVMVarSpaceRequirement(void)
 {
-  uint32_t requiredVarSpace = 0U;
+  uint32_t requiredVarSpace {0U};
 
-  for (uint16_t varID = 0U; varID < s_memoryMapPtr->genInfo.noOfVars; varID++)
+  for (uint16_t varID {0U}; varID < s_memoryMapPtr->sharedMap.genInfo.noOfVars; varID++)
   {
-    const VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
+    const VarInfo_t &varInfo = s_memoryMapPtr->sharedMap.varInfoList[varID];
 
     if (varInfo.NVMStorage) requiredVarSpace += Atams::TYPE_LENGTHS[varInfo.type];
   }
@@ -644,17 +646,17 @@ static Atams::Error_t nvmTransferVars(const uint32_t      maxIndex,
                                       const NVMTransfer_t transferType,
                                       const bool          universalBlockOnly)
 {
-  uint16_t numberOfVarsToTransfer = universalBlockOnly == true                            ?
-                                    static_cast<uint16_t>(BlockUniversal::NUMBER_OF_VARS) :
-                                    s_memoryMapPtr->genInfo.noOfVars;
+  uint16_t numberOfVarsToTransfer {universalBlockOnly == true                            ?
+                                   static_cast<uint16_t>(BlockUniversal::NUMBER_OF_VARS) :
+                                   s_memoryMapPtr->sharedMap.genInfo.noOfVars            };
 
-  for (uint16_t varID = 0U; varID < numberOfVarsToTransfer; varID++)
+  for (uint16_t varID {0U}; varID < numberOfVarsToTransfer; varID++)
   {
-    const VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
+    const VarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
 
     if (varInfo.NVMStorage)
     {
-      uint8_t varLength = Atams::TYPE_LENGTHS[varInfo.type];
+      uint8_t varLength {Atams::TYPE_LENGTHS[varInfo.type]};
 
       if ((nvmIndex + varLength) > maxIndex)
       {
@@ -689,8 +691,8 @@ static Atams::Error_t nvmTransferVars(const uint32_t      maxIndex,
 
 static Atams::Error_t loadNVMAllBlocks(const NVMHeader_t &nvmHeader)
 {
-  Atams::Error_t nvmStatus = Atams::ERROR_NONE;
-  uint32_t       nvmIndex  = sizeof(NVMHeader_t);
+  Atams::Error_t nvmStatus {Atams::ERROR_NONE};
+  uint32_t       nvmIndex  {sizeof(NVMHeader_t)};
 
   nvmStatus = nvmTransferVars(nvmHeader.length, nvmIndex, TRANSFER_LOAD, false);
 
@@ -699,8 +701,8 @@ static Atams::Error_t loadNVMAllBlocks(const NVMHeader_t &nvmHeader)
 
 static Atams::Error_t loadNVMUniversalBlock(const NVMHeader_t &nvmHeader)
 {
-  Atams::Error_t nvmStatus = Atams::ERROR_NONE;
-  uint32_t       nvmIndex  = sizeof(NVMHeader_t);
+  Atams::Error_t nvmStatus {Atams::ERROR_NONE};
+  uint32_t       nvmIndex  {sizeof(NVMHeader_t)};
 
   nvmStatus = nvmTransferVars(nvmHeader.length, nvmIndex, TRANSFER_LOAD, true);
 
@@ -709,8 +711,8 @@ static Atams::Error_t loadNVMUniversalBlock(const NVMHeader_t &nvmHeader)
 
 static Atams::Error_t saveVarsToNVM(const uint32_t availableNVMSpace)
 {
-  Atams::Error_t nvmStatus = Atams::ERROR_NONE;
-  uint32_t       nvmIndex  = sizeof(NVMHeader_t);
+  Atams::Error_t nvmStatus {Atams::ERROR_NONE};
+  uint32_t       nvmIndex  {sizeof(NVMHeader_t)};
 
   nvmStatus = nvmTransferVars(availableNVMSpace, nvmIndex, TRANSFER_SAVE, false);
 
@@ -719,7 +721,7 @@ static Atams::Error_t saveVarsToNVM(const uint32_t availableNVMSpace)
 
 static void initCommsBuffers(void)
 {
-  for (uint8_t commsChannel = 0U; commsChannel < Platform::NUMBER_OF_COMMS_PERIPHERALS; commsChannel++)
+  for (uint8_t commsChannel {0U}; commsChannel < Platform::NUMBER_OF_COMMS_PERIPHERALS; commsChannel++)
   {
     s_circularBuffers[commsChannel].setEOLChar(Atams::EOL_BYTE);
     s_circularBuffers[commsChannel].setLockArgument(static_cast<Platform::CommsPeripheralID_t>(commsChannel));
@@ -728,7 +730,7 @@ static void initCommsBuffers(void)
 
 static Atams::Error_t initUniversalDefaults(void)
 {
-  Atams::Error_t error = Atams::ERROR_NONE;
+  Atams::Error_t error {Atams::ERROR_NONE};
 
   if (!error) error = Atams::setVar(BlockUniversal::VAR_NODE_ID,          BlockUniversal::DEFAULT_NODE_ID);
   if (!error) error = Atams::setVar(BlockUniversal::VAR_FIRST_NODE_ID,    BlockUniversal::DEFAULT_FIRST_NODE_ID);
@@ -742,9 +744,11 @@ static Atams::Error_t initUniversalDefaults(void)
 
 static Atams::Error_t initAllDefaults(void)
 {
-  Atams::Error_t error = getMemoryMapIsValid();
-  if (!error)    error = initUniversalDefaults();
-  if (!error)    error = s_memoryMapPtr->initUserDefaults();
+  Atams::Error_t error {getMemoryMapIsValid()};
+
+  if (!error) error = initUniversalDefaults();
+
+  if (!error) error = s_memoryMapPtr->userDefaultsInitFn();
 
   return (error);
 }
@@ -761,7 +765,7 @@ static Atams::Error_t extractNVMHeader(NVMHeader_t &nvmHeader)
 
 static Atams::Error_t extractNVMFooter(const NVMHeader_t &nvmHeader, NVMFooter_t &nvmFooter)
 {
-  uint32_t nvmFooterIndex = nvmHeader.length - sizeof(nvmFooter);
+  uint32_t nvmFooterIndex {nvmHeader.length - sizeof(nvmFooter)};
 
   return (s_nvmUnitHandler.readFromNVM(nvmFooterIndex, reinterpret_cast<uint8_t*>(&nvmFooter), sizeof(nvmFooter)));
 }
@@ -785,9 +789,9 @@ static Atams::Error_t validateNVMHeaderFooter(NVMHeader_t &nvmHeader, NVMFooter_
 
 static Atams::Error_t validateNVMGenInfo(const NVMHeader_t &nvmHeader)
 {
-  Atams::Error_t   error        = Atams::ERROR_NONE;
-  Atams::GenInfo_t nvmGenInfo   = nvmHeader.genInfo;
-  Atams::GenInfo_t mapGenInfo   = s_memoryMapPtr->genInfo;
+  Atams::Error_t   error      {Atams::ERROR_NONE};
+  Atams::GenInfo_t nvmGenInfo {nvmHeader.genInfo};
+  Atams::GenInfo_t mapGenInfo {s_memoryMapPtr->sharedMap.genInfo};
 
   if ((nvmGenInfo.atamsVersionMajor != mapGenInfo.atamsVersionMajor) &&
       (nvmGenInfo.atamsVersionMinor != mapGenInfo.atamsVersionMinor) )
@@ -905,12 +909,12 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmEr
 {
   if (s_appCoreInitRequired) waitForAppCoreInit();
 
-  Atams::Error_t error    = Atams::validateMemoryMap(memoryMap, Platform::NODE_NUMBER_OF_VARS);
+  Atams::Error_t error {Atams::validateMemoryMap(memoryMap.sharedMap, Platform::NODE_NUMBER_OF_VARS)};
 
   if (!error)
   {
     s_memoryMapPtr  = &memoryMap;
-    s_validVarCount =  memoryMap.genInfo.noOfVars;
+    s_validVarCount =  memoryMap.sharedMap.genInfo.noOfVars;
   }
 
   if (!error) resetVars();
@@ -925,7 +929,7 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmEr
     error = initAllDefaults();
   }
 
-  if (!error) error = memoryMap.initGenInfo();
+  if (!error) error = memoryMap.genInfoInitFn();
 
   if (!error)
   {
@@ -969,7 +973,7 @@ Atams::Error_t setVar(const uint16_t varID, const T writeValue)
 {
   if (varID >= s_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
+  const Atams::VarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
 
   if (getAtamsType<T>() != varInfo.type) return (Atams::ERROR_VAR_TYPE); /* Early Return */
 
@@ -1016,11 +1020,11 @@ Atams::Error_t getVar(const uint16_t varID, T &outputRef)
 {
   if (varID >= s_validVarCount) return (Atams:: ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo = s_memoryMapPtr->varInfoList[varID];
+  const Atams::VarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
 
   if (getAtamsType<T>() != varInfo.type) return (Atams::ERROR_VAR_TYPE); /* Early Return */
 
-  Atams::VarStorage_t &var = s_varStorage[varID];
+  Atams::VarStorage_t &var {s_varStorage[varID]};
 
   Platform::acquireVarStorageLock();
 
@@ -1060,7 +1064,7 @@ template Atams::Error_t getVar<float   >(const uint16_t varID, float    &outputR
  */
 void updateCommsPolling(void)
 {
-  uint32_t currentTime = Platform::getMillis();
+  uint32_t currentTime {Platform::getMillis()};
 
   switch (s_nodeCommsState)
   {
@@ -1077,6 +1081,7 @@ void updateCommsPolling(void)
       Platform::update();
       processRawMeshData();
       s_watchdogHandler.update(currentTime);
+      s_watchdogFault.store(s_watchdogHandler.getWatchdogFault(), std::memory_order_relaxed);
       break;
 
     case Atams::NODE_STATE_PROCESS_PENDING:
@@ -1115,7 +1120,7 @@ void updateCommsPolling(void)
  */
 void updateCommsBlocking(void)
 {
-  uint32_t currentTime = Platform::getMillis();
+  uint32_t currentTime {Platform::getMillis()};
 
   switch (s_nodeCommsState)
   {
@@ -1132,6 +1137,7 @@ void updateCommsBlocking(void)
       Platform::acquireWaitOnReceiveSempahore(WatchdogHandler::WATCHDOG_UPDATE_PERIOD);
       processRawMeshData();
       s_watchdogHandler.update(currentTime);
+      s_watchdogFault.store(s_watchdogHandler.getWatchdogFault(), std::memory_order_relaxed);
       break;
 
     case Atams::NODE_STATE_PROCESS_PENDING:
@@ -1172,7 +1178,7 @@ void updateCommsBlocking(void)
  */
 Atams::Error_t restoreAll(void)
 {
-  Atams::Error_t error = initAllDefaults();
+  Atams::Error_t error {initAllDefaults()};
 
   if (!error) error = storeAll();
 
@@ -1199,9 +1205,9 @@ Atams::Error_t restoreAll(void)
  */
 Atams::Error_t restoreUser(void)
 {
-  Atams::Error_t error = getMemoryMapIsValid();
+  Atams::Error_t error {getMemoryMapIsValid()};
 
-  if (!error) error = s_memoryMapPtr->initUserDefaults();
+  if (!error) error = s_memoryMapPtr->userDefaultsInitFn();
 
   if (!error) error = storeAll();
 
@@ -1233,15 +1239,15 @@ Atams::Error_t storeAll(void)
 
   Platform::stopReceive();
 
-  const uint32_t requiredNVMVarSpace = getNVMVarSpaceRequirement();
-  const uint32_t requiredNVMSpace    = sizeof(NVMHeader_t) + requiredNVMVarSpace + sizeof(NVMFooter_t);
-  const uint32_t nvmFooterIndex      = sizeof(NVMHeader_t) + requiredNVMVarSpace;
+  const uint32_t requiredNVMVarSpace {getNVMVarSpaceRequirement()};
+  const uint32_t requiredNVMSpace    {sizeof(NVMHeader_t) + requiredNVMVarSpace + sizeof(NVMFooter_t)};
+  const uint32_t nvmFooterIndex      {sizeof(NVMHeader_t) + requiredNVMVarSpace};
 
   if (requiredNVMSpace > Platform::NVM_STORAGE_SIZE) return (Atams::ERROR_NVM_PLATFORM_SIZE); /* Early Return */
 
   nvmHeader.identifier = Atams::NVM_HEADER_IDENTIFIER_VALID;
   nvmHeader.length     = requiredNVMSpace;
-  nvmHeader.genInfo    = s_memoryMapPtr->genInfo;
+  nvmHeader.genInfo    = s_memoryMapPtr->sharedMap.genInfo;
 
   /* Erase NVM to invalidate */
   Atams::Error_t error = s_nvmUnitHandler.eraseNVM();
@@ -1262,6 +1268,21 @@ Atams::Error_t storeAll(void)
   Platform::beginReceive(receiveCallback);
 
   return (error);
+}
+
+/**
+ * @brief Get the watchdog fault status.
+ *
+ * Returns @c true if the time since the last valid message received
+ * from an Atams Hub exceeds the configured watchdog period.
+ *
+ * @retval @c true  Watchdog fault active.
+ * @retval @c false Watchdog fault inactive.
+ *
+ */
+bool getWatchdogFault(void)
+{
+  return (static_cast<bool>(s_watchdogFault.load(std::memory_order_relaxed)));
 }
 
 

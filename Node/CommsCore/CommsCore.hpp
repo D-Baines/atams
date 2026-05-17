@@ -73,6 +73,8 @@ Atams::Error_t restoreUser(void);
 
 Atams::Error_t storeAll(void);
 
+bool getWatchdogFault(void);
+
 
 } /* End Namespace - Atams */
 

@@ -163,7 +163,7 @@ void stopReceive(void)
  *
  * @return  None
  *
- * @note    ATAMS PLATFORM REQUIREMENT - POLLING
+ * @note    ATAMS PLATFORM REQUIREMENT - POLLING COMMS
  */
 void update(void)
 {

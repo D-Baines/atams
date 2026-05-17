@@ -29,6 +29,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+
 #include "../../Shared/AtamsTypedefs.hpp"
 
 /*************************************************************************************/
@@ -81,7 +82,7 @@ class WatchdogHandler
 
   void update(const uint32_t currentTime);
 
-  bool getWatchdogFault(void);
+  uint32_t getWatchdogFault(void);
 
   private:
 

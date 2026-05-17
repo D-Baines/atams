@@ -62,6 +62,7 @@ Atams::Error_t getVar(const uint16_t varID, T &outputRef);
 
 bool getWatchdogFault(void);
 
+
 } /* End Namespace - Atams */
 
 
