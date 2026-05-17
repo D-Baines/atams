@@ -68,7 +68,7 @@ uint8_t numbers[BUFFER_SIZE] = {0U, 0U, 0U};
 ```
 
 ### Serialising and Deserialising 
-- **Rule:** All byte arrays shared with other systems (external communications, non-volatile storage etc.) must be serialised and deserialised explicitly using bit-shifting and masking operations. Do not copy structs or objects directly into buffers.
+- **Rule:** All byte arrays shared with external systems must be serialised and deserialised explicitly using bit-shifting and masking operations. Do not copy structs or objects directly into buffers.
 - **Rationale:** Explicit bit manipulation ensures deterministic layout and handles differences in system endianness automatically. Compiler-dependent padding, alignment, or member ordering from alternative methods can break portability.
 - **Example:**
 ```cpp

@@ -104,9 +104,11 @@ bool BusPeripheral::transmit(uint8_t *buffer, const uint16_t length)
   return (true);
 }
 
-/** @brief   Update or poll the user comms peripheral if required.
+/*
+ * @brief   User update function called at regular intervals during non-blocking Bus Update Cycles
  *
- *  @details This function is called from the Atams::Bus class during a bus update cycle.
+ * @details Users can use this function to poll communications peripherals, check for
+ *          peripheral errors, and/or restart peripheral reception if required.
  *
  *  @note    ATAMS PLATFORM REQUIREMENT - POLLING COMMS
  */

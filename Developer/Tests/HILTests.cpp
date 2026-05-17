@@ -218,8 +218,7 @@ static Atams::Error_t runUpdateCycleTests(void)
   { 
     Atams::ProcessState_t updateState {Atams::PROCESS_IN_PROGRESS};
 
-    if (syncAsyncToggle_) 
-    updateState = testBus_.runUpdateCycleSync(error);
+    if (syncAsyncToggle_) updateState = testBus_.runUpdateCycleSync(error);
     else                  updateState = testBus_.runUpdateCycleAsync(error);
 
     if (updateState != Atams::PROCESS_IN_PROGRESS)

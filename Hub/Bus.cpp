@@ -809,7 +809,7 @@ Atams::Error_t Bus::beginUpdateCyclePrivate(void)
     updateProcessHandler_.specificState = Bus::UpdateState::SEND_REQUESTS;
   }
 
-  return (Atams::ERROR_NONE);
+  return (error);
 }
 
 Atams::Error_t Bus::beginSingleNodeUpdateCyclePrivate(Atams::Node &node)
@@ -820,15 +820,22 @@ Atams::Error_t Bus::beginSingleNodeUpdateCyclePrivate(Atams::Node &node)
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
   }
 
-  static_cast<NodeCallbackHandler&>(node).clearBusError();
-  static_cast<NodeCallbackHandler&>(node).clearAbortDetails();
-  circularBuffer_.reset();
-  activeSyncCount_++;
-  singleNodeUpdateProcessHandler_.activeNodePtr = &node;
-  singleNodeUpdateProcessHandler_.readyProcess();
-  singleNodeUpdateProcessHandler_.specificState = Bus::UpdateState::SEND_REQUESTS;
+  Atams::Error_t error {Atams::ERROR_NONE};
+  
+  error = static_cast<NodeCallbackHandler&>(node).updateRequestPacketWriteData();
 
-  return (Atams::ERROR_NONE);
+  if (error == Atams::ERROR_NONE)
+  {
+    static_cast<NodeCallbackHandler&>(node).clearBusError();
+    static_cast<NodeCallbackHandler&>(node).clearAbortDetails();
+    circularBuffer_.reset();
+    activeSyncCount_++;
+    singleNodeUpdateProcessHandler_.activeNodePtr = &node;
+    singleNodeUpdateProcessHandler_.readyProcess();
+    singleNodeUpdateProcessHandler_.specificState = Bus::UpdateState::SEND_REQUESTS;
+  }
+
+  return (error);
 }
 
 void Bus::clearAllBusErrors(void)
@@ -859,10 +866,6 @@ bool Bus::pollForRequestTransmit(Atams::Node                &node,
                                               sizeof(encodedBuffer_), 
                                               encodedLength_) == Atams::ERROR_NONE)
     {
-      if (encodedLength_ < 7U)
-      {
-        encodedLength_ = 0U;
-      }
       if (Platform::BusPeripheral::transmit(encodedBuffer_, encodedLength_) == false)
       {
         nodeCallbacks.reportBusError(Atams::ERROR_PLATFORM);
