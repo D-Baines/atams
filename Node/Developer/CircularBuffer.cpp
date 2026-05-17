@@ -25,8 +25,9 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "string.h"
 #include "CircularBuffer.hpp"
+
+#include <string.h>
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -61,11 +62,6 @@ void CircularBuffer::setLockArgument(const Platform::CommsPeripheralID_t channel
   lockArgument_ = channelToLock;
 }
 
-CircularBuffer::~CircularBuffer(void)
-{
-  /* Do Nothing */
-}
-
 void CircularBuffer::reset(void)
 {
   Platform::acquireCommsBufferLock(lockArgument_);
@@ -73,27 +69,23 @@ void CircularBuffer::reset(void)
   tailIndex_      = 0U;
   eolSearchIndex_ = 0U;
   byteCount_      = 0U;
-  newDataReady_   = !CircularBuffer::NEW_DATA_READY;
+  newDataReady_.store(!CircularBuffer::NEW_DATA_READY);
   Platform::releaseCommsBufferLock(lockArgument_);
 }
 
-CircularBuffer::Error_t CircularBuffer::getPacket(uint8_t        *targetBuffer,
+CircularBuffer::Error_t CircularBuffer::getPacket(uint8_t * const targetBuffer,
                                                   const uint16_t  maxOutputLength,
                                                   uint16_t       &outputLength)
 {
-  CircularBuffer::Error_t statusReturn = CircularBuffer::ERROR_NONE;
-
-  if (newDataReady_ != CircularBuffer::NEW_DATA_READY)
+  if (newDataReady_.load() != CircularBuffer::NEW_DATA_READY)
   {
-    statusReturn = CircularBuffer::ERROR_NO_NEW_DATA;
-    return (statusReturn); /* Early Return */
+    return (CircularBuffer::ERROR_NO_NEW_DATA); /* Early Return */
   }
 
   Platform::acquireCommsBufferLock(lockArgument_);
 
-  CircularBuffer::Error_t eolSearchResult = eolSearch();
+  CircularBuffer::Error_t eolSearchResult {eolSearch()};
 
-  /* Early return if no EOL byte found */
   if (eolSearchResult != CircularBuffer::ERROR_NONE)
   {
     Platform::releaseCommsBufferLock(lockArgument_);
@@ -110,7 +102,7 @@ CircularBuffer::Error_t CircularBuffer::getPacket(uint8_t        *targetBuffer,
     return (CircularBuffer::ERROR_OUTPUT_BUFFER_LENGTH); /* Early Return */
   }
 
-  uint16_t preWrapLength = STATIC_BUFFER_SIZE - tailIndex_;
+  uint16_t preWrapLength {static_cast<uint16_t>(STATIC_BUFFER_SIZE - tailIndex_)};
 
   if (outputLength < preWrapLength)
   {
@@ -118,21 +110,21 @@ CircularBuffer::Error_t CircularBuffer::getPacket(uint8_t        *targetBuffer,
   }
   else
   {
-    uint16_t postWrapLength = outputLength - preWrapLength;
+    uint16_t postWrapLength {static_cast<uint16_t>(outputLength - preWrapLength)};
     memcpy(&targetBuffer[0U],            &buffer_[tailIndex_], preWrapLength);
     memcpy(&targetBuffer[preWrapLength], &buffer_[0U],         postWrapLength);
   }
 
   increaseTailIndex(outputLength);
 
-  if (byteCount_ == 0U) newDataReady_ = !CircularBuffer::NEW_DATA_READY;
+  if (byteCount_ == 0U) newDataReady_.store(!CircularBuffer::NEW_DATA_READY);
 
   Platform::releaseCommsBufferLock(lockArgument_);
 
   return (CircularBuffer::ERROR_NONE);
 }
 
-CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t          *inputBuffer,
+CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t * const   inputBuffer,
                                                  volatile const uint16_t inputLength)
 {
   if (inputBuffer == nullptr)
@@ -154,7 +146,7 @@ CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t          *inputBu
     return (CircularBuffer::ERROR_FULL);                /* Early Return */
   }
 
-  uint16_t preWrapLength = STATIC_BUFFER_SIZE - headIndex_;
+  uint16_t preWrapLength {static_cast<uint16_t>(STATIC_BUFFER_SIZE - headIndex_)};
 
   if (inputLength < preWrapLength)
   {
@@ -162,14 +154,14 @@ CircularBuffer::Error_t CircularBuffer::pushHead(const uint8_t          *inputBu
   }
   else
   {
-    uint16_t postWrapLength = inputLength - preWrapLength;
+    uint16_t postWrapLength {static_cast<uint16_t>(inputLength - preWrapLength)};
     memcpy(&buffer_[headIndex_], inputBuffer, preWrapLength);
     memcpy(&buffer_[0U], &inputBuffer[preWrapLength], postWrapLength);
   }
 
   increaseHeadIndex(inputLength);
 
-  newDataReady_ = CircularBuffer::NEW_DATA_READY;
+  newDataReady_.store(CircularBuffer::NEW_DATA_READY);
 
   Platform::releaseCommsBufferLock(lockArgument_);
 
@@ -204,27 +196,32 @@ inline void CircularBuffer::resetEOLIndex(void)
 
 inline uint16_t CircularBuffer::calcEolToTail(void)
 {
-    return (eolSearchIndex_ >= tailIndex_) ?
-           (eolSearchIndex_ - tailIndex_)  :
-           (STATIC_BUFFER_SIZE - tailIndex_ + eolSearchIndex_);
+    return ((eolSearchIndex_ >= tailIndex_) ?
+            (eolSearchIndex_ - tailIndex_)  :
+            (STATIC_BUFFER_SIZE - tailIndex_ + eolSearchIndex_));
 }
 
 inline uint16_t CircularBuffer::calcEolToHead(void)
 {
-    return (headIndex_ >= eolSearchIndex_) ?
-           (headIndex_ - eolSearchIndex_)  :
-           (STATIC_BUFFER_SIZE - eolSearchIndex_ + headIndex_);
+    return ((headIndex_ >= eolSearchIndex_) ?
+            (headIndex_ - eolSearchIndex_)  :
+            (STATIC_BUFFER_SIZE - eolSearchIndex_ + headIndex_));
 }
 
 inline CircularBuffer::Error_t CircularBuffer::eolSearch(void)
 {
-  bool eolFound = false;
+  bool eolFound {false};
 
-  for (uint16_t searchLength = calcEolToHead(); searchLength > 0U; searchLength--)
+  for (uint16_t searchLength {calcEolToHead()}; searchLength > 0U; searchLength--)
   {
     eolFound = (buffer_[eolSearchIndex_] == eolChar_);
+
     incrementEOLIndex();
-    if (eolFound) return (CircularBuffer::ERROR_NONE);
+
+    if (eolFound)
+    {
+      return (CircularBuffer::ERROR_NONE);
+    }
   }
 
   if (byteCount_ >= STATIC_BUFFER_SIZE) return (CircularBuffer::ERROR_NO_EOL_BUFFER_FULL);

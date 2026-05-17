@@ -267,7 +267,7 @@ template Atams::Error_t getVar<float   >(const uint16_t varID, float    &outputR
  */
 bool getWatchdogFault(void)
 {
-  return (static_cast<bool>(s_watchdogFault.load(std::memory_order_relaxed)));
+  return (static_cast<bool>(s_watchdogFault.load()));
 }
 
 

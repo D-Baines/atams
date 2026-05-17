@@ -29,6 +29,7 @@
 
 #include <stdint.h>
 #include <limits>
+#include <atomic>
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -81,8 +82,9 @@ constexpr uint8_t SINGLE_BYTE_MASK  {0xFFU};
 /* STATIC ASSERTIONS                                                                 */
 /*************************************************************************************/
 
-static_assert(sizeof(float) == Atams::MAX_TYPE_SIZE, "Platform float size incompatible with Atams");
-static_assert(std::numeric_limits<float>::is_iec559, "Platform float representation incompatible with Atams" );
+static_assert(sizeof(float) == Atams::MAX_TYPE_SIZE,      "Platform float size incompatible with Atams");
+static_assert(std::numeric_limits<float>::is_iec559,      "Platform float representation incompatible with Atams" );
+static_assert(std::atomic<uint32_t>::is_always_lock_free, "Atomic uint32_t access is not lock free on the target platform");
 
 /*************************************************************************************/
 /* TYPEDEFS                                                                          */

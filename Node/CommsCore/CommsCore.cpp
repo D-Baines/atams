@@ -1081,7 +1081,7 @@ void updateCommsPolling(void)
       Platform::update();
       processRawMeshData();
       s_watchdogHandler.update(currentTime);
-      s_watchdogFault.store(s_watchdogHandler.getWatchdogFault(), std::memory_order_relaxed);
+      s_watchdogFault.store(s_watchdogHandler.getWatchdogFault());
       break;
 
     case Atams::NODE_STATE_PROCESS_PENDING:
@@ -1137,7 +1137,7 @@ void updateCommsBlocking(void)
       Platform::acquireWaitOnReceiveSempahore(WatchdogHandler::WATCHDOG_UPDATE_PERIOD);
       processRawMeshData();
       s_watchdogHandler.update(currentTime);
-      s_watchdogFault.store(s_watchdogHandler.getWatchdogFault(), std::memory_order_relaxed);
+      s_watchdogFault.store(s_watchdogHandler.getWatchdogFault());
       break;
 
     case Atams::NODE_STATE_PROCESS_PENDING:
@@ -1282,7 +1282,7 @@ Atams::Error_t storeAll(void)
  */
 bool getWatchdogFault(void)
 {
-  return (static_cast<bool>(s_watchdogFault.load(std::memory_order_relaxed)));
+  return (static_cast<bool>(s_watchdogFault.load()));
 }
 
 

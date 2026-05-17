@@ -187,7 +187,7 @@ void update(void)
  *
  * @note    ATAMS PLATFORM REQUIREMENT - ALL
  */
-bool transmitReady(CommsPeripheralID_t peripheralID)
+bool transmitReady(const CommsPeripheralID_t peripheralID)
 {
   static_cast<void>(peripheralID);
 
@@ -212,7 +212,7 @@ bool transmitReady(CommsPeripheralID_t peripheralID)
  *
  * @note    ATAMS PLATFORM REQUIREMENT - ALL
  */
-bool transmitBuffer(CommsPeripheralID_t peripheralID, uint8_t *buffer, uint16_t length)
+bool transmitBuffer(const CommsPeripheralID_t peripheralID, uint8_t * buffer, const uint16_t length)
 {
   static_cast<void>(peripheralID);
 
@@ -241,7 +241,7 @@ bool transmitBuffer(CommsPeripheralID_t peripheralID, uint8_t *buffer, uint16_t 
  *
  * @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
  */
-void acquireCommsBufferLock(CommsPeripheralID_t peripheralToLock)
+void acquireCommsBufferLock(const CommsPeripheralID_t peripheralToLock)
 {
   static_cast<void>(peripheralToLock);
   HAL_NVIC_DisableIRQ(USART2_IRQn);
@@ -262,7 +262,7 @@ void acquireCommsBufferLock(CommsPeripheralID_t peripheralToLock)
  *
  * @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
  */
-void releaseCommsBufferLock(CommsPeripheralID_t peripheralToUnlock)
+void releaseCommsBufferLock(const CommsPeripheralID_t peripheralToUnlock)
 {
   static_cast<void>(peripheralToUnlock);
   HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
@@ -283,7 +283,7 @@ void releaseCommsBufferLock(CommsPeripheralID_t peripheralToUnlock)
  *
  * @note    ATAMS PLATFORM REQUIREMENT - MULTI-THREAD + EVENT DRIVEN COMMS
  */
-void acquireWaitOnReceiveSempahore(uint32_t timeoutMilliseconds)
+void acquireWaitOnReceiveSempahore(const uint32_t timeoutMilliseconds)
 {
   static_cast<void>(timeoutMilliseconds);
 }
@@ -384,7 +384,7 @@ bool readFromNVM(const uint32_t readIndex, uint8_t * outputPtr, const uint32_t r
  *
  *  @note   ATAMS PLATFORM REQUIREMENT - ALL
  */
-bool writeToNVM(const uint32_t writeIndex, uint8_t (&nvmUnit)[Platform::NVM_UNIT_SIZE])
+bool writeToNVM(const uint32_t writeIndex, const uint8_t (&nvmUnit)[Platform::NVM_UNIT_SIZE])
 {
   if (HAL_FLASH_Unlock() != HAL_OK) return (false);
 

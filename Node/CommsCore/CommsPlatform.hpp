@@ -44,13 +44,13 @@ namespace Atams { namespace Platform {
 /*************************************************************************************/
 
 /** @brief The maximum packet size compatible with all of the Node communications peripherals */  
-constexpr uint16_t MAX_BUS_PACKET_SIZE {64U};
+constexpr uint32_t MAX_BUS_PACKET_SIZE {64U};
 
 /**
 *  @brief The circular buffer size used for receiving Atams packets.
 *         A minimum size of 3 * Atams::MAX_BUS_PACKET_SIZE is recommended.
 */
-constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};
+constexpr uint32_t CIRCULAR_BUFFER_SIZE {1024U};
 
 /** @brief The size of non-volatile memory (NVM) reserved for Atams use.
 *
@@ -70,7 +70,7 @@ constexpr uint32_t NVM_STORAGE_SIZE {1024U};
 *            The provided data buffer in @ref Platform::writeToNVM will always be of 
 *            size Platform::NVM_UNIT_SIZE.
 */
-constexpr uint8_t NVM_UNIT_SIZE {32U};
+constexpr uint32_t NVM_UNIT_SIZE {32U};
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
@@ -84,7 +84,7 @@ constexpr uint8_t NVM_UNIT_SIZE {32U};
 */
 enum CommsPeripheralID_t : uint8_t
 {
-  COMMS_DEFAULT = 0,
+  COMMS_DEFAULT = 0U,
 
   NUMBER_OF_COMMS_PERIPHERALS
 };
@@ -123,15 +123,15 @@ void stopReceive(void);
 
 void update(void);
 
-bool transmitReady(CommsPeripheralID_t peripheralID);
+bool transmitReady(const CommsPeripheralID_t peripheralID);
 
-bool transmitBuffer(CommsPeripheralID_t peripheralID, uint8_t *buffer, uint16_t length);
+bool transmitBuffer(const CommsPeripheralID_t peripheralID, uint8_t * bufferPtr, const uint16_t length);
 
-void acquireCommsBufferLock(CommsPeripheralID_t peripheralToLock);
+void acquireCommsBufferLock(const CommsPeripheralID_t peripheralToLock);
 
-void releaseCommsBufferLock(CommsPeripheralID_t peripheralToUnlock);
+void releaseCommsBufferLock(const CommsPeripheralID_t peripheralToUnlock);
 
-void acquireWaitOnReceiveSempahore(uint32_t timeoutInMilliseconds);
+void acquireWaitOnReceiveSempahore(const uint32_t timeoutInMilliseconds);
 
 void releaseWaitOnReceiveSemaphore(void);
 
@@ -139,13 +139,13 @@ bool eraseNVM(void);
 
 bool readFromNVM(const uint32_t readIndex, uint8_t * outputPtr, const uint32_t readLength);
 
-bool writeToNVM(uint32_t writeIndex, uint8_t (&nvmUnit)[Platform::NVM_UNIT_SIZE]);
+bool writeToNVM(const uint32_t writeIndex, const uint8_t (&nvmUnit)[Platform::NVM_UNIT_SIZE]);
 
 bool enterConfigurationState(void);
 
 void exitConfigurationState(void);
 
-void setBitrate(Atams::BitrateOption_t bitrateOption);
+void setBitrate(const Atams::BitrateOption_t bitrateOption);
 
 Atams::Error_t resetNode(void);
 

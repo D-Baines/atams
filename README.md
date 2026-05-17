@@ -62,12 +62,13 @@ Atams primarily targets multi-drop buses (such as RS485, CAN FD, CAN XL, 10Base-
 
 # C++ Platform Requirements
 The Atams Hub and Node libraries are compatible with any platform that meets the following requirements:
-- Single read and write operations to variables of type `uint8_t` must be inherently atomic.
+- Atomic access to variables of type uint32_t must be lock free.
 - The size of a float must be 4 bytes and meet the IEC559 standard for binary representation.
+- 32-bit and above architecture.
 
 
 # C++ Language Standard
-The Atams Hub and Node libraries are compatible with C++17 and above, does not use any non-ISO C++ features, and is developed with the following compiler flags enabled:  
+The Atams Hub and Node libraries are compatible with C++17 and above, do not use any non-ISO C++ features, and are developed with the following compiler flags enabled:  
 `-Wall -Wextra -Wpedantic -Wswitch-default -Wunreachable-code -Wformat`
 
 
