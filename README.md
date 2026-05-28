@@ -48,7 +48,7 @@ The Atams Hub and Node libraries support the following features:
 ### Not Yet Supported:
 
 - Automatic migration of Node non-volatile storage between compatible Memory Map versions.
-- Variable value maximum and minimum limits at the point of Request Packet parsing.
+- Maximum and minimum value limits for variable storage.
 - Large raw buffer transport.
 
 # Communications Hardware Requirements
