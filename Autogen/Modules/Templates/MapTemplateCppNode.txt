@@ -47,7 +47,7 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 /* STATIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-static const GenInfo_t s_genInfo = 
+static const GenInfo_t s_genInfo 
 {
   /* .atamsVersionMajor = */ $$$AUTOGEN$$$VERSION_MAJOR$$$AUTOGEN$$$,
   /* .atamsVersionMinor = */ $$$AUTOGEN$$$VERSION_MINOR$$$AUTOGEN$$$,
@@ -61,7 +61,7 @@ static const GenInfo_t s_genInfo =
   /* .noOfVars          = */ $$$AUTOGEN$$$NUMBER_OF_VARS$$$AUTOGEN$$$
 };
 
-static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
+static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] 
 {
   /*------------------------ Universal Var Info -------------------------*/
   
@@ -105,29 +105,33 @@ $$$AUTOGEN$$$VAR_INFO_LIST$$$AUTOGEN$$$
                                         
 Atams::Error_t initGenInfo(void)
 {
-  Atams::Error_t error = Atams::ERROR_NONE;
+  Atams::Error_t error {Atams::ERROR_NONE};
 
 $$$AUTOGEN$$$INIT_MAP_GEN_INFO_DEFINITION$$$AUTOGEN$$$  
 
-  return (error); 
+  return (error == Atams::ERROR_NONE ?
+          Atams::ERROR_NONE          :
+          Atams::ERROR_MEMORY_MAP    );
 }
 
 Atams::Error_t initUserDefaults(void)
 {
-  Atams::Error_t error = Atams::ERROR_NONE;
+  Atams::Error_t error {Atams::ERROR_NONE};
 
 $$$AUTOGEN$$$INIT_USER_DEFAULTS_DEFINITION$$$AUTOGEN$$$  
 
-  return (error); 
+  return (error == Atams::ERROR_NONE ?
+          Atams::ERROR_NONE          :
+          Atams::ERROR_MEMORY_MAP    );
 }
 
 /*************************************************************************************/
 /* EXTERN CONSTANTS                                                                  */
 /*************************************************************************************/
 
-const MemoryMap_t memoryMap =
+const MemoryMap_t memoryMap 
 {
-  /* SharedMemoryMap_t */
+  /* .sharedMap */
   {
     /* .genInfo     = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::s_genInfo,
     /* .varInfoList = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::s_varInfoList

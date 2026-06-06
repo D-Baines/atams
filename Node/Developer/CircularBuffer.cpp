@@ -69,7 +69,7 @@ void CircularBuffer::reset(void)
   tailIndex_      = 0U;
   eolSearchIndex_ = 0U;
   byteCount_      = 0U;
-  newDataReady_.store(!CircularBuffer::NEW_DATA_READY);
+  newDataReady_.store(CircularBuffer::NEW_DATA_NOT_READY);
   Platform::releaseCommsBufferLock(lockArgument_);
 }
 
@@ -117,7 +117,7 @@ CircularBuffer::Error_t CircularBuffer::getPacket(uint8_t * const targetBuffer,
 
   increaseTailIndex(outputLength);
 
-  if (byteCount_ == 0U) newDataReady_.store(!CircularBuffer::NEW_DATA_READY);
+  if (byteCount_ == 0U) newDataReady_.store(CircularBuffer::NEW_DATA_NOT_READY);
 
   Platform::releaseCommsBufferLock(lockArgument_);
 

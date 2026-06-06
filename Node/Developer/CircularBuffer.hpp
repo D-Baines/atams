@@ -112,6 +112,7 @@ class CircularBuffer
 
   static constexpr uint16_t STATIC_BUFFER_SIZE {Platform::CIRCULAR_BUFFER_SIZE};
   static constexpr uint32_t NEW_DATA_READY     {1U};
+  static constexpr uint32_t NEW_DATA_NOT_READY {0U};
 
   /*-- Private Constants ------------------------------------------------------------*/
 
@@ -128,7 +129,7 @@ class CircularBuffer
   volatile uint16_t eolToHead_      {0U};
   volatile uint16_t eolToTail_      {0U};
 
-  std::atomic<uint32_t> newDataReady_ {!CircularBuffer::NEW_DATA_READY}; /* UINT8_T MUST BE ATOMIC ON TARGET PLATFORM */
+  std::atomic<uint32_t> newDataReady_ {NEW_DATA_NOT_READY};
 
   uint8_t buffer_[STATIC_BUFFER_SIZE];
 
