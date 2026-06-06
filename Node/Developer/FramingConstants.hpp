@@ -46,7 +46,9 @@ namespace Atams { namespace Platform {
 /*************************************************************************************/
 
 constexpr uint16_t COBS_MAX_DATA_PER_CODE          {254U};
-constexpr uint16_t COBS_MAX_OVERHEAD               {(MAX_BUS_PACKET_SIZE + (COBS_MAX_DATA_PER_CODE - 1U)) / COBS_MAX_DATA_PER_CODE};
+constexpr uint16_t COBS_TERMINATOR_SIZE            {1U};
+constexpr uint16_t COBS_MAX_CODE_BYTES             {(MAX_BUS_PACKET_SIZE + (COBS_MAX_DATA_PER_CODE - 1U)) / COBS_MAX_DATA_PER_CODE};
+constexpr uint16_t COBS_MAX_OVERHEAD               {COBS_MAX_CODE_BYTES + COBS_TERMINATOR_SIZE};
 constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING {MAX_BUS_PACKET_SIZE - COBS_MAX_OVERHEAD};
 
 } } /* End Namespace - Atams::Platform */
