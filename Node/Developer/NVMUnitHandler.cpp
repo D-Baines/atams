@@ -4,8 +4,12 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Implementation of the NVMUnitHandler fixed-unit NVM access handler.
   *
+  * @details Implements the NVMUnitHandler class. Buffers sequential byte writes into
+  *          fixed-size units and flushes them to non-volatile memory via the platform
+  *          writeToNVM function. A rolling CRC is maintained over all written bytes
+  *          to enable write integrity verification.
   *
   * @version v1.0
   ******************************************************************************

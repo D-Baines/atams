@@ -907,8 +907,8 @@ Atams::Error_t clearDataReady(const uint16_t varID);
 
 The functions will return an error if the varID is outside the bounds of the Memory Map used to initialise the Node instance.
 
-### Node Combined Helper Functions
-The Node class contains helper functions to clean up the syntax for compounding operations. The helper functions use a combination of the Request Pattern setter, variable setter/getter, and flag checking/clearing functions to help keep user code clean.
+### Node Combined Convenience Functions
+The Node class contains convenience functions to clean up the syntax for compounding operations. The helper functions use a combination of the Request Pattern setter, variable setter/getter, and flag checking/clearing functions to help keep user code clean.
 
 Examples:
 ```cpp

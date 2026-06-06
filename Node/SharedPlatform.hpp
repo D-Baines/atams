@@ -4,8 +4,15 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Shared platform constants and macros for dual-core Atams Node platforms.
   *
+  * @details Defines the platform constants and preprocessor macros shared between the
+  *          Application Core and Communications Core on dual-core Atams Node platforms.
+  *          Includes NODE_NUMBER_OF_VARS for variable storage sizing, the
+  *          ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE linker section attribute for
+  *          placing shared data in a dedicated memory region accessible by both cores,
+  *          and the COMMS_CORE_DETECT macro for identifying the communications core
+  *          at compile time.
   *
   * @version v1.0
   ******************************************************************************

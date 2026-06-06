@@ -4,8 +4,13 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Implementation of the Atams Node Application Core for dual-core platforms.
   *
+  * @details Implements the App Core initialisation and variable access functions. On
+  *          startup, the Memory Map is validated and the core then blocks until the
+  *          Communications Core has completed its own initialisation. Variable reads
+  *          and writes are protected by the platform variable storage lock to prevent
+  *          concurrent access conflicts between the two processor cores.
   *
   * @version v1.0
   ******************************************************************************

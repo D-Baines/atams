@@ -4,8 +4,13 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Implementation of the Atams Node UniversalBlockManager.
   *
+  * @details Implements the state management logic for the Atams Node universal block.
+  *          Monitors configuration state transitions and passcode-protected processes
+  *          each update cycle, applies universal configuration to the platform on
+  *          configuration exit, and notifies the Comms Core when storage processes
+  *          complete.
   *
   * @version v1.0
   ******************************************************************************
@@ -25,7 +30,8 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include <Atams/Node/Developer/UniversalBlockManager.hpp>
+#include "UniversalBlockManager.hpp"
+
 #include "../CommsCore/CommsCore.hpp"
 #include "../CommsCore/CommsPlatform.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"

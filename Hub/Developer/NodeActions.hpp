@@ -4,8 +4,15 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Multi-step process handlers for Hub-side Node configuration and management.
   *
+  * @details Defines the NodeActions class, which encapsulates state machines for
+  *          performing multi-step operations on Atams Node devices from a Hub.
+  *          Supported processes include entering and exiting the configuration state,
+  *          setting the Node ID, comms bitrate, watchdog period, and bus IDs,
+  *          as well as triggering NVM storage and node reset operations. Each process
+  *          is driven incrementally by calling the corresponding update function once
+  *          per Hub update cycle until completion or an error is reported.
   *
   * @version v1.0
   ******************************************************************************

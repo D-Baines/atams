@@ -4,8 +4,13 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Inline utility templates for serialising Atams variable values to and from byte storage.
   *
+  * @details Provides the writeToVarStorage and readFromVarStorage template functions
+  *          used internally by the Atams Node library to convert typed variable values
+  *          to and from their little-endian byte representations in variable storage
+  *          arrays. Used by both the App Core and Comms Core to ensure consistent
+  *          serialisation across processor cores.
   *
   * @version v1.0
   ******************************************************************************

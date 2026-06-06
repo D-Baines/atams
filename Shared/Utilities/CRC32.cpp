@@ -4,7 +4,11 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Implementation of the Atams CRC32 checksum calculator.
+  *
+  * @details Implements CRC32 computation using a 256-entry software lookup table
+  *          generated at initialisation. The accumulate() method updates a running
+  *          checksum one byte at a time; reset() clears the accumulator for reuse.
   *
   * @version v1.0
   ******************************************************************************
@@ -47,16 +51,16 @@ CRC32::CRC32(uint32_t generatorPolynomial)
   generateLookupTable(generatorPolynomial);
 }
 
-uint32_t CRC32::calculateCRC(volatile const uint8_t *byteBuffer, uint16_t length)
+uint32_t CRC32::calculateCRC(const uint8_t *byteBuffer, uint32_t length)
 {
   uint32_t crc = CRC32::CRC_RESET_VALUE;
 
-  for (uint16_t byteIndex = 0U; byteIndex < length; byteIndex++) 
+  for (uint32_t byteIndex = 0U; byteIndex < length; byteIndex++)
   {
     crc = (crc >> BITS_IN_A_BYTE) ^ _crcTable[(crc ^ byteBuffer[byteIndex]) & BYTE_MASK];
   }
 
-  return (reflect(crc ^ FINAL_XOR_VALUE, NUMBER_OF_CRC_BITS));
+  return (crc ^ FINAL_XOR_VALUE);
 }
 
 void CRC32::beginRollingCRC(void)
@@ -71,7 +75,7 @@ void CRC32::updateRollingCRC(const uint8_t byte)
 
 uint32_t CRC32::getRollingCRC(void)
 {
-  return (reflect(_rollingCRC ^ FINAL_XOR_VALUE, NUMBER_OF_CRC_BITS));
+  return (_rollingCRC ^ FINAL_XOR_VALUE);
 }
 
 /*************************************************************************************/
@@ -100,20 +104,6 @@ void CRC32::generateLookupTable(const uint32_t generatorPolynomial)
   }
 }
 
-uint32_t CRC32::reflect(const uint32_t data, const uint8_t bitCount)
-{
-  uint32_t reflection = 0U;
-
-  for (uint8_t bitIndex = 0U; bitIndex < bitCount; bitIndex++) 
-  {
-    if (data & (1U << bitIndex)) 
-    {
-      reflection |= (1U << ((bitCount - 1U) - bitIndex));
-    }
-  }
-
-  return (reflection);
-}
 
 } /* End Namespace - Atams */
 

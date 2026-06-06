@@ -4,8 +4,13 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Platform interface declarations for the Atams Hub.
   *
+  * @details Defines the platform abstraction layer (PAL) for the Atams Hub. Provides
+  *          the BusPeripheral, MemoryLock, and CommsLock classes that the user must
+  *          implement to port the library to a specific hardware platform. Also exposes
+  *          platform-specific constants and the inline getMillis() time function.
+  *          This file should be modified to match the target platform.
   *
   * @version v1.0
   ******************************************************************************

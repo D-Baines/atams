@@ -4,8 +4,14 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Implementation of the Atams Node software watchdog handler.
   *
+  * @details Implements the WatchdogHandler class. update() increments an 
+  *          internal counter every milliseconds. When the counter exceeds the 
+  *          watchdog period, a fault is is flagged internally and in the 
+  *          Universal Data Block. Calls to toggleWatchdog() reset the counter.
+  *          The watchdog fault is cleared if BlockUniversal::VAR_WATCHDOG_RESET
+  *          is set to Atams::WATCHDOG_RESET_PASSCODE.
   *
   * @version v1.0
   ******************************************************************************

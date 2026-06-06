@@ -4,7 +4,14 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Core type definitions, constants, and data structures for the Atams library.
+  *
+  * @details Defines all fundamental types, enumerations, constants, and structures
+  *          used across the Atams Hub and Node libraries. Includes error codes,
+  *          access types, message types, request patterns, variable types, datagram
+  *          encoding structures, Memory Map types, configuration status types, and
+  *          shared utility functions such as getErrorString(). Shared between Hub
+  *          and Node libraries and must not be platform-specific.
   *
   * @version v1.0
   ******************************************************************************
@@ -61,7 +68,7 @@ constexpr int32_t  MIN_INT32                     {-2147483648L};
 constexpr uint32_t MAX_UINT32                    {4294967295U};
 constexpr uint32_t MIN_UINT32                    {0U};
 constexpr uint8_t  BITS_IN_A_BYTE                {8U};
-constexpr uint32_t CRC32_POLYNOMIAL              {0x04C11DB7U};
+constexpr uint32_t CRC32_POLYNOMIAL              {0x82F63B78U};
 constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID {0x00000000U};
 constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID   {0xD0D0CACAU};
 constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS  {0x454E5452U};

@@ -4,8 +4,14 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Implementation of the NodeActions multi-step state mahcine processes.
   *
+  * @details Implements the state machines in NodeActions that drive Hub-to-Node
+  *          multi-step processes. All processes use an internal ProcessHandler
+  *          template to manage state, errors, and the Node pointer. Each public update
+  *          function advances its corresponding state machine by one step; the caller
+  *          is expected to poll it each update cycle until Atams::PROCESS_COMPLETE or
+  *          Atams::PROCESS_ERROR is returned.
   *
   * @version v1.0
   ******************************************************************************
@@ -26,6 +32,7 @@
 /*************************************************************************************/
 
 #include "NodeActions.hpp"
+
 #include "../Node.hpp"
 #include "NodeCallbackHandler.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"

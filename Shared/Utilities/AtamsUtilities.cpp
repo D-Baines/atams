@@ -4,8 +4,13 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Implementation of shared Atams packet encoding, decoding, and validation utilities.
   *
+  * @details Implements the utility functions declared in AtamsUtilities.hpp. Bus packets
+  *          are COBS-encoded with a CRC32 in the packet header; decoding reverses this
+  *          and validates the checksum. Memory Map validation checks the Atams version,
+  *          variable count, universal block layout, and user block checksum. A
+  *          module-level CRC32 instance is shared across encode, decode, and validation.
   *
   * @version v1.0
   ******************************************************************************

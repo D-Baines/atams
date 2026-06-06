@@ -4,8 +4,12 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Platform implementation for the Atams Node Communications Core.
   *
+  * @details Implements the platform abstraction layer (PAL) for the Atams Node
+  *          Communications Core. Provides all required platform functions covering
+  *          system time, variable storage locking, serial peripheral management,
+  *          circular buffer locking, non-volatile memory access, and system control.
   *
   * @version v1.0
   ******************************************************************************

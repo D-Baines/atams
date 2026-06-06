@@ -4,7 +4,12 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Implementation of the Atams COBS encoder and decoder.
+  *
+  * @details Implements COBS encoding and decoding. The encoder scans a source buffer,
+  *          replacing each zero byte with a distance-to-next-zero overhead byte and
+  *          appending a zero terminator. The decoder reverses this transformation,
+  *          restoring the original payload bytes.
   *
   * @version v1.0
   ******************************************************************************

@@ -4,8 +4,11 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Hub-specific CircularBuffer instantiation.
   *
+  * @details Defines HubCommsLockPolicy, which wraps Platform::CommsLock, and
+  *          aliases CircularBufferBase<HubCommsLockPolicy> as CircularBuffer for
+  *          use within the Hub library.
   *
   * @version v1.0
   ******************************************************************************
@@ -21,16 +24,15 @@
   ******************************************************************************
   */
 
-/* Define to prevent recursive inclusion --------------------------------------------*/
+/* Pragma to prevent recursive inclusion --------------------------------------------*/
 #pragma once
 
 /*************************************************************************************/
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include <stdint.h>
-
 #include "../Platform.hpp"
+#include "../../Shared/Utilities/CircularBuffer.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -39,106 +41,32 @@
 namespace Atams {
 
 /*************************************************************************************/
-/* PROTOTYPES/CLASS DEFINITIONS                                                      */
+/* LOCK POLICY                                                                       */
 /*************************************************************************************/
 
-class CircularBuffer :
-private Platform::CommsLock
+class HubCommsLockPolicy
 {
   public:
 
-  /*-- Public Constants -------------------------------------------------------------*/
+  using ArgumentType_t = uint8_t; /* unused - Hub lock requires no discriminator */
 
-  static constexpr uint8_t DEFAULT_EOL_CHAR {0U};
+  static constexpr uint16_t BUFFER_SIZE {Platform::CIRCULAR_BUFFER_SIZE};
 
-  /*-- Public Typedefs --------------------------------------------------------------*/
+  void setArgument(ArgumentType_t) {}
 
-  typedef enum: uint8_t
-  {
-    ERROR_NONE                 = 0U,
-    ERROR_FULL                 = 1U,
-    ERROR_NO_NEW_DATA          = 2U,
-    ERROR_OUTPUT_BUFFER_LENGTH = 3U,
-    ERROR_NO_EOL_FOUND         = 4U,
-    ERROR_NO_EOL_BUFFER_FULL   = 5U,
-    ERROR_NULLPTR              = 6U,
-
-  } Error_t;
-
-  /*-- Public Function Declarations -------------------------------------------------*/
-
-  /* Default Constructor */
-  CircularBuffer(void);
-
-  /* Paramaterised Constructor */
-  CircularBuffer(const uint8_t endOfLineChar);
-
-  /* Destructor */
-  virtual ~CircularBuffer(void) = default;
-
-  /* Copy Constructor */
-  CircularBuffer(const CircularBuffer &other) = delete;
-
-  /* Copy Assignment Operator */
-  CircularBuffer & operator=(const CircularBuffer &other) = delete;
-
-  /* Move Constructor */
-  CircularBuffer(CircularBuffer &&other) = delete;
-
-  /* Move Assignment Operator */
-  CircularBuffer & operator=(CircularBuffer &&other) = delete;
-
-  void setEOLChar(const uint8_t endOfLineChar);
-
-  void reset(void);
-
-  CircularBuffer::Error_t getPacket(uint8_t * const targetBuffer,
-                                    const uint16_t  maxOutputLength,
-                                    uint16_t       &outputLength);
-
-  CircularBuffer::Error_t pushHead(const uint8_t * const inputBuffer,
-                                   const uint16_t        inputLength);
+  void acquireLock(void) { commsLock_.acquireLock(); }
+  void releaseLock(void) { commsLock_.releaseLock(); }
 
   private:
-
-  /*-- Private Static Constants -----------------------------------------------------*/
-
-  static constexpr uint16_t STATIC_BUFFER_SIZE {Platform::CIRCULAR_BUFFER_SIZE};
-  static constexpr uint8_t  NEW_DATA_READY     {1U};
-
-  /*-- Private Constants ------------------------------------------------------------*/
-
-  /*-- Private Constants ------------------------------------------------------------*/
-
-  /*-- Private Typedefs -------------------------------------------------------------*/
-
-  /*-- Private Variables ------------------------------------------------------------*/
-
-  volatile uint16_t headIndex_      {0U};
-  volatile uint16_t tailIndex_      {0U};
-  volatile uint16_t eolSearchIndex_ {0U};
-  volatile uint16_t byteCount_      {0U};
-  volatile uint16_t eolToHead_      {0U};
-  volatile uint16_t eolToTail_      {0U};
- 
-  std::atomic<uint32_t> newDataReady_ {!CircularBuffer::NEW_DATA_READY};
-
-  uint8_t buffer_[STATIC_BUFFER_SIZE];
-  uint8_t eolChar_ {DEFAULT_EOL_CHAR};
-
-  /*-- Private Function Declarations ------------------------------------------------*/
-
-  inline void incrementEOLIndex(void);
-
-  inline void increaseHeadIndex(uint16_t length);
-
-  inline void increaseTailIndex(uint16_t length);
-
-  inline void resetEOLIndex(void);
-
-  inline CircularBuffer::Error_t eolSearch(void);
-
+  
+  Platform::CommsLock commsLock_;
 };
+
+/*************************************************************************************/
+/* TYPE ALIAS                                                                        */
+/*************************************************************************************/
+
+using CircularBuffer = CircularBufferBase<HubCommsLockPolicy>;
 
 } /* End Namespace - Atams */
 
@@ -146,5 +74,3 @@ private Platform::CommsLock
 /**
   * @}End of File
   */
-
-

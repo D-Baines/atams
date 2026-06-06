@@ -13,7 +13,6 @@ set(ATAMS_HUB_LIB_SOURCES
     Platform.hpp
     Platform.cpp
     Developer/CircularBuffer.hpp
-    Developer/CircularBuffer.cpp
     Developer/NodeActions.hpp
     Developer/NodeActions.cpp
     Developer/NodeCallbackHandler.hpp
@@ -22,6 +21,7 @@ set(ATAMS_HUB_LIB_SOURCES
     ../Shared/AtamsTypedefs.hpp
     ../Shared/Maps/BlockUniversal.hpp
     ../Shared/Maps/BlockUniversal.cpp
+    ../Shared/Utilities/CircularBuffer.hpp
     ../Shared/Utilities/AtamsUtilities.hpp
     ../Shared/Utilities/AtamsUtilities.cpp
     ../Shared/Utilities/COBS.hpp

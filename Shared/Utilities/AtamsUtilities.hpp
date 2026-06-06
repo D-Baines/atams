@@ -4,8 +4,13 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Shared utility function declarations for Atams packet encoding, decoding, and validation.
   *
+  * @details Declares utility functions used by both Hub and Node libraries for COBS
+  *          encoding and decoding of bus packets, CRC32 computation and verification,
+  *          datagram header serialisation, and Memory Map validation. Also provides
+  *          the getAtamsType<T>() template for mapping C++ primitive types to
+  *          Atams VarType_t values.
   *
   * @version v1.0
   ******************************************************************************

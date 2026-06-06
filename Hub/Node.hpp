@@ -4,8 +4,12 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Public interface for an Atams Hub Node instance.
   *
+  * @details Defines the Atams::Node class, which represents a single Atams Node
+  *          device managed by an Atams::Bus. The public API provides typed 
+  *          variable access, configurable request patterns, and combined 
+  *          convenience functions.
   *
   * @version v1.0
   ******************************************************************************
@@ -29,6 +33,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+
 #include "../Shared/AtamsTypedefs.hpp"
 #include "../Shared/Utilities/CRC32.hpp"
 #include "Platform.hpp"

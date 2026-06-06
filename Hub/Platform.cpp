@@ -4,8 +4,17 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Platform abstraction layer (PAL) implementation for the Atams Hub.
   *
+  * @details Provides empty implementations of the PAL functions required by the
+  *          Atams Hub. Users must complete these functions with their own 
+  *          platform-specific code to provide serial communications and locking 
+  *          for their target environment. Refer to the @note tags on each
+  *          function for platform requirement classifications.
+  * 
+  *          The 'BusPeripheral - USER PRIVATE FUNCTION DEFINITIONS' section
+  *          can be used to define implementations for any user declared 
+  *          BusPeripheral functions.
   *
   * @version v1.0
   ******************************************************************************
@@ -147,7 +156,7 @@ void BusPeripheral::txHandler(asio::error_code ec, size_t xfr)
 }
 
 /*************************************************************************************/
-/* MemoryLock  - REQUIRED PUBLIC FUNCTION DEFINITIONS                                */
+/* MemoryLock - REQUIRED PUBLIC FUNCTION DEFINITIONS                                 */
 /*************************************************************************************/
 
 /** 

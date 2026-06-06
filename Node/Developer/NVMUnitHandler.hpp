@@ -4,8 +4,13 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Handler for fixed-unit non-volatile memory access on Atams Node devices.
   *
+  * @details Defines the NVMUnitHandler class, which manages the buffering and writing
+  *          of data to non-volatile memory in fixed-size units, as required by platforms
+  *          that cannot write arbitrary byte lengths. Provides sequential write buffering,
+  *          NVM erase, read, and flush operations. A rolling CRC is maintained over all
+  *          written data to enable write integrity verification.
   *
   * @version v1.0
   ******************************************************************************

@@ -4,8 +4,14 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Compact list tracking active write-stream datagrams in a Node request packet.
   *
+  * @details Defines the WriteList class, which maintains a fixed-size array of
+  *          WriteConfig_t entries. Each entry records a variable ID, its byte offset
+  *          within the request packet buffer, and its data length. This allows the Hub
+  *          to update write payload bytes in place each Bus update cycle without
+  *          rescanning the full request packet. The maximum list size is bounded by
+  *          the number of write datagrams that fit within one packet.
   *
   * @version v1.0
   ******************************************************************************
@@ -29,6 +35,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+
 #include "FramingConstants.hpp"
 #include "../../Shared/AtamsTypedefs.hpp"
 

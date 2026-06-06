@@ -4,8 +4,11 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Implementation of the Atams Hub Node class.
   *
+  * @details Implements the Node class for the Atams Hub library. Manages per-Node
+  *          variable storage, request packet construction and maintenance, response
+  *          packet validation and processing, and all public API functions.
   *
   * @version v1.0
   ******************************************************************************

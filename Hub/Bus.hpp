@@ -4,13 +4,15 @@
   *
   * @author  D. Baines
   *
-  * @brief   Atams Bus class for managing Node communication.
+  * @brief   Public interface for an Atams Hub Bus instance.
   *
-  * @details The Bus class coordinates communication and synchronisation between the Hub and multiple Node instances.
-  *          All Bus member functions must be called from the same thread or context to ensure correct operation.
-  *          Node functions (such as @c Node::setVar, @c Node::getVar, and @c Node::setRequestPattern) may be called
-  *          from other threads or contexts, provided the user has correctly filled the multi-threading/concurrency
-  *          function definitions in the Platform files.
+  * @details The Bus class coordinates communication and synchronisation between 
+  *          the Hub and multiple Node instances. All Bus member functions must 
+  *          be called from the same thread or context to ensure correct operation.
+  *          Node functions (such as @c Node::setVar, @c Node::getVar, and 
+  *          @c Node::setRequestPattern) may be called from other threads or
+  *          contexts, provided the user has correctly filled the 
+  *          multi-threading/concurrency function definitions in the Platform files.
   *
   * @version v1.0
   ******************************************************************************

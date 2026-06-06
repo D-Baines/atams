@@ -4,8 +4,11 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Platform implementation for the Atams Node Application Core.
   *
+  * @details Implements the platform abstraction layer (PAL) for the Atams Node
+  *          Application Core. Function definitions are left empty for the user 
+  *          to populate with their platform-specific implementation.
   *
   * @version v1.0
   ******************************************************************************

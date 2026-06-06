@@ -4,7 +4,12 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   COBS encoder and decoder for Atams bus packets.
+  *
+  * @details Defines the COBS class, which provides static encode and decode methods
+  *          implementing Consistent Overhead Byte Stuffing. COBS eliminates zero bytes
+  *          from a payload, allowing the zero byte to be used as an unambiguous
+  *          end-of-packet delimiter on the serial bus.
   *
   * @version v1.0
   ******************************************************************************

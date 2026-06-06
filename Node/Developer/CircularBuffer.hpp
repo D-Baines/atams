@@ -4,8 +4,15 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Node-specific CircularBuffer instantiation.
   *
+  * @details Defines NodeCommsLockPolicy, which delegates to the Platform 
+  *          functions acquireCommsBufferLock / releaseCommsBufferLock, and aliases
+  *          CircularBufferBase<NodeCommsLockPolicy> as CircularBuffer for use
+  *          within the Node library.
+  *
+  *          The lock argument identifies which comms peripheral to lock, enabling
+  *          multi-peripheral Node devices to use independent buffers safely.
   *
   * @version v1.0
   ******************************************************************************
@@ -21,16 +28,15 @@
   ******************************************************************************
   */
 
-/* Define to prevent recursive inclusion --------------------------------------------*/
+/* Pragma to prevent recursive inclusion --------------------------------------------*/
 #pragma once
 
 /*************************************************************************************/
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include <stdint.h>
-
 #include "../CommsCore/CommsPlatform.hpp"
+#include "../../Shared/Utilities/CircularBuffer.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -39,120 +45,32 @@
 namespace Atams {
 
 /*************************************************************************************/
-/* PROTOTYPES/CLASS DEFINITIONS                                                      */
+/* LOCK POLICY                                                                       */
 /*************************************************************************************/
 
-class CircularBuffer
+class NodeCommsLockPolicy
 {
-
   public:
+  
+  using ArgumentType_t = Platform::CommsPeripheralID_t;
 
-  /*-- Public Constants -------------------------------------------------------------*/
+  static constexpr uint16_t BUFFER_SIZE {Platform::CIRCULAR_BUFFER_SIZE};
 
-  static constexpr uint8_t DEFAULT_EOL_CHAR {0U};
+  void setArgument(ArgumentType_t id) { id_ = id; }
 
-  static constexpr Platform::CommsPeripheralID_t DEFAULT_LOCK_ARGUMENT {static_cast<Platform::CommsPeripheralID_t>(0U)};
-
-  /*-- Public Typedefs --------------------------------------------------------------*/
-
-  typedef enum: uint8_t
-  {
-    ERROR_NONE                 = 0U,
-    ERROR_FULL                 = 1U,
-    ERROR_NO_NEW_DATA          = 2U,
-    ERROR_INPUT_BUFFER_LENGTH  = 3U,
-    ERROR_OUTPUT_BUFFER_LENGTH = 4U,
-    ERROR_NO_EOL_FOUND         = 5U,
-    ERROR_NO_EOL_BUFFER_FULL   = 6U,
-    ERROR_NULLPTR              = 7U,
-
-  } Error_t;
-
-  /*-- Public Function Declarations -------------------------------------------------*/
-
-  /* Default Constructor */
-  CircularBuffer(void);
-
-  /* Parameterised Constructor */
-  CircularBuffer(const uint8_t                       endOfLineChar,
-                 const Platform::CommsPeripheralID_t channelToLock);
-
-  /* Destructor */
-  virtual ~CircularBuffer(void) = default;
-
-  /* Copy Constructor */
-  CircularBuffer(const CircularBuffer &other) = delete;
-
-  /* Copy Assignment Operator */
-  CircularBuffer & operator=(const CircularBuffer &other) = delete;
-
-  /* Move Constructor */
-  CircularBuffer(CircularBuffer &&other) = delete;
-
-  /* Move Assignment Operator */
-  CircularBuffer & operator=(CircularBuffer &&other) = delete;
-
-  void setEOLChar(const uint8_t endOfLineChar);
-
-  void setLockArgument(const Platform::CommsPeripheralID_t channelToLock);
-
-  void reset(void);
-
-  CircularBuffer::Error_t getPacket(uint8_t * const targetBuffer,
-                                    const uint16_t  maxOutputLength,
-                                    uint16_t       &outputLength);
-
-  CircularBuffer::Error_t pushHead(const uint8_t * const   inputBuffer,
-                                   volatile const uint16_t inputLength);
-
+  void acquireLock(void) { Platform::acquireCommsBufferLock(id_); }
+  void releaseLock(void) { Platform::releaseCommsBufferLock(id_); }
 
   private:
 
-  /*-- Private Static Constants -----------------------------------------------------*/
-
-  static constexpr uint16_t STATIC_BUFFER_SIZE {Platform::CIRCULAR_BUFFER_SIZE};
-  static constexpr uint32_t NEW_DATA_READY     {1U};
-  static constexpr uint32_t NEW_DATA_NOT_READY {0U};
-
-  /*-- Private Constants ------------------------------------------------------------*/
-
-  /*-- Private Constants ------------------------------------------------------------*/
-
-  /*-- Private Typedefs -------------------------------------------------------------*/
-
-  /*-- Private Variables ------------------------------------------------------------*/
-
-  volatile uint16_t headIndex_      {0U};
-  volatile uint16_t tailIndex_      {0U};
-  volatile uint16_t eolSearchIndex_ {0U};
-  volatile uint16_t byteCount_      {0U};
-  volatile uint16_t eolToHead_      {0U};
-  volatile uint16_t eolToTail_      {0U};
-
-  std::atomic<uint32_t> newDataReady_ {NEW_DATA_NOT_READY};
-
-  uint8_t buffer_[STATIC_BUFFER_SIZE];
-
-  uint8_t                       eolChar_      {DEFAULT_EOL_CHAR};
-  Platform::CommsPeripheralID_t lockArgument_ {DEFAULT_LOCK_ARGUMENT};
-
-  /*-- Private Function Declarations ------------------------------------------------*/
-
-  inline void incrementEOLIndex(void);
-
-  inline void increaseHeadIndex(volatile const uint16_t length);
-
-  inline void increaseTailIndex(volatile const uint16_t length);
-
-  inline void resetEOLIndex(void);
-
-  inline uint16_t calcEolToTail(void);
-
-  inline uint16_t calcEolToHead(void);
-
-  inline CircularBuffer::Error_t eolSearch(void);
-
+  Platform::CommsPeripheralID_t id_ {static_cast<Platform::CommsPeripheralID_t>(0U)};
 };
+
+/*************************************************************************************/
+/* TYPE ALIAS                                                                        */
+/*************************************************************************************/
+
+using CircularBuffer = CircularBufferBase<NodeCommsLockPolicy>;
 
 } /* End Namespace - Atams */
 
@@ -160,5 +78,3 @@ class CircularBuffer
 /**
   * @}End of File
   */
-
-

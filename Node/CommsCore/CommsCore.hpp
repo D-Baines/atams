@@ -4,14 +4,14 @@
   *
   * @author  D. Baines
   *
-  * @brief   File containing the public interfaces for the Comms Core of an
-  *          Atams Node device.
+  * @brief   Public interfaces for the Atams Node Communications Core on single
+  *          and dual-core platforms.
   *
-  * @details An Atams Node Comms Core is responsible for updating the Node's
+  * @details The Atams Node Comms Core is responsible for updating the Node's
   *          communications interface - allowing external Hub devices to access
   *          the Node's variable storage, and trigger Node processes.
-  *          On single-core platforms, user application code can access the
-  *          variable storage using the Comms Core setter and getter functions.
+  *          On single-core platforms, user application code can use the Comms
+  *          Core setter and getter functions to access the Node variable storage.
   *
   * @version v1.0
   ******************************************************************************

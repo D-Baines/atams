@@ -4,8 +4,13 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Abstract interface for Hub-side Node event callbacks.
   *
+  * @details Declares the NodeCallbackHandler pure abstract base class that
+  *          Atams::Node inherits from. The Atams::Bus class uses these virtual
+  *          functions to deliver received data, report bus errors, retrieve encoded
+  *          request packets, and validate Node general information during each update
+  *          cycle. Friend access is granted to Atams::Bus and Atams::NodeActions.
   *
   * @version v1.0
   ******************************************************************************
@@ -29,6 +34,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+
 #include "../../Shared/AtamsTypedefs.hpp"
 
 /*************************************************************************************/
@@ -63,7 +69,7 @@ class NodeCallbackHandler
   NodeCallbackHandler(void) = default;
 
   /* Default Destructor */
-  ~NodeCallbackHandler(void) = default;;
+  virtual ~NodeCallbackHandler(void) = default;
 
   /* Copy Constructor */
   NodeCallbackHandler(const NodeCallbackHandler &other) = delete;

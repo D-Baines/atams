@@ -4,8 +4,13 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Public interfaces for the Atams Node Application Core on dual-core platforms.
   *
+  * @details Declares the App Core initialisation function and typed variable accessor
+  *          functions for use on the application processor core of a dual-core Atams
+  *          Node platform. The App Core shares variable storage with the Communications
+  *          Core through a platform-defined shared memory region. On single-core
+  *          platforms, use the Comms Core interfaces instead.
   *
   * @version v1.0
   ******************************************************************************

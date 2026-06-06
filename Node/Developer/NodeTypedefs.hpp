@@ -4,8 +4,13 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Internal type definitions and data structures for the Atams Node library.
   *
+  * @details Defines types shared between the Atams Node Comms Core and Application Core.
+  *          Includes VarStorage_t for per-variable byte storage, MemoryMap_t which
+  *          extends the shared Memory Map with Node-specific init function references,
+  *          and SharedData_t which holds the dual-core shared variable storage array
+  *          and the watchdog fault flag.
   *
   * @version v1.0
   ******************************************************************************

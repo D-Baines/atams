@@ -4,8 +4,13 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Software watchdog handler for detecting Atams Hub communication dropouts.
   *
+  * @details Defines the WatchdogHandler class, which monitors the time elapsed since
+  *          the last valid Atams Hub message was received. If the elapsed time exceeds
+  *          the configured watchdog period, a fault is raised internally and flagged 
+  *          in the Universal Data Block. The fault can be cleared by writing the
+  *          correct passcode to the watchdog reset variable.
   *
   * @version v1.0
   ******************************************************************************

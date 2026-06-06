@@ -4,8 +4,11 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Implementation of the WriteList write-stream tracking container.
   *
+  * @details Implements the WriteList class. Provides ordered insertion, indexed
+  *          lookup, configurable-index removal, and packet-index shift adjustment
+  *          for tracking active write-stream datagrams in the Hub Node request packet.
   *
   * @version v1.0
   ******************************************************************************

@@ -4,8 +4,14 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Platform interface declarations for the Atams Node Comms Core.
   *
+  * @details Defines the platform abstraction layer (PAL) for the Atams Node 
+  *          Comms Core. Contains the constants, types, and function 
+  *          declarations that must be implemented by the user to port the Atams 
+  *          Node library to a specific hardware platform. The interface covers
+  *          communications peripheral management, concurrency primitives, 
+  *          non-volatile memory access, and system control.
   *
   * @version v1.0
   ******************************************************************************
@@ -49,13 +55,13 @@ namespace Atams { namespace Platform {
  * @details Used to set the size of static request and response buffers.
  *
  */
-constexpr uint32_t MAX_BUS_PACKET_SIZE {64U};
+constexpr uint16_t MAX_BUS_PACKET_SIZE {64U};
 
 /**
  * @brief The circular buffer size used for receiving Atams packets.
  *        A minimum size of 3 * Atams::MAX_BUS_PACKET_SIZE is recommended.
  */
-constexpr uint32_t CIRCULAR_BUFFER_SIZE {1024U};
+constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};
 
 /**
  * @brief The size of non-volatile memory (NVM) reserved for Atams use.

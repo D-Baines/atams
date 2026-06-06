@@ -4,8 +4,13 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   Platform interface declarations for the Atams Node Application Core.
   *
+  * @details Declares the platform functions required by the Application Core on
+  *          dual-core Atams Node platforms. The implementing file must provide
+  *          getMillis(), acquireVarStorageLock(), and releaseVarStorageLock(),
+  *          which are used to synchronise variable storage access between the
+  *          application and communications processor cores.
   *
   * @version v1.0
   ******************************************************************************

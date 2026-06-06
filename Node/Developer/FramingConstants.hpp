@@ -4,8 +4,11 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   COBS framing size constants derived from the Node platform packet size.
   *
+  * @details Exposes compile-time constants defining the COBS overhead and the maximum
+  *          unframed payload size for Node bus packets. Values are derived from
+  *          Platform::MAX_BUS_PACKET_SIZE defined in CommsPlatform.hpp.
   *
   * @version v1.0
   ******************************************************************************

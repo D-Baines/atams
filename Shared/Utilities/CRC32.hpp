@@ -4,7 +4,12 @@
   *
   * @author  D. Baines
   *
-  * @brief
+  * @brief   CRC32 checksum calculator for Atams packet integrity verification.
+  *
+  * @details Defines the CRC32 class, which computes a 32-bit cyclic redundancy check
+  *          using a software lookup table. Provides an incremental interface so that
+  *          a checksum can be accumulated across multiple byte sequences before being
+  *          finalised and compared against a reference value.
   *
   * @version v1.0
   ******************************************************************************
@@ -51,7 +56,7 @@ class CRC32
 
   CRC32(uint32_t generatorPolynomial);
 
-  uint32_t calculateCRC(volatile const uint8_t *byteBuffer, uint16_t length);
+  uint32_t calculateCRC(const uint8_t *byteBuffer, uint32_t length);
 
   void beginRollingCRC(void);
 
@@ -69,7 +74,6 @@ class CRC32
   static constexpr uint16_t DECIMAL_WIDTH_8_BIT = 256U;
   static constexpr uint8_t  BYTE_MASK           = 0xFFU;
   static constexpr uint32_t FINAL_XOR_VALUE     = 0xFFFFFFFFU;
-  static constexpr uint8_t  NUMBER_OF_CRC_BITS  = 32U;
   static constexpr uint8_t  BITS_IN_A_BYTE      = 8U;
 
   /*-- PRIVATE VARIABLES --------------*/
@@ -80,8 +84,6 @@ class CRC32
   /*-- PRIVATE FUNCTION DECLARATIONS --*/
 
   void generateLookupTable(const uint32_t generatorPolynomial);
-
-  uint32_t reflect(const uint32_t data, const uint8_t bitCount);
 };
 
 } /* End Namespace - Atams */
