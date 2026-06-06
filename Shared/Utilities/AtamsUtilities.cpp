@@ -25,8 +25,10 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include <string.h>
 #include "AtamsUtilities.hpp"
+
+#include <string.h>
+
 #include "../AtamsTypedefs.hpp"
 #include "../Maps/BlockUniversal.hpp"
 #include "COBS.hpp"
@@ -68,9 +70,9 @@ static bool validateMapLength(const SharedMemoryMap_t &memoryMap, const uint32_t
     lengthValid = false;
   }
 
-  for (uint16_t varID = 0U; varID < numberOfVars; varID++)
+  for (uint16_t varID {0U}; varID < numberOfVars; varID++)
   {
-    const VarInfo_t varInfo = memoryMap.varInfoList[varID];
+    const VarInfo_t varInfo {memoryMap.varInfoList[varID]};
 
     if ((varInfo.type           > Atams::NUMBER_OF_VAR_TYPES) ||
         (varInfo.externalAccess > Atams::ACCESS_WRITE       ) ||
@@ -95,8 +97,8 @@ static bool validateMapLength(const SharedMemoryMap_t &memoryMap, const uint32_t
 
 static bool validateUniversalBlock(const SharedMemoryMap_t &memoryMap)
 {
-  bool     universalValid = true;
-  uint16_t varIndex       = 0U;
+  bool     universalValid {true};
+  uint16_t varIndex       {0U};
 
   if (memoryMap.genInfo.noOfVars < BlockUniversal::NUMBER_OF_VARS)
   {
@@ -105,7 +107,7 @@ static bool validateUniversalBlock(const SharedMemoryMap_t &memoryMap)
 
   for (VarInfo_t universalVarInfo : BlockUniversal::varInfoList)
   {
-    VarInfo_t mapVarInfo = memoryMap.varInfoList[varIndex];
+    VarInfo_t mapVarInfo {memoryMap.varInfoList[varIndex]};
 
     if (universalVarInfo != mapVarInfo) universalValid = false;
 
@@ -119,16 +121,16 @@ static bool validateMapChecksum(const SharedMemoryMap_t &memoryMap)
 {
   atamsCRC_.beginRollingCRC();
 
-  for (uint16_t varID = BlockUniversal::NUMBER_OF_VARS; varID < memoryMap.genInfo.noOfVars; varID++)
+  for (uint16_t varID {BlockUniversal::NUMBER_OF_VARS}; varID < memoryMap.genInfo.noOfVars; varID++)
   {
-    const VarInfo_t varInfo = memoryMap.varInfoList[varID];
+    const VarInfo_t varInfo {memoryMap.varInfoList[varID]};
 
     atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.type));
     atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.externalAccess));
     atamsCRC_.updateRollingCRC(static_cast<uint8_t>(varInfo.NVMStorage));
   }
 
-  uint32_t calculatedChecksum = atamsCRC_.getRollingCRC();
+  uint32_t calculatedChecksum {atamsCRC_.getRollingCRC()};
 
   return (memoryMap.genInfo.genChecksum == calculatedChecksum);
 }
@@ -161,7 +163,7 @@ Atams::Error_t decodeBusPacket(const uint8_t  * const inputBuffer,
                                const uint16_t         decodedBufferMaxLength,
                                      uint16_t        &decodedLength)
 {
-  COBS::Result_t COBSDecodeResult = COBS::decode(inputBuffer, inputBufferLength, decodedBuffer, decodedBufferMaxLength);
+  COBS::Result_t COBSDecodeResult {COBS::decode(inputBuffer, inputBufferLength, decodedBuffer, decodedBufferMaxLength)};
 
   if (COBSDecodeResult.status != COBS::ERROR_NONE)
   {
@@ -173,7 +175,7 @@ Atams::Error_t decodeBusPacket(const uint8_t  * const inputBuffer,
     return (Atams::ERROR_DECODE_FRAMING);
   }
 
-  uint32_t packetCRC = bufferToUint32(&decodedBuffer[Atams::HEADER_INDEX_CRC]);
+  uint32_t packetCRC {bufferToUint32(&decodedBuffer[Atams::HEADER_INDEX_CRC])};
 
   memset(&decodedBuffer[Atams::HEADER_INDEX_CRC], 0U, Atams::HEADER_SIZE_CRC);
 
@@ -200,11 +202,11 @@ Atams::Error_t encodeBusPacket(      uint8_t  * const inputBuffer,
 
   memset(&inputBuffer[HEADER_INDEX_CRC], 0U, HEADER_SIZE_CRC);
 
-  uint32_t CRCResult = atamsCRC_.calculateCRC(inputBuffer, inputLength);
+  uint32_t CRCResult {atamsCRC_.calculateCRC(inputBuffer, inputLength)};
 
   uint32ToBuffer(CRCResult, &inputBuffer[HEADER_INDEX_CRC]);
 
-  COBS::Result_t COBSEncodeResult = COBS::encode(inputBuffer, inputLength, encodedBuffer, encodedBufferMaxLength);
+  COBS::Result_t COBSEncodeResult {COBS::encode(inputBuffer, inputLength, encodedBuffer, encodedBufferMaxLength)};
 
   if (COBSEncodeResult.status != COBS::ERROR_NONE)
   {
@@ -234,24 +236,24 @@ void bufferToDatagramHeader(const uint8_t * const buffer, DatagramHeader_t &data
 
 Atams::Error_t validateMemoryMap(const SharedMemoryMap_t &memoryMap, const uint32_t varStorageLength)
 {
-  Atams::Error_t statusReturn = Atams::ERROR_NONE;
+  Atams::Error_t error {Atams::ERROR_NONE};
 
   if (memoryMap.varInfoList == nullptr)
   {
-    statusReturn = Atams::ERROR_MEMORY_MAP;
+    error = Atams::ERROR_MEMORY_MAP;
   }
   else if (validateAtamsVersion(memoryMap) == false)
   {
-    statusReturn = Atams::ERROR_ATAMS_VERSION_MISMATCH;
+    error = Atams::ERROR_ATAMS_VERSION_MISMATCH;
   }
   else if ((validateMapLength(memoryMap, varStorageLength) == false) ||
            (validateUniversalBlock(memoryMap)              == false) ||
            (validateMapChecksum(memoryMap)                 == false) )
   {
-    statusReturn = Atams::ERROR_MEMORY_MAP;
+    error = Atams::ERROR_MEMORY_MAP;
   }
 
-  return (statusReturn);
+  return (error);
 }
 
 

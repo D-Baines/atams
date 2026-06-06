@@ -30,7 +30,7 @@
 
 #include <stdint.h>
 #include <type_traits>
-#include "string.h"
+#include <string.h>
 
 #include "../../Shared/AtamsTypedefs.hpp"
 #include "NodeTypedefs.hpp"

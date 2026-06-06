@@ -85,9 +85,9 @@ class UniversalBlockManager
   /* Move Assignment Operator */
   UniversalBlockManager & operator=(UniversalBlockManager &&other) = delete;
 
-  void initConfiguration(void);
-
   UniversalBlockManager::ProcessID_t update(void);
+
+  Atams::Error_t applyUniversalConfiguration(void);
 
   void runPendingProcess(void);
 
@@ -149,8 +149,6 @@ class UniversalBlockManager
   void checkConfigurationStateExit(void);
 
   void checkConfigurationPasscodes(void);
-
-  void applyUniversalConfiguration(void);
 
   void cancelConfigurationValueChange(void);
 };

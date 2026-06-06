@@ -29,7 +29,9 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+
 #include "../../Shared/AtamsTypedefs.hpp"
+#include "../SharedPlatform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -90,6 +92,12 @@ struct MemoryMap_t
   MemoryMap_t & operator=(MemoryMap_t &&other) = delete;
 };
 
+struct SharedData_t
+{
+  CoreInitStatus_t      coreInitComplete[Atams::NUMBER_OF_CORES];
+  Atams::VarStorage_t   varStorage[Platform::NODE_NUMBER_OF_VARS];
+  std::atomic<uint32_t> watchdogFault;
+};
 
 } /* End Namespace - Atams */
 

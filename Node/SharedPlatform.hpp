@@ -55,13 +55,18 @@ namespace Atams { namespace Platform {
 #define ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE __attribute__((section(".atamsSharedRAM")))
 
 /**
-*   @brief Define used in dual-core applications to allow Atams to determine which core is
-*          responsible for handling Atams communications. The define should only
-*          exist on compilation of the code for the core handling Atams communications.
+*   @brief Replace ATAMS_COMMS_CORE in the #ifdef below with the preprocessor symbol your
+*          build system defines for the core responsible for Atams communications, or add
+*          -D ATAMS_COMMS_CORE to the Comms Core build target only to use it as-is.
+*
+*          Example: STM32CubeIDE automatically defines CORE_CM4 / CORE_CM7 per core project.
+*          If the M4 handles Atams communications, replace ATAMS_COMMS_CORE with CORE_CM4.
 *
 *   @note  ATAMS PLATFORM REQUIREMENT - DUAL-CORE
 */
-#define COMMS_CORE_DETECT CORE_CM4
+#ifdef CORE_CM4 //ATAMS_COMMS_CORE
+#define COMMS_CORE_DETECT 1
+#endif
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */

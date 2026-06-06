@@ -42,12 +42,12 @@
 namespace Atams { namespace Platform {
 
 /*************************************************************************************/
-/* PRIVATE TYPEDEFS                                                                  */
-/*************************************************************************************/
-
-
-/*************************************************************************************/
 /* PRIVATE CONSTANTS                                                                 */
+/*************************************************************************************/
+
+
+/*************************************************************************************/
+/* PRIVATE TYPEDEFS                                                                  */
 /*************************************************************************************/
 
 
@@ -60,6 +60,7 @@ static SerialPort s_serialPort(SerialPort::PORT_ID_MESH);
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
+
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
@@ -78,7 +79,7 @@ uint32_t getMillis(void)
 }
 
 /**
- * @brief   Acquire the lock protecting the Node variable storage from concurrent access.
+ * @brief   Acquire the lock protecting the Node variable storage from invalid concurrent access.
  *
  * @details This function will be called before Node variable storage access. The variable storage
  *          may be accessed from multiple threads or cores depending on the user's platform. The user 
@@ -86,7 +87,7 @@ uint32_t getMillis(void)
  *
  *          For multi-threaded platforms, the user should use a mutex or similar mechanism. For dual-core 
  *          platforms, the user should use a hardware semaphore or similar mechanism. A combination of both
- *          may be required for multi-threaded dual-core platforms.
+ *          may be required for multi-threaded, dual-core platforms.
  *         
  * @return  None
  *
@@ -102,7 +103,7 @@ void acquireVarStorageLock(void)
 }
 
 /**
- * @brief   Release the lock protecting the Node variable storage from concurrent access.
+ * @brief   Release the lock protecting the Node variable storage from invalid concurrent access.
  *
  * @details This function will be called after Node variable storage access. The user must 
  *          release or unlock the mechanism locked in Platform::acquireVarStorageLock().
@@ -120,26 +121,26 @@ void releaseVarStorageLock(void)
 /**
  * @brief   Start reception on all peripherals and register the receive callback function.
  *
- * @return  None
+ * @return  Receive initiation status.
+ *          true:  Peripheral reception started successfully.
+ *          false: Peripheral fault occurred when attempting to start reception.
  *
  * @param   receiveCallback Function pointer to the function to be called when new bytes
- *                          are ready to be passed to Atams
+ *                          are ready to be passed to Atams.
  *
  * @see     CommsPlatform.hpp -> PUBLIC TYPEDEFS -> CommsReceiveCallback_t
  *
  * @note    ATAMS PLATFORM REQUIREMENT - ALL
  */
-void beginReceive(CommsReceiveCallback_t receiveCallback)
+bool beginReceive(CommsReceiveCallback_t receiveCallback)
 {
   s_serialPort.setReceiveCallback(receiveCallback);
 
-  while (s_serialPort.beginReceive() != SerialPort::ERROR_NONE)
-  {
-    s_serialPort.stopReceive();
-  }
 
   HAL_GPIO_WritePin(RS485_RE_GPIO_Port, RS485_RE_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_RESET);
+
+  return (s_serialPort.beginReceive() == SerialPort::ERROR_NONE);
 }
 
 /**
@@ -156,7 +157,7 @@ void stopReceive(void)
 }
 
 /**
- * @brief   User update function called at regular intervals from Atams::updateCommsPolling()
+ * @brief   User update function called at regular intervals from Atams::updateCommsPolling().
  *
  * @details Users can use this function to poll communications peripherals, check for
  *          peripheral errors, and/or restart peripheral reception if required.
@@ -177,15 +178,15 @@ void update(void)
 }
 
 /**
- * @brief   Check if the specified communications peripheral is ready to transmit new bytes.
+ * @brief  Check if the specified communications peripheral is ready to transmit new bytes.
  *
- * @param   peripheralID The ID of the communications peripheral to check
+ * @param  peripheralID The ID of the communications peripheral to check.
  *
- * @return  Transmission readiness.
- *          true:  Peripheral ready to accept new bytes for transmission.
- *          false: Peripheral not ready to accept new bytes for transmission.
+ * @return Transmission readiness.
+ *         true:  Peripheral ready to accept new bytes for transmission.
+ *         false: Peripheral not ready to accept new bytes for transmission.
  *
- * @note    ATAMS PLATFORM REQUIREMENT - ALL
+ * @note   ATAMS PLATFORM REQUIREMENT - ALL
  */
 bool transmitReady(const CommsPeripheralID_t peripheralID)
 {
@@ -195,16 +196,16 @@ bool transmitReady(const CommsPeripheralID_t peripheralID)
 }
 
 /**
- * @brief   Transmit a buffer of bytes via the specified communications peripheral
+ * @brief   Transmit a buffer of bytes via the specified communications peripheral.
  *
  * @details Users can choose to implement this function as a blocking or non-blocking.
  *          If implemented as non-blocking for event-driven comms, the function must ensure that
  *          the transmission is started before returning true. If implemented as blocking for polling
  *          comms, the function must ensure that all bytes are transmitted before returning true.
  *
- * @param   peripheralID The ID of the communications peripheral to use for transmission
- * @param   buffer       Pointer to the buffer holding the bytes to be transmitted
- * @param   length       Number of bytes to be transmitted
+ * @param   peripheralID The ID of the communications peripheral to use for transmission.
+ * @param   buffer       Pointer to the buffer holding the bytes to be transmitted.
+ * @param   length       Number of bytes to be transmitted.
  *
  * @return  Transmission status.
  *          true:  Transmission successfully started or all bytes successfully transmitted.
@@ -230,12 +231,13 @@ bool transmitBuffer(const CommsPeripheralID_t peripheralID, uint8_t * buffer, co
  * @brief   Acquire the lock protecting the circular buffer from concurrent access.
  *
  * @details This function will be called before Atams circular buffer access. The circular buffers
- *          are accessed from the Atams comms update functions and from the Platform::receiveCallback()
- *          function. The user must ensure that the lock is held until Platform::releaseCommsBufferLock()
- *          is called. If Platform::receiveCallback() is called from an interrupt, the user should
- *          disable the interrupt associated with the provided communications peripheral ID.
+ *          are accessed from the Atams comms update functions and from the CommsReceiveCallback_t function
+ *          passed to Platform::beginReceive. The user must ensure that the lock is held until
+ *          Platform::releaseCommsBufferLock() is called. If the CommsReceiveCallback_t function is called
+ *          from an interrupt, the user should disable the interrupt associated with the provided
+ *          comms peripheral ID in this function.
  *
- * @param   peripheralToLock The ID of the communications peripheral to lock
+ * @param   peripheralToLock The ID of the communications peripheral to lock.
  *
  * @return  None
  *
@@ -252,11 +254,11 @@ void acquireCommsBufferLock(const CommsPeripheralID_t peripheralToLock)
  * @brief   Release the lock protecting the circular buffer from concurrent access.
  *
  * @details This function will be called after Atams circular buffer access. The circular buffers
- *          are accessed from the Atams comms update functions and from the Platform::receiveCallback()
- *          function. If an interrupt was disabled in Platform::acquireCommsBufferLock(), the user should
- *          re-enable the same interrupt here.
+ *          are accessed from the Atams comms update functions and from the CommsReceiveCallback_t function
+ *          passed to Platform::beginReceive. If an interrupt was disabled in
+ *          Platform::acquireCommsBufferLock(), the user should re-enable the same interrupt here.
  *
- * @param   peripheralToUnlock The ID of the communications peripheral to unlock
+ * @param   peripheralToUnlock The ID of the communications peripheral to unlock.
  *
  * @return  None
  *
@@ -277,7 +279,7 @@ void releaseCommsBufferLock(const CommsPeripheralID_t peripheralToUnlock)
  *          to ensure that the Atams communications watchdog can safely detect a communications
  *          dropout.
  *
- * @param   timeoutInMilliseconds Maximum time to wait while attempting to acquire
+ * @param   timeoutInMilliseconds Maximum time to wait while attempting to acquire.
  *
  * @return  None
  *
@@ -319,7 +321,7 @@ void releaseWaitOnReceiveSemaphore(void)
 bool eraseNVM(void)
 {
   FLASH_EraseInitTypeDef eraseInitStruct;
-  uint32_t               sectorError = 0U;
+  uint32_t               sectorError {0U};
 
   /* Fill EraseInit structure*/
   eraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
@@ -400,13 +402,17 @@ bool writeToNVM(const uint32_t writeIndex, const uint8_t (&nvmUnit)[Platform::NV
 }
 
 /**
- * @brief
+ * @brief   Accept or reject entry to the Node configuration state.
  *
- * @details
+ * @details In the configuration state, the Hub can trigger blocking storage processes or trigger resets
+ *          on the Node device. If the Node application code is not in a safe state to accept blocking
+ *          processes, the function should return false. If the Node application state is in a safe state,
+ *          the function should return true. The Node application should remain in a safe state until
+ *          exitConfigurationState is called.
  *
  * @return  Configuration entry decision.
- *          true:  Configuration entry accepted - safe to call blocking storage functions or reset system
- *          false: Configuration entry declined - not safe to call blocking storage functions or reset system
+ *          true:  Configuration entry accepted - safe to call blocking storage functions or reset system.
+ *          false: Configuration entry declined - not safe to call blocking storage functions or reset system.
  *
  * @warning Do not allow configuration entry if it is not safe to call blocking functions or it is not safe
  *          to reset the system. Flash writes in storage functions may block the CPU completely.
@@ -421,9 +427,11 @@ bool enterConfigurationState(void)
 }
 
 /**
- * @brief   Notifies the user that the configuration state has been exited
+ * @brief   Notifies the user that the configuration state has been exited.
  *
- * @details
+ * @details In the configuration state, the Hub can trigger blocking storage processes or trigger resets
+ *          on the Node device. Once this function is called, Atams will not trigger any of these processes
+ *          again without calling enterConfigurationState().
  *
  * @return  None
  *
@@ -441,7 +449,7 @@ void exitConfigurationState(void)
  * @details Function will be called when an Atams Hub device requests a bitrate change
  *          through the configuration state.
  *
- * @return  bitrateOption User defined bitrate option to be asserted.
+ * @param   bitrateOption User defined bitrate option to be asserted.
  *
  * @note    ATAMS PLATFORM REQUIREMENT - ALL
  */
@@ -456,7 +464,7 @@ void setBitrate(Atams::BitrateOption_t bitrateOption)
  * @details Function will be called when an Atams Hub device requests a node reset.
  *          This function should not return, the system should reset immediately.
  *
- * @return  None.
+ * @return  Reset status - should return Atams::ERROR_PLATFORM if reset fails.
  *
  * @note    ATAMS PLATFORM REQUIREMENT - ALL
  */

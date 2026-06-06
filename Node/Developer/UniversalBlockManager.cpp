@@ -85,11 +85,6 @@ configPasscodeCheckers_
   /* Do Nothing */
 }
 
-void UniversalBlockManager::initConfiguration(void)
-{
-  applyUniversalConfiguration();
-}
-
 UniversalBlockManager::ProcessID_t UniversalBlockManager::update(void)
 {
   if (updateRequired_ == false)
@@ -123,6 +118,29 @@ UniversalBlockManager::ProcessID_t UniversalBlockManager::update(void)
   return (pendingProcessID_);
 }
 
+Atams::Error_t UniversalBlockManager::applyUniversalConfiguration(void)
+{
+  uint16_t error {Atams::ERROR_NONE};
+
+  uint32_t watchdogPeriod {WatchdogHandler::MINIMUM_VALID_WATCHDOG_PERIOD};
+
+  error |= static_cast<uint16_t>(Atams::getVar(BlockUniversal::VAR_NODE_ID,          localNodeID_));
+  error |= static_cast<uint16_t>(Atams::getVar(BlockUniversal::VAR_FIRST_NODE_ID,    firstSyncNodeID_));
+  error |= static_cast<uint16_t>(Atams::getVar(BlockUniversal::VAR_PREVIOUS_NODE_ID, prevSyncNodeID_));
+  error |= static_cast<uint16_t>(Atams::getVar(BlockUniversal::VAR_LAST_NODE_ID,     finalSyncNodeID_));
+  error |= static_cast<uint16_t>(Atams::getVar(BlockUniversal::VAR_BITRATE,          bitrateOption_));
+  error |= static_cast<uint16_t>(Atams::getVar(BlockUniversal::VAR_WATCHDOG_PERIOD,  watchdogPeriod));
+
+  Platform::setBitrate(static_cast<Atams::BitrateOption_t>(bitrateOption_));
+
+  watchdogHandler_.setWatchdogPeriod(watchdogPeriod);
+
+  return (error == Atams::ERROR_NONE ?
+          Atams::ERROR_NONE          :
+          Atams::ERROR_MEMORY_MAP    );
+}
+
+
 void UniversalBlockManager::runPendingProcess(void)
 {
   if (pendingProcessID_ < NUMBER_OF_PROCESSES)
@@ -146,11 +164,6 @@ void UniversalBlockManager::setUpdateRequired(void)
 
 bool UniversalBlockManager::checkWriteAccess(const uint16_t varID)
 {
-  if (varID == BlockUniversal::VAR_CONFIGURATION_PASSKEY)
-  {
-    return (true);
-  }
-
   return ((configurationState_ == CONFIGURATION_STATUS_ACTIVE              ) ||
           (varID               == BlockUniversal::VAR_CONFIGURATION_PASSKEY) ||
           (varID               == BlockUniversal::VAR_WATCHDOG_RESET       ) );
@@ -162,7 +175,7 @@ void UniversalBlockManager::processRead(const uint16_t varID)
   {
     case BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE:
       static_cast<void>(Atams::setVar(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE,
-                                     static_cast<uint8_t>(Atams::ATAMS_FALSE)));
+                                      static_cast<uint8_t>(false)));
       break;
     default:
       /* Do Nothing */
@@ -233,7 +246,7 @@ void UniversalBlockManager::checkConfigurationStateExit(void)
 
   if (configStatePasskey == Atams::CONFIGURATION_PASSKEY_APPLY)
   {
-    applyUniversalConfiguration();
+    static_cast<void>(applyUniversalConfiguration());
     Platform::exitConfigurationState();
     configurationState_ = Atams::CONFIGURATION_STATUS_APPLIED;
   }
@@ -261,22 +274,6 @@ void UniversalBlockManager::checkConfigurationPasscodes(void)
 
     checker.prevPasscode = checker.passcode;
   }
-}
-
-void UniversalBlockManager::applyUniversalConfiguration(void)
-{
-  uint32_t watchdogPeriod = WatchdogHandler::MINIMUM_VALID_WATCHDOG_PERIOD;
-
-  static_cast<void>(Atams::getVar(BlockUniversal::VAR_NODE_ID,          localNodeID_));
-  static_cast<void>(Atams::getVar(BlockUniversal::VAR_FIRST_NODE_ID,    firstSyncNodeID_));
-  static_cast<void>(Atams::getVar(BlockUniversal::VAR_PREVIOUS_NODE_ID, prevSyncNodeID_));
-  static_cast<void>(Atams::getVar(BlockUniversal::VAR_LAST_NODE_ID,     finalSyncNodeID_));
-  static_cast<void>(Atams::getVar(BlockUniversal::VAR_BITRATE,          bitrateOption_));
-  static_cast<void>(Atams::getVar(BlockUniversal::VAR_WATCHDOG_PERIOD,  watchdogPeriod));
-
-  Platform::setBitrate(static_cast<Atams::BitrateOption_t>(bitrateOption_));
-
-  watchdogHandler_.setWatchdogPeriod(watchdogPeriod);
 }
 
 void UniversalBlockManager::cancelConfigurationValueChange(void)

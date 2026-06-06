@@ -350,16 +350,16 @@ struct DatagramHeader_t
 
 struct GenInfo_t
 {
-  uint8_t  atamsVersionMajor  {ATAMS_VERSION_MAJOR};
-  uint8_t  atamsVersionMinor  {ATAMS_VERSION_MINOR};
-  uint8_t  genDay             {0U};
-  uint8_t  genMonth           {0U};
-  uint16_t genYear            {0U};
-  uint8_t  genHour            {0U};
-  uint8_t  genMinute          {0U};
-  uint8_t  genSecond          {0U};
-  uint32_t genChecksum        {0U};
-  uint16_t noOfVars           {0U};
+  uint8_t  atamsVersionMajor {ATAMS_VERSION_MAJOR};
+  uint8_t  atamsVersionMinor {ATAMS_VERSION_MINOR};
+  uint8_t  genDay            {0U};
+  uint8_t  genMonth          {0U};
+  uint16_t genYear           {0U};
+  uint8_t  genHour           {0U};
+  uint8_t  genMinute         {0U};
+  uint8_t  genSecond         {0U};
+  uint32_t genChecksum       {0U};
+  uint16_t noOfVars          {0U};
 
   bool operator==(const GenInfo_t &other)
   {
@@ -539,9 +539,9 @@ struct SharedMemoryMap_t
 /* POST-TYPEDEF CONSTANTS                                                            */
 /*************************************************************************************/
 
-constexpr uint8_t MINIMUM_SIZE_WRITE_DATAGRAM = Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t);
+constexpr uint8_t MINIMUM_SIZE_WRITE_DATAGRAM {Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t)};
 
-constexpr uint8_t TYPE_LENGTHS[Atams::NUMBER_OF_VAR_TYPES] =
+constexpr uint8_t TYPE_LENGTHS[Atams::NUMBER_OF_VAR_TYPES]
 {
   /* [TYPE_NULL  ] = */ 0U,
   /* [TYPE_UINT8 ] = */ 1U,
@@ -608,13 +608,20 @@ constexpr const char *ERROR_STRINGS[NUMBER_OF_ATAMS_ERRORS]
   /* [Atams::ERROR_NODE_ALREADY_ON_BUS         ] = */ "Node Already On Bus"
 };
 
+constexpr const char* ERROR_INDEX_OUT_OF_BOUNDS_STRING {"Invalid Atams Error Type"};
+
 /*************************************************************************************/
 /* INLINE FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
 inline const char *getErrorString(const Atams::Error_t error)
 {
-  return (ERROR_STRINGS[static_cast<uint8_t>(error)]);
+  if (error < Atams::NUMBER_OF_ATAMS_ERRORS)
+  {
+    return (ERROR_STRINGS[static_cast<uint8_t>(error)]);
+  }
+
+  return (ERROR_INDEX_OUT_OF_BOUNDS_STRING);
 }
 
 } /* End Namespace - Atams */
