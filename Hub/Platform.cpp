@@ -153,21 +153,12 @@ void BusPeripheral::txHandler(asio::error_code ec, size_t xfr)
   static_cast<void>(xfr);
 
   transmitReady_.store(true);
+  txCallback();
 }
 
 /*************************************************************************************/
 /* MemoryLock - REQUIRED PUBLIC FUNCTION DEFINITIONS                                 */
 /*************************************************************************************/
-
-/** 
- * @brief Initialize the memory lock if required.
- *
- * @note  ATAMS PLATFORM REQUIREMENT - MULTI-THREADED
- */
-bool MemoryLock::init(void)
-{
-  return (true);
-}
 
 /** 
  *  @brief Acquire the memory lock.
@@ -194,16 +185,6 @@ void MemoryLock::releaseLock(void)
 /*************************************************************************************/
 
 /** 
- * @brief Initialize the comms lock if required.
- *
- * @note  ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
- */
-bool CommsLock::init(void)
-{
-  return (true);
-}
-
-/** 
  *  @brief Acquire the comms lock.
  *
  *  @note  ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
@@ -223,6 +204,40 @@ void CommsLock::releaseLock(void)
   _commsLock.unlock();
 }
 
+
+/*************************************************************************************/
+/* BinarySemaphore - REQUIRED PUBLIC FUNCTION DEFINITIONS                            */
+/*************************************************************************************/
+
+/**
+ * @brief Block the calling thread indefinitely until the semaphore is released.
+ *
+ * @note  ATAMS PLATFORM REQUIREMENT - BLOCKING COMMS
+ */
+void BinarySemaphore::wait(void)
+{
+
+}
+
+/**
+ * @brief Block the calling thread until the semaphore is released or the timeout expires.
+ *
+ * @note  ATAMS PLATFORM REQUIREMENT - BLOCKING COMMS
+ */
+void BinarySemaphore::waitWithTimeout(uint32_t timeoutMilliseconds)
+{
+  static_cast<void>(timeoutMilliseconds);
+}
+
+/**
+ * @brief Release the semaphore, unblocking any thread waiting in wait or waitWithTimeout.
+ *
+ * @note  ATAMS PLATFORM REQUIREMENT - BLOCKING COMMS
+ */
+void BinarySemaphore::release(void)
+{
+
+}
 
 } } /* End Namespace - Atams::Platform */
 

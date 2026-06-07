@@ -114,9 +114,15 @@ private Platform::BusPeripheral
 
   Atams::ProcessState_t runUpdateCycleSync(Atams::Error_t &error);
 
+  Atams::ProcessState_t runUpdateCycleSyncBlocking(Atams::Error_t &error);
+
   Atams::ProcessState_t runUpdateCycleAsync(Atams::Error_t &error);
 
+  Atams::ProcessState_t runUpdateCycleAsyncBlocking(Atams::Error_t &error);
+
   Atams::ProcessState_t runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::Node &node);
+
+  Atams::ProcessState_t runSingleNodeUpdateCycleBlocking(Atams::Error_t &error, Atams::Node &node);
 
   Atams::Error_t processResponseBuffers(void);
 
@@ -210,13 +216,24 @@ private Platform::BusPeripheral
     void readyProcess(void);
   };
 
+  /*-- Private Function Declarations (Core) -----------------------------------------*/
+
+  Atams::ProcessState_t runUpdateCycleSyncCore(Atams::Error_t &error, bool blocking);
+
+  Atams::ProcessState_t runUpdateCycleAsyncCore(Atams::Error_t &error, bool blocking);
+
+  Atams::ProcessState_t runSingleNodeUpdateCycleCore(Atams::Error_t &error, Atams::Node &node, bool blocking);
+
   /*-- Static Private Variables -----------------------------------------------------*/
 
   static const GenInfo_t         dummyGenInfo_;
   static const Node::MemoryMap_t dummyMemoryMap_;
 
   /*-- Private Class Objects --------------------------------------------------------*/
-                                      
+
+  Platform::BinarySemaphore rxSemaphore_;
+  Platform::BinarySemaphore txSemaphore_;
+
   Atams::CircularBuffer circularBuffer_;
   Node                 *nodePtrs_[Platform::NUMBER_OF_NODES_PER_BUS];
   NodeActions           nodeProcessHandler_;
@@ -265,10 +282,15 @@ private Platform::BusPeripheral
   
   bool pollForJogTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process);
 
-  Bus::PollResult pollForResponse(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse);
+  Bus::PollResult pollForResponse(Atams::Node               &node, 
+                                  Bus::ProcessHandlerBase   &process, 
+                                  const Atams::MessageType_t expectedResponse, 
+                                  const bool                 blocking);
 
   virtual void rxCallback(uint8_t       *rxBufferPtr,
                           const uint16_t rxBufferLength) override final;
+
+  virtual void txCallback(void) override final;
 
   bool validateAndStoreResponsePacket(Atams::Node &node, const MessageType_t responseType);
 

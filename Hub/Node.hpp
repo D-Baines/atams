@@ -156,6 +156,8 @@ public NodeCallbackHandler
 
   Atams::AbortedResponseDetails_t getAbortedResponseDetails(void);
 
+  bool validateGenInfo(void);
+
   #if (DEVELOPER_TOOLS == true)
   void injectBusError(const Atams::Error_t errorToInject, 
                       const uint16_t       readOnlyVarID,
@@ -281,8 +283,6 @@ public NodeCallbackHandler
   Atams::Error_t updateRequestPatternOnReceive(const uint16_t varID);
 
   virtual Atams::Error_t updateRequestPacketWriteData(void);
-
-  virtual bool validateGenInfo(void);
 
   virtual void reportBusError(Atams::Error_t busError) final;
   

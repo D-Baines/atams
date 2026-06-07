@@ -59,7 +59,7 @@ WriteList::SearchResult_t WriteList::findConfig(const uint16_t varID)
     /* .configIndex = */ 0U
   };
 
-  for (uint16_t listIndex = 0U; listIndex < _configCount; listIndex++)
+  for (uint16_t listIndex {0U}; listIndex < _configCount; listIndex++)
   {
     if (varID == _configList[listIndex].varID) 
     {
@@ -87,7 +87,7 @@ WriteList::Error_t WriteList::addConfig(const WriteConfig_t newWriteConfig)
 
 void WriteList::removeConfigIfFound(const uint16_t varID)
 {
-  SearchResult_t searchResult = findConfig(varID);
+  SearchResult_t searchResult {findConfig(varID)};
 
   if (searchResult.configFound == true) removeConfigAtIndex(searchResult.configIndex);
 }
@@ -103,9 +103,9 @@ void WriteList::updateIndexes(const uint16_t referenceIndex, const int16_t shift
   }   
 }
 
-WriteList::Return_t WriteList::getConfigAtIndex(const uint16_t configIndex)
+WriteList::ConfigReturn_t WriteList::getConfigAtIndex(const uint16_t configIndex)
 { 
-  Return_t configReturn;
+  ConfigReturn_t configReturn;
 
   if (configIndex >= _configCount)
   {
@@ -130,7 +130,7 @@ uint16_t WriteList::getConfigCount(void)
 
 void WriteList::removeConfigAtIndex(const uint16_t configIndex)
 {
-  for (uint16_t index = configIndex; index < (_configCount - 1U); index++)
+  for (uint16_t index {configIndex}; index < (_configCount - 1U); index++)
   {
     _configList[index] = _configList[index + 1U];
   }

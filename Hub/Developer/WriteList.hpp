@@ -57,36 +57,35 @@ class WriteList
 
   /*-- PUBLIC CONSTANTS ---------------*/
 
-  static constexpr uint16_t LIST_MAX_LENGTH = Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING / Atams::MINIMUM_SIZE_WRITE_DATAGRAM;
+  static constexpr uint16_t LIST_MAX_LENGTH {Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING / Atams::MINIMUM_SIZE_WRITE_DATAGRAM};
 
   /*-- PUBLIC TYPEDEFS ----------------*/
 
-  typedef struct WriteConfig_t
+  struct WriteConfig_t
   {
     uint16_t varID;
     uint16_t requestPacketIndex;
     uint8_t  dataLength;
-  
-  } WriteConfig_t;
+  };
 
-  typedef enum: uint8_t
+  enum Error_t: uint8_t
   {
     ERROR_NONE      = 0U,
     ERROR_INDEX_OOR = 1U,
     ERROR_FULL      = 2U,
-  } Error_t;
+  };
   
-  typedef struct ListReturn_t
+  struct ConfigReturn_t
   {
     Error_t       status;
     WriteConfig_t writeConfig;
-  } Return_t;
+  };
 
-  typedef struct SearchResult_t
+  struct SearchResult_t
   {
     bool     configFound;
     uint16_t configIndex;
-  } SearchResult_t;
+  };
 
   /*-- PUBLIC FUNCTION DEFINITIONS ----*/
 
@@ -102,7 +101,7 @@ class WriteList
 
   void updateIndexes(const uint16_t referenceIndex, const int16_t shiftLength);
 
-  Return_t getConfigAtIndex(const uint16_t configIndex);
+  ConfigReturn_t getConfigAtIndex(const uint16_t configIndex);
 
   uint16_t getConfigCount(void);
 

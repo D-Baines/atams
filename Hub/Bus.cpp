@@ -228,13 +228,13 @@ Atams::Error_t Bus::beginBusInitProcess(void)
  * matches the internal Node instance, and configures the IDs required for Atams synchronous communication (first, last, and previous
  * Node IDs) in each Node's Universal Data Block.
  *
- * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::ProcessState::ERROR, this will be
+ * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::PROCESS_ERROR, this will be
  *              set to the error that caused the failure; otherwise, the value can be ignored.
  *
- * @return The current @c Atams::ProcessState of the initialisation process:
- *         - @c IN_PROGRESS: Initialisation is ongoing and this function should be called again.
- *         - @c COMPLETE:    Initialisation has finished successfully.
- *         - @c ERROR:       An error has occurred; check @p error for details.
+ * @return The current @c Atams::ProcessState_t of the initialisation process:
+ *         - @c PROCESS_IN_PROGRESS: Initialisation is ongoing and this function should be called again.
+ *         - @c PROCESS_COMPLETE:    Initialisation has finished successfully.
+ *         - @c PROCESS_ERROR:       An error has occurred; check @p error for details.
  *
  * @note The Bus initialisation process must be completed before running any Bus update cycles.
  */
@@ -367,89 +367,67 @@ Atams::Error_t Bus::beginSingleNodeUpdateCycle(Atams::Node &node)
 }
 
 /**
- * @brief Progresses the Synchronous Update Cycle for all Nodes on the Bus.
+ * @brief Progresses the Synchronous Update Cycle for all Nodes on the Bus (non-blocking).
  *
  * Advances the update cycle started by @ref Bus::beginUpdateCycle in synchronous mode. This function should be called repeatedly
  * until the update cycle completes or an error occurs. Each call advances the internal state machine by a single step, such as
  * sending a request, waiting for a response, or jogging a Node if a timeout occurs.
  *
- * During the Synchronous Update Cycle, Request Packets are sent to all Node devices, which store them in a Sync Buffer. Once the 
- * final Node device receives it's Request Packet, all Nodes process their stored Request Packets simultaneously: variables are 
- * written to variable storage, and read data and write acknowledgments are transferred to Response Packets. The first Node 
- * transmits it's Response Packet immediately and each subsequent Node device transmits its response after receiving the previous 
- * Node's Response Packet. If a Node does not respond before a timeout, the Hub's Bus Update Cycle detects the timeout and sends 
+ * During the Synchronous Update Cycle, Request Packets are sent to all Node devices, which store them in a Sync Buffer. Once the
+ * final Node device receives it's Request Packet, all Nodes process their stored Request Packets simultaneously: variables are
+ * written to variable storage, and read data and write acknowledgments are transferred to Response Packets. The first Node
+ * transmits it's Response Packet immediately and each subsequent Node device transmits its response after receiving the previous
+ * Node's Response Packet. If a Node does not respond before a timeout, the Hub's Bus Update Cycle detects the timeout and sends
  * a Jog Packet to the next Node device in the response order, ensuring the Update Cycle continues.
  *
- * Unlike the asynchronous and single-node update cycles, this function does not process incoming response data during the update.
- * To process all received response packets at a time of your choosing, call @ref Bus::processSyncBuffers after the update cycle completes.
+ * This function does not process incoming response data during the update. To process all received response packets at a time 
+ * of your choosing, call @ref Bus::processSyncBuffers after the update cycle completes.
  *
- * This function can operate in either blocking or non-blocking mode. If the user implements the @c Platform::CommsSemaphore functions
- * (including @c Platform::CommsSemaphore::waitWithTimeout) in @c Platform.cpp, the calling thread will be blocked while waiting for
- * packet transmissions and responses. If these functions are left empty, the function will operate in a polling fashion.
+ * This function operates in non-blocking (polling) mode. To block the calling thread while waiting for packet transmissions
+ * and responses, use @ref Bus::runUpdateCycleSyncBlocking instead.
  *
  * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::ProcessState::ERROR, this will be
  *              set to the error that caused the failure; otherwise, it will be set to @c Atams::ERROR_NONE.
  *
  * @return The current @c Atams::ProcessState of the update cycle:
- *         - @c IN_PROGRESS: Update is ongoing and this function should be called again.
- *         - @c COMPLETE:    Update has finished successfully.
- *         - @c ERROR:       An error has occurred; check @p error for details.
+ *         - @c PROCESS_IN_PROGRESS: Update is ongoing and this function should be called again.
+ *         - @c PROCESS_COMPLETE:    Update has finished successfully.
+ *         - @c PROCESS_ERROR:       An error has occurred; check @p error for details.
  *
  * @note The update cycle must be started by calling @ref Bus::beginUpdateCycle before calling this function.
  */
 Atams::ProcessState_t Bus::runUpdateCycleSync(Atams::Error_t &error)
 {
-  Bus::ProcessHandler<Bus::UpdateState> &process       {updateProcessHandler_};
-  Atams::ProcessState_t                 &processState  {process.processState};
-  Bus::UpdateState                      &updateState   {process.specificState};
-  Atams::Node                          *&activeNodePtr {process.activeNodePtr};
-  Bus::PollResult                        rxPollResult  {Bus::PollResult::WAITING};
-
-  activeNodePtr = getUpdateNodePtr();
-
-  if (activeNodePtr == nullptr) process.terminate(Atams::ERROR_NULLPTR);
-
-  //Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
-
-  Platform::BusPeripheral::update();
-
-  switch (updateState)
-  {
-    case Bus::UpdateState::SEND_REQUESTS:
-      if (pollForRequestTransmit(*activeNodePtr, process, Atams::MESSAGE_REQUEST_SYNCED) == true)
-      {
-        if      (tryNodeIncrementUpdate() == false) startResponseCollectionSync();
-        //else if (process.error)               Platform::CommsSemaphore::release();
-      }
-      break;
-    case Bus::UpdateState::COLLECT_RESPONSES:
-      rxPollResult = pollForResponse(*activeNodePtr, process, Atams::MESSAGE_RESPONSE_SYNCED);
-
-      if (rxPollResult != Bus::PollResult::WAITING)
-      {
-        if      (tryNodeIncrementUpdate() == false                   ) process.setProcessComplete();
-        else if (rxPollResult             == Bus::PollResult::TIMEOUT) triggerJogSync();
-      }
-      break;
-    case Bus::UpdateState::JOG_NODE:
-      if (pollForJogTransmit(*activeNodePtr, process) == true) updateState = Bus::UpdateState::COLLECT_RESPONSES;
-      break;
-    case Bus::UpdateState::COMPLETE:
-    case Bus::UpdateState::ERROR:
-      /* Do Nothing - Transitions handled by ProcessHandler */
-      break;
-    default:
-      process.terminate(Atams::ERROR_INVALID_CASE);
-      break;
-  }
-
-  if (processState == Atams::PROCESS_ERROR) error = process.error;
-
-  return (processState);
+  return (runUpdateCycleSyncCore(error, false));
 }
 
 /**
- * @brief Progresses the asynchronous update cycle for all Nodes on the Bus.
+ * @brief Progresses the Synchronous Update Cycle for all Nodes on the Bus (blocking).
+ *
+ * Blocking variant of @ref Bus::runUpdateCycleSync. During transmit phases the calling thread is blocked
+ * via @c Platform::BinarySemaphore::waitWithTimeout on a transmit semaphore released by @c txCallback when
+ * each packet transmission completes. During receive phases it is blocked on a receive semaphore released
+ * by @c rxCallback when a packet arrives or the response timeout expires.
+ *
+ * All other behaviour is identical to @ref Bus::runUpdateCycleSync.
+ *
+ * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::ProcessState::ERROR, this will be
+ *              set to the error that caused the failure; otherwise, it will be set to @c Atams::ERROR_NONE.
+ *
+ * @return The current @c Atams::ProcessState of the update cycle:
+ *         - @c PROCESS_IN_PROGRESS: Update is ongoing and this function should be called again.
+ *         - @c PROCESS_COMPLETE:    Update has finished successfully.
+ *         - @c PROCESS_ERROR:       An error has occurred; check @p error for details.
+ *
+ * @note The update cycle must be started by calling @ref Bus::beginUpdateCycle before calling this function.
+ */
+Atams::ProcessState_t Bus::runUpdateCycleSyncBlocking(Atams::Error_t &error)
+{
+  return (runUpdateCycleSyncCore(error, true));
+}
+
+/**
+ * @brief Progresses the asynchronous update cycle for all Nodes on the Bus (non-blocking).
  *
  * Advances the update cycle started by @ref Bus::beginUpdateCycle in asynchronous mode. This function should be called repeatedly
  * until the update cycle completes or an error occurs. Each call advances the internal state machine by a single step, such as
@@ -458,137 +436,102 @@ Atams::ProcessState_t Bus::runUpdateCycleSync(Atams::Error_t &error)
  * In the asynchronous update cycle, each Node responds immediately to its request packet with a response packet. Node transactions
  * are handled one after another: the Bus sends a request to a Node, waits for and processes its response, then proceeds to the next Node.
  *
- * This function can operate in either blocking or non-blocking mode. If the user implements the @c Platform::CommsSemaphore functions
- * (including @c Platform::CommsSemaphore::waitWithTimeout) in @c Platform.cpp, the calling thread will be blocked while waiting for
- * packet transmissions and responses. If these functions are left empty, the function will operate in a polling fashion.
+ * This function operates in non-blocking (polling) mode. To block the calling thread while waiting for packet transmissions
+ * and responses, use @ref Bus::runUpdateCycleAsyncBlocking instead.
  *
  * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::ProcessState::ERROR, this will be
  *              set to the error that caused the failure; otherwise, it will be set to @c Atams::ERROR_NONE.
  *
  * @return The current @c Atams::ProcessState of the update cycle:
- *         - @c IN_PROGRESS: Update is ongoing and this function should be called again.
- *         - @c COMPLETE:    Update has finished successfully.
- *         - @c ERROR:       An error has occurred; check @p error for details.
+ *         - @c PROCESS_IN_PROGRESS: Update is ongoing and this function should be called again.
+ *         - @c PROCESS_COMPLETE:    Update has finished successfully.
+ *         - @c PROCESS_ERROR:       An error has occurred; check @p error for details.
  *
  * @note The update cycle must be started by calling @ref Bus::beginUpdateCycle before calling this function.
  */
 Atams::ProcessState_t Bus::runUpdateCycleAsync(Atams::Error_t &error)
-{ 
-  Bus::ProcessHandler<Bus::UpdateState> &process       {updateProcessHandler_};
-  Atams::ProcessState_t                 &processState  {process.processState};
-  Bus::UpdateState                      &updateState   {process.specificState};
-  Atams::Node                          *&activeNodePtr {process.activeNodePtr};
-  Bus::PollResult                        rxPollResult  {Bus::PollResult::WAITING};
-
-  activeNodePtr = getUpdateNodePtr();
-
-  if (activeNodePtr == nullptr) process.terminate(Atams::ERROR_NULLPTR);
-
-  //Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
-
-  Platform::BusPeripheral::update();
-
-  switch (updateState)
-  {
-    case Bus::UpdateState::SEND_REQUESTS:
-      if (pollForRequestTransmit(*activeNodePtr, process, Atams::MESSAGE_REQUEST))
-      {
-        if (process.error) triggerNextRequestAsync();
-        else               updateState = Bus::UpdateState::COLLECT_RESPONSES;
-      }
-      break;
-    case Bus::UpdateState::COLLECT_RESPONSES:
-      rxPollResult = pollForResponse(*activeNodePtr, process, Atams::MESSAGE_RESPONSE);
-
-      if (rxPollResult != Bus::PollResult::WAITING) triggerNextRequestAsync();
-      break;
-    case Bus::UpdateState::COMPLETE:
-    case Bus::UpdateState::ERROR:
-      /* Do Nothing - Transitions handled by ProcessHandler */
-      break;
-    default:
-      process.terminate(Atams::ERROR_INVALID_CASE);
-      break;
-  } 
-
-  if (processState == Atams::PROCESS_ERROR) error = process.error;
-
-  return (processState);
+{
+  return (runUpdateCycleAsyncCore(error, false));
 }
 
 /**
- * @brief Progresses the update cycle for a single Node on the Bus.
+ * @brief Progresses the asynchronous update cycle for all Nodes on the Bus (blocking).
+ *
+ * Blocking variant of @ref Bus::runUpdateCycleAsync. The calling thread is blocked on each call via
+ * @c Platform::BinarySemaphore::waitWithTimeout on a receive semaphore released by @c rxCallback when
+ * a packet arrives or the response timeout expires.
+ *
+ * All other behaviour is identical to @ref Bus::runUpdateCycleAsync.
+ *
+ * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::ProcessState::ERROR, this will be
+ *              set to the error that caused the failure; otherwise, it will be set to @c Atams::ERROR_NONE.
+ *
+ * @return The current @c Atams::ProcessState of the update cycle:
+ *         - @c PROCESS_IN_PROGRESS: Update is ongoing and this function should be called again.
+ *         - @c PROCESS_COMPLETE:    Update has finished successfully.
+ *         - @c PROCESS_ERROR:       An error has occurred; check @p error for details.
+ *
+ * @note The update cycle must be started by calling @ref Bus::beginUpdateCycle before calling this function.
+ */
+Atams::ProcessState_t Bus::runUpdateCycleAsyncBlocking(Atams::Error_t &error)
+{
+  return (runUpdateCycleAsyncCore(error, true));
+}
+
+/**
+ * @brief Progresses the update cycle for a single Node on the Bus (non-blocking).
  *
  * Advances the update cycle started by @ref Bus::beginSingleNodeUpdateCycle. This function should be called repeatedly
  * until the update cycle completes or an error occurs. Each call advances the internal state machine by a single step,
  * such as sending a request, waiting for a response with a timeout, or processing a received response.
  *
  * For single-node updates, the Bus sends a request packet to the specified Node, waits for and processes its response,
- * and then completes the cycle. This function can operate in either blocking or non-blocking mode. If the user implements
- * the @c Platform::CommsSemaphore functions (including @c Platform::CommsSemaphore::waitWithTimeout) in @c Platform.cpp,
- * the calling thread will be blocked while waiting for packet transmissions and responses. If these functions are left empty,
- * the function will operate in a polling fashion.
+ * and then completes the cycle.
+ *
+ * This function operates in non-blocking (polling) mode. To block the calling thread while waiting for packet transmissions
+ * and responses, use @ref Bus::runSingleNodeUpdateCycleBlocking instead.
  *
  * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::ProcessState::ERROR,
  *              this will be set to the error that caused the failure; otherwise, it will be set to @c Atams::ERROR_NONE.
  * @param node  Reference to the @c Node instance being updated. This must be the same @c Node passed to
  *              @ref Bus::beginSingleNodeUpdateCycle.
  *
- * @return The current @c Atams::ProcessState of the update cycle:
- *         - @c IN_PROGRESS: Update is ongoing and this function should be called again.
- *         - @c COMPLETE:    Update has finished successfully.
- *         - @c ERROR:       An error has occurred; check @p error for details.
+ * @return The current @c Atams::ProcessState_t of the update cycle:
+ *         - @c PROCESS_IN_PROGRESS: Update is ongoing and this function should be called again.
+ *         - @c PROCESS_COMPLETE:    Update has finished successfully.
+ *         - @c PROCESS_ERROR:       An error has occurred; check @p error for details.
  *
  * @note The update cycle must be started by calling @ref Bus::beginSingleNodeUpdateCycle before calling this function.
  */
 Atams::ProcessState_t Bus::runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::Node &node)
-{ 
-  Bus::ProcessHandler<Bus::UpdateState> &process             {singleNodeUpdateProcessHandler_};
-  Atams::ProcessState_t                 &processState        {process.processState};
-  Bus::UpdateState                      &updateState         {process.specificState};
-  NodeCallbackHandler                   &nodeCallbackHandler {node};
-  Bus::PollResult                        rxPollResult        {Bus::PollResult::WAITING};
+{
+  return (runSingleNodeUpdateCycleCore(error, node, false));
+}
 
-  //Platform::CommsSemaphore::waitWithTimeout(Atams::WATCHDOG_PERIOD_MILLISECONDS);
-
-  Platform::BusPeripheral::update();
-  
-  switch (updateState)
-  {
-    case Bus::UpdateState::SEND_REQUESTS:
-      if (pollForRequestTransmit(node, process, Atams::MESSAGE_REQUEST))
-      {
-        if (process.error) process.terminate(process.error);
-        else               updateState = Bus::UpdateState::COLLECT_RESPONSES;
-      }
-      break;
-
-    case Bus::UpdateState::COLLECT_RESPONSES:
-      rxPollResult = pollForResponse(node, process, Atams::MESSAGE_RESPONSE);
-
-      if (rxPollResult != Bus::PollResult::WAITING)
-      {
-        nodeCallbackHandler.processResponseBuffer();
-
-        process.error = node.getBusError();
-
-        if (process.error) process.terminate(process.error);
-        else               process.setProcessComplete();
-      }
-      break;
-
-    case Bus::UpdateState::COMPLETE:
-    case Bus::UpdateState::ERROR:
-      /* Do Nothing - Transitions handled by ProcessHandler */
-      break;
-    default:
-      process.terminate(Atams::ERROR_INVALID_CASE);
-      break;
-  } 
-
-  if (processState == Atams::PROCESS_ERROR) error = process.error;
-
-  return (processState);
+/**
+ * @brief Progresses the update cycle for a single Node on the Bus (blocking).
+ *
+ * Blocking variant of @ref Bus::runSingleNodeUpdateCycle. The calling thread is blocked on each call via
+ * @c Platform::BinarySemaphore::waitWithTimeout on a receive semaphore released by @c rxCallback when
+ * a packet arrives or the response timeout expires.
+ *
+ * All other behaviour is identical to @ref Bus::runSingleNodeUpdateCycle.
+ *
+ * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::PROCESS_ERROR,
+ *              this will be set to the error that caused the failure; otherwise, it will be set to @c Atams::ERROR_NONE.
+ * @param node  Reference to the @c Node instance being updated. This must be the same @c Node passed to
+ *              @ref Bus::beginSingleNodeUpdateCycle.
+ *
+ * @return The current @c Atams::ProcessState_t of the update cycle:
+ *         - @c PROCESS_IN_PROGRESS: Update is ongoing and this function should be called again.
+ *         - @c PROCESS_COMPLETE:    Update has finished successfully.
+ *         - @c PROCESS_ERROR:       An error has occurred; check @p error for details.
+ *
+ * @note The update cycle must be started by calling @ref Bus::beginSingleNodeUpdateCycle before calling this function.
+ */
+Atams::ProcessState_t Bus::runSingleNodeUpdateCycleBlocking(Atams::Error_t &error, Atams::Node &node)
+{
+  return (runSingleNodeUpdateCycleCore(error, node, true));
 }
 
 /**
@@ -684,13 +627,13 @@ Atams::Error_t Bus::beginSetNodeConfigProcess(const Atams::NodeConfig_t &userCon
  * The configuration process adjusts values in the Universal Data Block of the Node, including Node ID, communications bitrate,
  * and watchdog period. The user must provide the current and desired Node IDs, as well as other parameters, in the @c NodeConfig_t structure.
  *
- * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::ProcessState::ERROR, this will be
+ * @param error Reference to an @c Atams::Error_t variable. If the process state becomes @c Atams::PROCESS_ERROR, this will be
  *              set to the error that caused the failure; otherwise, it will be set to @c Atams::ERROR_NONE.
  *
- * @return The current @c Atams::ProcessState of the configuration process:
- *         - @c IN_PROGRESS: Configuration is ongoing and this function should be called again.
- *         - @c COMPLETE:    Configuration has finished successfully.
- *         - @c ERROR:       An error has occurred; check @p error for details.
+ * @return The current @c Atams::ProcessState_t of the configuration process:
+ *         - @c PROCESS_IN_PROGRESS: Configuration is ongoing and this function should be called again.
+ *         - @c PROCESS_COMPLETE:    Configuration has finished successfully.
+ *         - @c PROCESS_ERROR:       An error has occurred; check @p error for details.
  *
  * @note The configuration process must be started by calling @ref Bus::beginSetNodeConfigProcess before calling this function.
  *       New Nodes default to a Node ID of 0 if configuration has never been set, allowing them to be added and reconfigured one at a time.
@@ -754,6 +697,156 @@ Atams::ProcessState_t Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
 }
 
 /*************************************************************************************/
+/* PRIVATE CORE FUNCTION DEFINITIONS                                                 */
+/*************************************************************************************/
+
+Atams::ProcessState_t Bus::runUpdateCycleSyncCore(Atams::Error_t &error, bool blocking)
+{
+  Bus::ProcessHandler<Bus::UpdateState> &process       {updateProcessHandler_};
+  Atams::ProcessState_t                 &processState  {process.processState};
+  Bus::UpdateState                      &updateState   {process.specificState};
+  Atams::Node                          *&activeNodePtr {process.activeNodePtr};
+  Bus::PollResult                        rxPollResult  {Bus::PollResult::WAITING};
+
+  activeNodePtr = getUpdateNodePtr();
+
+  if (activeNodePtr == nullptr) process.terminate(Atams::ERROR_NULLPTR);
+
+  Platform::BusPeripheral::update();
+
+  switch (updateState)
+  {
+    case Bus::UpdateState::SEND_REQUESTS:
+      if (blocking) txSemaphore_.wait();
+      
+      if (pollForRequestTransmit(*activeNodePtr, process, Atams::MESSAGE_REQUEST_SYNCED) == true)
+      {
+        if (tryNodeIncrementUpdate() == false) startResponseCollectionSync();
+      }
+      break;
+    case Bus::UpdateState::COLLECT_RESPONSES:
+      if (blocking) rxSemaphore_.waitWithTimeout(static_cast<uint32_t>(Platform::BUS_RESPONSE_TIMEOUT));
+
+      rxPollResult = pollForResponse(*activeNodePtr, process, Atams::MESSAGE_RESPONSE_SYNCED, blocking);
+
+      if (rxPollResult != Bus::PollResult::WAITING)
+      {
+        if      (tryNodeIncrementUpdate() == false                   ) process.setProcessComplete();
+        else if (rxPollResult             == Bus::PollResult::TIMEOUT) triggerJogSync();
+      }
+      break;
+    case Bus::UpdateState::JOG_NODE:
+      if (pollForJogTransmit(*activeNodePtr, process) == true) updateState = Bus::UpdateState::COLLECT_RESPONSES;
+      break;
+    case Bus::UpdateState::COMPLETE:
+    case Bus::UpdateState::ERROR:
+      /* Do Nothing - Transitions handled by ProcessHandler */
+      break;
+    default:
+      process.terminate(Atams::ERROR_INVALID_CASE);
+      break;
+  }
+
+  if (processState == Atams::PROCESS_ERROR) error = process.error;
+
+  return (processState);
+}
+
+Atams::ProcessState_t Bus::runUpdateCycleAsyncCore(Atams::Error_t &error, bool blocking)
+{
+  Bus::ProcessHandler<Bus::UpdateState> &process       {updateProcessHandler_};
+  Atams::ProcessState_t                 &processState  {process.processState};
+  Bus::UpdateState                      &updateState   {process.specificState};
+  Atams::Node                          *&activeNodePtr {process.activeNodePtr};
+  Bus::PollResult                        rxPollResult  {Bus::PollResult::WAITING};
+
+  activeNodePtr = getUpdateNodePtr();
+
+  if (activeNodePtr == nullptr) process.terminate(Atams::ERROR_NULLPTR);
+
+  Platform::BusPeripheral::update();
+
+  switch (updateState)
+  {
+    case Bus::UpdateState::SEND_REQUESTS:
+      if (pollForRequestTransmit(*activeNodePtr, process, Atams::MESSAGE_REQUEST))
+      {
+        if (process.error) triggerNextRequestAsync();
+        else               updateState = Bus::UpdateState::COLLECT_RESPONSES;
+      }
+      break;
+    case Bus::UpdateState::COLLECT_RESPONSES:
+      if (blocking) rxSemaphore_.waitWithTimeout(static_cast<uint32_t>(Platform::BUS_RESPONSE_TIMEOUT));
+
+      rxPollResult = pollForResponse(*activeNodePtr, process, Atams::MESSAGE_RESPONSE, blocking);
+
+      if (rxPollResult != Bus::PollResult::WAITING) triggerNextRequestAsync();
+      break;
+    case Bus::UpdateState::COMPLETE:
+    case Bus::UpdateState::ERROR:
+      /* Do Nothing - Transitions handled by ProcessHandler */
+      break;
+    default:
+      process.terminate(Atams::ERROR_INVALID_CASE);
+      break;
+  }
+
+  if (processState == Atams::PROCESS_ERROR) error = process.error;
+
+  return (processState);
+}
+
+Atams::ProcessState_t Bus::runSingleNodeUpdateCycleCore(Atams::Error_t &error, Atams::Node &node, bool blocking)
+{
+  Bus::ProcessHandler<Bus::UpdateState> &process             {singleNodeUpdateProcessHandler_};
+  Atams::ProcessState_t                 &processState        {process.processState};
+  Bus::UpdateState                      &updateState         {process.specificState};
+  NodeCallbackHandler                   &nodeCallbackHandler {node};
+  Bus::PollResult                        rxPollResult        {Bus::PollResult::WAITING};
+
+  Platform::BusPeripheral::update();
+
+  switch (updateState)
+  {
+    case Bus::UpdateState::SEND_REQUESTS:
+      if (pollForRequestTransmit(node, process, Atams::MESSAGE_REQUEST))
+      {
+        if (process.error) process.terminate(process.error);
+        else               updateState = Bus::UpdateState::COLLECT_RESPONSES;
+      }
+      break;
+
+    case Bus::UpdateState::COLLECT_RESPONSES:
+      if (blocking) rxSemaphore_.waitWithTimeout(static_cast<uint32_t>(Platform::BUS_RESPONSE_TIMEOUT));
+
+      rxPollResult = pollForResponse(node, process, Atams::MESSAGE_RESPONSE, blocking);
+
+      if (rxPollResult != Bus::PollResult::WAITING)
+      {
+        nodeCallbackHandler.processResponseBuffer();
+
+        process.error = node.getBusError();
+
+        if (process.error) process.terminate(process.error);
+        else               process.setProcessComplete();
+      }
+      break;
+
+    case Bus::UpdateState::COMPLETE:
+    case Bus::UpdateState::ERROR:
+      /* Do Nothing - Transitions handled by ProcessHandler */
+      break;
+    default:
+      process.terminate(Atams::ERROR_INVALID_CASE);
+      break;
+  }
+
+  if (processState == Atams::PROCESS_ERROR) error = process.error;
+
+  return (processState);
+}
+
+/*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
@@ -800,6 +893,7 @@ Atams::Error_t Bus::beginUpdateCyclePrivate(void)
   {
     clearAllBusErrors();
     circularBuffer_.reset();
+    txSemaphore_.release();
     updateNodeIndex_ = 0U;
     activeSyncCount_++;
     updateProcessHandler_.readyProcess();
@@ -915,7 +1009,10 @@ bool Bus::pollForJogTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process
   return (messageSendAttempted);
 }
 
-Bus::PollResult Bus::pollForResponse(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t expectedResponse)
+Bus::PollResult Bus::pollForResponse(Atams::Node               &node, 
+                                     Bus::ProcessHandlerBase   &process, 
+                                     const Atams::MessageType_t expectedResponse, 
+                                     const bool                 blocking)
 {
   Atams::NodeCallbackHandler &nodeCallbacks {node};
   uint32_t                    currentTime   {Platform::getMillis()};
@@ -928,7 +1025,8 @@ Bus::PollResult Bus::pollForResponse(Atams::Node &node, Bus::ProcessHandlerBase 
     process.prevEventTime = currentTime;
   }
 
-  else if ((currentTime - process.prevEventTime) > Platform::BUS_RESPONSE_TIMEOUT)
+  else if (((currentTime - process.prevEventTime) > Platform::BUS_RESPONSE_TIMEOUT) ||
+           (blocking                                                              ) )
   { 
     nodeCallbacks.reportBusError(Atams::ERROR_RESPONSE_TIMEOUT);
     result = Bus::PollResult::TIMEOUT;
@@ -938,9 +1036,15 @@ Bus::PollResult Bus::pollForResponse(Atams::Node &node, Bus::ProcessHandlerBase 
   return (result);
 }
 
-void Bus::rxCallback(uint8_t *rxBufferPtr, const uint16_t rxBufferLength) 
+void Bus::rxCallback(uint8_t *rxBufferPtr, const uint16_t rxBufferLength)
 {
   static_cast<void>(circularBuffer_.pushHead(rxBufferPtr, rxBufferLength));
+  rxSemaphore_.release();
+}
+
+void Bus::txCallback(void)
+{
+  txSemaphore_.release();
 }
 
 bool Bus::validateAndStoreResponsePacket(Atams::Node &node, const MessageType_t expectedResponse)
@@ -1015,19 +1119,17 @@ void Bus::startResponseCollectionSync(void)
 
 void Bus::triggerJogSync(void)
 {
-  //Platform::CommsSemaphore::release();
   updateProcessHandler_.specificState = Bus::UpdateState::JOG_NODE;
 }
 
 void Bus::triggerNextRequestAsync(void)
 {
-  if (tryNodeIncrementUpdate() == false) 
+  if (tryNodeIncrementUpdate() == false)
   {
     updateProcessHandler_.setProcessComplete();
   }
   else
-  { 
-    //Platform::CommsSemaphore::release();
+  {
     circularBuffer_.reset();
     updateProcessHandler_.specificState = Bus::UpdateState::SEND_REQUESTS;
   }
@@ -1131,7 +1233,7 @@ void Bus::updateSetConfigGetResponse(void)
 
   Platform::BusPeripheral::update();
 
-  if (pollForResponse(dummyNode_, process, MESSAGE_RESPONSE) != Bus::PollResult::WAITING)
+  if (pollForResponse(dummyNode_, process, MESSAGE_RESPONSE, false) != Bus::PollResult::WAITING)
   {
     dummyNodeCallbackHandler_.processResponseBuffer();
     configUpdateState = process.nextSpecificState;  

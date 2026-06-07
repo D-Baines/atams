@@ -59,7 +59,6 @@ class NodeCallbackHandler
   /*-- Friend Class Declarations ----------------------------------------------------*/
 
   friend class Atams::Bus;
-  friend class Atams::NodeActions;
 
   public:
 

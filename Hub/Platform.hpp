@@ -62,11 +62,12 @@ constexpr uint16_t MAX_BUS_PACKET_SIZE {64U};
 */
 constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};
 
-/** 
-*   @brief The maximum time period for an Atams::Bus object to wait wihout a response 
+/**
+*   @brief The maximum time period for an Atams::Bus object to wait wihout a response
 *          from an Atams::Node device during a Bus update cycle in milliseconds.
 */
 constexpr uint64_t BUS_RESPONSE_TIMEOUT {500U};
+
 
 /** 
 *   @brief The maximum time period for an Atams::Bus object to wait without response while an 
@@ -135,21 +136,31 @@ class BusPeripheral
 
   /*-- Required Private Function Declarations ---------------------------------------*/
 
-   /**
+  /**
    * @brief   Callback function for received bytes.
    *
    * @param   rxBufferPtr    Pointer to the received data buffer (optionally use rxBuffer_).
-   *
    * @param   rxBufferLength Length of the received data buffer.
    *
    * @details The user must call this function when new bytes have been received.
    *          This function is overridden by the Atams::Bus class. Bytes will be copied
-   *          from rxBufferPtr into an Atams::Bus circular buffer in the overidden function.
+   *          from rxBufferPtr into an Atams::Bus circular buffer in the overridden function.
    *
    * @note    ATAMS PLATFORM REQUIREMENT - ALL
    */
   virtual void rxCallback(      uint8_t  *rxBufferPtr,
                           const uint16_t  rxBufferLength) = 0;
+
+  /**
+   * @brief   Callback function for transmit completion.
+   *
+   * @details The user must call this function when a transmit operation has completed.
+   *          This function is overridden by the Atams::Bus class. It releases the transmit
+   *          semaphore to unblock the calling thread in blocking sync Bus update cycles.
+   *
+   * @note    ATAMS PLATFORM REQUIREMENT - BLOCKING COMMS
+   */
+  virtual void txCallback(void) = 0;
 
   /*-- User Private Function Declarations -------------------------------------------*/
 
@@ -173,8 +184,6 @@ class MemoryLock
   public:
 
   /*-- Required Public Function Declarations ----------------------------------------*/
-
-  bool init(void);
 
   void acquireLock(void);
 
@@ -203,8 +212,6 @@ class CommsLock
 
   /*-- Required Public Function Declarations ----------------------------------------*/
 
-  bool init(void);
-
   void acquireLock(void);
 
   void releaseLock(void);
@@ -214,6 +221,37 @@ class CommsLock
   /*-- User Private Variables -------------------------------------------------------*/
 
   std::mutex _commsLock;
+};
+
+/**
+ *  @brief   Binary semaphore class for blocking Bus update cycles.
+ *
+ *  @details Provides a binary semaphore used to block the thread running a Bus update
+ *           cycle. Two instances are used per Bus: one released by @c rxCallback on packet
+ *           reception (blocking receive waits), and one released by @c txCallback on
+ *           transmit completion (blocking transmit waits in the sync update cycle).
+ *           Used by the blocking variants of the Bus update cycle functions.
+ *
+ *  @note    ATAMS PLATFORM REQUIREMENT - BLOCKING COMMS
+ */
+class BinarySemaphore
+{
+  /*-- Public -----------------------------------------------------------------------*/
+
+  public:
+
+  /*-- Required Public Function Declarations ----------------------------------------*/
+
+  void wait(void);
+
+  void waitWithTimeout(uint32_t timeoutMs);
+
+  void release(void);
+
+  private:
+
+  /*-- User Private Variables -------------------------------------------------------*/
+
 };
 
 /*************************************************************************************/
