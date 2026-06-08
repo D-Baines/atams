@@ -36,6 +36,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+#include <atomic>
 
 #include "../Shared/AtamsTypedefs.hpp"
 #include "Developer/CircularBuffer.hpp"
@@ -199,6 +200,8 @@ private Platform::BusPeripheral
     uint32_t              prevEventTime    {0U};
     bool                  allNodesComplete {false};
     Atams::Node          *activeNodePtr    {nullptr};
+
+    void terminate(Atams::Error_t exitError);
   };
   
   template <typename T>
@@ -234,6 +237,8 @@ private Platform::BusPeripheral
   Platform::BinarySemaphore rxSemaphore_;
   Platform::BinarySemaphore txSemaphore_;
 
+  std::atomic<bool> txReady_ {true};
+
   Atams::CircularBuffer circularBuffer_;
   Node                 *nodePtrs_[Platform::NUMBER_OF_NODES_PER_BUS];
   NodeActions           nodeProcessHandler_;
@@ -250,6 +255,7 @@ private Platform::BusPeripheral
 
   uint8_t  rxBuffer_     [Platform::MAX_BUS_PACKET_SIZE];
   uint8_t  decodedBuffer_[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
+  uint8_t  rawTxBuffer_  [Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   uint8_t  encodedBuffer_[Platform::MAX_BUS_PACKET_SIZE];
   uint8_t  jogBuffer_    [HEADER_SIZE_HEADER];
 
@@ -278,9 +284,11 @@ private Platform::BusPeripheral
 
   void clearAllBusErrors(void);
 
-  bool pollForRequestTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType);
-  
-  bool pollForJogTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process);
+  bool pollForRequestTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType, const bool blocking);
+
+  bool pollForJogTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process, const bool blocking);
+
+  bool pollTransmit(Bus::ProcessHandlerBase &process, const Atams::MessageType_t messageType, const bool blocking);
 
   Bus::PollResult pollForResponse(Atams::Node               &node, 
                                   Bus::ProcessHandlerBase   &process, 

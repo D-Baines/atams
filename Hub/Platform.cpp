@@ -77,22 +77,15 @@ bool BusPeripheral::startReceive(void)
   return (true);
 }
 
-/** @brief   Check if the user comms peripheral is ready to transmit data.
- *
- *  @details This function is called from the Atams::Bus class during a bus update cycle.
- *
- *  @return  True if the user comms peripheral is ready to transmit data, false otherwise.
- *
- *  @note    ATAMS PLATFORM REQUIREMENT - ALL
- */
-bool BusPeripheral::transmitReady(void)
-{
-  return (transmitReady_);
-}
-
 /** @brief   Transmit bytes using the user comms peripheral.
  *
  *  @details This function is called from the Atams::Bus class during a bus update cycle.
+ *           Regardless of whether the implementation is synchronous (blocking) or
+ *           asynchronous (interrupt / DMA / async), @c txCallback() must be called exactly
+ *           once when the transmission completes. For a blocking implementation, call
+ *           @c txCallback() at the end of this function before returning. For an
+ *           asynchronous implementation, call @c txCallback() from the transmit-complete
+ *           interrupt, DMA callback, or async handler.
  *
  *  @param   buffer Pointer to the data buffer to transmit.
  *
@@ -100,7 +93,7 @@ bool BusPeripheral::transmitReady(void)
  *
  *  @return  Transmission status.
  *           true:  Transmission successfully started or all bytes successfully transmitted.
- *           false: Transmission error occurred. 
+ *           false: Transmission error occurred. @c txCallback() must NOT be called on failure.
  *
  *  @note    ATAMS PLATFORM REQUIREMENT - ALL
  */
@@ -152,7 +145,6 @@ void BusPeripheral::txHandler(asio::error_code ec, size_t xfr)
   static_cast<void>(ec);
   static_cast<void>(xfr);
 
-  transmitReady_.store(true);
   txCallback();
 }
 
@@ -210,23 +202,17 @@ void CommsLock::releaseLock(void)
 /*************************************************************************************/
 
 /**
- * @brief Block the calling thread indefinitely until the semaphore is released.
- *
- * @note  ATAMS PLATFORM REQUIREMENT - BLOCKING COMMS
- */
-void BinarySemaphore::wait(void)
-{
-
-}
-
-/**
  * @brief Block the calling thread until the semaphore is released or the timeout expires.
  *
+ * @return @c true if the semaphore was released before the timeout, @c false if the
+ *         timeout expired without the semaphore being released.
+ *
  * @note  ATAMS PLATFORM REQUIREMENT - BLOCKING COMMS
  */
-void BinarySemaphore::waitWithTimeout(uint32_t timeoutMilliseconds)
+bool BinarySemaphore::waitWithTimeout(uint32_t timeoutMilliseconds)
 {
   static_cast<void>(timeoutMilliseconds);
+  return true;
 }
 
 /**

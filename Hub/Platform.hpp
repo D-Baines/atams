@@ -63,14 +63,22 @@ constexpr uint16_t MAX_BUS_PACKET_SIZE {64U};
 constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};
 
 /**
-*   @brief The maximum time period for an Atams::Bus object to wait wihout a response
+*   @brief The maximum time period for an Atams::Bus object to wait without a response
 *          from an Atams::Node device during a Bus update cycle in milliseconds.
 */
-constexpr uint64_t BUS_RESPONSE_TIMEOUT {500U};
+constexpr uint32_t BUS_RESPONSE_TIMEOUT {500U};
 
+/**
+*   @brief The maximum time period for an Atams::Bus object to wait for the communications
+*          peripheral to complete a packet transmission in milliseconds. Should be set to
+*          accommodate the largest possible packet at the lowest supported baud rate, with margin.
+*          If @c txCallback is not called within this period, the Bus update cycle will terminate
+*          with @c Atams::ERROR_PLATFORM.
+*/
+constexpr uint32_t BUS_TRANSMIT_TIMEOUT {100U};
 
-/** 
-*   @brief The maximum time period for an Atams::Bus object to wait without response while an 
+/**
+*   @brief The maximum time period for an Atams::Bus object to wait without response while an
 *          Atams::Node device completes a non-volatile memory storage task in milliseconds.
 */
 constexpr uint64_t NVM_STORAGE_TIMEOUT {5000U};
@@ -115,8 +123,6 @@ class BusPeripheral
 
   bool startReceive(void);
 
-  bool transmitReady(void);
-
   bool transmit(uint8_t *buffer, const uint16_t length);
 
   void update(void);
@@ -129,10 +135,8 @@ class BusPeripheral
   const UserData_t userData_;
 
   /*-- User Private Variables -------------------------------------------------------*/
-  
-  uint8_t rxBuffer_[MAX_BUS_PACKET_SIZE];
 
-  std::atomic<bool> transmitReady_ {true};
+  uint8_t rxBuffer_[MAX_BUS_PACKET_SIZE];
 
   /*-- Required Private Function Declarations ---------------------------------------*/
 
@@ -155,10 +159,12 @@ class BusPeripheral
    * @brief   Callback function for transmit completion.
    *
    * @details The user must call this function when a transmit operation has completed.
-   *          This function is overridden by the Atams::Bus class. It releases the transmit
-   *          semaphore to unblock the calling thread in blocking sync Bus update cycles.
+   *          For blocking transmit implementations, call at the end of @c transmit().
+   *          For event-driven implementations, call from the transmit-complete interrupt or signal.
+   *          This function is overridden by the Atams::Bus class, which uses it to update
+   *          the transmit-ready flag and release the transmit semaphore for blocking update cycles.
    *
-   * @note    ATAMS PLATFORM REQUIREMENT - BLOCKING COMMS
+   * @note    ATAMS PLATFORM REQUIREMENT - ALL
    */
   virtual void txCallback(void) = 0;
 
@@ -242,9 +248,7 @@ class BinarySemaphore
 
   /*-- Required Public Function Declarations ----------------------------------------*/
 
-  void wait(void);
-
-  void waitWithTimeout(uint32_t timeoutMs);
+  bool waitWithTimeout(uint32_t timeoutMs);
 
   void release(void);
 

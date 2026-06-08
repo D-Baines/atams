@@ -29,8 +29,11 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "Platform.hpp"
 #include "Node.hpp"
+
+#include <cstring>
+
+#include "Platform.hpp"
 #include "../Shared/Utilities/AtamsUtilities.hpp"
 #include "../Shared/Maps/BlockUniversal.hpp"
 
@@ -1725,31 +1728,26 @@ void Node::reportAbortedResponse(const uint16_t varID, const Atams::Error_t erro
   reportBusError(Atams::ERROR_ABORTED_RESPONSE);
 }
 
-Atams::Error_t Node::getEncodedRequestPacket(const Atams::MessageType_t requestType,
-                                             const uint8_t              syncCount,
-                                             uint8_t * const            outputBuffer,
-                                             const uint16_t             outputBufferMaxLength, 
-                                             uint16_t                  &outputLength)
+/** @note @p outputBuffer must be at least @c Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING bytes — the same
+ *        size as the internal @c requestPacket_.buffer. No bounds check is performed at runtime. */
+void Node::getRequestPacket(const Atams::MessageType_t requestType,
+                             const uint8_t             syncCount,
+                             uint8_t * const           outputBuffer,
+                             uint16_t                 &outputLength)
 {
-  Atams::Error_t error {Atams::ERROR_NONE};
-
   requestPacketLock_.acquireLock();
 
   requestPacket_.buffer[HEADER_INDEX_MSG_TYPE] = requestType;
   requestPacket_.buffer[HEADER_INDEX_NODE_ID ] = nodeID_;
   requestPacket_.buffer[HEADER_INDEX_SYNC]     = syncCount;
 
-  error = encodeBusPacket(requestPacket_.buffer, 
-                          requestPacket_.length, 
-                          outputBuffer, 
-                          outputBufferMaxLength, 
-                          outputLength);
+  const uint16_t length {requestPacket_.length};
+
+  memcpy(outputBuffer, requestPacket_.buffer, length);
+
+  outputLength = length;
 
   requestPacketLock_.releaseLock();
-
-  if (error != Atams::ERROR_NONE) reportBusError(error);
-
-  return (error);
 }
 
 
