@@ -288,7 +288,9 @@ private Platform::BusPeripheral
 
   bool pollForJogTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process, const bool blocking);
 
-  bool pollTransmit(Bus::ProcessHandlerBase &process, const Atams::MessageType_t messageType, const bool blocking);
+  bool awaitTxReady(Bus::ProcessHandlerBase &process, const bool blocking);
+
+  void doTransmit(Bus::ProcessHandlerBase &process, const Atams::MessageType_t messageType);
 
   Bus::PollResult pollForResponse(Atams::Node               &node, 
                                   Bus::ProcessHandlerBase   &process, 

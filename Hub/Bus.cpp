@@ -727,8 +727,11 @@ Atams::ProcessState_t Bus::runUpdateCycleSyncCore(Atams::Error_t &error, bool bl
     case Bus::UpdateState::SEND_REQUESTS:
       if (pollForRequestTransmit(*activeNodePtr, process, Atams::MESSAGE_REQUEST_SYNCED, blocking) == true)
       {
-        if ((process.error            == false) &&
-            (tryNodeIncrementUpdate() == false) ) startResponseCollectionSync();
+        if ((process.error            == Atams::ERROR_NONE) &&
+            (tryNodeIncrementUpdate() == false            ) ) 
+        {
+          startResponseCollectionSync();
+        }
       }
       break;
     case Bus::UpdateState::COLLECT_RESPONSES:
@@ -950,6 +953,9 @@ bool Bus::pollForRequestTransmit(Atams::Node                &node,
                                  const Atams::MessageType_t  requestType,
                                  const bool                  blocking)
 {
+  if (!awaitTxReady(process, blocking)) return (false); /* Early Return */
+  if (process.error)                    return (true);  /* Early Return */
+
   Atams::NodeCallbackHandler &nodeCallbacks {node};
   uint16_t                    rawLength     {0U};
 
@@ -958,20 +964,26 @@ bool Bus::pollForRequestTransmit(Atams::Node                &node,
                                  rawTxBuffer_,
                                  rawLength);
 
-  if (encodeBusPacket(rawTxBuffer_, 
+  if (encodeBusPacket(rawTxBuffer_,
                       rawLength,
-                      encodedBuffer_, 
+                      encodedBuffer_,
                       sizeof(encodedBuffer_),
                       encodedLength_) != Atams::ERROR_NONE)
   {
-    return (false);
+    process.terminate(Atams::ERROR_ENCODE);
+    return (true); /* Early Return */
   }
 
-  return (pollTransmit(process, requestType, blocking));
+  doTransmit(process, requestType);
+
+  return (true);
 }
 
 bool Bus::pollForJogTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process, const bool blocking)
 {
+  if (!awaitTxReady(process, blocking)) return (false); /* Early Return */
+  if (process.error)                    return (true);  /* Early Return */
+
   jogBuffer_[HEADER_INDEX_NODE_ID]  = node.getNodeID();
   jogBuffer_[HEADER_INDEX_MSG_TYPE] = Atams::MESSAGE_SYNC_JOG;
   jogBuffer_[HEADER_INDEX_SYNC]     = activeSyncCount_;
@@ -980,60 +992,53 @@ bool Bus::pollForJogTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process
                       encodedBuffer_, sizeof(encodedBuffer_),
                       encodedLength_) != Atams::ERROR_NONE)
   {
-    return (false);
+    process.terminate(Atams::ERROR_ENCODE);
+    return (true);
   }
 
-  return (pollTransmit(process, Atams::MESSAGE_SYNC_JOG, blocking));
+  doTransmit(process, Atams::MESSAGE_SYNC_JOG);
+
+  return (true);
 }
 
-bool Bus::pollTransmit(Bus::ProcessHandlerBase    &process,
-                       const Atams::MessageType_t  messageType,
-                       const bool                  blocking)
+bool Bus::awaitTxReady(Bus::ProcessHandlerBase &process, const bool blocking)
 {
-  bool messageSendAttempted {false};
+  if (txReady_) return (true); /* Early Return */
 
-  do
+  uint32_t elapsedTime {Platform::getMillis() - process.prevEventTime};
+
+  if (elapsedTime >= Platform::BUS_TRANSMIT_TIMEOUT) 
+  { 
+    process.terminate(Atams::ERROR_PLATFORM);   
+  }
+  else if (blocking)
   {
-    uint32_t currentTime {Platform::getMillis()};
+    txSemaphore_.waitWithTimeout(Platform::BUS_TRANSMIT_TIMEOUT - elapsedTime);
+    
+    if (!txReady_) process.terminate(Atams::ERROR_PLATFORM);
+  }
+  else
+  {
+    return (false); /* Early Return */
+  }
 
-    if (txReady_)
-    {
-      txReady_ = false;
+  return (true);
+}
 
-      if (Platform::BusPeripheral::transmit(encodedBuffer_, encodedLength_) == false)
-      {
-        txReady_ = true;
-        process.terminate(Atams::ERROR_PLATFORM);
-      }
-      else
-      {
-        lastSentMessageType_ = messageType;
-      }
+void Bus::doTransmit(Bus::ProcessHandlerBase &process, const Atams::MessageType_t messageType)
+{
+  txReady_ = false;
 
-      messageSendAttempted  = true;
-      process.prevEventTime = currentTime;
-      break;
-    }
+  if (Platform::BusPeripheral::transmit(encodedBuffer_, encodedLength_) == false)
+  {
+    process.terminate(Atams::ERROR_PLATFORM);
+  }
+  else
+  {
+    lastSentMessageType_ = messageType;
+  }
 
-    uint32_t elapsedTime {currentTime - process.prevEventTime};
-
-    if (elapsedTime >= Platform::BUS_TRANSMIT_TIMEOUT)
-    {
-      txReady_ = true;
-      process.terminate(Atams::ERROR_PLATFORM);
-      messageSendAttempted  = true;
-      process.prevEventTime = currentTime;
-      break;
-    }
-
-    if (blocking)
-    {
-      txSemaphore_.waitWithTimeout(Platform::BUS_TRANSMIT_TIMEOUT);
-    }
-
-  } while (blocking);
-
-  return (messageSendAttempted);
+  process.prevEventTime = Platform::getMillis();
 }
 
 Bus::PollResult Bus::pollForResponse(Atams::Node               &node,
