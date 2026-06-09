@@ -94,13 +94,13 @@ void WriteList::removeConfigIfFound(const uint16_t varID)
 
 void WriteList::updateIndexes(const uint16_t referenceIndex, const int16_t shiftLength)
 {
-  for (WriteConfig_t &writeConfig : _configList)
+  for (uint16_t index {0U}; index < _configCount; index++)
   {
-    if (writeConfig.requestPacketIndex >= referenceIndex)
+    if (_configList[index].requestPacketIndex > referenceIndex)
     {
-      writeConfig.requestPacketIndex += shiftLength;
+      _configList[index].requestPacketIndex += shiftLength;
     }
-  }   
+  }
 }
 
 WriteList::ConfigReturn_t WriteList::getConfigAtIndex(const uint16_t configIndex)

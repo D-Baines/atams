@@ -1159,7 +1159,7 @@ void Node::resetVars(void)
 
   for (Var_t &var : varStorage_) memset(var.storage, 0U, sizeof(var.storage));
 
-  varStorageLock_.acquireLock();
+  varStorageLock_.releaseLock();
 }
 
 bool Node::getMemoryMapIsValid(void)
@@ -1519,15 +1519,17 @@ Atams::Error_t Node::constructDatagramBuffer(RequestChangeConfig_t &changeConfig
 
   if (changeConfig.accessRequest == Atams::ACCESS_WRITE)
   {
-    if (externalTransfer(Atams::ACCESS_READ, 
-                         changeConfig.newDatagramHeader.varID, 
-                         &changeConfig.newDatagramBuffer[DATAGRAM_INDEX_PAYLOAD], 
+    if (externalTransfer(Atams::ACCESS_READ,
+                         changeConfig.newDatagramHeader.varID,
+                         &changeConfig.newDatagramBuffer[DATAGRAM_INDEX_PAYLOAD],
                          changeConfig.writePayloadLength))
     {
       statusReturn = Atams::ERROR_REQUEST_PACKET_FATAL;
     }
-   
-    changeConfig.newDatagramLength += changeConfig.writePayloadLength;
+    else
+    {
+      changeConfig.newDatagramLength += changeConfig.writePayloadLength;
+    }
   }
 
   return (statusReturn);
@@ -1635,31 +1637,36 @@ Atams::Error_t Node::updateRequestPatternOnReceive(const uint16_t varID)
   return (statusReturn);
 }
 
-/* requestPacketLock_ must be acquired before using this function */
 Atams::Error_t Node::updateRequestPacketWriteData(void)
 {
+  requestPacketLock_.acquireLock();
+
   WriteList::ConfigReturn_t listReturn;
 
   uint16_t writeListLength {requestPacket_.writeList.getConfigCount()};
-  
+
   for (uint16_t writeListIndex {0U}; writeListIndex < writeListLength; writeListIndex++)
   {
     listReturn = requestPacket_.writeList.getConfigAtIndex(writeListIndex);
-    
+
     if (listReturn.status != WriteList::ERROR_NONE)
     {
-      clearAllRequestPatterns();
+      resetRequestPacketNoLock();
+      requestPacketLock_.releaseLock();
       return (Atams::ERROR_REQUEST_PACKET_FATAL); /* Early Return */
     }
     else if (externalTransfer(Atams::ACCESS_READ,
-                              listReturn.writeConfig.varID, 
-                              &requestPacket_.buffer[listReturn.writeConfig.requestPacketIndex], 
-                              listReturn.writeConfig.dataLength)!= Atams::ERROR_NONE)
+                              listReturn.writeConfig.varID,
+                              &requestPacket_.buffer[listReturn.writeConfig.requestPacketIndex],
+                              listReturn.writeConfig.dataLength) != Atams::ERROR_NONE)
     {
-      clearAllRequestPatterns();
+      resetRequestPacketNoLock();
+      requestPacketLock_.releaseLock();
       return (Atams::ERROR_REQUEST_PACKET_FATAL); /* Early Return */
     }
   }
+
+  requestPacketLock_.releaseLock();
 
   return (Atams::ERROR_NONE);
 }

@@ -82,7 +82,16 @@ static Atams::TestNode *testNodes_[NUMBER_OF_TEST_NODES] =
   //&testNode3_
 };
 
-static bool syncAsyncToggle_ {false};
+enum UpdateFunction_t : uint8_t
+{
+  UPDATE_CYCLE_SYNC           = 0U,
+  UPDATE_CYCLE_SYNC_BLOCKING  = 1U,
+  UPDATE_CYCLE_ASYNC          = 2U,
+  UPDATE_CYCLE_ASYNC_BLOCKING = 3U,
+  UPDATE_CYCLE_COUNT          = 4U
+};
+
+static UpdateFunction_t updateFunctionIndex_ {UPDATE_CYCLE_SYNC};
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -218,16 +227,22 @@ static Atams::Error_t runUpdateCycleTests(void)
   { 
     Atams::ProcessState_t updateState {Atams::PROCESS_IN_PROGRESS};
 
-    if (syncAsyncToggle_) updateState = testBus_.runUpdateCycleSync(error);
-    else                  updateState = testBus_.runUpdateCycleAsync(error);
+    switch (updateFunctionIndex_)
+    {
+      case UPDATE_CYCLE_SYNC:           updateState = testBus_.runUpdateCycleSync(error);              break;
+      case UPDATE_CYCLE_SYNC_BLOCKING:  updateState = testBus_.runUpdateCycleSyncBlocking(error);      break;
+      case UPDATE_CYCLE_ASYNC:          updateState = testBus_.runUpdateCycleAsync(error);             break;
+      case UPDATE_CYCLE_ASYNC_BLOCKING: updateState = testBus_.runUpdateCycleAsyncBlocking(error);     break;
+      default:                          errorHandler(Atams::ERROR_NONE, "Invalid Update Cycle Index"); break;
+    } 
 
     if (updateState != Atams::PROCESS_IN_PROGRESS)
-    { 
+    {
       if (updateState != Atams::PROCESS_COMPLETE) errorHandler(error, "Unexpected Update Cycle Error");
 
-      if (syncAsyncToggle_) testBus_.processResponseBuffers();
+      if (updateFunctionIndex_ <= UPDATE_CYCLE_SYNC_BLOCKING) testBus_.processResponseBuffers();
 
-      syncAsyncToggle_ = !syncAsyncToggle_;
+      updateFunctionIndex_ = static_cast<UpdateFunction_t>((updateFunctionIndex_ + 1U) % UPDATE_CYCLE_COUNT);
      
       for (TestNode *&testNodePtr : testNodes_)
       {
