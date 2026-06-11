@@ -57,6 +57,7 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS]
   
   BlockUniversal::varInfoList[BlockUniversal::VAR_ATAMS_VERSION_MAJOR],
   BlockUniversal::varInfoList[BlockUniversal::VAR_ATAMS_VERSION_MINOR],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ATAMS_VERSION_PATCH],
   BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_DAY],
   BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_MONTH],
   BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_YEAR],

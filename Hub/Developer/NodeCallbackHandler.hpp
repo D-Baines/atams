@@ -88,6 +88,8 @@ class NodeCallbackHandler
 
   virtual bool validateGenInfo(void) = 0;
 
+  virtual void setNodeMaxPacketSize(const uint16_t maxPacketSize) = 0;
+
   virtual void reportBusError(const Atams::Error_t error) = 0;
 
   virtual void clearBusError(void) = 0;

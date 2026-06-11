@@ -113,6 +113,8 @@ public NodeCallbackHandler
   void clearAllRequestPatterns(void);
 
   Atams::Error_t getBusError(void);
+
+  uint16_t getNodeMaxPacketSize(void) const;
   
   template <typename T>
   Atams::Error_t setWriteUntilAck(const uint16_t varID, const T writeValue);
@@ -157,6 +159,7 @@ public NodeCallbackHandler
   Atams::AbortedResponseDetails_t getAbortedResponseDetails(void);
 
   bool validateGenInfo(void);
+  bool checkVersionMajorMinor(const uint8_t major, const uint8_t minor);
 
   #if (DEVELOPER_TOOLS == true)
   void injectBusError(const Atams::Error_t errorToInject, 
@@ -218,6 +221,7 @@ public NodeCallbackHandler
   Atams::Error_t           busError_               {Atams::ERROR_NONE};
   uint16_t                 validVarCount_          {0U};
   uint16_t                 responseLength_         {0U};
+  uint16_t                 nodeMaxPacketSize_      {0U};
   bool                     newResponseReady_       {false};
   AbortedResponseDetails_t abortedResponseDetails_ {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
 
@@ -283,6 +287,8 @@ public NodeCallbackHandler
   Atams::Error_t updateRequestPatternOnReceive(const uint16_t varID);
 
   virtual Atams::Error_t updateRequestPacketWriteData(void);
+
+  virtual void setNodeMaxPacketSize(const uint16_t maxPacketSize) final;
 
   virtual void reportBusError(Atams::Error_t busError) final;
   

@@ -95,7 +95,7 @@ public Node
 
   static inline constexpr uint8_t MAX_ERROR_MESSAGE_LENGTH    = 100U;
   static inline constexpr uint8_t ERROR_INJECTION_PROBABILITY = 20U;
-  static inline constexpr uint8_t NUMBER_OF_ERRORS_TO_INJECT  = 4U;
+  static inline constexpr uint8_t NUMBER_OF_ERRORS_TO_INJECT  = 5U;
 
   /*-- Private Typedefs -------------------------------------------------------------*/
 
@@ -131,11 +131,12 @@ public Node
 
   uint8_t errorInjectionIndex_ {0U};
 
-  Atams::Error_t errorsToInject_[NUMBER_OF_ERRORS_TO_INJECT] = 
+  Atams::Error_t errorsToInject_[NUMBER_OF_ERRORS_TO_INJECT] =
   {
     Atams::ERROR_VAR_ID,
     Atams::ERROR_ACCESS_INVALID,
     Atams::ERROR_REQUEST_BUFFER_LENGTH,
+    Atams::ERROR_RESPONSE_BUFFER_LENGTH,
     Atams::ERROR_CONFIGURATION_STATE_INACTIVE,
   };
 

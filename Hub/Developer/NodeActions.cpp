@@ -95,9 +95,14 @@ void NodeActions::beginResetNodeProcess(Node &node)
   resetNodeProcess_.resetAndAssignNode(node);
 }
 
-void NodeActions::beginValidateGenInfoProcess(Node &node)
+void NodeActions::beginValidateAtamsVersionProcess(Node &node)
 {
   validateMultiConfigProcess_.resetAndAssignNode(node);
+}
+
+void NodeActions::beginGetUniversalBlockProcess(Node &node)
+{
+  getMultiConfigProcess_.resetAndAssignNode(node);
 }
 
 void NodeActions::beginValidateBusIDsProcess(Node &node, const Atams::BusIDs_t busIDs)
@@ -308,9 +313,14 @@ Atams::ProcessState_t NodeActions::updateResetNode(Atams::Error_t &error)
   return (process.processState);
 }
 
-Atams::ProcessState_t NodeActions::updateValidateGenInfo(Atams::Error_t &error, bool &genInfoIsValid)
+Atams::ProcessState_t NodeActions::updateValidateAtamsVersion(Atams::Error_t &error, bool &genInfoIsValid)
 {
-  return (updateValidateMultipleConfig(error, genInfoIsValid, validateGenInfoFunctions_));
+  return (updateValidateMultipleConfig(error, genInfoIsValid, validateAtamsVersionFunctions_));
+}
+
+Atams::ProcessState_t NodeActions::updateGetUniversalBlock(Atams::Error_t &error)
+{
+  return (updateGetMultipleConfig(error, getUniversalBlockFunctions));
 }
 
 Atams::ProcessState_t NodeActions::updateValidateBusIDs(Atams::Error_t &error, bool &allIDsValid)
@@ -547,6 +557,43 @@ Atams::ProcessState_t NodeActions::updateValidateMultipleConfig(Atams::Error_t  
   return (process.processState);
 }
 
+Atams::ProcessState_t NodeActions::updateGetMultipleConfig(Atams::Error_t       &error,
+                                                           GetMultiConfigFtns_t &specificFunctions)
+{
+  NodeActions::ProcessHandler<GetMultiConfigState> &process {getMultiConfigProcess_};
+
+  if (process.nullptrCheck(error)) return (process.processState); /* Early Return */
+
+  Node &node {*process.nodePtr};
+
+  switch (process.specificState)
+  {
+    case GetMultiConfigState::START:
+      process.specificState = GetMultiConfigState::COLLECT;
+      break;
+    case GetMultiConfigState::COLLECT:
+      specificFunctions.readFunction(node);
+      process.specificState = GetMultiConfigState::CHECK_DATA_READY;
+      break;
+    case GetMultiConfigState::CHECK_DATA_READY:
+      process.error = specificFunctions.checkFunction(node);
+      if (process.error) process.terminate(process.error);
+      else               process.setProcessComplete();
+      break; 
+    case GetMultiConfigState::COMPLETE:
+    case GetMultiConfigState::ERROR:
+      /* Do Nothing - Transitions handled by ProcessHandler */
+      break;
+    default:
+      process.terminate(Atams::ERROR_INVALID_CASE);
+      break;
+  }
+
+  error = process.error;
+  
+  return (process.processState);
+}
+
 Atams::ProcessState_t NodeActions::updateSetMultipleConfig(Atams::Error_t &error, SetMultiConfigFtns_t &specificFunctions)
 {
   NodeActions::ProcessHandler<SetMultiConfigState> &process {setMultiConfigProcess_};
@@ -613,10 +660,16 @@ Atams::ProcessState_t NodeActions::updateSetMultipleConfig(Atams::Error_t &error
   return (process.processState);
 }
 
-void NodeActions::validateGenInfoRead(Node &node)
+void NodeActions::validateAtamsVersionRead(Node &node)
 {
-  for (uint8_t varID {BlockUniversal::VAR_ATAMS_VERSION_MAJOR}; 
-       varID <= BlockUniversal::VAR_MAP_NUMBER_OF_VARS; 
+  static_cast<void>(node.clearDataReadySetReadStream(BlockUniversal::VAR_ATAMS_VERSION_MAJOR));
+  static_cast<void>(node.clearDataReadySetReadStream(BlockUniversal::VAR_ATAMS_VERSION_MINOR));
+}
+
+void NodeActions::getUniversalBlockRead(Node &node)
+{
+  for (uint8_t varID {BlockUniversal::VAR_ATAMS_VERSION_PATCH};
+       varID < BlockUniversal::NUMBER_OF_VARS;
        varID++)
   {
     static_cast<void>(node.clearDataReadySetReadStream(varID));
@@ -633,23 +686,32 @@ void NodeActions::validateBusIDsRead(Node &node)
   }
 }
 
-Atams::Error_t NodeActions::validateGenInfoCheck(NodeActions &actionsHandler, Node &node, bool &genInfoIsValid)
+Atams::Error_t NodeActions::getUniversalBlockCheckDataReady(Node &node)
 {
-  static_cast<void>(actionsHandler);
+  bool           newDataReady {false};
+  Atams::Error_t error        {Atams::ERROR_NONE};
 
-  Atams::Error_t       error           {Atams::ERROR_NONE};
-  bool                 newDataReady    {false};
-
-  for (uint8_t varID {BlockUniversal::VAR_ATAMS_VERSION_MAJOR}; 
-       varID <= BlockUniversal::VAR_MAP_NUMBER_OF_VARS; 
-       varID++)
+  for (uint8_t varID {BlockUniversal::VAR_ATAMS_VERSION_PATCH}; varID < BlockUniversal::NUMBER_OF_VARS; varID++)
   {
-    static_cast<void>(node.stopStreamIsDataReady(varID, newDataReady)); 
+    static_cast<void>(node.stopStreamIsDataReady(varID, newDataReady));
     if (!newDataReady) error = Atams::ERROR_NEW_DATA_NOT_READY;
   }
 
-  if (!error) genInfoIsValid = node.validateGenInfo();
-  
+  return (error);
+}
+
+Atams::Error_t NodeActions::validateAtamsVersionCheck(NodeActions &actionsHandler, Node &node, bool &genInfoIsValid)
+{
+  static_cast<void>(actionsHandler);
+
+  uint8_t        major {0U};
+  uint8_t        minor {0U};
+  Atams::Error_t error {Atams::ERROR_NONE};
+
+  if (!error) error = node.stopStreamGetVarIfDataReady(BlockUniversal::VAR_ATAMS_VERSION_MAJOR, major);
+  if (!error) error = node.stopStreamGetVarIfDataReady(BlockUniversal::VAR_ATAMS_VERSION_MINOR, minor);
+  if (!error) genInfoIsValid = node.checkVersionMajorMinor(major, minor);
+
   return (error);
 }
 

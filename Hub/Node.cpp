@@ -350,6 +350,16 @@ Atams::Error_t Node::getBusError(void)
   return (error);
 }
 
+uint16_t Node::getNodeMaxPacketSize(void) const
+{
+  return (nodeMaxPacketSize_);
+}
+
+void Node::setNodeMaxPacketSize(const uint16_t maxPacketSize)
+{
+  nodeMaxPacketSize_ = maxPacketSize;
+}
+
 /**
  * @brief Sets a variable's value and configures a write-until-acknowledged request pattern.
  *
@@ -947,6 +957,14 @@ Atams::AbortedResponseDetails_t Node::getAbortedResponseDetails(void)
  *       physical Node device. The full validation process — including collection of the Universal Block variables over the
  *       bus — is performed during the Bus initialisation process.
  */
+bool Node::checkVersionMajorMinor(const uint8_t major, const uint8_t minor)
+{
+  if (getMemoryMapIsValid() == false) return (false); /* Early Return */
+
+  return ((major == memoryMap_->genInfo.atamsVersionMajor) &&
+          (minor == memoryMap_->genInfo.atamsVersionMinor) );
+}
+
 bool Node::validateGenInfo(void)
 {
   if (getMemoryMapIsValid() == false) return (false); /* Early Return */
@@ -1010,18 +1028,25 @@ void Node::injectBusError(const Atams::Error_t errorToInject,
       requestPacketLock_.releaseLock();
       break;
     case Atams::ERROR_RESPONSE_BUFFER_LENGTH:
+    {
       requestPacketLock_.acquireLock();
       resetRequestPacketNoLock();
-      datagramHeader.command = Atams::ACCESS_READ;
-      datagramHeader.varID   = readOnlyVarID;
-      varIDUsed              = readOnlyVarID;
-      if ((requestPacket_.length + Atams::DATAGRAM_SIZE_HEADER) < static_cast<uint16_t>(sizeof(requestPacket_.buffer)))
+      datagramHeader.command   = Atams::ACCESS_READ;
+      datagramHeader.varID     = readOnlyVarID;
+      varIDUsed                = Atams::VAR_ID_NULL;
+      uint8_t  varLength       = 0U;
+      uint16_t responseLen     = Atams::HEADER_SIZE_HEADER;
+      static_cast<void>(getVarLength(readOnlyVarID, varLength));
+      while ((requestPacket_.length + Atams::DATAGRAM_SIZE_HEADER) < static_cast<uint16_t>(sizeof(requestPacket_.buffer)))
       {
         Atams::datagramHeaderToBuffer(datagramHeader, &requestPacket_.buffer[requestPacket_.length]);
         requestPacket_.length += Atams::DATAGRAM_SIZE_HEADER;
+        responseLen           += static_cast<uint16_t>(Atams::DATAGRAM_SIZE_HEADER + varLength);
+        if (responseLen > nodeMaxPacketSize_) break;
       }
       requestPacketLock_.releaseLock();
       break;
+    }
     case ERROR_DECODE_FRAMING:
       /* TODO - Cannot be handled here */
       break;

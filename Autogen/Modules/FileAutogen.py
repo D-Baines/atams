@@ -257,7 +257,7 @@ def autogenCallMap(autogenHint:         str,
       generateInitDefaultsDefinition(dataBlockNamesCamel, dataBlocks, targetFile)
     case "VERSION_MAJOR": 
       targetFile.write("0U")
-    case "VERSION_MINOR": 
+    case "VERSION_MINOR":
       targetFile.write("1U")
     case "GENERATION_DAY": 
       targetFile.write(str(timeStamp.day) + "U")

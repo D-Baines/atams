@@ -51,6 +51,12 @@ const VarInfo_t varInfoList[BlockUniversal::NUMBER_OF_VARS] =
     /* .externalAccess = */ Atams::ACCESS_READ,
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
+  /* [BlockUniversal::VAR_ATAMS_VERSION_PATCH] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT8,
+    /* .externalAccess = */ Atams::ACCESS_READ,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
   /* [BlockUniversal::VAR_MAP_GEN_DAY] = */
   {
     /* .type           = */ Atams::TYPE_UINT8,
@@ -94,6 +100,12 @@ const VarInfo_t varInfoList[BlockUniversal::NUMBER_OF_VARS] =
     /* .NVMStorage     = */ Atams::ATAMS_FALSE,
   },
   /* [BlockUniversal::VAR_MAP_NUMBER_OF_VARS] = */
+  {
+    /* .type           = */ Atams::TYPE_UINT16,
+    /* .externalAccess = */ Atams::ACCESS_READ,
+    /* .NVMStorage     = */ Atams::ATAMS_FALSE,
+  },
+  /* [BlockUniversal::VAR_MAX_BUS_PACKET_SIZE] = */
   {
     /* .type           = */ Atams::TYPE_UINT16,
     /* .externalAccess = */ Atams::ACCESS_READ,

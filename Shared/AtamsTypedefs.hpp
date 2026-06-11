@@ -56,6 +56,7 @@ namespace Atams {
 
 constexpr uint8_t ATAMS_VERSION_MAJOR {0U};
 constexpr uint8_t ATAMS_VERSION_MINOR {1U};
+constexpr uint8_t ATAMS_VERSION_PATCH {0U};
 
 constexpr uint8_t  NODE_ID_MAX                   {254U};
 constexpr uint8_t  MAX_NUMBER_OF_NODES_PER_BUS   {255U};
@@ -368,26 +369,21 @@ struct GenInfo_t
   uint32_t genChecksum       {0U};
   uint16_t noOfVars          {0U};
 
-  bool operator==(const GenInfo_t &other)
+  bool operator==(const GenInfo_t &other) const
   {
-    if ((atamsVersionMajor == other.atamsVersionMajor) &&
-        (atamsVersionMinor == other.atamsVersionMinor) &&
-        (genDay            == other.genDay           ) &&
-        (genMonth          == other.genMonth         ) &&
-        (genYear           == other.genYear          ) &&
-        (genHour           == other.genHour          ) &&
-        (genMinute         == other.genMinute        ) &&
-        (genSecond         == other.genSecond        ) &&
-        (genChecksum       == other.genChecksum      ) &&
-        (noOfVars          == other.noOfVars         ) )
-    {
-      return (true);
-    }
-
-    return (false);
+    return ((atamsVersionMajor == other.atamsVersionMajor) &&
+            (atamsVersionMinor == other.atamsVersionMinor) &&
+            (genDay            == other.genDay           ) &&
+            (genMonth          == other.genMonth         ) &&
+            (genYear           == other.genYear          ) &&
+            (genHour           == other.genHour          ) &&
+            (genMinute         == other.genMinute        ) &&
+            (genSecond         == other.genSecond        ) &&
+            (genChecksum       == other.genChecksum      ) &&
+            (noOfVars          == other.noOfVars         ) );
   }
 
-  bool operator!=(const GenInfo_t &other)
+  bool operator!=(const GenInfo_t &other) const
   {
     return (!(*this == other));
   }

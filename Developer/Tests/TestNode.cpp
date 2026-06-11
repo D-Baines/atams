@@ -432,10 +432,12 @@ void TestNode::updateErrorInjection(void)
     expectedBusError_     = Atams::ERROR_NONE;
     expectedAbortDetails_ = {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
 
-    if (Node::getRequestPacketLength() == 0U)
+    if (Node::getRequestPacketLength() == Atams::HEADER_SIZE_HEADER)
     {
       for (Atams::RequestPattern_t &pattern : prevRequestPatterns_) pattern = Atams::REQUEST_INACTIVE;
       for (Atams::Access_t         &access  : prevAccess_         ) access  = Atams::ACCESS_NONE;
+      expectedRequestPacketLength_ = Atams::HEADER_SIZE_HEADER;
+      expectedWriteListLength_     = 0U;
     }
   }
 

@@ -144,14 +144,14 @@ private Platform::BusPeripheral
 
   enum class InitState: uint8_t
   {
-    START             = 0U,
-    VALIDATE_GEN_INFO = 1U,
-    VALIDATE_IDS_PRE  = 2U,
-    SET_BUS_IDS       = 3U,
-    STORE_BUS_IDS     = 4U,
-    VALIDATE_IDS_POST = 5U,
-    COMPLETE          = 6U,
-    ERROR             = 7U,
+    START                    = 0U,
+    VALIDATE_ATAMS_VERSION   = 1U,
+    VALIDATE_UNIVERSAL_BLOCK = 2U,
+    SET_BUS_IDS              = 3U,
+    STORE_BUS_IDS            = 4U,
+    VALIDATE_IDS_POST        = 5U,
+    COMPLETE                 = 6U,
+    ERROR                    = 7U,
   };
 
   enum class ConfigUpdateState: uint8_t
@@ -322,9 +322,11 @@ private Platform::BusPeripheral
 
   void triggerNextRequestAsync(void);
 
-  void beginInitValidateGenInfo(Atams::Node &node);
-  
-  void beginInitValidateIDs(Atams::Node &node, const bool preAssignment, const Atams::BusIDs_t busIDs);
+  void beginInitValidateAtamsVersion(Atams::Node &node);
+
+  void beginInitValidateUniversalBlock(Atams::Node &node);
+
+  void beginInitValidateIDsPost(Atams::Node &node, const Atams::BusIDs_t busIDs);
   
   void beginInitSetBusIDs(Atams::Node &node, Atams::BusIDs_t busIDs);
 

@@ -718,12 +718,14 @@ static Atams::Error_t initUniversalDefaults(void)
 {
   Atams::Error_t error {Atams::ERROR_NONE};
 
-  if (!error) error = Atams::setVar(BlockUniversal::VAR_NODE_ID,          BlockUniversal::DEFAULT_NODE_ID);
-  if (!error) error = Atams::setVar(BlockUniversal::VAR_FIRST_NODE_ID,    BlockUniversal::DEFAULT_FIRST_NODE_ID);
-  if (!error) error = Atams::setVar(BlockUniversal::VAR_LAST_NODE_ID,     BlockUniversal::DEFAULT_LAST_NODE_ID);
-  if (!error) error = Atams::setVar(BlockUniversal::VAR_PREVIOUS_NODE_ID, BlockUniversal::DEFAULT_PREVIOUS_NODE_ID);
-  if (!error) error = Atams::setVar(BlockUniversal::VAR_BITRATE,          BlockUniversal::DEFAULT_BITRATE);
-  if (!error) error = Atams::setVar(BlockUniversal::VAR_WATCHDOG_PERIOD,  BlockUniversal::DEFAULT_WATCHDOG_PERIOD);
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_ATAMS_VERSION_PATCH, Atams::ATAMS_VERSION_PATCH);
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_MAX_BUS_PACKET_SIZE, static_cast<uint16_t>(Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING));
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_NODE_ID,             BlockUniversal::DEFAULT_NODE_ID);
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_FIRST_NODE_ID,       BlockUniversal::DEFAULT_FIRST_NODE_ID);
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_LAST_NODE_ID,        BlockUniversal::DEFAULT_LAST_NODE_ID);
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_PREVIOUS_NODE_ID,    BlockUniversal::DEFAULT_PREVIOUS_NODE_ID);
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_BITRATE,             BlockUniversal::DEFAULT_BITRATE);
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_WATCHDOG_PERIOD,     BlockUniversal::DEFAULT_WATCHDOG_PERIOD);
 
   return (error == Atams::ERROR_NONE ?
           Atams::ERROR_NONE          :
