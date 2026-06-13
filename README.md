@@ -511,7 +511,8 @@ The steps below show the complete sequence for setting up and running the Hub li
 **Step 1 — One-time Node configuration** (new or reconfigured Nodes only)\
 Each physical Node device must be assigned a unique ID before it can be used on the Bus. See [The Node Configuration Process](#the-node-configuration-process).
 
-**Step 2 — Construct Node and Bus instances**
+**Step 2 — Construct Node and Bus instances**\
+See [Bus Construction](#bus-construction) and [Node Construction](#node-construction).
 ```cpp
 #include "Atams/Hub/Node.hpp"
 #include "Atams/Hub/Bus.hpp"
@@ -524,19 +525,22 @@ static Atams::Node node1(1U);
 static Atams::Node node2(2U);
 ```
 
-**Step 3 — Initialise each Node instance with its Memory Map**
+**Step 3 — Initialise each Node instance with its Memory Map**\
+See [Node Initialisation](#node-initialisation).
 ```cpp
 node1.init(Atams::MapExample::memoryMap);
 node2.init(Atams::MapExample::memoryMap);
 ```
 
-**Step 4 — Add each Node to the Bus**
+**Step 4 — Add each Node to the Bus**\
+See [Linking Nodes to a Bus](#linking-nodes-to-a-bus).
 ```cpp
 bus.addNodeToBus(node1);
 bus.addNodeToBus(node2);
 ```
 
-**Step 5 — Run the Bus Initialisation Process** (once per power cycle, or when the Bus configuration changes)
+**Step 5 — Run the Bus Initialisation Process** (once per power cycle, or when the Bus configuration changes)\
+See [The Bus Initialisation Process](#the-bus-initialisation-process).
 ```cpp
 Atams::Error_t        error {Atams::ERROR_NONE};
 Atams::ProcessState_t state {Atams::PROCESS_IN_PROGRESS};
@@ -563,7 +567,8 @@ node1.setVar(BlockExample::VAR_EXAMPLE_2, someValue);
 node1.setRequestPattern(BlockExample::VAR_EXAMPLE_2, Atams::ACCESS_WRITE, Atams::REQUEST_STREAM);
 ```
 
-**Step 7 — Run the Bus Update Cycle** (called repeatedly in the application loop)
+**Step 7 — Run the Bus Update Cycle** (called repeatedly in the application loop)\
+See [Synchronous Bus Update Cycle](#synchronous-bus-update-cycle) or [Asynchronous Bus Update Cycle](#asynchronous-bus-update-cycle).
 ```cpp
 error = bus.beginUpdateCycle();
 
