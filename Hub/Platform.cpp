@@ -204,15 +204,15 @@ void CommsLock::releaseLock(void)
 /**
  * @brief Block the calling thread until the semaphore is released or the timeout expires.
  *
- * @return @c true if the semaphore was released before the timeout, @c false if the
- *         timeout expired without the semaphore being released.
- *
  * @note  ATAMS PLATFORM REQUIREMENT - BLOCKING COMMS
  */
-bool BinarySemaphore::waitWithTimeout(uint32_t timeoutMilliseconds)
+void BinarySemaphore::waitWithTimeout(uint32_t timeoutMilliseconds)
 {
-  static_cast<void>(timeoutMilliseconds);
-  return true;
+  std::unique_lock<std::mutex> lock(mutex_);
+  cv_.wait_for(lock,
+               std::chrono::milliseconds(timeoutMilliseconds),
+               [this]{ return released_; });
+  released_ = false;
 }
 
 /**
@@ -222,7 +222,11 @@ bool BinarySemaphore::waitWithTimeout(uint32_t timeoutMilliseconds)
  */
 void BinarySemaphore::release(void)
 {
-
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    released_ = true;
+  }
+  cv_.notify_one();
 }
 
 } } /* End Namespace - Atams::Platform */

@@ -40,7 +40,6 @@
 #include "Developer/FramingConstants.hpp"
 #include "Developer/WriteList.hpp"
 #include "Developer/NodeCallbackHandler.hpp"
-#include "Developer/NodeActions.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -158,8 +157,9 @@ public NodeCallbackHandler
 
   Atams::AbortedResponseDetails_t getAbortedResponseDetails(void);
 
-  bool validateGenInfo(void);
-  bool checkVersionMajorMinor(const uint8_t major, const uint8_t minor);
+  Atams::Error_t validateGenInfo(void);
+
+  Atams::Error_t validateAtamsVersion(void);
 
   #if (DEVELOPER_TOOLS == true)
   void injectBusError(const Atams::Error_t errorToInject, 
@@ -211,7 +211,6 @@ public NodeCallbackHandler
   Platform::MemoryLock requestPacketLock_;
   Platform::MemoryLock varStorageLock_;
   Platform::MemoryLock busErrorLock_;
-  NodeActions          nodeProcessHandler_;
 
   /*-- Private Variables ------------------------------------------------------------*/
 

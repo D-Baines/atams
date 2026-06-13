@@ -38,7 +38,7 @@
 #include <stdint.h>
 #include <optional>
 
-#include "../../Shared/AtamsTypedefs.hpp"
+#include "../Shared/AtamsTypedefs.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -80,9 +80,9 @@ class NodeActions
   /* Move Assignment Operator */
   NodeActions & operator=(NodeActions &&other) = delete;
 
-  void beginConfigEntryProcess(Node &node);
+  void beginConfigStateEntry(Node &node);
 
-  void beginConfigExitProcess(Node &node, bool applyChangesOnExit, std::optional<uint8_t> newNodeID);
+  void beginConfigStateExit(Node &node, bool applyChangesOnExit, std::optional<uint8_t> newNodeID);
 
   void beginSetNodeID(Node &node, const uint8_t nodeID);
 
@@ -94,19 +94,23 @@ class NodeActions
 
   void beginStorageProcess(Node &node);
 
-  void beginResetNodeProcess(Node &node);
+  void beginResetNode(Node &node);
 
-  void beginValidateAtamsVersionProcess(Node &node);
+  void beginClearWatchdogFault(Node &node);
 
-  void beginGetUniversalBlockProcess(Node &node);
+  void beginValidateAtamsVersion(Node &node);
 
-  void beginValidateBusIDsProcess(Node &node, const Atams::BusIDs_t busIDs);
+  void beginValidateBusIDs(Node &node, const Atams::BusIDs_t busIDs);
+
+  void beginReadUniversalBlock(Node &node);
+
+  void beginReadMultiVarsOrdered(Node &node, uint16_t firstVarID, uint16_t lastVarID);
 
   void beginSetBusIDs(Node &node, const Atams::BusIDs_t busIDs);
 
-  Atams::ProcessState_t updateConfigurationStateEntry(Atams::Error_t &error);
+  Atams::ProcessState_t updateConfigStateEntry(Atams::Error_t &error);
 
-  Atams::ProcessState_t updateConfigurationStateExit(Atams::Error_t &error);
+  Atams::ProcessState_t updateConfigStateExit(Atams::Error_t &error);
 
   Atams::ProcessState_t updateSetNodeID(Atams::Error_t &error);
 
@@ -124,11 +128,15 @@ class NodeActions
 
   Atams::ProcessState_t updateResetNode(Atams::Error_t &error);
 
-  Atams::ProcessState_t updateValidateAtamsVersion(Atams::Error_t &error, bool &genInfoIsValid);
+  Atams::ProcessState_t updateClearWatchdogFault(Atams::Error_t &error);
 
-  Atams::ProcessState_t updateGetUniversalBlock(Atams::Error_t &error);
+  Atams::ProcessState_t updateValidateAtamsVersion(Atams::Error_t &error, bool &versionIsCompatible);
 
-  Atams::ProcessState_t updateValidateBusIDs(Atams::Error_t &error, bool &allIDsValid);
+  Atams::ProcessState_t updateValidateBusIDs(Atams::Error_t &error, bool &busIDsAreValid);
+
+  Atams::ProcessState_t updateReadUniversalBlock(Atams::Error_t &error);
+
+  Atams::ProcessState_t updateReadMultiVarsOrdered(Atams::Error_t &error);
 
   Atams::ProcessState_t updateSetBusIDs(Atams::Error_t &error);
 
@@ -208,6 +216,24 @@ class NodeActions
     ERROR          = 6U
   };
 
+  enum class ClearWatchdogFaultState : uint8_t
+  {
+    START          = 0U,
+    WRITE_PASSCODE = 1U,
+    CHECK_ACK      = 2U,
+    COMPLETE       = 3U,
+    ERROR          = 4U
+  };
+
+  enum class ReadMultiVarsState : uint8_t
+  {
+    START        = 0U,
+    STREAM_GROUP = 1U,
+    CHECK_GROUP  = 2U,
+    COMPLETE     = 3U,
+    ERROR        = 4U
+  };
+
   enum class ValidateMultiConfigState : uint8_t
   {
     START    = 0U,
@@ -245,24 +271,11 @@ class NodeActions
   typedef bool           (&MultiConfigAckFn_t)      (Atams::Node &node);
   typedef void           (&MultiConfigReadFn_t)     (Atams::Node &node);
   typedef Atams::Error_t (&MultiConfigCheckFn_t)    (NodeActions &actionsHandler, Atams::Node &node, bool &checkSuccess);
-  typedef Atams::Error_t (&MultiConfigDataReadyFn_t)(Atams::Node &node);
-
-  struct GetMultiConfigFtns_t
-  {
-    MultiConfigReadFn_t      readFunction;
-    MultiConfigDataReadyFn_t checkFunction;
-  };
 
   struct SetMultiConfigFtns_t
   {
     MultiConfigWriteFn_t writeFunction;
     MultiConfigAckFn_t   ackFunction;
-    MultiConfigReadFn_t  readFunction;
-    MultiConfigCheckFn_t checkFunction;
-  };
-
-  struct ValidateMultiConfigFtns_t
-  {
     MultiConfigReadFn_t  readFunction;
     MultiConfigCheckFn_t checkFunction;
   };
@@ -277,7 +290,7 @@ class NodeActions
     ProcessHandler(const ProcessHandler &other)             = delete;
     ProcessHandler & operator=(const ProcessHandler &other) = delete;
     ProcessHandler(ProcessHandler &&other)                  = delete;
-    ProcessHandler & operator=(ProcessHandler &&other)      = delete;;
+    ProcessHandler & operator=(ProcessHandler &&other)      = delete;
 
     Node                 *nodePtr         {nullptr};
     Atams::ProcessState_t processState    {Atams::PROCESS_COMPLETE};
@@ -286,16 +299,21 @@ class NodeActions
     Atams::Error_t        error           {Atams::ERROR_NONE};
     Atams::Error_t        cancelError     {Atams::ERROR_NONE};
     uint32_t              prevEventTime   {0U};
-    uint32_t              startTime       {0U};
 
     void resetAndAssignNode(Node &node);
     void terminate(Atams::Error_t error);
     void setProcessComplete(void);
-    bool getProcessTerminated(void);
-    void updateTimeout(void);
     bool nullptrCheck(Atams::Error_t &errorReturn);
   };
-  
+
+  struct ReadMultiVarsContext
+  {
+    ProcessHandler<ReadMultiVarsState> process;
+    uint16_t groupStart {0U};
+    uint16_t groupEnd   {0U};
+    uint16_t lastID     {0U};
+  };
+
   /*-- Private Objects --------------------------------------------------------------*/
 
   ProcessHandler<ConfigEntryState>         configEntryProcess_;
@@ -303,29 +321,31 @@ class NodeActions
   ProcessHandler<SetConfigVarState>        setConfigVarProcess_;
   ProcessHandler<StorageProcessState>      storageProcess_;
   ProcessHandler<ResetNodeState>           resetNodeProcess_;
-  ProcessHandler<ValidateMultiConfigState> validateMultiConfigProcess_;
-  ProcessHandler<GetMultiConfigState>      getMultiConfigProcess_;
+  ProcessHandler<ClearWatchdogFaultState>  clearWatchdogFaultProcess_;
   ProcessHandler<SetMultiConfigState>      setMultiConfigProcess_;
+  ReadMultiVarsContext                     busReadMultiVars_;
+  ReadMultiVarsContext                     userReadMultiVars_;
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  bool                   applyChanges_        {false};
-  uint8_t                nodeIDToSet_         {0U};
-  std::optional<uint8_t> configExitNodeID_    {std::nullopt};
-  Atams::BitrateOption_t bitrateOptionToSet_  {Atams::BitrateOption_t::BITRATE_OPTION_0};
-  uint32_t               watchdogPeriodToSet_ {0U};
+  bool                   applyChanges_            {false};
+  uint8_t                nodeIDToSet_             {0U};
+  std::optional<uint8_t> configExitNodeID_        {std::nullopt};
+  Atams::BitrateOption_t bitrateOptionToSet_      {Atams::BitrateOption_t::BITRATE_OPTION_0};
+  uint32_t               watchdogPeriodToSet_     {0U};
   Atams::NodeConfig_t    nodeConfigToSet_;
   BusIDs_t               busIDsToSet_;
-
-  GetMultiConfigFtns_t getUniversalBlockFunctions {getUniversalBlockRead, getUniversalBlockCheckDataReady};
-
-  ValidateMultiConfigFtns_t validateAtamsVersionFunctions_   {validateAtamsVersionRead,   validateAtamsVersionCheck};
-  ValidateMultiConfigFtns_t validateBusIDsFunctions_         {validateBusIDsRead,         validateBusIDsCheck};
 
   SetMultiConfigFtns_t setUserConfigFunctions_ {setUserConfigWrite, setUserConfigGetAck, setUserConfigRead, setUserConfigCheck};
   SetMultiConfigFtns_t setBusIDsFunctions_     {setBusIDsWrite,     setBusIDsGetAck,     setBusIDsRead,     setBusIDsCheck};
 
   /*-- Private Function Declarations ------------------------------------------------*/
+
+  void beginReadMultiVarsOrderedImpl(ReadMultiVarsContext &context, Node &node, uint16_t firstVarID, uint16_t lastVarID);
+
+  Atams::ProcessState_t updateReadMultiVarsOrderedImpl(ReadMultiVarsContext &context, Atams::Error_t &error);
+
+  static uint16_t computeReadGroupEnd(Node &node, uint16_t groupStart, uint16_t lastVarID);
 
   template<typename T>
   void cancelConfigProcess(ProcessHandler<T> &process, Atams::Error_t error);
@@ -338,28 +358,8 @@ class NodeActions
 
   Atams::ProcessState_t updateStorageProcess(Atams::Error_t &error, const uint16_t varID, uint32_t passcode);
 
-  Atams::ProcessState_t updateValidateMultipleConfig(Atams::Error_t            &error, 
-                                                     bool                      &allVarsValid, 
-                                                     ValidateMultiConfigFtns_t &specificFunctions);
-                                                     
-
-  Atams::ProcessState_t updateGetMultipleConfig(Atams::Error_t       &error, 
-                                                GetMultiConfigFtns_t &specificFunctions);
-
   Atams::ProcessState_t updateSetMultipleConfig(Atams::Error_t &error, SetMultiConfigFtns_t &specificFunctions);
   
-  static void getUniversalBlockRead(Atams::Node &node);
-
-  static Atams::Error_t getUniversalBlockCheckDataReady(Atams::Node &node);
-
-  static void validateAtamsVersionRead(Atams::Node &node);
-
-  static Atams::Error_t validateAtamsVersionCheck(NodeActions &processHandler, Atams::Node &node, bool &genInfoIsValid);
-
-  static void validateBusIDsRead(Atams::Node &node);
-
-  static Atams::Error_t validateBusIDsCheck(NodeActions &processHandler, Atams::Node &node, bool &allIDsValid);
-
   static void setUserConfigWrite(NodeActions &processHandler, Atams::Node &node);
 
   static bool setUserConfigGetAck(Atams::Node &node);

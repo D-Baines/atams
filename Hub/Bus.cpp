@@ -220,12 +220,6 @@ Atams::Error_t Bus::beginBusInitProcess(void)
   return (Atams::ERROR_NONE);
 }
 
-
-void Bus::validateUniversalBlock(void)
-{
-  //MAYBE DO IN NODE INSTEAD
-}
-
 /**
  * @brief Progresses the Bus initialisation process.
  *
@@ -278,33 +272,13 @@ Atams::ProcessState_t Bus::updateBusInitProcess(Atams::Error_t &error)
     case Bus::InitState::VALIDATE_ATAMS_VERSION:
       subProcessState = nodeProcessHandler_.updateValidateAtamsVersion(process.error, dataIsValid);
       if      (dataIsValid     == true)                    beginInitValidateUniversalBlock(node);
-      else if (subProcessState == Atams::PROCESS_COMPLETE) process.terminate(Atams::ERROR_GEN_INFO_MISMATCH);
+      else if (subProcessState == Atams::PROCESS_COMPLETE) process.terminate(Atams::ERROR_ATAMS_VERSION_MISMATCH);
       else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);
       break;
     case Bus::InitState::VALIDATE_UNIVERSAL_BLOCK:
-      subProcessState = nodeProcessHandler_.updateGetUniversalBlock(process.error);
-      if (subProcessState == Atams::PROCESS_COMPLETE) validateUniversalBlock();
-      {
-        uint16_t             maxPacketSize {0U};
-        uint8_t              firstNodeID   {0U};
-        uint8_t              lastNodeID    {0U};
-        uint8_t              prevNodeID    {0U};
-        NodeCallbackHandler &nodeCallbacks {node};
-        if      (!node.validateGenInfo())                                                                     process.terminate(Atams::ERROR_GEN_INFO_MISMATCH);
-        else if (node.getVar(BlockUniversal::VAR_MAX_BUS_PACKET_SIZE,  maxPacketSize) != Atams::ERROR_NONE)  process.terminate(Atams::ERROR_MEMORY_MAP);
-        else if (node.getVar(BlockUniversal::VAR_FIRST_NODE_ID,        firstNodeID)   != Atams::ERROR_NONE)  process.terminate(Atams::ERROR_MEMORY_MAP);
-        else if (node.getVar(BlockUniversal::VAR_LAST_NODE_ID,         lastNodeID)    != Atams::ERROR_NONE)  process.terminate(Atams::ERROR_MEMORY_MAP);
-        else if (node.getVar(BlockUniversal::VAR_PREVIOUS_NODE_ID,     prevNodeID)    != Atams::ERROR_NONE)  process.terminate(Atams::ERROR_MEMORY_MAP);
-        else
-        {
-          nodeCallbacks.setNodeMaxPacketSize(maxPacketSize);
-          if ((firstNodeID == busIDsToSet_.firstNodeID   ) &&
-              (lastNodeID  == busIDsToSet_.lastNodeID    ) &&
-              (prevNodeID  == busIDsToSet_.previousNodeID))  startNextNodeInit();
-          else                                               beginInitSetBusIDs(node, busIDsToSet_);
-        }
-      }
-      else if (subProcessState == Atams::PROCESS_ERROR) process.terminate(process.error);
+      subProcessState = nodeProcessHandler_.updateReadUniversalBlock(process.error);
+      if      (subProcessState == Atams::PROCESS_COMPLETE) validateNodeUniversalBlock(node);
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);
       break;
     case Bus::InitState::SET_BUS_IDS:
       subProcessState = nodeProcessHandler_.updateSetBusIDs(process.error);
@@ -730,7 +704,7 @@ Atams::ProcessState_t Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
 }
 
 /*************************************************************************************/
-/* PRIVATE CORE FUNCTION DEFINITIONS                                                 */
+/* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
 Atams::ProcessState_t Bus::runUpdateCycleSyncCore(Atams::Error_t &error, bool blocking)
@@ -877,9 +851,43 @@ Atams::ProcessState_t Bus::runSingleNodeUpdateCycleCore(Atams::Error_t &error, A
   return (processState);
 }
 
-/*************************************************************************************/
-/* PRIVATE FUNCTION DEFINITIONS                                                      */
-/*************************************************************************************/
+Atams::Error_t Bus::validateNodeUniversalBlock(Node &node)
+{
+  Bus::ProcessHandler<Bus::InitState> &process {initProcessHandler_};
+
+  uint16_t             maxPacketSize {0U};
+  uint8_t              firstNodeID   {0U};
+  uint8_t              lastNodeID    {0U};
+  uint8_t              prevNodeID    {0U};
+  NodeCallbackHandler &nodeCallbacks {node};
+
+  if (node.validateGenInfo() != Atams::ERROR_NONE)
+  {
+    process.terminate(Atams::ERROR_MEMORY_MAP);
+  }
+  else if ((node.getVar(BlockUniversal::VAR_MAX_BUS_PACKET_SIZE,  maxPacketSize) != Atams::ERROR_NONE) ||  
+           (node.getVar(BlockUniversal::VAR_FIRST_NODE_ID,        firstNodeID)   != Atams::ERROR_NONE) || 
+           (node.getVar(BlockUniversal::VAR_LAST_NODE_ID,         lastNodeID)    != Atams::ERROR_NONE) || 
+           (node.getVar(BlockUniversal::VAR_PREVIOUS_NODE_ID,     prevNodeID)    != Atams::ERROR_NONE) )
+  {
+    process.terminate(Atams::ERROR_MEMORY_MAP);
+  } 
+  else
+  {
+    nodeCallbacks.setNodeMaxPacketSize(maxPacketSize);
+
+    if ((firstNodeID == busIDsToSet_.firstNodeID   ) &&
+        (lastNodeID  == busIDsToSet_.lastNodeID    ) &&
+        (prevNodeID  == busIDsToSet_.previousNodeID))
+    {
+      startNextNodeInit();
+    }
+    else 
+    {
+      beginInitSetBusIDs(node, busIDsToSet_);
+    }
+  }
+}
 
 bool Bus::safeToRemoveNode(void) 
 {
@@ -1209,19 +1217,13 @@ void Bus::triggerNextRequestAsync(void)
 void Bus::beginInitValidateAtamsVersion(Atams::Node &node)
 {
   initProcessHandler_.specificState = Bus::InitState::VALIDATE_ATAMS_VERSION;
-  nodeProcessHandler_.beginValidateAtamsVersionProcess(node);
-}
-
-void Bus::beginInitValidateUniversalBlock(Atams::Node &node)
-{
-  initProcessHandler_.specificState = Bus::InitState::VALIDATE_UNIVERSAL_BLOCK;
-  nodeProcessHandler_.beginGetUniversalBlockProcess(node);
+  nodeProcessHandler_.beginValidateAtamsVersion(node);
 }
 
 void Bus::beginInitValidateIDsPost(Atams::Node &node, const Atams::BusIDs_t busIDs)
 {
   initProcessHandler_.specificState = Bus::InitState::VALIDATE_IDS_POST;
-  nodeProcessHandler_.beginValidateBusIDsProcess(node, busIDs);
+  nodeProcessHandler_.beginValidateBusIDs(node, busIDs);
 }
 
 void Bus::beginInitSetBusIDs(Atams::Node &node, Atams::BusIDs_t busIDs)
@@ -1367,12 +1369,6 @@ void Bus::ProcessHandler<T>::setProcessComplete(void)
   this->error         = Atams::ERROR_NONE;
   this->specificState = T::COMPLETE;
   this->processState  = Atams::PROCESS_COMPLETE;
-}
-
-template <typename T>
-bool Bus::ProcessHandler<T>::getProcessTerminated(void)
-{
-  return (this->processState == Atams::PROCESS_ERROR);
 }
 
 template <typename T>

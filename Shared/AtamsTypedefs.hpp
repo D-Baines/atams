@@ -58,28 +58,29 @@ constexpr uint8_t ATAMS_VERSION_MAJOR {0U};
 constexpr uint8_t ATAMS_VERSION_MINOR {1U};
 constexpr uint8_t ATAMS_VERSION_PATCH {0U};
 
-constexpr uint8_t  NODE_ID_MAX                   {254U};
-constexpr uint8_t  MAX_NUMBER_OF_NODES_PER_BUS   {255U};
-constexpr uint16_t MAX_NUMBER_OF_VARS            {8191U};
-constexpr uint16_t VAR_ID_NULL                   {8191U};
-constexpr uint8_t  MAX_TYPE_SIZE                 {4U};
-constexpr uint8_t  EOL_BYTE                      {0U};
-constexpr int32_t  MAX_INT32                     {2147483647L};
-constexpr int32_t  MIN_INT32                     {-2147483648L};
-constexpr uint32_t MAX_UINT32                    {4294967295U};
-constexpr uint32_t MIN_UINT32                    {0U};
-constexpr uint8_t  BITS_IN_A_BYTE                {8U};
-constexpr uint32_t CRC32_POLYNOMIAL              {0x82F63B78U};
-constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID {0x00000000U};
-constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID   {0xD0D0CACAU};
-constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS  {0x454E5452U};
-constexpr uint32_t CONFIGURATION_PASSKEY_APPLY   {0x41504C59U};
-constexpr uint32_t CONFIGURATION_PASSKEY_CANCEL  {0x00000000U};
-constexpr uint32_t STORE_ALL_PASSCODE            {0x53415645U};
-constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE  {0x55534552U};
-constexpr uint32_t RESTORE_ALL_PASSCODE          {0x52535452U};
-constexpr uint32_t RESET_NODE_PASSCODE           {0x4E525354U};
-constexpr uint32_t WATCHDOG_RESET_PASSCODE       {0x57444F47U};
+constexpr uint8_t  NODE_ID_MAX                     {254U};
+constexpr uint8_t  MAX_NUMBER_OF_NODES_PER_BUS     {255U};
+constexpr uint16_t MAX_NUMBER_OF_VARS              {8191U};
+constexpr uint16_t VAR_ID_NULL                     {8191U};
+constexpr uint8_t  MAX_TYPE_SIZE                   {4U};
+constexpr uint8_t  EOL_BYTE                        {0U};
+constexpr int32_t  MAX_INT32                       {2147483647L};
+constexpr int32_t  MIN_INT32                       {-2147483648L};
+constexpr uint32_t MAX_UINT32                      {4294967295U};
+constexpr uint32_t MIN_UINT32                      {0U};
+constexpr uint8_t  BITS_IN_A_BYTE                  {8U};
+constexpr uint32_t CRC32_POLYNOMIAL                {0x82F63B78U};
+constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID   {0x00000000U};
+constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID     {0xD0D0CACAU};
+constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS    {0x454E5452U};
+constexpr uint32_t CONFIGURATION_PASSKEY_APPLY     {0x41504C59U};
+constexpr uint32_t CONFIGURATION_PASSKEY_CANCEL    {0x00000000U};
+constexpr uint32_t STORE_ALL_PASSCODE              {0x53415645U};
+constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE    {0x55534552U};
+constexpr uint32_t RESTORE_ALL_PASSCODE            {0x52535452U};
+constexpr uint32_t RESET_NODE_PASSCODE             {0x4E525354U};
+constexpr uint32_t WATCHDOG_RESET_PASSCODE         {0x57444F47U};
+constexpr uint32_t MINIMUM_MAXIMUM_BUS_PACKET_SIZE {64U};
 
 constexpr uint8_t THREE_BYTE_SHIFT  {24U};
 constexpr uint8_t TWO_BYTE_SHIFT    {16U};
@@ -242,6 +243,7 @@ enum Error_t: uint8_t
   ERROR_CONFIGURATION_EXIT           = 49U,
   ERROR_NODE_ALREADY_ON_BUS          = 50U,
   ERROR_NODE_NOT_ON_BUS              = 51U,
+  ERROR_CONFIGURATION_CANCEL_FAILED  = 52U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
@@ -608,7 +610,9 @@ constexpr const char *ERROR_STRINGS[NUMBER_OF_ATAMS_ERRORS]
   /* [Atams::ERROR_INITIALISATION_REQUIRED     ] = */ "Initialisation Required",
   /* [Atams::ERROR_ID_ASSIGNMENT_FAILED        ] = */ "ID Assignment Failed",
   /* [Atams::ERROR_CONFIGURATION_EXIT          ] = */ "Configuration Exit",
-  /* [Atams::ERROR_NODE_ALREADY_ON_BUS         ] = */ "Node Already On Bus"
+  /* [Atams::ERROR_NODE_ALREADY_ON_BUS         ] = */ "Node Already On Bus",
+  /* [Atams::ERROR_NODE_NOT_ON_BUS             ] = */ "Node Not On Bus",
+  /* [Atams::ERROR_CONFIGURATION_CANCEL_FAILED ] = */ "Configuration Cancel Failed - Node May Be Stuck In Configuration Mode"
 };
 
 constexpr const char* ERROR_INDEX_OUT_OF_BOUNDS_STRING {"Invalid Atams Error Type"};

@@ -49,13 +49,18 @@ namespace Atams { namespace Platform {
 /* PUBLIC MACROS                                                                     */
 /*************************************************************************************/
 
-/** 
+/**
 *   @brief Define used in dual-core applications to place shared variables in a
 *          dedicated shared memory section accessible by both cores. This section
 *          should be defined in the application linker script.
 *
 *   @details The size of the shared memory section must be at least:
 *            2 + (4 * Platform::NODE_NUMBER_OF_VARS) bytes.
+*
+*   @warning The targeted memory region must be configured as non-cacheable in
+*            the MPU (or equivalent) on both cores. If the region is cacheable,
+*            each core may read from its own locally cached copy rather than
+*            RAM, causing stale reads and silent data corruption.
 *
 *   @note    ATAMS PLATFORM REQUIREMENT - DUAL-CORE
 */

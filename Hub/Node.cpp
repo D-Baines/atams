@@ -940,10 +940,34 @@ Atams::AbortedResponseDetails_t Node::getAbortedResponseDetails(void)
 }
 
 
+Atams::Error_t Node::validateAtamsVersion(void)
+{
+  Atams::Error_t error {Atams::ERROR_NONE};
+  uint8_t        major {0U};
+  uint8_t        minor {0U};
+
+  if (getMemoryMapIsValid() == false)
+  {
+    error = Atams::ERROR_MEMORY_MAP;
+  }
+  else if ((getVar(BlockUniversal::VAR_ATAMS_VERSION_MAJOR, major) != Atams::ERROR_NONE) ||
+           (getVar(BlockUniversal::VAR_ATAMS_VERSION_MINOR, minor) != Atams::ERROR_NONE) )
+  {
+    error = Atams::ERROR_MEMORY_MAP;
+  }
+  else if ((major != memoryMap_->genInfo.atamsVersionMajor) ||
+           (minor != memoryMap_->genInfo.atamsVersionMinor) )
+  {
+    error = Atams::ERROR_ATAMS_VERSION_MISMATCH;
+  }
+
+  return (error);
+}
+
 /**
  * @brief Validates that the Node device's Memory Map matches the Hub's Memory Map.
  *
- * Reads the universal block variables from the Node's internal variable storage — including the Atams version,
+ * Reads the universal block variables from the Node instances internal variable storage — including the Atams version,
  * map generation timestamp, checksum, and number of variables — and compares them against the genInfo stored in
  * the initialised Memory Map. This allows the Hub to confirm that the physical Node device is running a Memory Map
  * that is identical to the one used by this Node instance.
@@ -957,40 +981,36 @@ Atams::AbortedResponseDetails_t Node::getAbortedResponseDetails(void)
  *       physical Node device. The full validation process — including collection of the Universal Block variables over the
  *       bus — is performed during the Bus initialisation process.
  */
-bool Node::checkVersionMajorMinor(const uint8_t major, const uint8_t minor)
+Atams::Error_t Node::validateGenInfo(void)
 {
-  if (getMemoryMapIsValid() == false) return (false); /* Early Return */
-
-  return ((major == memoryMap_->genInfo.atamsVersionMajor) &&
-          (minor == memoryMap_->genInfo.atamsVersionMinor) );
-}
-
-bool Node::validateGenInfo(void)
-{
-  if (getMemoryMapIsValid() == false) return (false); /* Early Return */
-  
+  Atams::Error_t  error {Atams::ERROR_NONE};
   const GenInfo_t nullGenInfo;
-  bool            genInfoMatch {false};
   GenInfo_t       genInfo;
   
-  static_cast<void>(getVar(BlockUniversal::VAR_ATAMS_VERSION_MAJOR, genInfo.atamsVersionMajor));
-  static_cast<void>(getVar(BlockUniversal::VAR_ATAMS_VERSION_MINOR, genInfo.atamsVersionMinor));
-  static_cast<void>(getVar(BlockUniversal::VAR_MAP_GEN_DAY,         genInfo.genDay));
-  static_cast<void>(getVar(BlockUniversal::VAR_MAP_GEN_MONTH,       genInfo.genMonth));
-  static_cast<void>(getVar(BlockUniversal::VAR_MAP_GEN_YEAR,        genInfo.genYear));
-  static_cast<void>(getVar(BlockUniversal::VAR_MAP_GEN_HOUR,        genInfo.genHour));
-  static_cast<void>(getVar(BlockUniversal::VAR_MAP_GEN_MINUTE,      genInfo.genMinute));
-  static_cast<void>(getVar(BlockUniversal::VAR_MAP_GEN_SECOND,      genInfo.genSecond));
-  static_cast<void>(getVar(BlockUniversal::VAR_MAP_CHECKSUM,        genInfo.genChecksum));
-  static_cast<void>(getVar(BlockUniversal::VAR_MAP_NUMBER_OF_VARS,  genInfo.noOfVars));
-
-  if ((genInfo != nullGenInfo         ) &&
-      (genInfo == memoryMap_->genInfo) )
+  if (getMemoryMapIsValid() == false)
   {
-    genInfoMatch = true;
+    error = Atams::ERROR_MEMORY_MAP;
+  }
+  else if ((getVar(BlockUniversal::VAR_ATAMS_VERSION_MAJOR, genInfo.atamsVersionMajor) != Atams::ERROR_NONE) ||
+           (getVar(BlockUniversal::VAR_ATAMS_VERSION_MINOR, genInfo.atamsVersionMinor) != Atams::ERROR_NONE) ||
+           (getVar(BlockUniversal::VAR_MAP_GEN_DAY,         genInfo.genDay)            != Atams::ERROR_NONE) ||
+           (getVar(BlockUniversal::VAR_MAP_GEN_MONTH,       genInfo.genMonth)          != Atams::ERROR_NONE) ||
+           (getVar(BlockUniversal::VAR_MAP_GEN_YEAR,        genInfo.genYear)           != Atams::ERROR_NONE) ||
+           (getVar(BlockUniversal::VAR_MAP_GEN_HOUR,        genInfo.genHour)           != Atams::ERROR_NONE) ||
+           (getVar(BlockUniversal::VAR_MAP_GEN_MINUTE,      genInfo.genMinute)         != Atams::ERROR_NONE) ||
+           (getVar(BlockUniversal::VAR_MAP_GEN_SECOND,      genInfo.genSecond)         != Atams::ERROR_NONE) ||
+           (getVar(BlockUniversal::VAR_MAP_CHECKSUM,        genInfo.genChecksum)       != Atams::ERROR_NONE) ||
+           (getVar(BlockUniversal::VAR_MAP_NUMBER_OF_VARS,  genInfo.noOfVars)          != Atams::ERROR_NONE) )
+  {
+    error = Atams::ERROR_MEMORY_MAP;
+  }
+  else if ((genInfo == nullGenInfo        ) ||
+           (genInfo != memoryMap_->genInfo) )
+  {
+    error = Atams::ERROR_GEN_INFO_MISMATCH;
   }
 
-  return (genInfoMatch);
+  return (error);
 }
 
 #if (DEVELOPER_TOOLS == true)

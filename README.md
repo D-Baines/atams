@@ -261,6 +261,16 @@ The Node library is compatible with single and dual-core micro-controllers. The 
     #include "Atams/Node/CommsCore/CommsCore.hpp"
     ```
 
+### Common Return Type
+The majority of Node library functions return the following type:
+
+- **Atams::Error_t**\
+  This enum type is used to notify the user of any function errors.\
+  The following function included from `Atams/Shared/AtamsTypedefs.hpp` converts the error value into a human readable `const char *` string:
+  ```cpp
+  const char *Atams::getErrorString(const Atams::Error_t error);
+  ```
+
 ### Comms Core (Single & Dual-Core)
 
 - **Overview:**
@@ -313,7 +323,7 @@ The Node library is compatible with single and dual-core micro-controllers. The 
       {
         // An error occured during restoration from non-volatile storage
         printf("Atams non-volatile: ");
-        printf(Atams::getErrorString(initStatus));
+        printf(Atams::getErrorString(nvmStatus));
         printf("\n");
       }
     }
@@ -397,7 +407,7 @@ The Node library is compatible with single and dual-core micro-controllers. The 
     The App Core must be initialised using the same Memory Map as the Comms Core. The following function from `Atams/Node/AppCore/AppCore.hpp` is used to initialise the application core. The function will validate the provided Memory Map, and then perform a blocking wait until the Comms Core initialisation completes. The function will return `Atams::ERROR_NONE` if initialisation is successful.
 
     ```cpp
-    Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap);
+    Atams::Error_t initAppCore(const MemoryMap_t &memoryMap);
     ```
 
 - **Setting and Getting Variables:**
@@ -408,18 +418,22 @@ The Node library is compatible with single and dual-core micro-controllers. The 
 
 The Node library is written to maximise compatibility with different user application setups. This includes single or multi-threaded applications running on single or dual-core microcontrollers, alongside polling or event-driven communications peripheral setups. Atams provides platform files that contain all the required user constants, function declarations, and empty function definitions. The required platform function definitions change depending upon the users application setup. Comments are provided above each constant and function definition to help with implementation. 
 
-- **Platform Files:** The following Node library files need to be completed by the user:
+- **Platform Files:** 
 
-    Single and dual-core:  
-    `Atams/Node/SharedPlatform.cpp`\
-    `Atams/Node/CommsCore/CommsPlatform.hpp`\
-    `Atams/Node/CommsCore/CommsPlatform.cpp`  
-    
-    Dual-core only:  
-    `Atams/Node/AppCore/AppPlatform.hpp`\
-    `Atams/Node/AppCore/AppPlatform.cpp`  
+  The following Node library files need to be completed by the user:
 
-- **Function Comments:** The following tags are present in the `.cpp` file function comments to indicate when completion of the definition is required. Non-applicable function definitions can be left empty. It is recommended to cast any unused function arguments to `void` to avoid compiler warnings.
+  Single and dual-core:  
+  `Atams/Node/SharedPlatform.cpp`\
+  `Atams/Node/CommsCore/CommsPlatform.hpp`\
+  `Atams/Node/CommsCore/CommsPlatform.cpp`  
+  
+  Dual-core only:  
+  `Atams/Node/AppCore/AppPlatform.hpp`\
+  `Atams/Node/AppCore/AppPlatform.cpp`  
+
+- **Function Comments:** 
+
+  The following tags are present in the `.cpp` file function comments to indicate when completion of the definition is required. Non-applicable function definitions can be left empty. It is recommended to cast any unused function arguments to `void` to avoid compiler warnings.
 
 | Comment Tag                        | Requirement Condition |  
 | :--------------------------------- | :---------- |  
@@ -430,11 +444,47 @@ The Node library is written to maximise compatibility with different user applic
 | EVENT DRIVEN COMMS                 | Required when incoming bytes are received into an interrupt or event context separate from the context running the Atams comms update function. |
 | MULTI-THREAD + EVENT DRIVEN COMMS  | Required when Atams::updateCommsBlocking() is used in combination with an event driven receive setup. |
 
-- **Platform Byte Pre-Processing:** No pre-processing of incoming bytes is required at the platform level. All incoming bytes can be passed directly to Atams using the provided receive callback functions. The incoming bytes must be passed to Atams in order, and the same bytes should not be passed to Atams more than once.
+- **Platform Byte Pre-Processing:** 
 
-- **Platform Reception Methods:** Atams packets are compatible with polling, character delimited, or idle line reception methods. If a user wants to use character delimited reception methods - the delimiter should be set to hex `0x00`. 
+  No pre-processing of incoming bytes is required at the platform level. All incoming bytes can be passed directly to Atams using the provided receive callback functions. The incoming bytes must be passed to Atams in order, and the same bytes should not be passed to Atams more than once.
+
+- **Platform Reception Methods:** 
+
+  Atams packets are compatible with polling, character delimited, or idle line reception methods. If a user wants to use character delimited reception methods - the delimiter should be set to hex `0x00`. 
+
+- **Shared Memory Configuration (Dual-Core Only):**
+
+  `ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE` in `Atams/Node/SharedPlatform.hpp` places the inter-core shared structs into a dedicated memory section. The memory region targeted by this attribute must be configured as **non-cacheable** in the MPU (or equivalent) on both cores. If the region is cacheable, each core may read from its own locally cached copy rather than RAM.
+
+- **Configuration State Callbacks:**
+
+  `enterConfigurationState()` and `exitConfigurationState()` in `CommsPlatform.cpp` are called by the library whenever the Hub initiates a configuration state operation — this includes NVM storage processes, Node resets, and configuration variable changes (Node ID, bitrate, watchdog period). NVM storage and Node resets in particular can block the CPU entirely while they complete.
+
+  `enterConfigurationState()` should return `true` if the application is in a safe state to accept these operations, or `false` to defer them until the next Hub attempt. The application must remain in the safe state until `exitConfigurationState()` is called, which signals that the library will not trigger any further blocking operations or resets until config state is entered again.
+
+  > [!WARNING]
+  > Do not return `true` from `enterConfigurationState()` if blocking functions cannot be safely called, or if a Node reset at that moment would cause unacceptable behaviour in the application.
+
+### Watchdog Fault Handling
+
+The Node library includes a software watchdog that measures the time between valid Hub messages. If no valid message is received within the configured watchdog period (set via the Hub's Node Configuration Process), a watchdog fault is triggered. The user application should poll the following function to detect the fault and enter a safe state:
+
+```cpp
+bool Atams::getWatchdogFault(void);
+```
+
+This function is available from both the Comms Core and App Core — the same call works in either context. It returns `true` when a fault is active.
+
+The watchdog counter is reset automatically each time a valid Hub message is received, so no user action is required to keep the watchdog fed during normal operation.
+
+> [!IMPORTANT]
+> The watchdog fault does **not** clear automatically when Hub communications resume. Once a fault is active, it persists until the Hub explicitly clears it. Use `NodeActions::beginClearWatchdogFault` / `updateClearWatchdogFault` from the Hub Library to perform the clear — see [Node Actions](#node-actions) in the Hub Library section. The `VAR_WATCHDOG_FAULT_ACTIVE` variable in the Universal Data Block is also set when a fault is active, allowing the Hub to detect the fault state on reconnection.
+
+> [!NOTE]
+> Set the watchdog period to `0` in the Node Configuration to disable the watchdog entirely. See [The Node Configuration Process](#the-node-configuration-process).
 
 ### Maximising Node Performance
+
 Care should be taken when using Atams alongside user code containing high-priority device functions. If user device functions run at the same priority or higher than an Atams comms update function, the response time of the Node could be at least up to the length of time it takes these user functions to run. One solution for RTOS based systems can be to run the `Atams::updateCommsBlocking()` function in a higher priority thread than any user device functions. If this is not possible, a secondary core of a multi-core MCU can be dedicated to run Atams communications for the quickest Node response times. This becomes especially important when using the synchronous update cycle with the Atams Hub library.
 
 ### Building (CMake Example) - Coming Soon
@@ -454,12 +504,109 @@ The Hub library includes two key classes: a Node class, and a Bus class.
 
 **Bus Class:** A Bus class instance is required to enable communication and variable exchange with connected Node devices. Each Node class instance must be linked to the Bus instance that mirrors the physical device connections. The Bus class public interfaces include easy to update processes - abstracting away packet handling, compatibility checks, Node storage processes, Bus arbitration, Node configuration, Node sychronisation, and error handling. This lets the user focus almost entirely on their application specific functionality.
 
+### Getting Started
+
+The steps below show the complete sequence for setting up and running the Hub library. Each step is documented in detail in the sections that follow.
+
+**Step 1 — One-time Node configuration** (new or reconfigured Nodes only)\
+Each physical Node device must be assigned a unique ID before it can be used on the Bus. See [The Node Configuration Process](#the-node-configuration-process).
+
+**Step 2 — Construct Node and Bus instances**
+```cpp
+#include "Atams/Hub/Node.hpp"
+#include "Atams/Hub/Bus.hpp"
+#include "Atams/Hub/Maps/MapExample/MapExample.hpp"
+
+static const Atams::Platform::BusPeripheral::UserData_t userData { /* ... */ };
+
+static Atams::Bus  bus(userData);
+static Atams::Node node1(1U);
+static Atams::Node node2(2U);
+```
+
+**Step 3 — Initialise each Node instance with its Memory Map**
+```cpp
+node1.init(Atams::MapExample::memoryMap);
+node2.init(Atams::MapExample::memoryMap);
+```
+
+**Step 4 — Add each Node to the Bus**
+```cpp
+bus.addNodeToBus(node1);
+bus.addNodeToBus(node2);
+```
+
+**Step 5 — Run the Bus Initialisation Process** (once per power cycle, or when the Bus configuration changes)
+```cpp
+Atams::Error_t        error {Atams::ERROR_NONE};
+Atams::ProcessState_t state {Atams::PROCESS_IN_PROGRESS};
+
+error = bus.beginBusInitProcess();
+
+do    
+{
+  state = bus.updateBusInitProcess(error); 
+}
+while (state == Atams::PROCESS_IN_PROGRESS);
+```
+
+**Step 6 — Configure Request Patterns for variables to read or write**\
+`setRequestPattern` controls which variables are included in each update cycle and whether they are read or written. For writes, call `setVar` first to place the value into the Node instance's local storage. Helper functions such as `setReadStream` and `setWriteStream` provide cleaner syntax for the most common patterns — see [Node Request Pattern Control](#node-request-pattern-control).
+```cpp
+using namespace Atams::MapExample;
+
+// Request a read of VAR_EXAMPLE_1 every update cycle
+node1.setRequestPattern(BlockExample::VAR_EXAMPLE_1, Atams::ACCESS_READ, Atams::REQUEST_STREAM);
+
+// Place a write value into local storage, then request it be sent every update cycle
+node1.setVar(BlockExample::VAR_EXAMPLE_2, someValue);
+node1.setRequestPattern(BlockExample::VAR_EXAMPLE_2, Atams::ACCESS_WRITE, Atams::REQUEST_STREAM);
+```
+
+**Step 7 — Run the Bus Update Cycle** (called repeatedly in the application loop)
+```cpp
+error = bus.beginUpdateCycle();
+
+do 
+{ 
+  state = bus.runUpdateCycleSync(error); 
+}
+while (state == Atams::PROCESS_IN_PROGRESS);
+
+bus.processResponseBuffers();
+```
+
+**Step 8 (Optional) — Check New Data Ready and Write Acknowledgement flags**\
+Each variable has a New Data Ready flag set when fresh read data arrives, and a Write Acknowledgement flag set when a write is confirmed by the Node. Both flags persist until explicitly cleared. They are useful for per-variable confirmation independent of the overall cycle result, and particularly valuable when the Bus Update Cycle runs in a separate thread from the code reading or writing variables. See [Node Acknowledgement and New Data Ready Flags](#node-acknowledgement-and-new-data-ready-flags).
+```cpp
+// using namespace Atams::MapExample assumed
+bool newData  {false};
+bool writeAck {false};
+
+node1.isDataReady(BlockExample::VAR_EXAMPLE_1, newData);
+node1.isWriteAcked(BlockExample::VAR_EXAMPLE_2, writeAck);
+```
+
+**Step 9 — Read updated variable values from Node instance storage**\
+If the update cycle and `processResponseBuffers` both return without error, all active read requests received fresh data and all active write requests were acknowledged by the Node. Variable values can be read directly from Node instance storage using `getVar`. See [Node Variable Access](#node-variable-access).
+```cpp
+uint32_t readValue {0U};
+node1.getVar(BlockExample::VAR_EXAMPLE_1, readValue); // using namespace Atams::MapExample assumed
+```
+
+> [!NOTE]
+> **Commissioning (Step 1):** The Node Configuration Process writes the Node's configuration to its non-volatile memory, so it only needs to be run once when commissioning a new Node device, or when a configuration change is required. It is not part of the normal operational flow.
+>
+> **Power-on setup (Steps 2–5):** These steps must be run every time the Hub is powered on or the Hub library is initialised.
+>
+> **Main loop (Steps 6–9):** Request Patterns only need to be changed when the set of variables being exchanged changes. Steps 7 and 9 form the core repeating loop; Step 8 is optional and most valuable in multi-threaded setups.
+
 ### Common Return Types
 The majority of Hub library functions return one of the two following types:
 
 - **Atams::Error_t**\
 This enum type is used to notify the user of any function or process errors.\
-The following function included from `Atams/Shared/AtamsTypedefs.hpp` converts the error value into a `const char *` string description:
+The following function included from `Atams/Shared/AtamsTypedefs.hpp` converts the error value into a human readable `const char *` string:
   ```cpp
   const char *getErrorString(const Atams::Error_t error);
   ```
@@ -487,6 +634,8 @@ This enum type is returned from any Atams function that includes a polled update
                                  */
     };
     ```
+
+  When a process returns `Atams::PROCESS_ERROR`, the library automatically cleans up its internal state — no manual teardown is required. The process can be restarted at any time by calling the appropriate `begin...` function again.
 
 ### Includes
 
@@ -565,9 +714,9 @@ The following example shows how to start the Node Configuration Process for an u
   #include "Atams/Hub/Bus.hpp"
 
   constexpr uint8_t NODE_ONE_ID {1U};
-  
+
   static const Atams::Platform::BusPeripheral::UserData_t userData;
-  
+
   static Atams::Bus bus(userData);
 
   void userFunc(void)
@@ -581,16 +730,8 @@ The following example shows how to start the Node Configuration Process for an u
     };
 
     Atams::Error_t error {Atams::ERROR_NONE};
-    
-    error = bus.beginSetNodeConfigProcess(nodeConfig);
 
-    if (error != Atams::ERROR_NONE)
-    {
-      // An error occured while attempting to start the Node Configuration Process
-      printf("Atams Node configuration process error: ");
-      printf(Atams::getErrorString(error));
-      printf("\n");
-    }
+    error = bus.beginSetNodeConfigProcess(nodeConfig);
   }
   ```
 
@@ -616,18 +757,6 @@ During the Node Configuration Process, the new configuration values will be writ
       processState = bus.updateSetNodeConfigProcess(error);
     }
     while (processState == Atams::PROCESS_IN_PROGRESS);
-
-    if (processState == Atams::PROCESS_COMPLETE) 
-    {
-      printf ("Node configuration successful!\n");
-    }
-    else if (processState == Atams::PROCESS_ERROR)    
-    {
-      // An error occured during the Node Configuration Process
-      printf("Atams Node configuration process error: ");
-      printf(Atams::getErrorString(error));
-      printf("\n");
-    }
   }
   ```
   
@@ -662,7 +791,7 @@ static Atams::Node node1(NODE_ONE_ID);
 
 void userFunc(void)
 {
-  Atams::Error_t {Atams::ERROR_NONE};
+  Atams::Error_t error {Atams::ERROR_NONE};
   
   error = node1.init(Atams::MapExample::memoryMap);
 }
@@ -683,12 +812,12 @@ constexpr uint8_t NODE_ONE_ID {1U};
 
 static const Atams::Platform::BusPeripheral::UserData_t userData;
 
-static Atams::Bus  bus(userData)
+static Atams::Bus  bus(userData);
 static Atams::Node node1(NODE_ONE_ID);
 
 void userFunc(void)
 {
-  Atams::Error_t {Atams::ERROR_NONE};
+  Atams::Error_t error {Atams::ERROR_NONE};
   
   error = bus.addNodeToBus(node1);
 }
@@ -711,24 +840,16 @@ The Bus Initialisation process cannot be skipped, and must be completed to use t
 The following example shows how to start the Bus Initialisation Process. The function will return errors if no Node class instances have been added to the Bus, or if the `BusPeripheral::startReceive()` function fails to complete successfully.
   ```cpp
   #include "Atams/Hub/Bus.hpp"
-  
+
   static const Atams::Platform::BusPeripheral::UserData_t userData;
-  
+
   static Atams::Bus bus(userData);
 
   void userFunc(void)
   {
     Atams::Error_t error {Atams::ERROR_NONE};
-    
-    error = bus.beginBusInitProcess();
 
-    if (error != Atams::ERROR_NONE)
-    {
-      // An error occured while attempting to start the Bus Initialisation Process
-      printf("Atams Bus initialisation process error: ");
-      printf(Atams::getErrorString(error));
-      printf("\n");
-    }
+    error = bus.beginBusInitProcess();
   }
   ```
 
@@ -757,18 +878,6 @@ The following example shows how to start the Bus Initialisation Process. The fun
       processState = bus.updateBusInitProcess(error);
     }
     while (processState == Atams::PROCESS_IN_PROGRESS);
-
-    if (processState == Atams::PROCESS_COMPLETE) 
-    {
-      printf ("Bus initialisation successful!\n");
-    }
-    else if (processState == Atams::PROCESS_ERROR)    
-    {
-      // An error occured during the Bus Initialisation Process
-      printf("Atams Node configuration process error: ");
-      printf(Atams::getErrorString(error));
-      printf("\n");
-    }
   }
   ```
 
@@ -905,7 +1014,7 @@ Atams::Error_t clearWriteAck(const uint16_t varID);
 Atams::Error_t clearDataReady(const uint16_t varID);
 ```
 
-The functions will return an error if the varID is outside the bounds of the Memory Map used to initialise the Node instance.
+The functions will return an error if the varID is outside the bounds of the Memory Map used to initialise the Node instance. Both flags persist across Bus Update Cycles until explicitly cleared — they are not automatically reset between cycles.
 
 ### Node Combined Convenience Functions
 The Node class contains convenience functions to clean up the syntax for compounding operations. The helper functions use a combination of the Request Pattern setter, variable setter/getter, and flag checking/clearing functions to help keep user code clean.
@@ -940,7 +1049,7 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
 - **Overview**\
   During the Synchronous Update Cycle, Request Packets are sent to all Node devices, which store them in a Sync Buffer. Once the final Node device receives it's Request Packet, all Nodes process their stored Sync Buffers simultaneously: variables are written to variable storage, and read data and write acknowledgments are transferred to Response Packets. The first Node transmits it's Response Packet immediately, and each subsequent Node device transmits it's response after receiving the previous Node's Response Packet. If a Node does not respond within a given timeout window, the Bus Update Cycle running on the Hub, detects the timeout and sends a Jog Packet to the next Node device in the response order, ensuring the cycle continues.
   
-  The Bus Update Cycles do not process incoming response data during the update. This is triggered by the user once the update cycle is complete with the `Bus::processSyncBuffers` function.
+  The Bus Update Cycles do not process incoming response data during the update. This is triggered by the user once the update cycle is complete with the `Bus::processResponseBuffers` function.
 
 - **Starting the Synchronous Update Cycle:**
 
@@ -962,14 +1071,6 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
     Atams::Error_t error {Atams::ERROR_NONE};
     
     error = bus.beginUpdateCycle();
-
-    if (error != Atams::ERROR_NONE)
-    {
-      // An error occured while attempting to start the Bus Update Process
-      printf("Atams Bus Update Cycle error: ");
-      printf(Atams::getErrorString(error));
-      printf("\n");
-    }
   }
   ```
 
@@ -998,18 +1099,6 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
       processState = bus.runUpdateCycleSync(error);
     }
     while (processState == Atams::PROCESS_IN_PROGRESS);
-
-    if (processState == Atams::PROCESS_COMPLETE) 
-    {
-      printf ("Node Update Cycle successful - some Nodes may have Bus errors \n");
-    }
-    else if (processState == Atams::PROCESS_ERROR)    
-    {
-      // An error occured during the Bus Update Cycle
-      printf("Atams Bus Update Cycle error: ");
-      printf(Atams::getErrorString(error));
-      printf("\n");
-    }
   }
   ```
 
@@ -1019,9 +1108,9 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
 
 - **Processing Response Packets & Handling Errors:**
 
-  If the Sychronous Update Cycle completes successfully, each Node class instance linked to the Bus will contain a new Response Packet. The user can call the `Bus::processSyncBuffers` to trigger the processing of all Node Response Packets. If the function returns no errors, all the read values received from all the Node devices will be written to the Node class instances' variable storage, and the data ready and write acknowledgement flags will be set appropriately. If communications errors occured with any of the Nodes during the Bus Update Cycle, this function will return an error. 
+  If the Sychronous Update Cycle completes successfully, each Node class instance linked to the Bus will contain a new Response Packet. The user can call the `Bus::processResponseBuffers` to trigger the processing of all Node Response Packets. If the function returns no errors, all the read values received from all the Node devices will be written to the Node class instances' variable storage, and the data ready and write acknowledgement flags will be set appropriately. If communications errors occured with any of the Nodes during the Bus Update Cycle, this function will return an error. 
 
-  If the `Bus::processSyncBuffers` function indicated that a communication error occurred with a Node during the Bus Update Cycle, it is important to figure out which Node caused the error. If an error occurs on a Node, the variable storage of the Node device or Node class instance may not have been updated as expected. The Node class `getBusError(void)` function can be used with each Node instance to find the error, and get further details.
+  If `Bus::processResponseBuffers` returns an error, it indicates that a communications failure occurred with one or more Nodes during the update cycle — but it does not identify which Node was affected or why. To diagnose the failure, the Node class `getBusError(void)` function must be called on each Node instance individually. If a Node experienced a communications error during the cycle, `getBusError` will return a non-`Atams::ERROR_NONE` value describing the specific failure. If an error occurred on a Node, the variable storage of that Node device or Node class instance may not have been updated as expected for that cycle. Note that Bus errors stored on each Node instance are automatically cleared when a new update cycle is started with `beginUpdateCycle`, so `getBusError` should be called before starting the next cycle if the error needs to be handled.
   
   **Example:**
   ```cpp
@@ -1040,7 +1129,7 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
   static Atams::Node node1(1);
   static Atams::Node node2(2);
 
-  static Atams::Node[NUMBER_OF_NODES] *nodePtrs {node1, node2};
+  static Atams::Node[NUMBER_OF_NODES] *nodePtrs {&node1, &node2};
 
   static Atams::Bus bus(userData);
 
@@ -1048,13 +1137,10 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
   {
     Atams::Error_t error {Atams::ERROR_NONE};
 
-    error = bus.processSyncBuffers();
+    error = bus.processResponseBuffers();
 
     if (error == Atams::ERROR_NONE)
     {
-      // No Node communications errors occured during the Bus update cycles.
-      // Write values have successfully been written to the variable storage of all Node devices.
-      // Read values have successfully been written to the variable storage of all Node class instances.
       printf("Response Packet processing successful! \n");
     }
     else
@@ -1062,15 +1148,8 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
       // A Bus error occured with one or more Nodes
       for (Atams::Node *&node : nodePtrs)
       {
-        error = node.getBusError();
-
-        if (error != Atams::ERROR_NONE)
-        {
-          // An Bus error occured on this Node
-          printf("Node Bus error: ");
-          printf(Atams::getErrorString(error));
-          printf("\n");
-        }
+        // Check this Node for error
+        error = node->getBusError();
       }
     }
   }
@@ -1084,11 +1163,35 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
 
 - **Overview**
 
-  The Asynchronous Update cycle is almost identical to the Synchronous Update Cycle, with one key difference. In the Asynchronous Update Cycle, each Node responds immediately to it's Request Packet with a Response Packet. Node transactions are handled one after another: the Bus sends a request to a Node, waits for and stores it's response, then proceeds to the next Node. This requires more messages on the Bus per cycle, leading to a slightly slower process. It also means that there is no mechanism to sync the processing of Request Packets between all Node devices. 
+  The Asynchronous Update cycle is almost identical to the Synchronous Update Cycle, with one key difference. In the Asynchronous Update Cycle, each Node responds immediately to it's Request Packet with a Response Packet. Node transactions are handled one after another: the Bus sends a request to a Node, waits for and stores it's response, then proceeds to the next Node. This requires more messages on the Bus per cycle, leading to a slightly slower process. It also means that there is no mechanism to sync the processing of Request Packets between all Node devices. The Asynchronous Update Cycle is preferable when simultaneous processing across all Nodes is not a requirement, or when the application does not need the tighter timing guarantees that the Synchronous Update Cycle provides.
 
 - **Using the Asynchronous Update Cycle**
 
-  The process of using the Asynchronous Update Cycle with the Hub Library is the same as the Synchronous Update Cycle, just use the Bus `runUpdateCycleAsync` function instead of the `runUpdateCycleSync` function when updating the process.
+  The process of using the Asynchronous Update Cycle with the Hub Library is the same as the Synchronous Update Cycle. `processResponseBuffers` is still required after the cycle completes. Use `runUpdateCycleAsync` in place of `runUpdateCycleSync`:
+
+  ```cpp
+  #include "Atams/Hub/Bus.hpp"
+
+  static const Atams::Platform::BusPeripheral::UserData_t userData;
+
+  static Atams::Bus bus(userData);
+
+  void userFunc(void)
+  {
+    Atams::Error_t        error {Atams::ERROR_NONE};
+    Atams::ProcessState_t processState;
+
+    error = bus.beginUpdateCycle();
+
+    do
+    {
+      processState = bus.runUpdateCycleAsync(error);
+    }
+    while (processState == Atams::PROCESS_IN_PROGRESS);
+
+    bus.processResponseBuffers();
+  }
+  ```
 
 
 ### Single Node Update Cycle
@@ -1121,14 +1224,6 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
     Atams::Error_t error {Atams::ERROR_NONE};
     
     error = bus.beginSingleNodeUpdateCycle(node1);
-    
-    if (error != Atams::ERROR_NONE)
-    {
-      // An error occured while attempting to start the Bus Update Process
-      printf("Atams Bus Update Cycle error: ");
-      printf(Atams::getErrorString(error));
-      printf("\n");
-    }
   }
   ```
 
@@ -1161,29 +1256,89 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
       processState = bus.runSingleNodeUpdateCycle(error, node1);
     }
     while (processState == Atams::PROCESS_IN_PROGRESS);
-
-    if (processState == Atams::PROCESS_COMPLETE) 
-    {
-      // The Single Node Update Cycles completed successfully.
-      // Write values have successfully been written to the variable storage of the Node device.
-      // Read values have successfully been written to the variable storage of the Node class instance.
-      printf ("Node Update Cycle successful!\n");
-    }
-    else if (processState == Atams::PROCESS_ERROR)    
-    {
-      // A communications or Response Packet processing error occured
-      printf("Atams Single Node Update Cycle error: ");
-      printf(Atams::getErrorString(error));
-      printf("\n");
-    }
   }
   ```
+
+### Node Actions
+
+The `NodeActions` class provides advanced Hub-side operations that run alongside the Bus Update Cycle. Unlike the processes managed by `Bus`, `NodeActions` is instantiated directly by the user, giving independent control over NVM storage operations, Node resets, and individual configuration changes on a per-Node basis.
+
+Include the following header to use `NodeActions`:
+```cpp
+#include "Atams/Hub/NodeActions.hpp"
+```
+
+- **Construction:**
+
+    `NodeActions` uses a default constructor and requires no arguments. A single instance can be used to drive one process at a time across any Node on the Bus.
+    ```cpp
+    static Atams::NodeActions nodeActions;
+    ```
+
+- **How it interleaves with the Bus Update Cycle:**
+
+    `NodeActions` processes are polled incrementally — call a `NodeActions` update function (e.g. `updateStoreAll`) each Bus Update Cycle until it returns `Atams::PROCESS_COMPLETE` or `Atams::PROCESS_ERROR`. At least one Bus Update Cycle must complete between calls, but multiple cycles can safely pass since response flags persist until cleared, so `NodeActions` can equally be driven from a slower loop or a separate context. Only one `NodeActions` process can be active at a time per `NodeActions` instance; to run processes on two Nodes concurrently, two separate `NodeActions` instances are required.
+
+- **NVM Storage Operations:**
+
+    All three storage operations share the same begin function. The update function called determines the operation performed.
+
+    | Operation | Update Function | Description |
+    | :-------- | :-------------- | :---------- |
+    | Store All | `updateStoreAll(error)` | Saves all NVM-flagged variables to non-volatile memory on the Node. |
+    | Restore All | `updateRestoreAll(error)` | Restores all variables to their factory default values, including the Universal Block. |
+    | Restore User Blocks | `updateRestoreUserBlocks(error)` | Restores only user-defined Data Block variables to their factory default values, leaving the Universal Block unchanged. |
+
+    ```cpp
+    Atams::Error_t        error {Atams::ERROR_NONE};
+    Atams::ProcessState_t state {Atams::PROCESS_IN_PROGRESS};
+
+    nodeActions.beginStorageProcess(node1);
+
+    do { state = nodeActions.updateStoreAll(error); }
+    while (state == Atams::PROCESS_IN_PROGRESS);
+    ```
+
+- **Node Reset:**
+
+    Triggers a software reset on the target Node device. After a successful reset, the Node will reinitialise and the Bus Initialisation Process should be run before resuming normal Bus Update Cycles.
+
+    ```cpp
+    nodeActions.beginResetNode(node1);
+
+    do { state = nodeActions.updateResetNode(error); }
+    while (state == Atams::PROCESS_IN_PROGRESS);
+    ```
+
+- **Clear Watchdog Fault:**
+
+    Clears an active watchdog fault on the target Node. The fault does not clear automatically when Hub communications resume — this process must be run explicitly after reconnection. See [Watchdog Fault Handling](#watchdog-fault-handling) for details of the Node-side watchdog behaviour.
+
+    ```cpp
+    nodeActions.beginClearWatchdogFault(node1);
+
+    do { state = nodeActions.updateClearWatchdogFault(error); }
+    while (state == Atams::PROCESS_IN_PROGRESS);
+    ```
+
+- **Individual Configuration Changes:**
+
+    The Node Configuration Process (run via `Bus`) sets all configuration values in a single operation. For cases where only one value needs to change after initial commissioning, `NodeActions` provides individual setters that can be used without running the full process:
+
+    | Process | Begin Function | Update Function |
+    | :------ | :------------- | :-------------- |
+    | Change Node ID | `beginSetNodeID(node, newID)` | `updateSetNodeID(error)` |
+    | Change Bitrate | `beginSetBitrate(node, bitrateOption)` | `updateSetBitrate(error)` |
+    | Change Watchdog Period | `beginSetWatchdogPeriod(node, periodMs)` | `updateSetWatchdogPeriod(error)` |
+
+    > [!NOTE]
+    > Configuration changes are written to non-volatile memory on the Node and persist between power cycles. If the Node ID is changed, the Node class instance must be updated to match using `Node::setNodeID`, and the Bus Initialisation Process should be re-run.
 
 ### Platform Setup
 
 Atams provides platform files that contain all the required user constants, function declarations, and empty function definitions. The required platform function definitions change depending upon the users application setup. Comments are provided above each constant and function definition to help with implementation. 
 
-- **Platform Files:** The following Node library files need to be completed by the user:
+- **Platform Files:** The following Hub library files need to be completed by the user:
 
     `Atams/Hub/Platform.hpp`
 
@@ -1197,12 +1352,14 @@ Atams provides platform files that contain all the required user constants, func
 | MULTI-THREAD                       | Required when Atams functions are used from multiple threads, and/or interrupt contexts. | 
 | POLLING COMMS                      | Required when the platform hardware needs to be polled in order to receive incoming bytes. |
 | EVENT DRIVEN COMMS                 | Required when incoming bytes are received into an interrupt or event context separate from the context running the Atams comms update function. |
-| BLOCKING BUS UPDATE | Required when blocking Bus Update Cycles functions are used.
+| BLOCKING BUS UPDATE | Required when blocking Bus Update Cycles functions are used. |
 
 - **Platform Byte Pre-Processing:** No pre-processing of incoming bytes is required at the platform level. All incoming bytes can be passed directly to Atams using the provided receive callback functions. The incoming bytes must be passed to Atams in order, and the same bytes should not be passed to Atams more than once.
 
 - **Platform Reception Methods:** Atams packets are compatible with polling, character delimited, or idle line reception methods. If a user wants to use character delimited reception methods - the delimiter should be set to hex `0x00`. 
 
 ### Maximising Hub Performance
-A user may decide to use the blocking versions of the Bus Update Cycle functions by implementing `Platform::CommsSemaphore` in the platform files. This will block the thread running the Bus Update Cycle whilst the cycle waits for new Bus messages. If this setup is used, it is recommended to give this thread the highest priority possible.
+The non-blocking update functions (`runUpdateCycleSync`, `runUpdateCycleAsync`) return `Atams::PROCESS_IN_PROGRESS` while waiting for Bus responses, relying on the user to poll them as fast as possible. The faster the poll rate, the less time is wasted between a response arriving and the next request being sent.
+
+The blocking variants (`runUpdateCycleSyncBlocking`, `runUpdateCycleAsyncBlocking`) suspend the calling thread while waiting for Bus responses, only resuming when a response arrives or a timeout expires. This requires `Platform::BinarySemaphore` to be implemented in the Hub platform files. Because the thread does not busy-wait, the CPU is free to do other work between responses — but for the lowest possible latency, the thread running the blocking update cycle should be given the highest priority available.
 

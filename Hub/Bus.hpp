@@ -42,7 +42,7 @@
 #include "Developer/CircularBuffer.hpp"
 #include "Platform.hpp"
 #include "Developer/FramingConstants.hpp"
-#include "Developer/NodeActions.hpp"
+#include "NodeActions.hpp"
 #include "Node.hpp"
 
 /*************************************************************************************/
@@ -215,17 +215,8 @@ private Platform::BusPeripheral
 
     void terminate(Atams::Error_t error);
     void setProcessComplete(void);
-    bool getProcessTerminated(void);
     void readyProcess(void);
   };
-
-  /*-- Private Function Declarations (Core) -----------------------------------------*/
-
-  Atams::ProcessState_t runUpdateCycleSyncCore(Atams::Error_t &error, bool blocking);
-
-  Atams::ProcessState_t runUpdateCycleAsyncCore(Atams::Error_t &error, bool blocking);
-
-  Atams::ProcessState_t runSingleNodeUpdateCycleCore(Atams::Error_t &error, Atams::Node &node, bool blocking);
 
   /*-- Static Private Variables -----------------------------------------------------*/
 
@@ -273,6 +264,14 @@ private Platform::BusPeripheral
   Atams::BusIDs_t busIDsToSet_;
 
   /*-- Private Function Declarations ------------------------------------------------*/
+
+  Atams::ProcessState_t runUpdateCycleSyncCore(Atams::Error_t &error, bool blocking);
+
+  Atams::ProcessState_t runUpdateCycleAsyncCore(Atams::Error_t &error, bool blocking);
+
+  Atams::ProcessState_t runSingleNodeUpdateCycleCore(Atams::Error_t &error, Atams::Node &node, bool blocking);
+
+  Atams::Error_t validateNodeUniversalBlock(Node &node);
 
   bool safeToRemoveNode(void);
 

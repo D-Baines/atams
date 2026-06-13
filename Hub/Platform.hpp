@@ -34,6 +34,8 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+#include <chrono>
+#include <condition_variable>
 #include <mutex>
 #include "asio.hpp"
 
@@ -248,7 +250,7 @@ class BinarySemaphore
 
   /*-- Required Public Function Declarations ----------------------------------------*/
 
-  bool waitWithTimeout(uint32_t timeoutMs);
+  void waitWithTimeout(uint32_t timeoutMs);
 
   void release(void);
 
@@ -256,6 +258,9 @@ class BinarySemaphore
 
   /*-- User Private Variables -------------------------------------------------------*/
 
+  std::mutex              mutex_;
+  std::condition_variable cv_;
+  bool                    released_ {false};
 };
 
 /*************************************************************************************/
