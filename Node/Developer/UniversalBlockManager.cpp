@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    ConfigurationHandler.cpp
+  * @file    UniversalBlockHandler.cpp
   *
   * @author  D. Baines
   *
@@ -151,8 +151,8 @@ void UniversalBlockManager::runPendingProcess(void)
 {
   if (pendingProcessID_ < NUMBER_OF_PROCESSES)
   {
-    PasscodeChecker_t &checker       = configPasscodeCheckers_[pendingProcessID_];
-    Atams::Error_t     processStatus = checker.processFunction();
+    PasscodeChecker_t &checker       {configPasscodeCheckers_[pendingProcessID_]};
+    Atams::Error_t     processStatus {checker.processFunction()};
 
     if (checker.isStorageProcess == true)
     {
@@ -268,7 +268,7 @@ void UniversalBlockManager::checkConfigurationPasscodes(void)
 {
   for (uint8_t processIndex {0U}; processIndex < NUMBER_OF_PROCESSES; processIndex++)
   {
-    PasscodeChecker_t &checker = configPasscodeCheckers_[processIndex];
+    PasscodeChecker_t &checker {configPasscodeCheckers_[processIndex]};
 
     static_cast<void>(Atams::getVar(checker.passcodeVarID, checker.passcode));
 
@@ -294,7 +294,7 @@ void UniversalBlockManager::cancelConfigurationValueChange(void)
   static_cast<void>(Atams::setVar(BlockUniversal::VAR_WATCHDOG_PERIOD,  watchdogPeriod));
 }
 
-void UniversalBlockManager::notifyStorageProcessComplete(Atams::Error_t processStatus)
+void UniversalBlockManager::notifyStorageProcessComplete(const Atams::Error_t processStatus)
 {
   static_cast<void>(Atams::setVar(BlockUniversal::VAR_STORAGE_STATUS,           static_cast<uint8_t>(processStatus)));
   static_cast<void>(Atams::setVar(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE, static_cast<uint8_t>(ATAMS_TRUE)));

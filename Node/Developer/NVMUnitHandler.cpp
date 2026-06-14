@@ -63,7 +63,7 @@ Atams::Error_t NVMUnitHandler::writeToNVM(const uint32_t writeIndex, const uint8
     return (Atams::ERROR_NVM_WRITE_ORDER); /* Early Return */
   }
 
-  for (uint32_t byteIndex = 0U; byteIndex < length; byteIndex++)
+  for (uint32_t byteIndex {0U}; byteIndex < length; byteIndex++)
   {
     unitBuffer_[unitIndex_] = inputPtr[byteIndex];
 

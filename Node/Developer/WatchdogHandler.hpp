@@ -54,8 +54,8 @@ class WatchdogHandler
 
   /*-- Public Constants -------------------------------------------------------------*/
 
-  static constexpr uint32_t WATCHDOG_UPDATE_PERIOD        = 1U;
-  static constexpr uint32_t MINIMUM_VALID_WATCHDOG_PERIOD = 1U;
+  static constexpr uint32_t WATCHDOG_UPDATE_PERIOD        {1U};
+  static constexpr uint32_t MINIMUM_VALID_WATCHDOG_PERIOD {1U};
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
@@ -103,11 +103,11 @@ class WatchdogHandler
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  uint32_t m_prevWatchdogUpdateTime = 0U;
-  uint32_t m_prevWatchdogReset      = Atams::WATCHDOG_RESET_PASSCODE;
-  uint32_t m_watchdogPeriod         = 0U;
-  uint32_t m_watchdogCount          = 0U;
-  uint32_t m_watchdogStatus         = WATCHDOG_FAULT_INACTIVE;
+  uint32_t m_prevWatchdogUpdateTime {0U};
+  uint32_t m_prevWatchdogReset      {Atams::WATCHDOG_RESET_PASSCODE};
+  uint32_t m_watchdogPeriod         {0U};
+  uint32_t m_watchdogCount          {0U};
+  uint32_t m_watchdogStatus         {WATCHDOG_FAULT_INACTIVE};
 
   /*-- Private Function Declarations -------------------------------------------------*/
 

@@ -105,9 +105,9 @@ static void syncWithCommsCoreInit(void)
 
   while (commsInitStatus == CORE_INIT_IN_PROGRESS)
   {
-    uint32_t currentTime = Platform::getMillis();
+    uint32_t currentTime {Platform::getMillis()};
 
-    if (currentTime - previousCoreCheckTime >= CORE_STATUS_CHECK_PERIOD)
+    if ((currentTime - previousCoreCheckTime) >= CORE_STATUS_CHECK_PERIOD)
     {
       Platform::acquireVarStorageLock();
 
@@ -147,7 +147,7 @@ static Atams::Error_t setVarImpl(const uint16_t varID, const T writeValue)
 
   if (getAtamsType<T>() != varInfo.type) return (Atams::ERROR_VAR_TYPE); /* Early Return */
 
-  Atams::VarStorage_t &varStorage = s_sharedData.varStorage[varID];
+  Atams::VarStorage_t &varStorage {s_sharedData.varStorage[varID]};
 
   Platform::acquireVarStorageLock();
 

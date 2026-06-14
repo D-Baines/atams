@@ -132,7 +132,7 @@ A GUI tool is provided for auto-generating the Memory Map C++ files required by 
 
 ### Memory Map Tables
 
-![alt text](Developer/Documentation/Imags/MemoryMapExampleTable.png)
+![alt text](Developer/Documentation/Images/MemoryMapExampleTable.png)
 
 Before using the autogen tool, fill out an Atams Memory Map table in the provided `.xlsx` format to specify the configuration information for each device variable. The table drives code generation and doubles as documentation for the Memory Map. The template is at:  
 `Atams/Autogen/TemplateMap.xlsx`.
@@ -181,10 +181,10 @@ Follow these steps to generate Memory Map files with the Atams Memory Map Genera
 - **Step 7:** Click *Generate*. Before writing any files, the tool checks whether a folder with the given Memory Map name already exists in either output directory. If a conflict is found, a warning popup lists the affected paths and asks for confirmation before overwriting. Generation status is shown at the bottom of the application.
 
 > [!NOTE]  
-> The application remembers previously selected paths when restarted.
+> Previously selected file paths are remembered between sessions.
 
 > [!TIP]  
-> If the Hub and Node are not being developed on the same machine, consider generating to local repositories and using version control to synchronise Memory Map files between environments. The Bus Initialisation Process will return an error if the Hub and Node Memory Maps are not compatible — see [The Bus Initialisation Process](#the-bus-initialisation-process).
+> If the Hub and Node are being developed on separate machines, generate Memory Maps to local repositories and use version control to keep them in sync. The Bus Initialisation Process will fail if the Hub and Node Memory Maps are incompatible — see [The Bus Initialisation Process](#the-bus-initialisation-process).
 
 
 # Memory Map Access

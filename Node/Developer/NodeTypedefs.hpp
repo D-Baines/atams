@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    NodeUtilities.hpp
+  * @file    NodeTypedefs.hpp
   *
   * @author  D. Baines
   *

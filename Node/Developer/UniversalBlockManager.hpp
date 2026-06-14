@@ -1,13 +1,13 @@
 /**
   ******************************************************************************
-  * @file    ConfigurationHandler.hpp
+  * @file    UniversalBlockManager.hpp
   *
   * @author  D. Baines
   *
-  * @brief   Manager for the Atams Node universal variable block and configuration state.
+  * @brief   Manager for the Atams Node Universal Data Block and configuration state.
   *
   * @details Defines the UniversalBlockManager class, which manages the Atams Node
-  *          universal variable block. Handles configuration state entry and exit,
+  *          Universal Data Block. Handles configuration state entry and exit,
   *          validates passcodes for processes such as store, restore, and reset, and
   *          applies universal configuration variables (node ID, bitrate, watchdog
   *          period, bus IDs) when the configuration state is exited with changes applied.
@@ -110,7 +110,7 @@ class UniversalBlockManager
 
   uint8_t getFinalSyncNodeID(void);
 
-  void notifyStorageProcessComplete(Atams::Error_t processStatus);
+  void notifyStorageProcessComplete(const Atams::Error_t processStatus);
 
   private:
 
