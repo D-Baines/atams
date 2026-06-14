@@ -19,9 +19,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This Source Code Form is subject to the terms of the Mozilla Public
-  * License, v. 2.0. If a copy of the MPL was not distributed with this
-  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
@@ -37,7 +37,6 @@
 
 #include "../SharedPlatform.hpp"
 #include "AppPlatform.hpp"
-#include "../Developer/NodeUtilities.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"
 #include "../../Shared/Utilities/AtamsUtilities.hpp"
 

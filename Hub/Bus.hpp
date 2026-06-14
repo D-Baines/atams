@@ -220,8 +220,8 @@ private Platform::BusPeripheral
 
   /*-- Static Private Variables -----------------------------------------------------*/
 
-  static const GenInfo_t         dummyGenInfo_;
-  static const Node::MemoryMap_t dummyMemoryMap_;
+  static const GenInfo_t         s_dummyGenInfo;
+  static const Node::MemoryMap_t s_dummyMemoryMap;
 
   /*-- Private Class Objects --------------------------------------------------------*/
 
@@ -271,7 +271,7 @@ private Platform::BusPeripheral
 
   Atams::ProcessState_t runSingleNodeUpdateCycleCore(Atams::Error_t &error, Atams::Node &node, bool blocking);
 
-  Atams::Error_t validateNodeUniversalBlock(Node &node);
+  void validateNodeUniversalBlock(Node &node);
 
   bool safeToRemoveNode(void);
 

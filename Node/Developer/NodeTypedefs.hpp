@@ -19,9 +19,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This Source Code Form is subject to the terms of the Mozilla Public
-  * License, v. 2.0. If a copy of the MPL was not distributed with this
-  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
@@ -54,8 +54,6 @@ constexpr uint32_t CORE_STATUS_CHECK_PERIOD {10U};
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
 
-using VarStorage_t = uint8_t[Atams::MAX_TYPE_SIZE];
-
 typedef Atams::Error_t (&InitUniversalDataFn_t)(void);
 typedef Atams::Error_t (&InitDefaultsFn_t)(void);
 
@@ -68,12 +66,12 @@ enum CoreInitStatus_t: uint32_t
 struct MemoryMap_t
 {
   const SharedMemoryMap_t     sharedMap;
-  const InitUniversalDataFn_t genInfoInitFn;
-  const InitDefaultsFn_t      userDefaultsInitFn;
+  InitUniversalDataFn_t genInfoInitFn;
+  InitDefaultsFn_t      userDefaultsInitFn;
 
-  MemoryMap_t(const SharedMemoryMap_t    &sharedMemoryMapInput,
-              const InitUniversalDataFn_t genInfoInitFnInput,
-              const InitDefaultsFn_t      initUserDefaultsFnInput) :
+  MemoryMap_t(const SharedMemoryMap_t &sharedMemoryMapInput,
+              InitUniversalDataFn_t    genInfoInitFnInput,
+              InitDefaultsFn_t         initUserDefaultsFnInput) :
   sharedMap(sharedMemoryMapInput),
   genInfoInitFn(genInfoInitFnInput),
   userDefaultsInitFn(initUserDefaultsFnInput){};

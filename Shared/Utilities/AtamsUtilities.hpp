@@ -19,9 +19,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This Source Code Form is subject to the terms of the Mozilla Public
-  * License, v. 2.0. If a copy of the MPL was not distributed with this
-  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
@@ -34,6 +34,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+#include <string.h>
 #include <type_traits>
 
 #include "../AtamsTypedefs.hpp"
@@ -84,6 +85,38 @@ Atams::Error_t validateMemoryMap(const SharedMemoryMap_t &memoryMap, const uint3
 /*************************************************************************************/
 /* PUBLIC TEMPLATE FUNCTION DEFINITIONS                                              */
 /*************************************************************************************/
+
+template<typename T>
+inline void writeToVarStorage(const T inputVar, Atams::VarStorage_t &varStorage)
+{
+  static_assert(sizeof(T) <= Atams::MAX_TYPE_SIZE, "Incompatible type size used in writeToVarStorage");
+
+  uint32_t tempVar;
+
+  if constexpr (std::is_same<T, float>::value) memcpy(&tempVar, &inputVar, sizeof(tempVar));
+  else                                         tempVar = static_cast<uint32_t>(inputVar);
+
+  /* Little endian: LSB first */
+  varStorage[ZERO_BYTE_INDEX ] = static_cast<uint8_t>((tempVar                     ) & SINGLE_BYTE_MASK);
+  varStorage[ONE_BYTE_INDEX  ] = static_cast<uint8_t>((tempVar >> SINGLE_BYTE_SHIFT) & SINGLE_BYTE_MASK);
+  varStorage[TWO_BYTE_INDEX  ] = static_cast<uint8_t>((tempVar >> TWO_BYTE_SHIFT   ) & SINGLE_BYTE_MASK);
+  varStorage[THREE_BYTE_INDEX] = static_cast<uint8_t>((tempVar >> THREE_BYTE_SHIFT ) & SINGLE_BYTE_MASK);
+}
+
+template<typename T>
+inline void readFromVarStorage(T &outputVar, const Atams::VarStorage_t &varStorage)
+{
+  static_assert(sizeof(T) <= Atams::MAX_TYPE_SIZE, "Incompatible type size used in readFromVarStorage");
+
+  /* Little endian: LSB first */
+  uint32_t tempVar {((static_cast<uint32_t>(varStorage[ZERO_BYTE_INDEX ])                     ) |
+                     (static_cast<uint32_t>(varStorage[ONE_BYTE_INDEX  ]) << SINGLE_BYTE_SHIFT) |
+                     (static_cast<uint32_t>(varStorage[TWO_BYTE_INDEX  ]) << TWO_BYTE_SHIFT   ) |
+                     (static_cast<uint32_t>(varStorage[THREE_BYTE_INDEX]) << THREE_BYTE_SHIFT ) )};
+
+  if constexpr (std::is_same<T, float>::value) memcpy(&outputVar, &tempVar, sizeof(outputVar));
+  else                                         outputVar = static_cast<T>(tempVar);
+}
 
 template <typename T>
 constexpr Atams::VarType_t getAtamsType(void)

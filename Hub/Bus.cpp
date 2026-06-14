@@ -663,7 +663,7 @@ Atams::ProcessState_t Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
   switch (configUpdateState) 
   { 
     case Bus::ConfigUpdateState::START:
-      process.error = dummyNode_.init(dummyMemoryMap_);
+      process.error = dummyNode_.init(s_dummyMemoryMap);
       if (process.error) process.terminate(process.error);
       else               beginSetConfigWrite();
       break;
@@ -851,7 +851,7 @@ Atams::ProcessState_t Bus::runSingleNodeUpdateCycleCore(Atams::Error_t &error, A
   return (processState);
 }
 
-Atams::Error_t Bus::validateNodeUniversalBlock(Node &node)
+void Bus::validateNodeUniversalBlock(Node &node)
 {
   Bus::ProcessHandler<Bus::InitState> &process {initProcessHandler_};
 
@@ -1220,6 +1220,12 @@ void Bus::beginInitValidateAtamsVersion(Atams::Node &node)
   nodeProcessHandler_.beginValidateAtamsVersion(node);
 }
 
+void Bus::beginInitValidateUniversalBlock(Atams::Node &node)
+{
+  initProcessHandler_.specificState = Bus::InitState::VALIDATE_UNIVERSAL_BLOCK;
+  nodeProcessHandler_.beginReadUniversalBlock(node);
+}
+
 void Bus::beginInitValidateIDsPost(Atams::Node &node, const Atams::BusIDs_t busIDs)
 {
   initProcessHandler_.specificState = Bus::InitState::VALIDATE_IDS_POST;
@@ -1318,7 +1324,7 @@ void Bus::updateSetConfigGetResponse(void)
 /* PRIVATE STATIC CONSTANTS                                                          */
 /*************************************************************************************/
 
-const Atams::GenInfo_t Bus::dummyGenInfo_
+const Atams::GenInfo_t Bus::s_dummyGenInfo
 {
   /* .atamsVersionMajor  = */ ATAMS_VERSION_MAJOR,
   /* .atamsVersionMinor  = */ ATAMS_VERSION_MINOR,
@@ -1332,11 +1338,11 @@ const Atams::GenInfo_t Bus::dummyGenInfo_
   /* .noOfVars           = */ BlockUniversal::NUMBER_OF_VARS,
 };
 
-const Node::MemoryMap_t Bus::dummyMemoryMap_ 
+const Node::MemoryMap_t Bus::s_dummyMemoryMap 
 {
   /* .sharedMemoryMap = */
   {
-    /* .genInfo     = */ Bus::dummyGenInfo_,
+    /* .genInfo     = */ Bus::s_dummyGenInfo,
     /* .varInfoList = */ BlockUniversal::varInfoList
   }
 };

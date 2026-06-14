@@ -20,7 +20,7 @@ This document balances style guidelines to keep the codebase consistent, and saf
 - **Compliant Example:**
 ```cpp
 float   floatVar {1.0F};
-int32_t intVar   {0.0F};
+int32_t intVar   {0};
 
 std::memcpy(&floatVar, &intVar, sizeof(intVar)); // Compliant
 ```
@@ -202,16 +202,8 @@ MyClass obj{1, 2};   // Not preferred for class objects
 - **Rationale:** Explicit type declarations improve code readability, maintainability, and type safety.
 
 ### Magic Numbers
-- **Rule:** No magic numbers. Literals with values other than `0`, `1`, or `2`, must be defined as named constants.
+- **Rule:** No magic numbers. Literals with values other than `0` or `1` must be defined as named constants.
 - **Rationale:** Named constants improve code readability, provide context, and make maintenance safer and easier.
-
-### Cast Style
-- **Rule:** No C-style casts. Use C++ named casts.
-- **Rationale:** C-style casts are not explicit about the type of conversion performed. They can easily introduce unsafe or undefined behavior. C++ named casts make intent clear and restrict dangerous conversions.
-
-### Qualification Removal Casts
-- **Rule:** A cast shall not remove any `const` or `volatile` qualification.
-- **Rationale:** Removing these qualifiers can break immutability or safe access guarantees, leading to undefined behavior. 
 
 ### Pointer Indirection
 - **Rule:** Pointer variables should not be declared with more than two levels of indirection.
@@ -219,9 +211,9 @@ MyClass obj{1, 2};   // Not preferred for class objects
 ```cpp
 uint8_t value {0U};
 
-uint8_t   *ptr1 = &value; // Compliant: one level of indirection
-uint8_t  **ptr2 = &ptr1;  // Compliant: two levels of indirection
-uint8_t ***ptr3 = &ptr2;  // Non-compliant: more than two levels of indirection
+uint8_t   *ptr1 {&value}; // Compliant: one level of indirection
+uint8_t  **ptr2 {&ptr1};  // Compliant: two levels of indirection
+uint8_t ***ptr3 {&ptr2};  // Non-compliant: more than two levels of indirection
 ```
 
 ### Dereferencing Pointers
@@ -236,7 +228,7 @@ struct Data_t
 
 void processData(Data_t *inputPtr)
 {
-  if (dataPtr == nullptr)
+  if (inputPtr == nullptr)
   {
     return; // Nullptr guard clause
   }
@@ -282,7 +274,7 @@ class Data_t
 ```
 
 ### Non-POD Structs 
-- **Rule:** Non-POD structs may be defined, but their member variables and functions must be public. If more complex behaviour or private member variables and functions are required, classes should be used. Non-POD structs must exclude the `_t` prefix.
+- **Rule:** Non-POD structs may be defined, but their member variables and functions must be public. If more complex behaviour or private member variables and functions are required, classes should be used. Non-POD structs must exclude the `_t` suffix.
 - **Rationale:** This results in a simple struct type that acts as an extension of POD structs. The use of simple public functions operating on public variables can minimise repetition of code blocks. 
 
 ### Special Member Functions
@@ -296,10 +288,6 @@ class Data_t
 ### Public Class Variables
 - **Rule:** Non-constexpr public member variables shall not be used. Setters and getters of private variables should be defined instead for more tightly specified object interactions.
 - **Rationale:** Clarifies expected class usage, and concurrency locks can be encapsulated in setter/getter functions to avoid race conditions.
-
-### Composition vs Inheritance
-- **Rule:** Prefer composition over inheritance. 
-- **Rationale:** Complex inheritance can make a codebase harder to maintain.
 
 ### Operator Overloading
 - **Rule:** Overloads must be obvious & complete.  
@@ -563,6 +551,10 @@ bool getValueValid(const uint8_t value)
 `-Wall -Wextra -Wpedantic -Wswitch-default -Wunreachable-code -Wformat`
 - **Rationale:** Enables strict compiler checks to catch errors and enforce code quality.
 
+### Global and Static Initialisation Order
+- **Rule:** Avoid global/static init order reliance.
+- **Rationale:** The order in which global and static variables are initialized across different translation units is not guaranteed by the C++ standard. Relying on this order can lead to unpredictable behavior.
+
 
 ## 7. Scope Resolution and Ownership
 
@@ -674,7 +666,7 @@ void setCellValue(ItemID_t itemID, ItemType_t value)
 }
 ```
 
-## 10. Formatting & Style
+## 9. Formatting & Style
 
 ### Indentation
 - **Rule:** All indentation should use 2 spaces.
@@ -862,7 +854,7 @@ else if (conditionB) /* Compliant */
 }
 ```
 
-## 12. Naming Conventions
+## 10. Naming Conventions
 
 ### Naming
 - **Rule:** Naming should provide context. Single character and overly shortened names should not be used.
@@ -943,13 +935,13 @@ namespace Atams
 }
 ```
 
-## 13. Error Handling
+## 11. Error Handling
 
 ### Exceptions
 - **Rule:** Do not use C++ exceptions. All error conditions must be handled explicitly using return codes, error objects, or guard clauses.
 - **Rationale:** Exceptions can disrupt control flow, making it unclear where execution will continue after an error. Catching exceptions only at high levels may leave the program in an unpredictable state. Return codes and guard clauses keep error handling straightforward and maintainable.
 
-## 14. File Format & Structure
+## 12. File Format & Structure
 
 ### Single Namespace per File
 - **Rule:** Only one namespace (or nested namespace) shall be used per pair of files (`.hpp` and `.cpp`). All code in a file must be contained within this namespace.
@@ -982,10 +974,6 @@ namespace Atams
 
 #include "OtherProjectFile.hpp"
 ```
-
-## Init Orders
-- **Rule:** Avoid global/static init order reliance.  
-- **Rationale:** The order in which global and static variables are initialized across different translation units is not guaranteed by the C++ standard. Relying on this order can lead to unpredictable behavior.
 
 ### Class Files
 - **Rule:** Classes that are large or intended to be reused between different modules must be defined in their own `.hpp` and `.cpp` file pair.

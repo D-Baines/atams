@@ -20,9 +20,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This Source Code Form is subject to the terms of the Mozilla Public
-  * License, v. 2.0. If a copy of the MPL was not distributed with this
-  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
@@ -87,6 +87,11 @@ constexpr uint8_t TWO_BYTE_SHIFT    {16U};
 constexpr uint8_t SINGLE_BYTE_SHIFT {8U};
 constexpr uint8_t SINGLE_BYTE_MASK  {0xFFU};
 
+constexpr uint8_t THREE_BYTE_INDEX {3U};
+constexpr uint8_t TWO_BYTE_INDEX   {2U};
+constexpr uint8_t ONE_BYTE_INDEX   {1U};
+constexpr uint8_t ZERO_BYTE_INDEX  {0U};
+
 /*************************************************************************************/
 /* STATIC ASSERTIONS                                                                 */
 /*************************************************************************************/
@@ -98,6 +103,8 @@ static_assert(std::atomic<uint32_t>::is_always_lock_free, "Atomic uint32_t acces
 /*************************************************************************************/
 /* TYPEDEFS                                                                          */
 /*************************************************************************************/
+
+using VarStorage_t = uint8_t[MAX_TYPE_SIZE];
 
 enum ProcessState_t: uint8_t
 {
@@ -549,13 +556,13 @@ constexpr uint8_t MINIMUM_SIZE_WRITE_DATAGRAM {Atams::DATAGRAM_SIZE_HEADER + siz
 constexpr uint8_t TYPE_LENGTHS[Atams::NUMBER_OF_VAR_TYPES]
 {
   /* [TYPE_NULL  ] = */ 0U,
-  /* [TYPE_UINT8 ] = */ 1U,
-  /* [TYPE_INT8  ] = */ 1U,
-  /* [TYPE_UINT16] = */ 2U,
-  /* [TYPE_INT16 ] = */ 2U,
-  /* [TYPE_UINT32] = */ 4U,
-  /* [TYPE_INT32 ] = */ 4U,
-  /* [TYPE_FLOAT ] = */ 4U,
+  /* [TYPE_UINT8 ] = */ sizeof(uint8_t),
+  /* [TYPE_INT8  ] = */ sizeof(int8_t),
+  /* [TYPE_UINT16] = */ sizeof(uint16_t),
+  /* [TYPE_INT16 ] = */ sizeof(int16_t),
+  /* [TYPE_UINT32] = */ sizeof(uint32_t),
+  /* [TYPE_INT32 ] = */ sizeof(int32_t),
+  /* [TYPE_FLOAT ] = */ sizeof(float),
 };
 
 constexpr const char *ERROR_STRINGS[NUMBER_OF_ATAMS_ERRORS]

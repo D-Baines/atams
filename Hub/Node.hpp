@@ -195,7 +195,7 @@ public NodeCallbackHandler
 
   struct Var_t
   {
-    uint8_t                 storage[MAX_TYPE_SIZE] {0U, 0U, 0U, 0U};
+    Atams::VarStorage_t     storage                {0U, 0U, 0U, 0U};
     Atams::Access_t         requestAccess          {Atams::ACCESS_NONE};
     Atams::RequestPattern_t requestPattern         {Atams::REQUEST_INACTIVE};
     bool                    newDataReady           {false};
@@ -229,12 +229,6 @@ public NodeCallbackHandler
   Var_t                    varStorage_[Platform::NODE_NUMBER_OF_VARS];
 
   /*-- Private Function Declarations ------------------------------------------------*/
-
-  template<typename T>
-  inline void writeToVarStorage(const T inputVar, Node::Var_t &nodeVar);
-
-  template<typename T>
-  inline void readFromVarStorage(T &outputVar, const Node::Var_t &nodeVar);
 
   Atams::Error_t externalTransfer(const Access_t  accessRequest,
                                   const uint16_t  varID,

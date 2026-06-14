@@ -6,13 +6,15 @@
 # Table of Contents
 - [Introduction](#introduction)
 - [Communications Hardware Requirements](#communications-hardware-requirements)
-- [C++ Platform Requirements](#platform-requirements)
-- [C++ Language Standard](#language-standard)
+- [C++ Platform Requirements](#c-platform-requirements)
+- [C++ Language Standard](#c-language-standard)
 - [Memory Maps](#memory-maps)
-- [Auto-generation](#auto-generation)
+- [Memory Map Auto-generation](#memory-map-auto-generation)
 - [Memory Map Access](#memory-map-access)
 - [Node Library](#node-library)
 - [Hub Library](#hub-library)
+- [Developer](#developer)
+- [License](#license)
 
 # Introduction
 
@@ -126,32 +128,32 @@ struct GenInfo_t
 ```
 
 # Memory Map Auto-generation
-GUI tooling is provided for auto-generating device specific Memory Map C++ files for use with the Hub and Node libraries. 
+A GUI tool is provided for auto-generating the Memory Map C++ files required by the Hub and Node libraries. A single generation run produces both a Node variant and a Hub variant of the Memory Map at the same time — one folder output to `Atams/Node/Maps` for the Node project, and one to `Atams/Hub/Maps` for the Hub project. See [Memory Map Access](#memory-map-access) for how to include the generated files in each project.
 
 ### Memory Map Tables
 
-![alt text](Developer/Documentation/Images/MemoryMapExampleTable.png)
+![alt text](Developer/Documentation/Imags/MemoryMapExampleTable.png)
 
-To use the auto-generation application, a user needs to fill out an Atams Memory Map table in the provided `.xlsx` format to define the required information for each device variable. The table is used by the autogen tool to create the Memory Map C++ files, and doubles as documentation for the device Memory Map. The template is available at the following directory path:  
+Before using the autogen tool, fill out an Atams Memory Map table in the provided `.xlsx` format to specify the configuration information for each device variable. The table drives code generation and doubles as documentation for the Memory Map. The template is at:  
 `Atams/Autogen/TemplateMap.xlsx`.
 
-- **Data Blocks:** Each Data Block should be defined in a separate sheet of the `.xlsx` file. Copy the original template sheet to maintain the correct table formatting. Data Block names will be taken from the name of each sheet and converted to `PascalCase` namespaces with a `Block` prefix in the generated C++ files.
+- **Data Blocks:** Define each Data Block in a separate sheet of the `.xlsx` file. Copy the original template sheet to maintain correct formatting. Sheet names are used as the Data Block name and converted to `PascalCase` namespaces with a `Block` prefix in the generated C++ files.
 
 - **Columns:**
-The following columns of information are provided. Only the `Required` columns are necessary for Atams operation, and must be completed for successful auto-generation:
+Only `Required` columns must be completed for successful generation. `Optional` columns are used for documentation purposes or to configure factory default and NVM behaviour:
 
 | Column Name     | Requirement  | Description    |
 | :-------------: | :----------: | :------------: |
-| Var ID          | Required     | Name of the device variable. This can be provided in any format, but will be converted to `SCREAMING_SNAKE_CASE` with a `VAR_` prefix in the Data Block C++ file `VarID_t` enum list. This ID will be used as an input argument for Atams functions so it is worth keeping naming concise where possible. |
-| Data Type       | Required     | Pick from the dropdown list of variable types to define the variable type. Interacting with this variable with any other type will return errors from Atams functions. Atams is compatible with the provided types only. |
-| External Access | Required     | Pick from RO (Read Only), or RW (Read/Write). RO means a Hub device can only read from the selected Node variable. RW means the Hub device can read from and write to the selected Node variable. |
-| Units           | Optional     | Provided only for user documentation purposes. |
-| Min Limit       | Optional     | Provided only for user documentation purposes. |
-| Max Limit       | Optional     | Provided only for user documentation purposes. |
-| Default         | Optional     | Defines the value for the variable to be set to on startup and during a factory restore operation. Values previously stored in non-volatile memory will overwrite default values on startup. If this column is left blank, the variable will be zero-initialised. |
-| NVM Storage     | Optional     | Defines whether the variable should be stored in non-volatile memory or not during a STORE ALL operation. If this column is left blank, the variable will not be stored in non-volatile memory. |
-| Description     | Optional     | Provided only for user documentation purposes. |
-| Widget          | Future Scope | Provided for future Atams application compatibility. |
+| Var ID          | Required     | Name of the device variable. Any format accepted — converted to `SCREAMING_SNAKE_CASE` with a `VAR_` prefix in the `VarID_t` enum. Used as an input argument to Atams functions; keep names concise where possible. |
+| Data Type       | Required     | Select from the dropdown list. Atams will return errors if this variable is accessed with a mismatched type. Only the listed types are supported. |
+| External Access | Required     | `RO` (Read Only) — Hub can only read this variable. `RW` (Read/Write) — Hub can read and write this variable. |
+| Units           | Optional     | Documentation only. |
+| Min Limit       | Optional     | Documentation only. |
+| Max Limit       | Optional     | Documentation only. |
+| Default         | Optional     | Value assigned on startup and during a factory restore. Any value previously stored in non-volatile memory will overwrite this on startup. Zero-initialised if left blank. |
+| NVM Storage     | Optional     | Marks the variable for inclusion in a STORE ALL operation. Not stored in non-volatile memory if left blank. |
+| Description     | Optional     | Documentation only. |
+| Widget          | Future Scope | Reserved for future Atams application compatibility. |
 
 
 ### Autogen GUI Application
@@ -160,22 +162,29 @@ The following columns of information are provided. Only the `Required` columns a
   <img src="Developer/Documentation/Images/AtamsAutogenTool.png">
 </p>
 
-Follow these steps to start auto-generating Memory Maps with the Atams Memory Map Generator GUI.
-- **Step 1:** Install the Python library requirements for the autogen application by running the following command in terminal:
+Follow these steps to generate Memory Map files with the Atams Memory Map Generator GUI.
 
-    `pip install -r PATH_TO_USER_PROJECT_FOLDER/Atams/Autogen/requirements.txt`.   
-- **Step 2:** Open the application by running `AtamsAutogen.py` from the `Atams/Autogen` folder.
-- **Step 3:** Browse and select the Memory Map Table `.xlsx` file specific to the Node device in development.
-- **Step 4:** Browse and select the Atams Node library directory path (`Atams/Node`) used by the Node device C++ project. The auto-generation tool will create a Memory Map folder in the `Atams/Node/Maps` folder, containing the Memory Map and Data Block files specific to the device-in-development.
-- **Step 5:** Browse and select the Atams Hub library directory path (`Atams/Hub`) used by the Hub device C++ project. The auto-generation tool will place a Memory Map folder in the `Atams/Hub/Maps` folder, containing the Memory Map and Data Block files specific to the device-in-development.
-- **Step 6:** Enter a name for the Memory Map. Memory Map names will be converted to `PascalCase` namespaces with a `Map` prefix in the generated C++ files.
-- **Step 7:** Click the *Generate* button. A popup may appear with a warning if there is a risk of over-writing previously generated Memory Map files. Generation status information will be provided towards the bottom of the application.
+- **Step 1:** Install the required Python dependencies:
+
+    `pip install -r Atams/Autogen/requirements.txt`
+
+- **Step 2:** Launch the application by running `AtamsAutogen.py` from the `Atams/Autogen` folder.
+
+- **Step 3:** Browse and select the completed Memory Map Table `.xlsx` file for the Node device being developed.
+
+- **Step 4:** Browse and select the Atams Node library path (`Atams/Node`) used by the Node C++ project. A folder named after the Memory Map will be generated at `Atams/Node/Maps/<MapName>/`, containing the Node-specific Memory Map and Data Block files.
+
+- **Step 5:** Browse and select the Atams Hub library path (`Atams/Hub`) used by the Hub C++ project. A matching folder will be generated at `Atams/Hub/Maps/<MapName>/`, containing the Hub-specific variants of the same files. Both folders are created in a single generation run.
+
+- **Step 6:** Enter a name for the Memory Map. Names are converted to `PascalCase` with a `Map` prefix to form the top-level namespace in the generated C++ files (e.g. `Atams::MapExample`).
+
+- **Step 7:** Click *Generate*. Before writing any files, the tool checks whether a folder with the given Memory Map name already exists in either output directory. If a conflict is found, a warning popup lists the affected paths and asks for confirmation before overwriting. Generation status is shown at the bottom of the application.
 
 > [!NOTE]  
-> The application will remember any previously selected paths when restarted.
+> The application remembers previously selected paths when restarted.
 
 > [!TIP]  
-> If the Hub and Node are not being developed on the same device, consider generating to local repositories and using version control to efficiently synchronise Memory Map files between development environments. The Hub library Bus initialisation process will effectively catch and return errors if the Hub and Node Memory Maps are not synchronised.
+> If the Hub and Node are not being developed on the same machine, consider generating to local repositories and using version control to synchronise Memory Map files between environments. The Bus Initialisation Process will return an error if the Hub and Node Memory Maps are not compatible — see [The Bus Initialisation Process](#the-bus-initialisation-process).
 
 
 # Memory Map Access
@@ -227,10 +236,59 @@ Once the Memory Map C++ files have been generated, they are ready to be used in 
     Atams::write(VAR_EXAMPLE_1, variableToWrite);
     ```
 > [!CAUTION]   
-> Block-only header inclusion provides a loose limit on variable access. The compiler will provide warnings should the user try to use a variable ID that is not provided by the included file, or if a variable ID does not exist in the enum of the included Block namespace. However, users should be cautious of hidden includes of other Block or Map files when using `using namespace`. Unless confident, users should avoid using raw `uint16_t` variables instead of the provided enum IDs as input arguments to Atams functions. Atams functions will always return an error if the variable ID is outside the bounds of the entire Memory Map.
+> Block-only headers provide a loose access limit — the compiler warns if you reference an ID outside the included namespace. When using `using namespace`, be cautious of hidden includes pulling in IDs from other Blocks or Maps. Always use the provided enum IDs rather than raw `uint16_t` values; Atams will return an error if a variable ID is out of bounds.
 
 
 # Node Library
+
+### Getting Started
+
+The steps below show the complete setup sequence for a single-core Node. Each step is documented in detail in the sections that follow.
+
+**Step 1 — Complete the platform files**\
+Fill in the required function definitions for your hardware and application setup. See [Platform Setup](#platform-setup) for details on which functions apply to your configuration.
+```
+Atams/Node/SharedPlatform.cpp
+Atams/Node/CommsCore/CommsPlatform.hpp
+Atams/Node/CommsCore/CommsPlatform.cpp
+```
+
+**Step 2 — Include the Comms Core header and Memory Map**\
+See [Includes & Core Setup](#includes--core-setup).
+```cpp
+#include "Atams/Node/CommsCore/CommsCore.hpp"
+#include "Atams/Node/Maps/MapExample/MapExample.hpp"
+```
+
+**Step 3 — Initialise the Comms Core once on startup**\
+See [Comms Core — Initialisation](#comms-core-single--dual-core).
+```cpp
+Atams::Error_t nvmStatus  {Atams::ERROR_NONE};
+Atams::Error_t initStatus {Atams::ERROR_NONE};
+
+initStatus = Atams::initSingleCore(Atams::MapExample::memoryMap, nvmStatus);
+```
+
+**Step 4 — Run the communications update in the main loop**\
+Call `updateCommsPolling` as often as possible, or `updateCommsBlocking` from a high-priority RTOS thread. See [Communications Update](#communications-update).
+```cpp
+while (true)
+{
+  Atams::updateCommsPolling();
+}
+```
+
+**Step 5 (Optional) — Poll the watchdog fault flag**\
+If the watchdog is enabled, poll `getWatchdogFault` from application code to detect a Hub communications timeout and enter a safe state. See [Watchdog Fault Handling](#watchdog-fault-handling).
+```cpp
+if (Atams::getWatchdogFault())
+{
+  // Enter safe state
+}
+```
+
+> [!NOTE]
+> **Dual-core setup:** Steps 1–5 apply to the comms core. On the application core, also complete `Atams/Node/AppCore/AppPlatform.hpp` and `AppPlatform.cpp`, include `Atams/Node/AppCore/AppCore.hpp`, and call `Atams::initAppCore` once before accessing any variables. Use `Atams::initCommsCore` in place of `initSingleCore` on the comms core. See [App Core (Dual-Core Only)](#app-core-dual-core-only).
 
 ### Includes & Core Setup
 The Node library is compatible with single and dual-core micro-controllers. The user can decide which setup is more appropriate for their use case, but should aim to minimise Atams communications response times for the best Atams Bus performance. See [Maximising Node Performance](#maximising-node-performance).
@@ -741,7 +799,7 @@ The following example shows how to start the Node Configuration Process for an u
   ```
 
 - **Updating the Configuration Process:**\
-During the Node Configuration Process, the new configuration values will be written to the Universal Data Block of the Node device. An NVM storage operation will be triggered on the Node to ensure the configurtion persist between power cycles. If the Hub confirms the storage completes successfully, the process update function will return `Atams::PROCESS_COMPLETE`. If any errors occur, the process update function will return `Atams::PROCESS_ERROR`. In this case, the value of the `Atams::Error_t` passed to the update function can be checked for further details.
+The process writes the new configuration to the Node and triggers an NVM storage operation to persist it between power cycles. The update function returns `Atams::PROCESS_COMPLETE` on success, or `Atams::PROCESS_ERROR` if any step fails — check the `Atams::Error_t` passed by reference for details.
 
   **Example:**
 
@@ -860,9 +918,7 @@ The following example shows how to start the Bus Initialisation Process. The fun
 
 - **Updating the Bus Initialisation Process:**
 
-  During the Bus Initialisation Process, Memory Map compatibility checks are performed for the first Node. The process will then check the Update Cycle Node IDs stored in the Node device's Universal Data Block. If the IDs are already correct, the process will continue to verify the next Node. If the stored IDs are not correct, the process will correct them, before triggering a NVM storage operation on the given Node device. If the NVM storage operation is successful, the process will continue to verify the next Node. The process continues until all Node's on the Bus have been verified.
-  
-  If any of the Node device Memory Maps are incompatible, if any NVM storage operations fail, or if communications errors occur with any of the Node's, the update function will return `Atams::PROCESS_ERROR`. The error variable passed to the function by reference will be set appropriately and can be checked for error details.
+  The process verifies Memory Map compatibility and synchronises required configuration across all Nodes on the Bus. If any compatibility check fails, an NVM operation fails, or a communications error occurs, the update function will return `Atams::PROCESS_ERROR`. The error variable passed by reference will be set with further details.
   
   **Example:**
 
@@ -1115,7 +1171,7 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
 
   If the Sychronous Update Cycle completes successfully, each Node class instance linked to the Bus will contain a new Response Packet. The user can call the `Bus::processResponseBuffers` to trigger the processing of all Node Response Packets. If the function returns no errors, all the read values received from all the Node devices will be written to the Node class instances' variable storage, and the data ready and write acknowledgement flags will be set appropriately. If communications errors occured with any of the Nodes during the Bus Update Cycle, this function will return an error. 
 
-  If `Bus::processResponseBuffers` returns an error, it indicates that a communications failure occurred with one or more Nodes during the update cycle — but it does not identify which Node was affected or why. To diagnose the failure, the Node class `getBusError(void)` function must be called on each Node instance individually. If a Node experienced a communications error during the cycle, `getBusError` will return a non-`Atams::ERROR_NONE` value describing the specific failure. If an error occurred on a Node, the variable storage of that Node device or Node class instance may not have been updated as expected for that cycle. Note that Bus errors stored on each Node instance are automatically cleared when a new update cycle is started with `beginUpdateCycle`, so `getBusError` should be called before starting the next cycle if the error needs to be handled.
+  If `Bus::processResponseBuffers` returns an error, a communications failure occurred on one or more Nodes but the function does not identify which. Call `getBusError()` on each Node instance to find the affected Node and the specific failure — variable storage for that Node may not have been updated for that cycle. Bus errors are automatically cleared when `beginUpdateCycle` is next called, so check them before starting the next cycle.
   
   **Example:**
   ```cpp
@@ -1367,4 +1423,35 @@ Atams provides platform files that contain all the required user constants, func
 The non-blocking update functions (`runUpdateCycleSync`, `runUpdateCycleAsync`) return `Atams::PROCESS_IN_PROGRESS` while waiting for Bus responses, relying on the user to poll them as fast as possible. The faster the poll rate, the less time is wasted between a response arriving and the next request being sent.
 
 The blocking variants (`runUpdateCycleSyncBlocking`, `runUpdateCycleAsyncBlocking`) suspend the calling thread while waiting for Bus responses, only resuming when a response arrives or a timeout expires. This requires `Platform::BinarySemaphore` to be implemented in the Hub platform files. Because the thread does not busy-wait, the CPU is free to do other work between responses — but for the lowest possible latency, the thread running the blocking update cycle should be given the highest priority available.
+
+
+# Developer
+
+Internal, non-public-facing implementation files for the Node and Hub libraries are located in their respective `Developer` subfolders:
+
+`Atams/Node/Developer/`\
+`Atams/Hub/Developer/`
+
+New internal files should be placed here rather than in the library root, to keep the public API areas clear.
+
+Files or functions that can be reused across both the Hub and Node libraries should **not** be placed in a `Developer` subfolder. Instead, they belong in the shared library folder:
+
+`Atams/Shared/`
+
+Utility functions, type definitions, and constants that are library-agnostic should be added to the appropriate file in `Atams/Shared/` so that both libraries can consume them without duplication.
+
+### Coding Standards
+`Atams/Developer/Documentation/CodingStandards.md`
+
+### File Templates
+`Atams/Developer/Templates/`
+
+
+# License
+
+Atams is licensed under the [Mozilla Public License 2.0](https://mozilla.org/MPL/2.0/).
+
+You are free to use Atams in both commercial and non-commercial projects. The license applies a file-level copyleft: if you modify any of the Atams source files, those modified files must be made available under the same license. Your own application code that uses Atams — but does not modify its source files — is not subject to this requirement and may remain proprietary.
+
+A copy of the license is provided in the `LICENSE` file at the root of this repository.
 

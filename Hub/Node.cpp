@@ -149,7 +149,7 @@ Atams::Error_t Node::setVar(const uint16_t varID, const T writeValue)
 
   varStorageLock_.acquireLock();
 
-  writeToVarStorage(writeValue, var);
+  writeToVarStorage(writeValue, var.storage);
 
   varStorageLock_.releaseLock();
 
@@ -197,7 +197,7 @@ Atams::Error_t Node::getVar(const uint16_t varID, T &outputRef)
 
   varStorageLock_.acquireLock();
 
-  readFromVarStorage(outputRef, var);
+  readFromVarStorage(outputRef, var.storage);
 
   varStorageLock_.releaseLock();
 
@@ -713,7 +713,7 @@ Atams::Error_t Node::getVarIfDataReady(const uint16_t varID, T &outputRef)
 
   varStorageLock_.acquireLock();
 
-  if (var.newDataReady) readFromVarStorage(outputRef, var);
+  if (var.newDataReady) readFromVarStorage(outputRef, var.storage);
   else                  error = Atams::ERROR_NEW_DATA_NOT_READY;
 
   var.newDataReady = false;
@@ -1127,38 +1127,6 @@ void Node::clearInjectedBusError(const Atams::Error_t errorToClear, const uint16
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
-
-template<typename T>
-inline void Node::writeToVarStorage(const T inputVar, Node::Var_t &nodeVar)
-{
-  static_assert(sizeof(T) <= Atams::MAX_TYPE_SIZE, "Incompatible type size used in writeToVarStorage");
-
-  uint32_t tempVar;
-
-  if constexpr (std::is_same<T, float>::value) memcpy(&tempVar, &inputVar, sizeof(tempVar));
-  else                                         tempVar = static_cast<uint32_t>(inputVar);
-
-  /* Little endian: LSB first */
-  nodeVar.storage[0U] = static_cast<uint8_t>((tempVar                     ) & SINGLE_BYTE_MASK);
-  nodeVar.storage[1U] = static_cast<uint8_t>((tempVar >> SINGLE_BYTE_SHIFT) & SINGLE_BYTE_MASK);
-  nodeVar.storage[2U] = static_cast<uint8_t>((tempVar >> TWO_BYTE_SHIFT   ) & SINGLE_BYTE_MASK);
-  nodeVar.storage[3U] = static_cast<uint8_t>((tempVar >> THREE_BYTE_SHIFT ) & SINGLE_BYTE_MASK);
-}
-
-template<typename T>
-inline void Node::readFromVarStorage(T &outputVar, const Node::Var_t &nodeVar)
-{
-  static_assert(sizeof(T) <= Atams::MAX_TYPE_SIZE, "Incompatible type size used in readFromVarStorage");
-
-  /* Little endian: LSB first */
-  uint32_t tempVar {((static_cast<uint32_t>(nodeVar.storage[0U])                     ) |
-                     (static_cast<uint32_t>(nodeVar.storage[1U]) << SINGLE_BYTE_SHIFT) |
-                     (static_cast<uint32_t>(nodeVar.storage[2U]) << TWO_BYTE_SHIFT   ) |
-                     (static_cast<uint32_t>(nodeVar.storage[3U]) << THREE_BYTE_SHIFT ) )};
-
-  if constexpr (std::is_same<T, float>::value) memcpy(&outputVar, &tempVar, sizeof(outputVar));
-  else                                         outputVar = static_cast<T>(tempVar);
-}
 
 Atams::Error_t Node::externalTransfer(const Atams::Access_t accessRequest,
                                       const uint16_t        varID,

@@ -19,9 +19,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This Source Code Form is subject to the terms of the Mozilla Public
-  * License, v. 2.0. If a copy of the MPL was not distributed with this
-  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
@@ -215,8 +215,8 @@ uint8_t UniversalBlockManager::getFinalSyncNodeID(void)
 
 void UniversalBlockManager::checkConfigurationStateEntry(void)
 {
-  static uint32_t prevConfigStatePasskey = 0U;
-  uint32_t        configStatePasskey     = 0U;
+  static uint32_t s_prevConfigStatePasskey {0U};
+  uint32_t        configStatePasskey       {0U};
 
   if (configurationState_ == Atams::CONFIGURATION_STATUS_ACTIVE)
   {
@@ -225,8 +225,8 @@ void UniversalBlockManager::checkConfigurationStateEntry(void)
 
   static_cast<void>(Atams::getVar(BlockUniversal::VAR_CONFIGURATION_PASSKEY, configStatePasskey));
 
-  if ((configStatePasskey     == Atams::CONFIGURATION_PASSKEY_ACCESS) &&
-      (prevConfigStatePasskey != Atams::CONFIGURATION_PASSKEY_ACCESS) )
+  if ((configStatePasskey       == Atams::CONFIGURATION_PASSKEY_ACCESS) &&
+      (s_prevConfigStatePasskey != Atams::CONFIGURATION_PASSKEY_ACCESS) )
   {
     if (Platform::enterConfigurationState() == true)
     {
@@ -241,12 +241,12 @@ void UniversalBlockManager::checkConfigurationStateEntry(void)
 
 void UniversalBlockManager::checkConfigurationStateExit(void)
 {
-  uint32_t configStatePasskey = 0U;
-
   if (configurationState_ != Atams::CONFIGURATION_STATUS_ACTIVE)
   {
     return; /* Early Return */
   }
+
+  uint32_t configStatePasskey {0U};
 
   static_cast<void>(Atams::getVar(BlockUniversal::VAR_CONFIGURATION_PASSKEY, configStatePasskey));
 
@@ -266,7 +266,7 @@ void UniversalBlockManager::checkConfigurationStateExit(void)
 
 void UniversalBlockManager::checkConfigurationPasscodes(void)
 {
-  for (uint8_t processIndex = 0U; processIndex < NUMBER_OF_PROCESSES; processIndex++)
+  for (uint8_t processIndex {0U}; processIndex < NUMBER_OF_PROCESSES; processIndex++)
   {
     PasscodeChecker_t &checker = configPasscodeCheckers_[processIndex];
 
@@ -284,7 +284,7 @@ void UniversalBlockManager::checkConfigurationPasscodes(void)
 
 void UniversalBlockManager::cancelConfigurationValueChange(void)
 {
-  uint32_t watchdogPeriod = watchdogHandler_.getWatchdogPeriod();
+  uint32_t watchdogPeriod {watchdogHandler_.getWatchdogPeriod()};
 
   static_cast<void>(Atams::setVar(BlockUniversal::VAR_NODE_ID,          localNodeID_));
   static_cast<void>(Atams::setVar(BlockUniversal::VAR_FIRST_NODE_ID,    firstSyncNodeID_));

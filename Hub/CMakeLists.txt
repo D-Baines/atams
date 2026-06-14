@@ -12,9 +12,10 @@ set(ATAMS_HUB_LIB_SOURCES
     Node.cpp
     Platform.hpp
     Platform.cpp
+    NodeActions.hpp
+    NodeActions.cpp
     Developer/CircularBuffer.hpp
-    Developer/NodeActions.hpp
-    Developer/NodeActions.cpp
+    Developer/FramingConstants.hpp
     Developer/NodeCallbackHandler.hpp
     Developer/WriteList.hpp
     Developer/WriteList.cpp

@@ -19,9 +19,9 @@
   * Copyright (c) D. Baines
   * All rights reserved.
   *
-  * This Source Code Form is subject to the terms of the Mozilla Public
-  * License, v. 2.0. If a copy of the MPL was not distributed with this
-  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
@@ -147,19 +147,19 @@ static bool validateMapChecksum(const SharedMemoryMap_t &memoryMap)
 uint32_t bufferToUint32(const uint8_t * const buffer)
 {
   /* Little endian: LSB first */
-  return ((static_cast<uint32_t>(buffer[0U])                     ) |
-          (static_cast<uint32_t>(buffer[1U]) << SINGLE_BYTE_SHIFT) |
-          (static_cast<uint32_t>(buffer[2U]) << TWO_BYTE_SHIFT   ) |
-          (static_cast<uint32_t>(buffer[3U]) << THREE_BYTE_SHIFT ) );
+  return ((static_cast<uint32_t>(buffer[ZERO_BYTE_INDEX ])                     ) |
+          (static_cast<uint32_t>(buffer[ONE_BYTE_INDEX  ]) << SINGLE_BYTE_SHIFT) |
+          (static_cast<uint32_t>(buffer[TWO_BYTE_INDEX  ]) << TWO_BYTE_SHIFT   ) |
+          (static_cast<uint32_t>(buffer[THREE_BYTE_INDEX]) << THREE_BYTE_SHIFT ) );
 }
 
 void uint32ToBuffer(const uint32_t value, uint8_t * const buffer)
 {
   /* Little endian: LSB first */
-  buffer[0U] = static_cast<uint8_t>((value                     ) & SINGLE_BYTE_MASK);
-  buffer[1U] = static_cast<uint8_t>((value >> SINGLE_BYTE_SHIFT) & SINGLE_BYTE_MASK);
-  buffer[2U] = static_cast<uint8_t>((value >> TWO_BYTE_SHIFT   ) & SINGLE_BYTE_MASK);
-  buffer[3U] = static_cast<uint8_t>((value >> THREE_BYTE_SHIFT ) & SINGLE_BYTE_MASK);
+  buffer[ZERO_BYTE_INDEX ] = static_cast<uint8_t>((value                     ) & SINGLE_BYTE_MASK);
+  buffer[ONE_BYTE_INDEX  ] = static_cast<uint8_t>((value >> SINGLE_BYTE_SHIFT) & SINGLE_BYTE_MASK);
+  buffer[TWO_BYTE_INDEX  ] = static_cast<uint8_t>((value >> TWO_BYTE_SHIFT   ) & SINGLE_BYTE_MASK);
+  buffer[THREE_BYTE_INDEX] = static_cast<uint8_t>((value >> THREE_BYTE_SHIFT ) & SINGLE_BYTE_MASK);
 }
 
 Atams::Error_t decodeBusPacket(const uint8_t  * const inputBuffer,
