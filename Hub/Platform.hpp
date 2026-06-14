@@ -30,10 +30,15 @@
 #pragma once
 
 /*************************************************************************************/
-/* INCLUDES                                                                          */
+/* ATAMS INCLUDES                                                                    */
 /*************************************************************************************/
 
 #include <stdint.h>
+
+/*************************************************************************************/
+/* USER INCLUDES                                                                     */
+/*************************************************************************************/
+
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
@@ -240,7 +245,7 @@ class CommsLock
  *           transmit completion (blocking transmit waits in the sync update cycle).
  *           Used by the blocking variants of the Bus update cycle functions.
  *
- *  @note    ATAMS PLATFORM REQUIREMENT - BLOCKING COMMS
+ *  @note    ATAMS PLATFORM REQUIREMENT - BLOCKING BUS UPDATE
  */
 class BinarySemaphore
 {

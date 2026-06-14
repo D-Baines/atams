@@ -1116,7 +1116,10 @@ Bus::PollResult Bus::pollForResponse(Atams::Node               &node,
 
 void Bus::rxCallback(uint8_t *rxBufferPtr, const uint16_t rxBufferLength)
 {
-  static_cast<void>(circularBuffer_.pushHead(rxBufferPtr, rxBufferLength));
+  if (circularBuffer_.pushHead(rxBufferPtr, rxBufferLength) == CircularBuffer::ERROR_FULL)
+  {
+    circularBuffer_.reset();
+  }
   rxSemaphore_.release();
 }
 

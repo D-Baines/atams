@@ -200,7 +200,10 @@ static void receiveCallback(const Platform::CommsPeripheralID_t commsChannel,
   if ((commsChannel   < Platform::NUMBER_OF_COMMS_PERIPHERALS) &&
       (rxBufferLength > 0U                                   ) )
   {
-    s_circularBuffers[commsChannel].pushHead(rxBufferPtr, rxBufferLength);
+    if (s_circularBuffers[commsChannel].pushHead(rxBufferPtr, rxBufferLength) == CircularBuffer::ERROR_FULL)
+    {
+      s_circularBuffers[commsChannel].reset();
+    }
     Platform::releaseWaitOnReceiveSemaphore();
   }
 }

@@ -6,6 +6,7 @@
 # Table of Contents
 - [Introduction](#introduction)
 - [Communications Hardware Requirements](#communications-hardware-requirements)
+- [Bus Interoperability](#bus-interoperability)
 - [C++ Platform Requirements](#c-platform-requirements)
 - [C++ Language Standard](#c-language-standard)
 - [Memory Maps](#memory-maps)
@@ -60,6 +61,17 @@ Atams primarily targets multi-drop buses (such as RS485, CAN FD, CAN XL, 10Base-
 - **Self-reception:** Atams safely handles cases where a device receives its own messages.
 - **Bus arbitration:** Hardware-level bus arbitration is not required, but can be used alongside Atams software arbitration to improve robustness.
 - **Packet size:** Atams is not compatible with hardware that has a small maximum packet size (such as classic CAN). A minimum *maximum* packet size of 64 bytes or greater is recommended.
+
+
+# Bus Interoperability
+
+Atams uses a proprietary framing protocol. Bytes from non-Atams devices received on the same bus will corrupt Atams frame detection, causing Atams packets to be lost. For Atams to operate reliably alongside other devices, the Platform layer must filter received frames so that only Atams frames are passed to the Atams receive callback.
+
+Buses that provide hardware frame filtering — such as CAN FD (via acceptance filters) or Ethernet (via EtherType or MAC filtering) — can be shared with other devices by configuring the Platform layer to pass only Atams frames to the receive callback. Buses without physical-layer addressing, such as RS485, provide no such filtering mechanism and cannot be shared with devices using other protocols.
+
+### CANOpen Interoperability
+
+Atams can operate alongside CANOpen devices with hardware filtering in place, provided the CAN IDs assigned to Atams do not overlap with any CANOpen reserved ranges in use on the bus.
 
 
 # C++ Platform Requirements
