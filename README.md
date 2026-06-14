@@ -555,7 +555,9 @@ The watchdog counter is reset automatically each time a valid Hub message is rec
 
 ### Maximising Node Performance
 
-Care should be taken when using Atams alongside user code containing high-priority device functions. If user device functions run at the same priority or higher than an Atams comms update function, the response time of the Node could be at least up to the length of time it takes these user functions to run. One solution for RTOS based systems can be to run the `Atams::updateCommsBlocking()` function in a higher priority thread than any user device functions. If this is not possible, a secondary core of a multi-core MCU can be dedicated to run Atams communications for the quickest Node response times. This becomes especially important when using the synchronous update cycle with the Atams Hub library.
+The non-blocking comms update function (`Atams::updateCommsPolling()`) returns immediately on each call, relying on the user to poll it as frequently as possible. The faster the poll rate, the less time elapses between a request arriving and the Node processing and responding to it.
+
+The blocking variant (`Atams::updateCommsBlocking()`) suspends the calling thread until a packet arrives or a timeout expires, freeing the CPU to do other work between requests. For the lowest response latency, the thread running `updateCommsBlocking()` should be given higher priority than any user functions that could otherwise delay it. If priority constraints make this difficult, dedicating a secondary core of a multi-core MCU to Atams communications is an alternative. Minimising Node response latency becomes especially important when using the [Synchronous Bus Update Cycle](#synchronous-bus-update-cycle).
 
 ### Building (CMake Example) - Coming Soon
 
