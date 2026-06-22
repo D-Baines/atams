@@ -66,7 +66,6 @@ static bool validateMapLength(const SharedMemoryMap_t &memoryMap, const uint32_t
 {
   const uint16_t numberOfVars {memoryMap.genInfo.noOfVars};
   bool           lengthValid  {true};
-  uint16_t       varIndex     {0U};
 
   if ((numberOfVars > varStorageLength              ) ||
       (numberOfVars > Atams::MAX_NUMBER_OF_VARS     ) ||
@@ -81,20 +80,13 @@ static bool validateMapLength(const SharedMemoryMap_t &memoryMap, const uint32_t
 
     if ((varInfo.type           > Atams::NUMBER_OF_VAR_TYPES) ||
         (varInfo.externalAccess > Atams::ACCESS_WRITE       ) ||
-        (varInfo.NVMStorage     > Atams::ATAMS_TRUE         ) )
+        (varInfo.NVMStorage     > Atams::ATAMS_TRUE         ) ||
+        (varInfo.type           == Atams::TYPE_NULL         ) ||
+        (varInfo.externalAccess == Atams::ACCESS_NONE       ) )
     {
       lengthValid = false;
       break;
     }
-
-    if ((varInfo.type           == Atams::TYPE_NULL  ) ||
-        (varInfo.externalAccess == Atams::ACCESS_NONE) )
-    {
-      if (varIndex != numberOfVars) lengthValid = false;
-      break;
-    }
-
-    varIndex++;
   }
 
   return (lengthValid);
