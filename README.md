@@ -272,7 +272,8 @@ Once the Memory Map C++ files have been generated, they are ready to be used in 
 
 The steps below show the complete setup sequence for a single-core Node. Each step is documented in detail in the sections that follow.
 
-**Step 1 — Complete the platform files**\
+**Step 1 — Complete the platform files**
+
 Fill in the required function definitions for your hardware and application setup. See [Platform Setup](#platform-setup) for details on which functions apply to your configuration.
 
 ```
@@ -281,7 +282,8 @@ Atams/Node/CommsCore/CommsPlatform.hpp
 Atams/Node/CommsCore/CommsPlatform.cpp
 ```
 
-**Step 2 — Include the Comms Core header and Memory Map**\
+**Step 2 — Include the Comms Core header and Memory Map**
+
 See [Includes & Core Setup](#includes--core-setup).
 
 ```cpp
@@ -289,7 +291,8 @@ See [Includes & Core Setup](#includes--core-setup).
 #include "Atams/Node/Maps/MapExample/MapExample.hpp"
 ```
 
-**Step 3 — Initialise the Comms Core once on startup**\
+**Step 3 — Initialise the Comms Core once on startup**
+
 See [Comms Core — Initialisation](#comms-core-single--dual-core).
 
 ```cpp
@@ -299,7 +302,8 @@ Atams::Error_t initStatus {Atams::ERROR_NONE};
 initStatus = Atams::initSingleCore(Atams::MapExample::memoryMap, nvmStatus);
 ```
 
-**Step 4 — Run the communications update in the main loop**\
+**Step 4 — Run the communications update in the main loop**
+
 Call `updateCommsPolling` as often as possible, or `updateCommsBlocking` from a high-priority RTOS thread. See [Communications Update](#communications-update).
 
 ```cpp
@@ -309,7 +313,8 @@ while (true)
 }
 ```
 
-**Step 5 (Optional) — Poll the watchdog fault flag**\
+**Step 5 (Optional) — Poll the watchdog fault flag**
+
 If the watchdog is enabled, poll `getWatchdogFault` from application code to detect a Hub communications timeout and enter a safe state. See [Watchdog Fault Handling](#watchdog-fault-handling).
 
 ```cpp
@@ -339,6 +344,7 @@ The Node library is compatible with single and dual-core micro-controllers. The 
   ```
 
     <p align="center">
+
   <img height="500" src="https://atams.io/CommsCoreInclude.gif">
   </p>
 - **Dual-Core Includes:** 
@@ -359,8 +365,8 @@ The Node library is compatible with single and dual-core micro-controllers. The 
 
 The majority of Node library functions return the following type:
 
-- **Atams::Error_t**\
-  This enum type is used to notify the user of any function errors.\
+- **Atams::Error_t**  
+  This enum type is used to notify the user of any function errors.  
   The following function included from `Atams/Shared/AtamsTypedefs.hpp` converts the error value into a human readable `const char *` string:
 
   ```cpp
@@ -428,6 +434,7 @@ The majority of Node library functions return the following type:
   ```
 
     <p align="center">
+
   <img height="500" src="https://atams.io/NodeInit.gif">
   </p>
 - **Setting and Getting Variables:** 
@@ -453,6 +460,7 @@ The majority of Node library functions return the following type:
   ```
 
     <p align="center">
+
   <img height="500" src="https://atams.io/NodeGetVar.gif">
   </p>
 
@@ -475,6 +483,7 @@ The majority of Node library functions return the following type:
   ```
 
     <p align="center">
+
   <img height="500" src="https://atams.io/NodeSetVar.gif">
   </p>
 - **Communications Update:** 
@@ -494,8 +503,10 @@ The majority of Node library functions return the following type:
   ```
 
     <p align="center">
+
   <img height="500" src="https://atams.io/NodeCommsUpdate.gif">
   </p>
+
 
 ### App Core (Dual-Core Only)
 
@@ -522,31 +533,24 @@ The Node library is written to maximise compatibility with different user applic
   The following Node library files need to be completed by the user:
 
   Single and dual-core:  
-  `Atams/Node/SharedPlatform.cpp`\
-  `Atams/Node/CommsCore/CommsPlatform.hpp`\
+  `Atams/Node/SharedPlatform.cpp`  
+  `Atams/Node/CommsCore/CommsPlatform.hpp`  
   `Atams/Node/CommsCore/CommsPlatform.cpp`
 
   Dual-core only:  
-  `Atams/Node/AppCore/AppPlatform.hpp`\
+  `Atams/Node/AppCore/AppPlatform.hpp`  
   `Atams/Node/AppCore/AppPlatform.cpp`
 - **Function Comments:** 
 
   The following tags are present in the `.cpp` file function comments to indicate when completion of the definition is required. Non-applicable function definitions can be left empty. It is recommended to cast any unused function arguments to `void` to avoid compiler warnings.
 
 | Comment Tag                        | Requirement Condition |
-
 | :--------------------------------- | :---------- |
-
 | ALL                                | Required for all platform setups. |
-
-| MULTI-THREAD                       | Required when Atams functions are used from multiple threads, and/or interrupt contexts, on the given core. | 
-
+| MULTI-THREAD                       | Required when Atams functions are used from multiple threads, and/or interrupt contexts, on the given core. |
 | DUAL-CORE                          | Required when Atams functions are used on multiple MCU cores. |
-
 | POLLING COMMS                      | Required when the platform hardware needs to be polled in order to receive incoming bytes. |
-
 | EVENT DRIVEN COMMS                 | Required when incoming bytes are received into an interrupt or event context separate from the context running the Atams comms update function. |
-
 | MULTI-THREAD + EVENT DRIVEN COMMS  | Required when Atams::updateCommsBlocking() is used in combination with an event driven receive setup. |
 
 - **Platform Byte Pre-Processing:** 
@@ -614,10 +618,12 @@ The Hub library includes two key classes: a Node class, and a Bus class.
 
 The steps below show the complete sequence for setting up and running the Hub library. Each step is documented in detail in the sections that follow.
 
-**Step 1 — One-time Node configuration** (new or reconfigured Nodes only)\
+**Step 1 — One-time Node configuration** (new or reconfigured Nodes only)
+
 Each physical Node device must be assigned a unique ID before it can be used on the Bus. See [The Node Configuration Process](#the-node-configuration-process).
 
-**Step 2 — Construct Node and Bus instances**\
+**Step 2 — Construct Node and Bus instances**
+
 See [Bus Construction](#bus-construction) and [Node Construction](#node-construction).
 
 ```cpp
@@ -632,7 +638,8 @@ static Atams::Node node1(1U);
 static Atams::Node node2(2U);
 ```
 
-**Step 3 — Initialise each Node instance with its Memory Map**\
+**Step 3 — Initialise each Node instance with its Memory Map**
+
 See [Node Initialisation](#node-initialisation).
 
 ```cpp
@@ -640,7 +647,8 @@ node1.init(Atams::MapExample::memoryMap);
 node2.init(Atams::MapExample::memoryMap);
 ```
 
-**Step 4 — Add each Node to the Bus**\
+**Step 4 — Add each Node to the Bus**
+
 See [Linking Nodes to a Bus](#linking-nodes-to-a-bus).
 
 ```cpp
@@ -648,7 +656,8 @@ bus.addNodeToBus(node1);
 bus.addNodeToBus(node2);
 ```
 
-**Step 5 — Run the Bus Initialisation Process** (once per power cycle, or when the Bus configuration changes)\
+**Step 5 — Run the Bus Initialisation Process** (once per power cycle, or when the Bus configuration changes)
+
 See [The Bus Initialisation Process](#the-bus-initialisation-process).
 
 ```cpp
@@ -664,7 +673,8 @@ do
 while (state == Atams::PROCESS_IN_PROGRESS);
 ```
 
-**Step 6 — Configure Request Patterns for variables to read or write**\
+**Step 6 — Configure Request Patterns for variables to read or write**
+
 `setRequestPattern` controls which variables are included in each update cycle and whether they are read or written. For writes, call `setVar` first to place the value into the Node instance's local storage. Helper functions such as `setReadStream` and `setWriteStream` provide cleaner syntax for the most common patterns — see [Node Request Pattern Control](#node-request-pattern-control).
 
 ```cpp
@@ -678,7 +688,8 @@ node1.setVar(BlockExample::VAR_EXAMPLE_2, someValue);
 node1.setRequestPattern(BlockExample::VAR_EXAMPLE_2, Atams::ACCESS_WRITE, Atams::REQUEST_STREAM);
 ```
 
-**Step 7 — Run the Bus Update Cycle** (called repeatedly in the application loop)\
+**Step 7 — Run the Bus Update Cycle** (called repeatedly in the application loop)
+
 See [Synchronous Bus Update Cycle](#synchronous-bus-update-cycle) or [Asynchronous Bus Update Cycle](#asynchronous-bus-update-cycle).
 
 ```cpp
@@ -693,7 +704,8 @@ while (state == Atams::PROCESS_IN_PROGRESS);
 bus.processResponseBuffers();
 ```
 
-**Step 8 (Optional) — Check New Data Ready and Write Acknowledgement flags**\
+**Step 8 (Optional) — Check New Data Ready and Write Acknowledgement flags**
+
 Each variable has a New Data Ready flag set when fresh read data arrives, and a Write Acknowledgement flag set when a write is confirmed by the Node. Both flags persist until explicitly cleared. They are useful for per-variable confirmation independent of the overall cycle result, and particularly valuable when the Bus Update Cycle runs in a separate thread from the code reading or writing variables. See [Node Acknowledgement and New Data Ready Flags](#node-acknowledgement-and-new-data-ready-flags).
 
 ```cpp
@@ -705,7 +717,8 @@ node1.isDataReady(BlockExample::VAR_EXAMPLE_1, newData);
 node1.isWriteAcked(BlockExample::VAR_EXAMPLE_2, writeAck);
 ```
 
-**Step 9 — Read updated variable values from Node instance storage**\
+**Step 9 — Read updated variable values from Node instance storage**
+
 If the update cycle and `processResponseBuffers` both return without error, all active read requests received fresh data and all active write requests were acknowledged by the Node. Variable values can be read directly from Node instance storage using `getVar`. See [Node Variable Access](#node-variable-access).
 
 ```cpp
@@ -725,42 +738,33 @@ node1.getVar(BlockExample::VAR_EXAMPLE_1, readValue); // using namespace Atams::
 
 The majority of Hub library functions return one of the two following types:
 
-- **Atams::Error_t**\
+- **Atams::Error_t**
 
-This enum type is used to notify the user of any function or process errors.\
+This enum type is used to notify the user of any function or process errors.  
 The following function included from `Atams/Shared/AtamsTypedefs.hpp` converts the error value into a human readable `const char *` string:
 
 ```cpp
 const char *getErrorString(const Atams::Error_t error);
 ```
 
-- **Atams::ProcessState_t**\
+- **Atams::ProcessState_t**
 
 This enum type is returned from any Atams function that includes a polled update process. The enum options are as follows:
+
 ```cpp
     enum ProcessState_t: uint8_t
     {
       PROCESS_ERROR       = 0U, /* - The process reached an error condition and has stopped.
-
-    - Check the Atams::Error_t passed to the process
-* update function for error details. 
-    - Restart the process using the appropriate 
-* `begin` function if required.
-
+                                 * - Check the Atams::Error_t passed to the process update function for error details. 
+                                 * - Restart the process using the appropriate `begin` function if required.
                                  */
 
-      PROCESS_IN_PROGRESS = 1U, /* - The process is in progress, keep polling the process update 
-
-* function until either PROCESS_ERROR or PROCESS_COMPLETE is
-* returned.
-
+      PROCESS_IN_PROGRESS = 1U, /* - The process is in progress, keep polling the process update
+                                 *   function until either PROCESS_ERROR or PROCESS_COMPLETE is returned.
                                  */
 
       PROCESS_COMPLETE    = 2U  /* - The process has completed successfully.
-
-    - Restart the process using the appropriate 
-* `begin` function if required.
-
+                                 * - Restart the process using the appropriate `begin` function if required.
                                  */
 };
 ```
@@ -774,21 +778,22 @@ This enum type is returned from any Atams function that includes a polled update
     Hub library Memory Map files should be included from `Atams/Hub/Maps`. See [Memory Map Access](#memory-map-access) for details.
 - **Node Access Includes:**
 
-    Files responsible for initialising or accessing a Node instance should include the following header:\
+    Files responsible for initialising or accessing a Node instance should include the following header:  
   `Atams/Hub/Node.hpp`
 - **Bus Control Includes:**
 
-    Files responsible for initialising and updating the Bus must include the following headers:\
-  `Atams/Hub/Node.hpp`\
+    Files responsible for initialising and updating the Bus must include the following headers:  
+  `Atams/Hub/Node.hpp`  
   `Atams/Hub/Bus.hpp`
 
 ### Bus Construction
 
 The Atams Bus constructor accepts an `Atams::Platform::BusPeripheral::UserData_t` instance. When the user completes the definition of the `Atams::Platform::BusPeripheral` class in the Hub Platform files, they may need to access data that is set, or objects that are constructed, at a wider application scope. Any variables or references that need to be used by the `BusPeripheral` class can be added to the `BusPeripheral::UserData_t` definition, and passed to the class during construction.
 
-**Example:**\
-The following example uses Asio - a common cross-platform C++ library for network and low-level I/O programming
-. Asio is not part of the Atams libraries and is used as an example low level interface only.
+**Example:**
+
+The following example uses Asio - a common cross-platform C++ library for network and low-level I/O programmin
+g . Asio is not part of the Atams libraries and is used as an example low level interface only.
 
 ```cpp
 // In the Atams::Platform::BusPeripheral class definition in Hub/Platform.hpp:
@@ -826,23 +831,23 @@ struct NodeConfig_t
 };
 ```
 
-- **Node ID:**\
+- **Node ID:**
 
 The Node configuration includes the unique Node ID used for Node addressing during the Bus update cycle. Each physical Node on an Atams Bus must be configured with it's own unique ID ranging from 1-254. All unconfigured Nodes will start with a Node ID of 0.
 
-- **Bitrate Option:**\
+- **Bitrate Option:**
 
 How the Bitrate Option affects the Node's hardware peripheral bitrate is defined by the developer of the Node device in the Node library platform setup. All Node's on the same bus must have the same hardware peripheral bitrate as a result of setting each of the Node's Bitrate Options.
 
-- **Watchdog Period:**\
+- **Watchdog Period:**
 
 The Node library measures the time between messages received from the Hub. If the time spent waiting for a new message exceeds the watchdog period, the Node library will alert the Node device user code so the device can enter a safe state. The period is measured in milliseconds. Set the value to 0 to disable the watchdog functionality.
 
-- **Hardware Connections:**\
+- **Hardware Connections:**
 
 If multiple unconfigured Node's need to be added to a physical bus, they must be physically connected and configured one by one. If a Node already has a unique ID, it can be re-configured without having to remove any other Nodes from the bus, so long as the new Node ID does not conflict with an existing Node ID on the bus.
 
-- **Starting the Configuration Process:**\
+- **Starting the Configuration Process:**
 
 The following example shows how to start the Node Configuration Process for an un-configured Node on the bus.
 
@@ -871,7 +876,7 @@ void userFunc(void)
 }
 ```
 
-- **Updating the Configuration Process:**\
+- **Updating the Configuration Process:**
 
 The process writes the new configuration to the Node and triggers an NVM storage operation to persist it between power cycles. The update function returns `Atams::PROCESS_COMPLETE` on success, or `Atams::PROCESS_ERROR` if any step fails — check the `Atams::Error_t` passed by reference for details.
 
@@ -981,7 +986,7 @@ The Bus Initialisation Process handles Memory Map compatibility checking, and st
 
 The Bus Initialisation process cannot be skipped, and must be completed to use the Bus Update Cycles.
 
-- **Starting the Bus Initialisation Process:**\
+- **Starting the Bus Initialisation Process:**
 
 The following example shows how to start the Bus Initialisation Process. The function will return errors if no Node class instances have been added to the Bus, or if the `BusPeripheral::startReceive()` function fails to complete successfully.
 
@@ -1054,31 +1059,27 @@ void userFunc(void)
 
   enum Access_t: uint8_t
   {
-  ACCESS_NONE  = 0U, // Remove any existing datagram for this variable.
+    ACCESS_NONE  = 0U, // Remove any existing datagram for this variable.
 
     ACCESS_READ  = 1U, // Add a Read Datagram for this variable to the Node Request Packet. 
-  // If a Write Datagram exists, it will be replaced.
+                       // If a Write Datagram exists, it will be replaced.
 
     ACCESS_WRITE = 2U, // Add a Write Datagram for this variable to the Node Request Packet. 
-  // If a read Datagram exists, it will be replaced.
+                       // If a read Datagram exists, it will be replaced.
   };
 
   enum RequestPattern_t: uint8_t
   {
-  REQUEST_INACTIVE           = 0U, // Remove any existing Datagram for this variable.
+    REQUEST_INACTIVE   = 0U, // Remove any existing Datagram for this variable.
 
-    REQUEST_STREAM             = 1U, // The Datagram will remain in the Node Request Packet until explicitly cleared or changed.
+    REQUEST_STREAM     = 1U, // The Datagram will remain in the Node Request Packet until explicitly cleared or changed.
 
-    REQUEST_UNTIL_ACK          = 2U, // Add the Datagram to the Node Request Packet until a write 
-  // acknowledgement or new read data is received.
+    REQUEST_UNTIL_ACK  = 2U, // Add the Datagram to the Node Request Packet until a write 
+                             // acknowledgement or new read data is received.
   };
 
-  /* [!NOTE] If either ACCESS_NONE or REQUEST_INACTIVE are used, the Request 
-    - Packet datagram will be removed regardless of other inputs. 
-
-   */
-
-```
+  // Note: If either ACCESS_NONE or REQUEST_INACTIVE are used, the Request Packet datagram will be removed regardless of other inputs.
+  ```
 
 <p align="center">
 <img height="500" src="https://atams.io/HubRequestPatterns.gif">
@@ -1201,7 +1202,8 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
 
 ### Synchronous Bus Update Cycle
 
-- **Overview**\
+- **Overview**
+
   During the Synchronous Update Cycle, Request Packets are sent to all Node devices, which store them in a Sync Buffer. Once the final Node device receives it's Request Packet, all Nodes process their stored Sync Buffers simultaneously: variables are written to variable storage, and read data and write acknowledgments are transferred to Response Packets. The first Node transmits it's Response Packet immediately, and each subsequent Node device transmits it's response after receiving the previous Node's Response Packet. If a Node does not respond within a given timeout window, the Bus Update Cycle running on the Hub, detects the timeout and sends a Jog Packet to the next Node device in the response order, ensuring the cycle continues.
 
   The Bus Update Cycles do not process incoming response data during the update. This is triggered by the user once the update cycle is complete with the `Bus::processResponseBuffers` function.
@@ -1313,6 +1315,82 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
 <p align="center">
   <img height="500" src="https://atams.io/HubProcessSyncBuffers.gif">
 </p>
+
+- **Aborted Responses:**
+
+  Most Bus errors — such as timeouts, framing errors, and checksum failures — are transient and indicate a communications issue that is likely to resolve on the next update cycle. One error type is more serious and warrants immediate attention: `ERROR_ABORTED_RESPONSE`.
+
+  An aborted response means the Node received a Request Packet that passed framing and checksum validation, but encountered an error while parsing or validating its datagrams. The Node aborts its response at the point of the offending datagram and reports the error. This is distinct from a communications failure — the packet was received and decoded successfully, but its datagram content was invalid from the Node's perspective.
+
+  The most likely cause of an aborted response is a mismatch between the Hub and Node Memory Maps. If the Hub's Memory Map and the Node's Memory Map were not generated from the same source, the Hub may request access to a variable that does not exist on the Node, or attempt to write to a variable the Node considers read-only. The Bus Initialisation Process checks Memory Map compatibility — an aborted response in normal operation indicates that the Hub's Request Packet contains a datagram that shouldn't have been possible to construct. This points to a programming error rather than a transient communications issue.
+
+  When `getBusError()` returns `ERROR_ABORTED_RESPONSE`, call `getAbortedResponseDetails()` on the same Node instance to retrieve the variable ID of the datagram that caused the abort and the specific error:
+
+  ```cpp
+  Atams::AbortedResponseDetails_t getAbortedResponseDetails(void);
+  ```
+
+  ```cpp
+  struct AbortedResponseDetails_t
+  {
+    uint16_t       varID; // ID of the variable whose datagram triggered the abort; VAR_ID_NULL if not applicable
+    Atams::Error_t error; // Reason the Node rejected the datagram
+  };
+  ```
+
+  The `error` field will be one of the following:
+
+  | Error                          | varID            | Meaning                                                                                              |
+  | :----------------------------- | :--------------- | :--------------------------------------------------------------------------------------------------- |
+  | `ERROR_VAR_ID`                 | `VAR_ID_NULL`    | The datagram references a variable ID that does not exist in the Node's Memory Map.                  |
+  | `ERROR_ACCESS_INVALID`         | Offending var ID | The datagram requests write access to a variable the Node's Memory Map defines as read-only.         |
+  | `ERROR_RESPONSE_BUFFER_LENGTH` | `VAR_ID_NULL`    | The cumulative response to the Request Packet would exceed the Node's transmit buffer. No single datagram is identified as the cause. |
+
+  **Example:**
+
+  ```cpp
+  #include "Atams/Hub/Node.hpp"
+  #include "Atams/Hub/Bus.hpp"
+
+  static const Atams::Platform::BusPeripheral::UserData_t userData;
+
+  enum NodeID_t: uint8_t
+  {
+    NODE_1_ID       = 1U,
+    NODE_2_ID       = 2U,
+    NUMBER_OF_NODES = 2U
+  };
+
+  static Atams::Node node1(NODE_1_ID);
+  static Atams::Node node2(NODE_2_ID);
+
+  static Atams::Node *nodePtrs[NUMBER_OF_NODES] {&node1, &node2};
+
+  static Atams::Bus bus(userData);
+
+  void userFunc(void)
+  {
+    if (bus.processResponseBuffers() != Atams::ERROR_NONE)
+    {
+      for (Atams::Node *&node : nodePtrs)
+      {
+        if (node->getBusError() == Atams::ERROR_ABORTED_RESPONSE)
+        {
+          Atams::AbortedResponseDetails_t details {node->getAbortedResponseDetails()};
+
+          printf("Node %d aborted response: varID=%d error=%s\n",
+                 node->getNodeID(),
+                 details.varID,
+                 Atams::getErrorString(details.error));
+        }
+      }
+    }
+  }
+  ```
+
+  > [!WARNING]
+  >
+  > An aborted response during normal operation indicates a serious configuration error — most likely a Hub/Node Memory Map mismatch. Verify that both sides were generated from the same Memory Map source and that the Bus Initialisation Process completed successfully. Do not suppress or ignore this error.
 
 ### Asynchronous Bus Update Cycle
 
@@ -1495,18 +1573,12 @@ Atams provides platform files that contain all the required user constants, func
 - **Function Comments:** The following tags are present in the `.cpp` file function comments to indicate when completion of the definition is required. Non-applicable function definitions can be left empty. It is recommended to cast any unused function arguments to `void` to avoid compiler warnings.
 
 | Comment Tag                        | Requirement Condition |
-
 | :--------------------------------- | :---------- |
-
 | ALL                                | Required for all platform setups. |
-
-| MULTI-THREAD                       | Required when Atams functions are used from multiple threads, and/or interrupt contexts. | 
-
+| MULTI-THREAD                       | Required when Atams functions are used from multiple threads, and/or interrupt contexts. |
 | POLLING COMMS                      | Required when the platform hardware needs to be polled in order to receive incoming bytes. |
-
 | EVENT DRIVEN COMMS                 | Required when incoming bytes are received into an interrupt or event context separate from the context running the Atams comms update function. |
-
-| BLOCKING BUS UPDATE | Required when blocking Bus Update Cycles functions are used. |
+| BLOCKING BUS UPDATE                | Required when blocking Bus Update Cycles functions are used. |
 
 - **Platform Byte Pre-Processing:** No pre-processing of incoming bytes is required at the platform level. All incoming bytes can be passed directly to Atams using the provided receive callback functions. The incoming bytes must be passed to Atams in order, and the same bytes should not be passed to Atams more than once.
 - **Platform Reception Methods:** Atams packets are compatible with polling, character delimited, or idle line reception methods. If a user wants to use character delimited reception methods - the delimiter should be set to hex `0x00`. 
@@ -1521,7 +1593,7 @@ The blocking variants (`runUpdateCycleSyncBlocking`, `runUpdateCycleAsyncBlockin
 
 Internal, non-public-facing implementation files for the Node and Hub libraries are located in their respective `Developer` subfolders:
 
-`Atams/Node/Developer/`\
+`Atams/Node/Developer/`  
 `Atams/Hub/Developer/`
 
 New internal files should be placed here rather than in the library root, to keep the public API areas clear.
