@@ -43,20 +43,20 @@ namespace Atams { namespace MapTest { namespace BlockTest2 {
 
 enum VarID_t: uint16_t
 {
-  VAR_READ_UINT8   = 42U,
-  VAR_READ_INT8    = 43U,
-  VAR_READ_UINT16  = 44U,
-  VAR_READ_INT16   = 45U,
-  VAR_READ_UINT32  = 46U,
-  VAR_READ_INT32   = 47U,
-  VAR_READ_FLOAT   = 48U,
-  VAR_WRITE_UINT8  = 49U,
-  VAR_WRITE_INT8   = 50U,
-  VAR_WRITE_UINT16 = 51U,
-  VAR_WRITE_INT16  = 52U,
-  VAR_WRITE_UINT32 = 53U,
-  VAR_WRITE_INT32  = 54U,
-  VAR_WRITE_FLOAT  = 55U,
+  VAR_READ_UINT8   = 44U,
+  VAR_READ_INT8    = 45U,
+  VAR_READ_UINT16  = 46U,
+  VAR_READ_INT16   = 47U,
+  VAR_READ_UINT32  = 48U,
+  VAR_READ_INT32   = 49U,
+  VAR_READ_FLOAT   = 50U,
+  VAR_WRITE_UINT8  = 51U,
+  VAR_WRITE_INT8   = 52U,
+  VAR_WRITE_UINT16 = 53U,
+  VAR_WRITE_INT16  = 54U,
+  VAR_WRITE_UINT32 = 55U,
+  VAR_WRITE_INT32  = 56U,
+  VAR_WRITE_FLOAT  = 57U,
 };
 
 /*************************************************************************************/

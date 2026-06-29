@@ -37,26 +37,27 @@ namespace Atams { namespace MapTest {
 /* STATIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-static const GenInfo_t s_genInfo = 
+static const GenInfo_t s_genInfo 
 {
   /* .atamsVersionMajor = */ 0U,
   /* .atamsVersionMinor = */ 1U,
-  /* .genDay            = */ 21U,
-  /* .genMonth          = */ 12U,
-  /* .genYear           = */ 2025U,
-  /* .genHour           = */ 11U,
-  /* .genMinute         = */ 34U,
-  /* .genSecond         = */ 5U,
-  /* .genChecksum       = */ 495011647U,
-  /* .noOfVars          = */ 96U
+  /* .genDay            = */ 22U,
+  /* .genMonth          = */ 6U,
+  /* .genYear           = */ 2026U,
+  /* .genHour           = */ 20U,
+  /* .genMinute         = */ 23U,
+  /* .genSecond         = */ 23U,
+  /* .genChecksum       = */ 3893583024U,
+  /* .noOfVars          = */ 98U
 };
 
-static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
+static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] 
 {
   /*------------------------ Universal Var Info -------------------------*/
   
   BlockUniversal::varInfoList[BlockUniversal::VAR_ATAMS_VERSION_MAJOR],
   BlockUniversal::varInfoList[BlockUniversal::VAR_ATAMS_VERSION_MINOR],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ATAMS_VERSION_PATCH],
   BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_DAY],
   BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_MONTH],
   BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_YEAR],
@@ -65,6 +66,7 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
   BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_SECOND],
   BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_CHECKSUM],
   BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_NUMBER_OF_VARS],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_MAX_BUS_PACKET_SIZE],
   BlockUniversal::varInfoList[BlockUniversal::VAR_CONFIGURATION_PASSKEY],
   BlockUniversal::varInfoList[BlockUniversal::VAR_CONFIGURATION_STATUS],
   BlockUniversal::varInfoList[BlockUniversal::VAR_NODE_ID],
@@ -502,7 +504,7 @@ static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] =
 
 const Node::MemoryMap_t memoryMap =
 {
-  /* SharedMemoryMap_t */
+  /* .sharedMap */
   {
     /* genInfo     = */ MapTest::s_genInfo,
     /* varInfoList = */ MapTest::s_varInfoList

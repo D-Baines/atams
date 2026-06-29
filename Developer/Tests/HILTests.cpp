@@ -28,6 +28,7 @@
 #include "HILTests.hpp"
 #include "../../Hub/Bus.hpp"
 #include "TestNode.hpp"
+#include <thread>
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -39,7 +40,7 @@ namespace Atams { namespace HILTests {
 /* PRIVATE CONSTANTS                                                                 */
 /*************************************************************************************/
 
-constexpr uint8_t NUMBER_OF_TEST_NODES = 2U;
+constexpr uint8_t NUMBER_OF_TEST_NODES {3U};
 
 /*************************************************************************************/
 /* PRIVATE TYPEDEFS                                                                  */
@@ -79,7 +80,7 @@ static Atams::TestNode *testNodes_[NUMBER_OF_TEST_NODES] =
 {
   &testNode1_,
   &testNode2_,
-  //&testNode3_
+  &testNode3_
 };
 
 enum UpdateFunction_t : uint8_t
@@ -93,13 +94,15 @@ enum UpdateFunction_t : uint8_t
 
 static UpdateFunction_t updateFunctionIndex_ {UPDATE_CYCLE_SYNC};
 
+static uint32_t updateCycleCount_ {0U};
+
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
 static void errorHandler(const Atams::Error_t error, const char * errorMessage)
 {
-  printf("Atams Tests Failed with Error: %d\n", error);
+  printf("Atams Tests Failed with Error: %d - %s\n", error, Atams::getErrorString(error));
 
   if (errorMessage != nullptr) printf("Message: %s\n", errorMessage);
   
@@ -145,6 +148,10 @@ static void testBusInit(void)
   error         = testBus_.beginUpdateCycle();
   if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::beginUpdateCycle");
 
+  expectedError = Atams::ERROR_INIT_ORDER;
+  error         = testBus_.beginSingleNodeUpdateCycle(testNode1_);
+  if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::beginSingleNodeUpdateCycle");
+
   expectedError  = Atams::ERROR_INIT_ORDER;
   error          = Atams::ERROR_NONE;
   initState      = testBus_.runUpdateCycleAsync(error);
@@ -156,6 +163,30 @@ static void testBusInit(void)
   initState      = testBus_.runUpdateCycleSync(error);
   if ((initState != Atams::PROCESS_ERROR) ||
       (error     != expectedError       ) ) errorHandler(error, "Unexpected Return from Bus::runUpdateCycleSync");
+
+  expectedError  = Atams::ERROR_INIT_ORDER;
+  error          = Atams::ERROR_NONE;
+  initState      = testBus_.runSingleNodeUpdateCycle(error, testNode1_);
+  if ((initState != Atams::PROCESS_ERROR) ||
+      (error     != expectedError       ) ) errorHandler(error, "Unexpected Return from Bus::runSingleNodeUpdateCycle");
+
+  expectedError  = Atams::ERROR_INIT_ORDER;
+  error          = Atams::ERROR_NONE;
+  initState      = testBus_.runUpdateCycleSyncBlocking(error);
+  if ((initState != Atams::PROCESS_ERROR) ||
+      (error     != expectedError       ) ) errorHandler(error, "Unexpected Return from Bus::runUpdateCycleSyncBlocking");
+
+  expectedError  = Atams::ERROR_INIT_ORDER;
+  error          = Atams::ERROR_NONE;
+  initState      = testBus_.runUpdateCycleAsyncBlocking(error);
+  if ((initState != Atams::PROCESS_ERROR) ||
+      (error     != expectedError       ) ) errorHandler(error, "Unexpected Return from Bus::runUpdateCycleAsyncBlocking");
+
+  expectedError  = Atams::ERROR_INIT_ORDER;
+  error          = Atams::ERROR_NONE;
+  initState      = testBus_.runSingleNodeUpdateCycleBlocking(error, testNode1_);
+  if ((initState != Atams::PROCESS_ERROR) ||
+      (error     != expectedError       ) ) errorHandler(error, "Unexpected Return from Bus::runSingleNodeUpdateCycleBlocking");
 
   expectedError = Atams::ERROR_INIT_ORDER;
   error         = Atams::ERROR_NONE;
@@ -218,8 +249,8 @@ static void testBusInit(void)
 }
 
 static Atams::Error_t runUpdateCycleTests(void)
-{
-  Atams::Error_t error = testBus_.beginUpdateCycle();
+{ 
+  Atams::Error_t error {testBus_.beginUpdateCycle()};
 
   if (error) errorHandler(error, "Begin Update Cycle Failed");
 
@@ -240,7 +271,7 @@ static Atams::Error_t runUpdateCycleTests(void)
     {
       if (updateState != Atams::PROCESS_COMPLETE) errorHandler(error, "Unexpected Update Cycle Error");
 
-      if (updateFunctionIndex_ <= UPDATE_CYCLE_SYNC_BLOCKING) testBus_.processResponseBuffers();
+      testBus_.processResponseBuffers();
 
       updateFunctionIndex_ = static_cast<UpdateFunction_t>((updateFunctionIndex_ + 1U) % UPDATE_CYCLE_COUNT);
      
@@ -258,9 +289,10 @@ static Atams::Error_t runUpdateCycleTests(void)
       {
         testNodePtr->runUpdateCycleTests();
       }
-     
 
       testBus_.beginUpdateCycle();
+
+      updateCycleCount_++;
     }
   }
 }
@@ -279,6 +311,17 @@ void runTests(void)
   serialPort_.set_option(asio::serial_port::parity(asio::serial_port::parity::none));
   tcflush(serialPort_.lowest_layer().native_handle(), TCIOFLUSH);
 
+  auto workGuard = asio::make_work_guard(ioContext_);
+  std::thread ioThread([]()
+  {
+    for (;;)
+    {
+      ioContext_.run();
+      ioContext_.restart();
+    }
+  });
+  ioThread.detach();
+
   Atams::Error_t error = testNode1_.initMemoryMap(Atams::MapTest::memoryMap);
 
   if (!error) error = testNode2_.initMemoryMap(Atams::MapTest::memoryMap);
@@ -287,10 +330,13 @@ void runTests(void)
 
   if (error) errorHandler(error, "Node Init Failed");
 
-  testNode1_.runFunctionArgTests();
-
   testBusInit();
- 
+
+  for (TestNode *&testNodePtr : testNodes_)
+  {
+    testNodePtr->runFunctionArgTests();
+  }
+
   runUpdateCycleTests();
 }
 

@@ -10,7 +10,7 @@ from   Modules.AtamsCRC32 import *
 from   pathlib            import Path
 
 FRAMEWORK_NAME           = "Atams"
-NUMBER_OF_UNIVERSAL_VARS = 28
+NUMBER_OF_UNIVERSAL_VARS = 30
 
 class Platforms(Enum):
   NODE = 0

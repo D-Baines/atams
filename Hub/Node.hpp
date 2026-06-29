@@ -153,6 +153,8 @@ public NodeCallbackHandler
 
   uint16_t getRequestPacketLength(void);
 
+  uint16_t getExpectedResponseLength(void);
+
   uint16_t getWriteListLength(void);
 
   Atams::AbortedResponseDetails_t getAbortedResponseDetails(void);
@@ -221,6 +223,7 @@ public NodeCallbackHandler
   uint16_t                 validVarCount_          {0U};
   uint16_t                 responseLength_         {0U};
   uint16_t                 nodeMaxPacketSize_      {0U};
+  uint16_t                 expectedResponseLength_ {Atams::HEADER_SIZE_HEADER};
   bool                     newResponseReady_       {false};
   AbortedResponseDetails_t abortedResponseDetails_ {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
 
@@ -259,6 +262,7 @@ public NodeCallbackHandler
 
   Atams::Error_t validateResponseBuffer(uint8_t * const responsePacket, const uint16_t responsePacketLength);
 
+
   DataStatusReturn_t<bool> findDatagramMatchInPacket(RequestChangeConfig_t &changeConfig);
 
   Atams::Error_t requestPacketShift(const uint16_t shiftIndex, const int16_t shiftLength);
@@ -278,6 +282,11 @@ public NodeCallbackHandler
                                             const Atams::RequestPattern_t requestPattern);
 
   Atams::Error_t updateRequestPatternOnReceive(const uint16_t varID);
+
+  bool wouldExceedResponseBuffer(const Atams::VarInfo_t        &varInfo,
+                                 const Atams::Access_t          accessRequest,
+                                 const Atams::RequestPattern_t  requestPattern,
+                                 const Atams::Access_t          currentAccess) const;
 
   virtual Atams::Error_t updateRequestPacketWriteData(void);
 

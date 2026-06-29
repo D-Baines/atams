@@ -80,7 +80,12 @@ constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE    {0x55534552U};
 constexpr uint32_t RESTORE_ALL_PASSCODE            {0x52535452U};
 constexpr uint32_t RESET_NODE_PASSCODE             {0x4E525354U};
 constexpr uint32_t WATCHDOG_RESET_PASSCODE         {0x57444F47U};
-constexpr uint32_t MINIMUM_MAXIMUM_BUS_PACKET_SIZE {64U};
+constexpr uint32_t COBS_MAX_DATA_PER_CODE                         {254U};
+constexpr uint32_t COBS_TERMINATOR_SIZE                           {1U};
+constexpr uint32_t MINIMUM_MAXIMUM_BUS_PACKET_SIZE                {64U};
+constexpr uint32_t MINIMUM_COBS_MAX_CODE_BYTES                    {(MINIMUM_MAXIMUM_BUS_PACKET_SIZE + (COBS_MAX_DATA_PER_CODE - 1U)) / COBS_MAX_DATA_PER_CODE};
+constexpr uint32_t MINIMUM_COBS_OVERHEAD                          {MINIMUM_COBS_MAX_CODE_BYTES + COBS_TERMINATOR_SIZE};
+constexpr uint32_t MINIMUM_MAXIMUM_BUS_PACKET_SIZE_PRE_FRAMING    {MINIMUM_MAXIMUM_BUS_PACKET_SIZE - MINIMUM_COBS_OVERHEAD};
 
 constexpr uint8_t THREE_BYTE_SHIFT  {24U};
 constexpr uint8_t TWO_BYTE_SHIFT    {16U};
@@ -134,6 +139,8 @@ enum HeaderSize_t: uint8_t
   HEADER_SIZE_NODE_ID  = sizeof(uint8_t),
   HEADER_SIZE_HEADER   = HEADER_SIZE_MSG_TYPE + HEADER_SIZE_SYNC + HEADER_SIZE_CRC + HEADER_SIZE_NODE_ID,
 };
+
+constexpr uint32_t MINIMUM_MAXIMUM_BUS_PAYLOAD_SIZE {MINIMUM_MAXIMUM_BUS_PACKET_SIZE_PRE_FRAMING - HEADER_SIZE_HEADER};
 
 enum HeaderIndex_t: uint8_t
 {

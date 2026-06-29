@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    NodeUtilities.hpp
+  * @file    FramingConstants.hpp
   *
   * @author  D. Baines
   *
@@ -34,6 +34,7 @@
 #include <stdint.h>
 
 #include "../CommsCore/CommsPlatform.hpp"
+#include "../../Shared/AtamsTypedefs.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -45,11 +46,9 @@ namespace Atams { namespace Platform {
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-constexpr uint16_t COBS_MAX_DATA_PER_CODE          {254U};
-constexpr uint16_t COBS_TERMINATOR_SIZE            {1U};
-constexpr uint16_t COBS_MAX_CODE_BYTES             {(MAX_BUS_PACKET_SIZE + (COBS_MAX_DATA_PER_CODE - 1U)) / COBS_MAX_DATA_PER_CODE};
-constexpr uint16_t COBS_MAX_OVERHEAD               {COBS_MAX_CODE_BYTES + COBS_TERMINATOR_SIZE};
-constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING {MAX_BUS_PACKET_SIZE - COBS_MAX_OVERHEAD};
+constexpr uint16_t COBS_MAX_CODE_BYTES             {static_cast<uint16_t>((Platform::MAX_BUS_PACKET_SIZE + (Atams::COBS_MAX_DATA_PER_CODE - 1U)) / Atams::COBS_MAX_DATA_PER_CODE)};
+constexpr uint16_t COBS_MAX_OVERHEAD               {static_cast<uint16_t>(COBS_MAX_CODE_BYTES + Atams::COBS_TERMINATOR_SIZE)};
+constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING {static_cast<uint16_t>(Platform::MAX_BUS_PACKET_SIZE - COBS_MAX_OVERHEAD)};
 
 } } /* End Namespace - Atams::Platform */
 

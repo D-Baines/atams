@@ -252,13 +252,19 @@ Atams::ProcessState_t Bus::updateBusInitProcess(Atams::Error_t &error)
   {
     process.terminate(Atams::ERROR_INIT_ORDER);
     error = process.error;
-    return (processState);
+    return (processState); /* Early Return */
   }
 
   Atams::Node &node {*initNodePtr};
 
-  if ((runSingleNodeUpdateCycle(cycleError, node) == Atams::PROCESS_IN_PROGRESS) ||
-      (processState                               != Atams::PROCESS_IN_PROGRESS) )
+  if (processState != Atams::PROCESS_IN_PROGRESS)
+  {
+    error = process.error;
+    return (processState); /* Early Return */
+  }
+
+  if ((initState != Bus::InitState::START                                        ) &&
+      (runSingleNodeUpdateCycle(cycleError, node) == Atams::PROCESS_IN_PROGRESS) )
   {
     error = process.error;
     return (processState); /* Early Return */
@@ -308,7 +314,7 @@ Atams::ProcessState_t Bus::updateBusInitProcess(Atams::Error_t &error)
   if ((process.error == Atams::ERROR_NONE         ) &&
       (processState  == Atams::PROCESS_IN_PROGRESS) ) 
   {
-    static_cast<void>(beginSingleNodeUpdateCyclePrivate(node));
+    static_cast<void>(beginSingleNodeUpdateCyclePrivate(*initNodePtr));
   }
 
   error = process.error;
@@ -653,8 +659,14 @@ Atams::ProcessState_t Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
   Bus::ConfigUpdateState                      &configUpdateState {process.specificState};
   Atams::Error_t                               cycleError        {Atams::ERROR_NONE};
 
-  if ((runSingleNodeUpdateCycle(cycleError, dummyNode_) == Atams::PROCESS_IN_PROGRESS) ||
-      (processState                                     != Atams::PROCESS_IN_PROGRESS) )
+  if (processState != Atams::PROCESS_IN_PROGRESS)
+  {
+    error = process.error;
+    return (processState); /* Early Return */
+  }
+
+  if ((configUpdateState != Bus::ConfigUpdateState::START                             ) &&
+      (runSingleNodeUpdateCycle(cycleError, dummyNode_) == Atams::PROCESS_IN_PROGRESS) )
   {
     error = process.error;
     return (processState); /* Early Return */
@@ -757,7 +769,10 @@ Atams::ProcessState_t Bus::runUpdateCycleSyncCore(Atams::Error_t &error, bool bl
       break;
   }
 
-  if (processState == Atams::PROCESS_ERROR) error = process.error;
+  if (processState == Atams::PROCESS_ERROR)
+  {
+    error = process.error;
+  }
 
   return (processState);
 }
@@ -933,6 +948,7 @@ Atams::Error_t Bus::beginUpdateCyclePrivate(void)
     clearAllBusErrors();
     circularBuffer_.reset();
     txReady_ = true;
+    txSemaphore_.waitWithTimeout(0U);
     updateNodeIndex_ = 0U;
     activeSyncCount_++;
     updateProcessHandler_.readyProcess();
@@ -960,6 +976,7 @@ Atams::Error_t Bus::beginSingleNodeUpdateCyclePrivate(Atams::Node &node)
     static_cast<NodeCallbackHandler&>(node).clearAbortDetails();
     circularBuffer_.reset();
     txReady_ = true;
+    txSemaphore_.waitWithTimeout(0U);
     activeSyncCount_++;
     singleNodeUpdateProcessHandler_.activeNodePtr = &node;
     singleNodeUpdateProcessHandler_.readyProcess();
@@ -1048,7 +1065,10 @@ bool Bus::awaitTxReady(Bus::ProcessHandlerBase &process, const bool blocking)
   {
     txSemaphore_.waitWithTimeout(Platform::BUS_TRANSMIT_TIMEOUT - elapsedTime);
     
-    if (!txReady_) process.terminate(Atams::ERROR_PLATFORM);
+    if (!txReady_)
+    {
+      process.terminate(Atams::ERROR_PLATFORM);
+    }
   }
   else
   {
@@ -1147,8 +1167,8 @@ bool Bus::validateAndStoreResponsePacket(Atams::Node &node, const MessageType_t 
     uint8_t              packetSyncCount {decodedBuffer_[HEADER_INDEX_SYNC]};
     Atams::MessageType_t messageType     {static_cast<MessageType_t>(decodedBuffer_[HEADER_INDEX_MSG_TYPE])};
 
-     bool messageIsAbort {((messageType == Atams::MESSAGE_ABORT_RESPONSE       ) ||
-                           (messageType == Atams::MESSAGE_ABORT_RESPONSE_SYNCED) )};
+    bool messageIsAbort {((messageType == Atams::MESSAGE_ABORT_RESPONSE       ) ||
+                          (messageType == Atams::MESSAGE_ABORT_RESPONSE_SYNCED) )};
 
     if      (messageType     == lastSentMessageType_) packetValid = false;
     else if (packetSyncCount != activeSyncCount_)     error = Atams::ERROR_SYNC_COUNT;

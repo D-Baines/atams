@@ -55,7 +55,7 @@ namespace Atams { namespace Platform {
 /*************************************************************************************/
 
 /** @brief The maximum number of Nodes that can be added to any of the application's Atams::Bus objects */
-constexpr uint16_t NUMBER_OF_NODES_PER_BUS {2U};
+constexpr uint16_t NUMBER_OF_NODES_PER_BUS {3U};
 
 /** @brief The maximum number of Atams vars used by any of the application's Atams::Node objects */
 constexpr uint16_t NODE_NUMBER_OF_VARS {100U};
@@ -281,7 +281,7 @@ class BinarySemaphore
  */
 inline uint32_t getMillis(void)
 {
-  return (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+  return (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
 }
 
 } } /* End Namespace - Atams::Platform */

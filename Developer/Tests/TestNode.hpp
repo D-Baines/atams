@@ -111,6 +111,7 @@ public Node
   Atams::AbortedResponseDetails_t expectedAbortDetails_ {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
 
   uint16_t expectedRequestPacketLength_ {Atams::HEADER_SIZE_HEADER};
+  uint16_t expectedResponseLength_      {Atams::HEADER_SIZE_HEADER};
   uint16_t expectedWriteListLength_     {0U};
 
   uint8_t  testUint8_  {0U};
@@ -141,8 +142,8 @@ public Node
   };
 
 
-  Atams::Access_t         prevAccess_[Atams::MapTest::BlockTest1::NUMBER_OF_VARS]          = {Atams::ACCESS_NONE};
-  Atams::RequestPattern_t prevRequestPatterns_[Atams::MapTest::BlockTest1::NUMBER_OF_VARS] = {Atams::REQUEST_INACTIVE};
+  Atams::Access_t         prevAccess_[Atams::BlockUniversal::NUMBER_OF_VARS + Atams::MapTest::BlockTest1::NUMBER_OF_VARS]          = {};
+  Atams::RequestPattern_t prevRequestPatterns_[Atams::BlockUniversal::NUMBER_OF_VARS + Atams::MapTest::BlockTest1::NUMBER_OF_VARS] = {};
 
   char errorBuffer_[MAX_ERROR_MESSAGE_LENGTH];
 

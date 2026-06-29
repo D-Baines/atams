@@ -38,9 +38,8 @@
 
 #include "Platform.hpp"
 
-/*************************************************************************************/
-/* PUBLIC MACROS                                                                     */
-/*************************************************************************************/
+static uint32_t txCBCount_ {0U};
+static uint32_t rxCBCount_ {0U};
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -107,7 +106,7 @@ bool BusPeripheral::transmit(uint8_t *buffer, const uint16_t length)
 }
 
 /*
- * @brief   User update function called at regular intervals during non-blocking Bus Update Cycles
+ * @brief   User update function called at regular intervals during Bus Update Cycles
  *
  * @details Users can use this function to poll communications peripherals, check for
  *          peripheral errors, and/or restart peripheral reception if required.
@@ -116,8 +115,7 @@ bool BusPeripheral::transmit(uint8_t *buffer, const uint16_t length)
  */
 void BusPeripheral::update(void)
 {
-  userData_.ioContext.poll();
-  userData_.ioContext.restart();
+
 }
 
 /*************************************************************************************/
@@ -131,6 +129,8 @@ void BusPeripheral::rxHandler(asio::error_code ec, size_t xfr)
   if (xfr > 0)
   {
     rxCallback(rxBuffer_, xfr);
+
+    rxCBCount_++;
   }
 
   userData_.serialPort.async_read_some(asio::buffer(rxBuffer_), 
@@ -144,6 +144,8 @@ void BusPeripheral::txHandler(asio::error_code ec, size_t xfr)
 {
   static_cast<void>(ec);
   static_cast<void>(xfr);
+
+  txCBCount_++;
 
   txCallback();
 }
@@ -209,9 +211,11 @@ void CommsLock::releaseLock(void)
 void BinarySemaphore::waitWithTimeout(uint32_t timeoutMilliseconds)
 {
   std::unique_lock<std::mutex> lock(mutex_);
+
   cv_.wait_for(lock,
                std::chrono::milliseconds(timeoutMilliseconds),
                [this]{ return released_; });
+
   released_ = false;
 }
 
@@ -222,10 +226,10 @@ void BinarySemaphore::waitWithTimeout(uint32_t timeoutMilliseconds)
  */
 void BinarySemaphore::release(void)
 {
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    released_ = true;
-  }
+  std::unique_lock<std::mutex> lock(mutex_);
+  released_ = true;
+  lock.unlock();
+
   cv_.notify_one();
 }
 
