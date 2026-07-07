@@ -178,6 +178,8 @@ Atams::Error_t decodeBusPacket(const uint8_t  * const inputBuffer,
 
   if (packetCRC != atamsCRC_.calculateCRC(decodedBuffer, COBSDecodeResult.outputLength))
   {
+    decodedLength = COBSDecodeResult.outputLength;
+
     return (Atams::ERROR_DECODE_CHECKSUM);
   }
 

@@ -480,6 +480,43 @@ void TestNode::updateErrorInjection(void)
     {
       for (uint16_t varID {BlockTest1::VAR_WRITE_UINT8}; varID <= BlockTest1::VAR_WRITE_FLOAT; varID++)
       {
+        bool ackReceived {false};
+        bool dataReady   {false};
+
+        static_cast<void>(Node::isWriteAcked(varID, ackReceived));
+        static_cast<void>(Node::isDataReady(varID, dataReady));
+
+        if (ackReceived)
+        {
+          /* Write was ACKed but read never completed: node holds testVar + 1. */
+          switch (varID)
+          {
+            case BlockTest1::VAR_WRITE_UINT8:  feedbackUint8_  = static_cast<uint8_t> (testUint8_  + 1); break;
+            case BlockTest1::VAR_WRITE_INT8:   feedbackInt8_   = static_cast<int8_t>  (testInt8_   + 1); break;
+            case BlockTest1::VAR_WRITE_UINT16: feedbackUint16_ = static_cast<uint16_t>(testUint16_ + 1); break;
+            case BlockTest1::VAR_WRITE_INT16:  feedbackInt16_  = static_cast<int16_t> (testInt16_  + 1); break;
+            case BlockTest1::VAR_WRITE_UINT32: feedbackUint32_ = static_cast<uint32_t>(testUint32_ + 1); break;
+            case BlockTest1::VAR_WRITE_INT32:  feedbackInt32_  = static_cast<int32_t> (testInt32_  + 1); break;
+            case BlockTest1::VAR_WRITE_FLOAT:  feedbackFloat_  = testFloat_ + 1.0F;                      break;
+            default: errorHandler(Node::getBusError(), "Unexpected Default Case In Tests On Node ");     break;
+          }
+        }
+        else if (dataReady)
+        {
+          /* Read response arrived but checkReadValue never ran: varStorage_ has the correct node value. */
+          switch (varID)
+          {
+            case BlockTest1::VAR_WRITE_UINT8:  static_cast<void>(Node::getVar(varID, feedbackUint8_));  break;
+            case BlockTest1::VAR_WRITE_INT8:   static_cast<void>(Node::getVar(varID, feedbackInt8_));   break;
+            case BlockTest1::VAR_WRITE_UINT16: static_cast<void>(Node::getVar(varID, feedbackUint16_)); break;
+            case BlockTest1::VAR_WRITE_INT16:  static_cast<void>(Node::getVar(varID, feedbackInt16_));  break;
+            case BlockTest1::VAR_WRITE_UINT32: static_cast<void>(Node::getVar(varID, feedbackUint32_)); break;
+            case BlockTest1::VAR_WRITE_INT32:  static_cast<void>(Node::getVar(varID, feedbackInt32_));  break;
+            case BlockTest1::VAR_WRITE_FLOAT:  static_cast<void>(Node::getVar(varID, feedbackFloat_));  break;
+            default: errorHandler(Node::getBusError(), "Unexpected Default Case In Tests On Node ");    break;
+          }
+        }
+
         static_cast<void>(Node::clearWriteAck(varID));
         static_cast<void>(Node::clearDataReady(varID));
       }
@@ -522,10 +559,6 @@ template<typename T>
 void TestNode::updateWriteValue(const uint16_t varID, T &feedbackVar, T &writeVar)
 {
   Atams::Error_t error {Atams::ERROR_NONE};
-
-  error = Node::getVar(varID, feedbackVar);
-
-  if (error) errorHandler(error, "Node::getVar error in TestNode::updateWriteValue On Node ");
 
   writeVar = static_cast<T>(std::rand());
 

@@ -255,20 +255,20 @@ Atams::ProcessState_t Bus::updateBusInitProcess(Atams::Error_t &error)
     return (processState); /* Early Return */
   }
 
-  Atams::Node &node {*initNodePtr};
-
   if (processState != Atams::PROCESS_IN_PROGRESS)
   {
     error = process.error;
     return (processState); /* Early Return */
   }
 
-  if ((initState != Bus::InitState::START                                        ) &&
-      (runSingleNodeUpdateCycle(cycleError, node) == Atams::PROCESS_IN_PROGRESS) )
+  if ((initState != Bus::InitState::START                                            ) &&
+      (runSingleNodeUpdateCycle(cycleError, *initNodePtr) == Atams::PROCESS_IN_PROGRESS) )
   {
     error = process.error;
     return (processState); /* Early Return */
   }
+
+  Atams::Node &node {*initNodePtr};
 
   switch (initState)
   {
@@ -311,8 +311,14 @@ Atams::ProcessState_t Bus::updateBusInitProcess(Atams::Error_t &error)
       break;
   }
 
-  if ((process.error == Atams::ERROR_NONE         ) &&
-      (processState  == Atams::PROCESS_IN_PROGRESS) ) 
+  /* Only start a new Bus cycle if this step actually queued a variable request; several transitions above (e.g.
+     moving on to the next group of a multi-var read, or a sub-process's own bookkeeping-only steps) merely set up
+     the next state without queuing anything, so a cycle here would just send a header-only request. Skipping it
+     costs nothing: with no cycle in progress, the guard above will let the next call straight through to run the
+     next switch case. */
+  if ((process.error == Atams::ERROR_NONE           ) &&
+      (processState  == Atams::PROCESS_IN_PROGRESS  ) &&
+      (nodeHasQueuedRequestData(*initNodePtr)        ) )
   {
     static_cast<void>(beginSingleNodeUpdateCyclePrivate(*initNodePtr));
   }
@@ -672,8 +678,8 @@ Atams::ProcessState_t Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
     return (processState); /* Early Return */
   }
 
-  switch (configUpdateState) 
-  { 
+  switch (configUpdateState)
+  {
     case Bus::ConfigUpdateState::START:
       process.error = dummyNode_.init(s_dummyMemoryMap);
       if (process.error) process.terminate(process.error);
@@ -703,9 +709,14 @@ Atams::ProcessState_t Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
       process.terminate(Atams::ERROR_INVALID_CASE);
       break;
   }
-    
+
+  /* See the equivalent guard in updateBusInitProcess: only start a new Bus cycle if this step actually queued a
+     variable request. Several of these states (e.g. START, or ENTER_CONFIG's own internal START step) only set up
+     the next state without queuing anything - skipping the cycle there costs nothing, since the guard above lets
+     the next call straight through to run the next switch case. */
   if ((process.error == Atams::ERROR_NONE         ) &&
-      (processState  == Atams::PROCESS_IN_PROGRESS) ) 
+      (processState  == Atams::PROCESS_IN_PROGRESS) &&
+      (nodeHasQueuedRequestData(dummyNode_)        ) )
   {
     static_cast<void>(beginSingleNodeUpdateCyclePrivate(dummyNode_));
   }
@@ -984,6 +995,11 @@ Atams::Error_t Bus::beginSingleNodeUpdateCyclePrivate(Atams::Node &node)
   }
 
   return (error);
+}
+
+bool Bus::nodeHasQueuedRequestData(Atams::Node &node)
+{
+  return (node.getRequestPacketLength() > Atams::HEADER_SIZE_HEADER);
 }
 
 void Bus::clearAllBusErrors(void)

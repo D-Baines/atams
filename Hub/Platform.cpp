@@ -37,9 +37,14 @@
 /*************************************************************************************/
 
 #include "Platform.hpp"
+#include <cstdio>
 
 static uint32_t txCBCount_ {0U};
 static uint32_t rxCBCount_ {0U};
+
+/* Diagnostic instrumentation: log if a posted transmit sits queued on the
+ * io_context for longer than this before async_write is actually called. */
+static constexpr uint32_t TX_DISPATCH_DELAY_WARN_MS {5U};
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -98,10 +103,25 @@ bool BusPeripheral::startReceive(void)
  */
 bool BusPeripheral::transmit(uint8_t *buffer, const uint16_t length)
 {
-  asio::async_write(userData_.serialPort, asio::buffer(buffer, length), std::bind(&BusPeripheral::txHandler, 
-                                                                                  this, 
-                                                                                  asio::placeholders::error, 
-                                                                                  asio::placeholders::bytes_transferred));
+  uint32_t postedTime {Platform::getMillis()};
+
+  asio::post(userData_.ioContext, [this, buffer, length, postedTime]()
+  {
+    uint32_t dispatchDelay {Platform::getMillis() - postedTime};
+
+    if (dispatchDelay >= TX_DISPATCH_DELAY_WARN_MS)
+    {
+      printf("BusPeripheral::transmit dispatch delay: %u ms\n", dispatchDelay);
+    }
+
+    asio::async_write(userData_.serialPort,
+                      asio::buffer(buffer, length),
+                      std::bind(&BusPeripheral::txHandler,
+                                this,
+                                asio::placeholders::error,
+                                asio::placeholders::bytes_transferred));
+  });
+
   return (true);
 }
 
@@ -115,16 +135,24 @@ bool BusPeripheral::transmit(uint8_t *buffer, const uint16_t length)
  */
 void BusPeripheral::update(void)
 {
-
+  //userData_.ioContext.poll();
+  //userData_.ioContext.restart();
 }
 
 /*************************************************************************************/
 /* BusPeripheral - USER PRIVATE FUNCTION DEFINITIONS                                 */
 /*************************************************************************************/
 
+static uint8_t breakpoint {0U};
+
 void BusPeripheral::rxHandler(asio::error_code ec, size_t xfr)
 {
   static_cast<void>(ec);
+
+  if (ec)
+  {
+    breakpoint++;
+  }
 
   if (xfr > 0)
   {
@@ -142,12 +170,18 @@ void BusPeripheral::rxHandler(asio::error_code ec, size_t xfr)
 
 void BusPeripheral::txHandler(asio::error_code ec, size_t xfr)
 {
-  static_cast<void>(ec);
   static_cast<void>(xfr);
 
   txCBCount_++;
 
-  txCallback();
+  if (!ec)
+  {
+    txCallback();
+  }
+  else 
+  {
+    breakpoint++;
+  }
 }
 
 /*************************************************************************************/

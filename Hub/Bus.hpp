@@ -281,6 +281,8 @@ private Platform::BusPeripheral
 
   Atams::Error_t beginSingleNodeUpdateCyclePrivate(Atams::Node &node);
 
+  bool nodeHasQueuedRequestData(Atams::Node &node);
+
   void clearAllBusErrors(void);
 
   bool pollForRequestTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process, const Atams::MessageType_t requestType, const bool blocking);

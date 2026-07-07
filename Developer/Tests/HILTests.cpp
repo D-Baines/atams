@@ -26,9 +26,12 @@
 /*************************************************************************************/
 
 #include "HILTests.hpp"
+
+#include <thread>
+#include <chrono>
+
 #include "../../Hub/Bus.hpp"
 #include "TestNode.hpp"
-#include <thread>
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -89,7 +92,7 @@ enum UpdateFunction_t : uint8_t
   UPDATE_CYCLE_SYNC_BLOCKING  = 1U,
   UPDATE_CYCLE_ASYNC          = 2U,
   UPDATE_CYCLE_ASYNC_BLOCKING = 3U,
-  UPDATE_CYCLE_COUNT          = 4U
+  UPDATE_CYCLE_COUNT          
 };
 
 static UpdateFunction_t updateFunctionIndex_ {UPDATE_CYCLE_SYNC};
@@ -139,7 +142,7 @@ static void testBusInit(void)
     error         = testBus_.addNodeToBus(*testNodes_[nodeIndex]);
     if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
   }
-
+  
   expectedError = Atams::ERROR_BUS_FULL;
   error         = testBus_.addNodeToBus(testNode4_);
   if (error != expectedError) errorHandler(error, "Unexpected Error Return from Bus::addNodeToBus");
@@ -215,7 +218,7 @@ static void testBusInit(void)
       {
         char errorBuffer[100];
 
-        std::snprintf (errorBuffer, sizeof(errorBuffer), "Node %d Bus Error During Init: %d", testNodePtr->getNodeID(), nodeError);
+        std::snprintf(errorBuffer, sizeof(errorBuffer), "Node %d Bus Error During Init: %d", testNodePtr->getNodeID(), nodeError);
 
         errorHandler(nodeError, errorBuffer);
       }
@@ -294,6 +297,8 @@ static Atams::Error_t runUpdateCycleTests(void)
 
       updateCycleCount_++;
     }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
 }
 
@@ -318,6 +323,7 @@ void runTests(void)
     {
       ioContext_.run();
       ioContext_.restart();
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
   });
   ioThread.detach();
