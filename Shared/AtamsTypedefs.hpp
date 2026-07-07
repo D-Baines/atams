@@ -128,6 +128,7 @@ enum MessageType_t: uint8_t
   MESSAGE_SYNC_JOG              = 5U,
   MESSAGE_ABORT_RESPONSE        = 6U,
   MESSAGE_ABORT_RESPONSE_SYNCED = 7U,
+  NUMBER_OF_MESSAGE_TYPES
 };
 static_assert(sizeof(Atams::MessageType_t) == 1U, "Atams::MessageType_t size invalid");
 
@@ -619,6 +620,18 @@ constexpr const char *ERROR_STRINGS[NUMBER_OF_ATAMS_ERRORS]
   /* [Atams::ERROR_CONFIGURATION_CANCEL_FAILED ] = */ "Configuration Cancel Failed - Node May Be Stuck In Configuration Mode"
 };
 
+constexpr const char *MESSAGE_TYPE_STRINGS[NUMBER_OF_MESSAGE_TYPES]
+{
+  /* [MESSAGE_UNKNOWN              ] = */ "Unknown",
+  /* [MESSAGE_REQUEST              ] = */ "Request",
+  /* [MESSAGE_RESPONSE             ] = */ "Response",
+  /* [MESSAGE_REQUEST_SYNCED       ] = */ "Request Synced",
+  /* [MESSAGE_RESPONSE_SYNCED      ] = */ "Response Synced",
+  /* [MESSAGE_SYNC_JOG             ] = */ "Sync Jog",
+  /* [MESSAGE_ABORT_RESPONSE       ] = */ "Abort Response",
+  /* [MESSAGE_ABORT_RESPONSE_SYNCED] = */ "Abort Response Synced",
+};
+
 constexpr const char* ERROR_INDEX_OUT_OF_BOUNDS_STRING {"Invalid Atams Error Type"};
 
 /*************************************************************************************/
@@ -630,6 +643,16 @@ inline const char *getErrorString(const Atams::Error_t error)
   if (error < Atams::NUMBER_OF_ATAMS_ERRORS)
   {
     return (ERROR_STRINGS[static_cast<uint8_t>(error)]);
+  }
+
+  return (ERROR_INDEX_OUT_OF_BOUNDS_STRING);
+}
+
+inline const char *getMessageTypeString(const Atams::MessageType_t messageType)
+{
+  if (messageType < Atams::NUMBER_OF_MESSAGE_TYPES)
+  {
+    return (MESSAGE_TYPE_STRINGS[static_cast<uint8_t>(messageType)]);
   }
 
   return (ERROR_INDEX_OUT_OF_BOUNDS_STRING);
