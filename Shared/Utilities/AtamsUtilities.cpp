@@ -94,24 +94,22 @@ static bool validateMapLength(const SharedMemoryMap_t &memoryMap, const uint32_t
 
 static bool validateUniversalBlock(const SharedMemoryMap_t &memoryMap)
 {
-  bool     universalValid {true};
-  uint16_t varIndex       {0U};
+  bool universalBlockValid {true};
 
   if (memoryMap.genInfo.noOfVars < BlockUniversal::NUMBER_OF_VARS)
   {
     return (false); /* Early Return */
   }
 
-  for (VarInfo_t universalVarInfo : BlockUniversal::varInfoList)
+  for (uint16_t varIndex {0U}; varIndex < BlockUniversal::NUMBER_OF_VARS; varIndex++)
   {
-    VarInfo_t mapVarInfo {memoryMap.varInfoList[varIndex]};
+    VarInfo_t mapVarInfo       {memoryMap.varInfoList[varIndex]};
+    VarInfo_t universalVarInfo {BlockUniversal::varInfoList[varIndex]};
 
-    if (universalVarInfo != mapVarInfo) universalValid = false;
-
-    varIndex++;
+    if (universalVarInfo != mapVarInfo) universalBlockValid = false;
   }
 
-  return (universalValid);
+  return (universalBlockValid);
 }
 
 static bool validateMapChecksum(const SharedMemoryMap_t &memoryMap)
