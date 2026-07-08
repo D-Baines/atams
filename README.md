@@ -75,8 +75,8 @@ Atams uses a custom framing protocol. Bytes from non-Atams devices received on t
 How this is achieved depends on the underlying transport:
 
 - **RS485:** No physical-layer addressing or filtering mechanism is available. An RS485 bus cannot be reliably shared with devices using other protocols.
-- **CAN FD / CAN XL:** Hardware acceptance filters can be configured to pass only Atams CAN IDs to the receive callback, allowing the bus to be shared with other CAN devices. When sharing with CANOpen devices, ensure Atams CAN IDs do not overlap with any CANOpen reserved ranges in use on the bus.
-- **UDP/IP:** The UDP socket model provides natural isolation. Binding a socket to a dedicated port means the IP stack delivers only datagrams addressed to that port to the receive callback — no additional filtering configuration is required in the Platform layer.
+- **CAN FD / CAN XL:** Filter by the CAN ID(s) allocated to Atams traffic before forwarding to the receive callback, using hardware acceptance filters or a software check in the platform's receive handler. Avoid overlapping those CAN IDs with any CANOpen reserved ranges in use on the bus.
+- **UDP/IP:** Binding the Platform layer peripheral to a dedicated Atams port gives natural isolation — the IP stack only delivers appropriate matching packets, so no additional filtering is required.
 
 # C++ Platform Requirements
 

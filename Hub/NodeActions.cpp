@@ -221,7 +221,7 @@ Atams::ProcessState_t NodeActions::updateConfigStateEntry(Atams::Error_t &error)
       break;
     case ConfigEntryState::CHECK_STATUS_PRE:
       process.error = node.stopStreamGetVarIfDataReady(BlockUniversal::VAR_CONFIGURATION_STATUS, configState);
-      if      (process.error)                                     process.terminate(Atams::ERROR_MEMORY_MAP);
+      if      (process.error)                                     process.terminate(process.error);
       else if (configState == Atams::CONFIGURATION_STATUS_ACTIVE) process.setProcessComplete();
       else                                                        process.specificState = ConfigEntryState::WRITE_PASSCODE;
       break;
@@ -237,7 +237,7 @@ Atams::ProcessState_t NodeActions::updateConfigStateEntry(Atams::Error_t &error)
       break;
     case ConfigEntryState::CHECK_STATUS_POST:
       process.error = node.stopStreamGetVarIfDataReady(BlockUniversal::VAR_CONFIGURATION_STATUS, configState);
-      if      (process.error)                                       process.terminate(Atams::ERROR_MEMORY_MAP);
+      if      (process.error)                                       process.terminate(process.error);
       else if (configState == Atams::CONFIGURATION_STATUS_ACTIVE)   process.setProcessComplete();
       else if (configState == Atams::CONFIGURATION_STATUS_DENIED)   process.terminate(Atams::ERROR_CONFIGURATION_STATE_DENIED);
       else                                                          process.terminate(Atams::ERROR_CONFIGURATION_STATE_INACTIVE);
@@ -277,7 +277,7 @@ Atams::ProcessState_t NodeActions::updateConfigStateExit(Atams::Error_t &error)
       break;
     case ConfigExitState::CHECK_STATUS_PRE:
       process.error = node.stopStreamGetVarIfDataReady(BlockUniversal::VAR_CONFIGURATION_STATUS, configState);
-      if      (process.error)                                     process.terminate(Atams::ERROR_MEMORY_MAP);
+      if      (process.error)                                     process.terminate(process.error);
       else if (configState != Atams::CONFIGURATION_STATUS_ACTIVE) process.terminate(Atams::ERROR_CONFIGURATION_STATE_INACTIVE);
       else                                                        process.specificState = ConfigExitState::WRITE_PASSCODE;
       break;
@@ -293,7 +293,7 @@ Atams::ProcessState_t NodeActions::updateConfigStateExit(Atams::Error_t &error)
       break;
     case ConfigExitState::CHECK_STATUS_POST:
       process.error = node.stopStreamGetVarIfDataReady(BlockUniversal::VAR_CONFIGURATION_STATUS, configState);
-      if      (process.error)                                            process.terminate(Atams::ERROR_MEMORY_MAP);
+      if      (process.error)                                            process.terminate(process.error);
       else if ((configState   == Atams::CONFIGURATION_STATUS_INACTIVE) &&
                (configPasskey == Atams::CONFIGURATION_PASSKEY_CANCEL ) ) process.setProcessComplete();
       else if ((configState   == Atams::CONFIGURATION_STATUS_APPLIED) &&
@@ -559,7 +559,7 @@ Atams::ProcessState_t NodeActions::updateSetConfigVar(Atams::Error_t &error, con
       break;
     case SetConfigVarState::CHECK_VALUE:
       process.error = node.stopStreamGetVarIfDataReady(varID, readConfigVar);
-      if      (process.error)          process.terminate(Atams::ERROR_MEMORY_MAP);
+      if      (process.error)          process.terminate(process.error);
       else if (readConfigVar == value) process.setProcessComplete();
       else                             process.terminate(Atams::ERROR_SET_CONFIG_VAR_FAILED);
       break;
@@ -610,7 +610,7 @@ Atams::ProcessState_t NodeActions::updateStorageProcess(Atams::Error_t &error, c
       break;
     case StorageProcessState::PROGRESS_CHECK_PRE:
       process.error = node.stopStreamGetVarIfDataReady(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE, storeComplete);
-      if      (process.error)                       cancelConfigProcess(process, Atams::ERROR_MEMORY_MAP);
+      if      (process.error)                       cancelConfigProcess(process, process.error);
       else if (storeComplete == Atams::ATAMS_FALSE) process.specificState = StorageProcessState::CLEAR_PASSCODE;
       else                                          cancelConfigProcess(process, Atams::ERROR_STORAGE_PROCESS_FAILED);
       break;
@@ -721,7 +721,7 @@ Atams::ProcessState_t NodeActions::updateSetMultipleConfig(Atams::Error_t &error
       break;
     case SetMultiConfigState::CHECK_VALUE:
       process.error = specificFunctions.checkFunction(*this, node, successFlag);
-      if      (process.error) process.terminate(Atams::ERROR_MEMORY_MAP);
+      if      (process.error) process.terminate(process.error);
       else if (successFlag)   process.setProcessComplete();
       else                    process.terminate(Atams::ERROR_SET_CONFIG_VAR_FAILED);
       break;

@@ -73,7 +73,7 @@ constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};
 *   @brief The maximum time period for an Atams::Bus object to wait without a response
 *          from an Atams::Node device during a Bus update cycle in milliseconds.
 */
-constexpr uint32_t BUS_RESPONSE_TIMEOUT {500U};
+constexpr uint32_t BUS_RESPONSE_TIMEOUT {100U};
 
 /**
 *   @brief The maximum time period for an Atams::Bus object to wait for the communications
