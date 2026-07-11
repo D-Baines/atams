@@ -368,6 +368,7 @@ struct DatagramHeader_t
   uint16_t varID;
 };
 
+/* Layout changes to GenInfo_t, NVMHeader_t or NVMFooter_t require at least a minor version bump. */
 struct GenInfo_t
 {
   uint8_t  atamsVersionMajor {ATAMS_VERSION_MAJOR};
@@ -399,21 +400,10 @@ struct GenInfo_t
   {
     return (!(*this == other));
   }
-
-  void invalidate(void)
-  {
-    atamsVersionMajor = 0U;
-    atamsVersionMinor = 0U;
-    genDay            = 0U;
-    genMonth          = 0U;
-    genYear           = 0U;
-    genHour           = 0U;
-    genMinute         = 0U;
-    genSecond         = 0U;
-    genChecksum       = 0U;
-    noOfVars          = 0U;
-  }
 };
+
+static_assert(std::is_standard_layout_v<GenInfo_t>);
+static_assert(std::is_trivially_copyable_v<GenInfo_t>);
 
 struct NVMHeader_t
 {
@@ -422,11 +412,17 @@ struct NVMHeader_t
   GenInfo_t genInfo;
 };
 
+static_assert(std::is_standard_layout_v<NVMHeader_t>);
+static_assert(std::is_trivially_copyable_v<NVMHeader_t>);
+
 struct NVMFooter_t
 {
   uint32_t identifier {NVM_HEADER_IDENTIFIER_INVALID};
   uint32_t checksum   {0U};
 };
+
+static_assert(std::is_standard_layout_v<NVMFooter_t>);
+static_assert(std::is_trivially_copyable_v<NVMFooter_t>);
 
 template <typename T>
 struct DataStatusReturn_t

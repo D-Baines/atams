@@ -586,7 +586,7 @@ static void signalCommsCoreInitComplete(void)
 
 static Atams::Error_t validateNVMChecksum(const NVMHeader_t &nvmHeader, const NVMFooter_t &nvmFooter)
 {
-  const uint32_t endOfVarStorage {nvmHeader.length - sizeof(nvmFooter)};
+  const uint32_t endOfVarStorage {nvmHeader.length - static_cast<uint32_t>(sizeof(nvmFooter))};
 
   Atams::Error_t error {Atams::ERROR_NONE};
 
@@ -757,7 +757,7 @@ static Atams::Error_t extractNVMHeader(NVMHeader_t &nvmHeader)
 
 static Atams::Error_t extractNVMFooter(const NVMHeader_t &nvmHeader, NVMFooter_t &nvmFooter)
 {
-  const uint32_t nvmFooterIndex {nvmHeader.length - sizeof(nvmFooter)};
+  const uint32_t nvmFooterIndex {nvmHeader.length - static_cast<uint32_t>(sizeof(nvmFooter))};
 
   return (s_nvmUnitHandler.readFromNVM(nvmFooterIndex, reinterpret_cast<uint8_t*>(&nvmFooter), sizeof(nvmFooter)));
 }
@@ -1279,13 +1279,13 @@ Atams::Error_t restoreUser(void)
  */
 Atams::Error_t storeAll(void)
 {
-  NVMHeader_t nvmHeader;
+  NVMHeader_t nvmHeader {};
 
   if (getMemoryMapIsValid() != Atams::ERROR_NONE) return (Atams::ERROR_MEMORY_MAP); /* Early Return */
 
   const uint32_t requiredNVMVarSpace {getNVMVarSpaceRequirement()};
-  const uint32_t requiredNVMSpace    {sizeof(NVMHeader_t) + requiredNVMVarSpace + sizeof(NVMFooter_t)};
-  const uint32_t nvmFooterIndex      {sizeof(NVMHeader_t) + requiredNVMVarSpace};
+  const uint32_t requiredNVMSpace    {static_cast<uint32_t>(sizeof(NVMHeader_t)) + requiredNVMVarSpace + static_cast<uint32_t>(sizeof(NVMFooter_t))};
+  const uint32_t nvmFooterIndex      {static_cast<uint32_t>(sizeof(NVMHeader_t)) + requiredNVMVarSpace};
 
   if (requiredNVMSpace > Platform::NVM_STORAGE_SIZE) return (Atams::ERROR_NVM_PLATFORM_SIZE); /* Early Return */
 

@@ -195,7 +195,7 @@ Follow these steps to generate Memory Map files with the Atams Memory Map Genera
 - **Step 4:** Browse and select the Atams Node library path (`Atams/Node`) used by the Node C++ project. A folder named after the Memory Map will be generated at `Atams/Node/Maps/<MapName>/`, containing the Node-specific Memory Map and Data Block files.
 - **Step 5:** Browse and select the Atams Hub library path (`Atams/Hub`) used by the Hub C++ project. A matching folder will be generated at `Atams/Hub/Maps/<MapName>/`, containing the Hub-specific variants of the same files. Both folders are created in a single generation run.
 - **Step 6:** Enter a name for the Memory Map. Names are converted to `PascalCase` with a `Map` prefix to form the top-level namespace in the generated C++ files (e.g. `Atams::MapExample`).
-- **Step 7:** Click *Generate*. Before writing any files, the tool checks whether a folder with the given Memory Map name already exists in either output directory. If a conflict is found, a warning popup lists the affected paths and asks for confirmation before overwriting. Generation status is shown at the bottom of the application.
+- **Step 7:** Click *Generate*. Before writing any files, the tool checks whether a folder with the given Memory Map name already exists in either output directory. If a conflict is found, a warning popup will ask for confirmation before overwriting any files. Generation status is shown at the bottom of the application.
 
 > [!NOTE]  
 >
@@ -203,7 +203,7 @@ Follow these steps to generate Memory Map files with the Atams Memory Map Genera
 
 > [!TIP]  
 >
-> If the Hub and Node are being developed on separate machines, generate Memory Maps to local repositories and use version control to keep them in sync. The Bus Initialisation Process will fail if the Hub and Node Memory Maps are incompatible — see [The Bus Initialisation Process](#the-bus-initialisation-process).
+> If the Hub and Node are being developed on separate machines, generate Memory Maps to local repositories and use version control to keep them in sync. The Bus Initialisation Process will fail safely if the Hub and Node Memory Maps are incompatible — see [The Bus Initialisation Process](#the-bus-initialisation-process).
 
 # Memory Map Access
 
@@ -264,7 +264,7 @@ Once the Memory Map C++ files have been generated, they are ready to be used in 
 
 > [!CAUTION]   
 >
-> Block-only headers provide a loose access limit — the compiler warns if you reference an ID outside the included namespace. When using `using namespace`, be cautious of hidden includes pulling in IDs from other Blocks or Maps. Always use the provided enum IDs rather than raw `uint16_t` values; Atams will return an error if a variable ID is out of bounds.
+> Block-only headers provide a loose access limit — the compiler warns if you reference an ID that doesn't exist in included Map or Data Block headers. When using `using namespace`, be cautious of hidden includes pulling in IDs from other Blocks or Maps. Always aim to use the provided enum IDs rather than raw `uint16_t` values; Atams will return an error if a variable ID is outside of the bounds of the entire Memory Map.
 
 # Node Library
 
