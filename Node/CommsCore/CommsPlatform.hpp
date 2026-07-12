@@ -67,15 +67,21 @@ constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};
  * @brief The size of non-volatile memory (NVM) reserved for Atams use.
  *
  * @details The size required depends on the number of vars selected for non-volatile
- *          storage in the Atams Memory Map. The formula for calculating the minimum
- *          required size is:
+ *          storage in the Atams Memory Map. Once a Memory Map has been generated, set this to
+ *          Atams::Map<YourMapName>::REQUIRED_NVM_SIZE + Platform::NVM_UNIT_SIZE - autogen
+ *          computes the exact minimum for the Memory Map but REQUIRED_NVM_SIZE itself does
+ *          not include the trailing NVM_UNIT_SIZE write-unit headroom below. There is no need 
+ *          to recompute the formula below by hand or keep it in sync as vars are added/removed. 
+ *      
+ *          The formula (for reference only) is:
  *
- *          (noOfNVMVars * sizeOfEachVar) + headerSize + footerSize + NVM_UNIT_SIZE
+ *          (noOfNVMVars * (sizeOfEachVar + entryHeaderSize)) + headerSize + footerSize + NVM_UNIT_SIZE
  *
  *          Where:
  *
- *          headerSize = 8 + sizeof(Atams::GenInfo_t)
- *          footerSize = 8
+ *          entryHeaderSize = Atams::NVM_VAR_ENTRY_HEADER_SIZE (per NVMStorage var)
+ *          headerSize      = Atams::NVM_HEADER_SIZE
+ *          footerSize      = Atams::NVM_FOOTER_SIZE
  */
 constexpr uint32_t NVM_STORAGE_SIZE {1024U};
 

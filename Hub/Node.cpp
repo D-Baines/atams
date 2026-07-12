@@ -140,7 +140,7 @@ Atams::Error_t Node::setVar(const uint16_t varID, const T writeValue)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo {memoryMap_->varInfoList[varID]};
+  const Atams::HubVarInfo_t &varInfo {memoryMap_->varInfoList[varID]};
 
   if (getAtamsType<T>() != varInfo.type)           return (Atams::ERROR_VAR_TYPE);       /* Early Return */
   if (ACCESS_WRITE       > varInfo.externalAccess) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
@@ -188,7 +188,7 @@ Atams::Error_t Node::getVar(const uint16_t varID, T &outputRef)
 {
   if (varID >= validVarCount_) return (Atams:: ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo {memoryMap_->varInfoList[varID]};
+  const Atams::HubVarInfo_t &varInfo {memoryMap_->varInfoList[varID]};
 
   if (getAtamsType<T>() != varInfo.type)           return (Atams::ERROR_VAR_TYPE);       /* Early Return */
   if (ACCESS_READ        > varInfo.externalAccess) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
@@ -252,7 +252,7 @@ Atams::Error_t Node::setRequestPattern(const uint16_t                varID,
   if (requestPattern >= Atams::NUMBER_OF_REQUEST_PATTERNS) return (Atams::ERROR_REQUEST_PATTERN_INVALID); /* Early Return */
   
   Node::Var_t     &var     {varStorage_[varID]};
-  const VarInfo_t &varInfo {memoryMap_->varInfoList[varID]};
+  const HubVarInfo_t &varInfo {memoryMap_->varInfoList[varID]};
 
   if (accessRequest > varInfo.externalAccess)
   {
@@ -714,7 +714,7 @@ Atams::Error_t Node::getVarIfDataReady(const uint16_t varID, T &outputRef)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo {memoryMap_->varInfoList[varID]};
+  const Atams::HubVarInfo_t &varInfo {memoryMap_->varInfoList[varID]};
 
   if (getAtamsType<T>() != varInfo.type)           return (Atams::ERROR_VAR_TYPE);       /* Early Return */
   if (ACCESS_READ        > varInfo.externalAccess) return (Atams::ERROR_ACCESS_INVALID); /* Early Return */
@@ -878,7 +878,7 @@ Atams::Error_t Node::getVarLength(const uint16_t varID, uint8_t &length)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo {memoryMap_->varInfoList[varID]};
+  const Atams::HubVarInfo_t &varInfo {memoryMap_->varInfoList[varID]};
 
   length = TYPE_LENGTHS[varInfo.type];
 
@@ -1096,13 +1096,18 @@ void Node::injectBusError(const Atams::Error_t errorToInject,
     case Atams::ERROR_RESPONSE_BUFFER_LENGTH:
     {
       requestPacketLock_.acquireLock();
+      
       resetRequestPacketNoLock();
+
+      uint8_t  varLength   {0U};
+      uint16_t responseLen {Atams::PACKET_HEADER_SIZE};
+
       datagramHeader.command   = Atams::ACCESS_READ;
       datagramHeader.varID     = readOnlyVarID;
       varIDUsed                = Atams::VAR_ID_NULL;
-      uint8_t  varLength       = 0U;
-      uint16_t responseLen     = Atams::HEADER_SIZE_HEADER;
+
       static_cast<void>(getVarLength(readOnlyVarID, varLength));
+
       while ((requestPacket_.length + Atams::DATAGRAM_SIZE_HEADER) < static_cast<uint16_t>(sizeof(requestPacket_.buffer)))
       {
         Atams::datagramHeaderToBuffer(datagramHeader, &requestPacket_.buffer[requestPacket_.length]);
@@ -1110,6 +1115,7 @@ void Node::injectBusError(const Atams::Error_t errorToInject,
         responseLen           += static_cast<uint16_t>(Atams::DATAGRAM_SIZE_HEADER + varLength);
         if (responseLen > nodeMaxPacketSize_) break;
       }
+
       requestPacketLock_.releaseLock();
       break;
     }
@@ -1166,7 +1172,7 @@ Atams::Error_t Node::externalTransfer(const Atams::Access_t accessRequest,
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo {memoryMap_->varInfoList[varID]};
+  const Atams::HubVarInfo_t &varInfo {memoryMap_->varInfoList[varID]};
 
   if (TYPE_LENGTHS[varInfo.type] != length ) return (Atams::ERROR_VAR_TYPE); /* Early Return */
   if (bytesPtr                   == nullptr) return (Atams::ERROR_NULLPTR);  /* Early Return */
@@ -1228,7 +1234,7 @@ void Node::processAbortedResponse(void)
   uint16_t varID = ((static_cast<uint16_t>(bufferVarIDHi & Atams::ABORT_MASK_VAR_ID_HI) << Atams::ABORT_SHIFT_VAR_ID_HI) |
                     (static_cast<uint16_t>(bufferVarIDLo & Atams::ABORT_MASK_VAR_ID_LO) << Atams::ABORT_SHIFT_VAR_ID_LO) );
 
-  if ((responseLength_ != Atams::ABORT_SIZE_PACKET) ||
+  if ((responseLength_ != Atams::ABORT_PACKET_SIZE) ||
       (errorByte       >= NUMBER_OF_ATAMS_ERRORS  ) )
   {
     reportBusError(Atams::ERROR_ABORT_FAILURE);
@@ -1405,7 +1411,7 @@ Atams::Error_t Node::requestPacketShift(const uint16_t shiftIndex, const int16_t
 
   const int32_t newLength {static_cast<int32_t>(requestPacket_.length) + shiftLength};
 
-  if (newLength < static_cast<int32_t>(Atams::HEADER_SIZE_HEADER))
+  if (newLength < static_cast<int32_t>(Atams::PACKET_HEADER_SIZE))
   {
     return (Atams::ERROR_REQUEST_PACKET_FATAL); /* Early Return */
   }
@@ -1584,8 +1590,8 @@ Atams::Error_t Node::constructDatagramBuffer(RequestChangeConfig_t &changeConfig
 
 void Node::resetRequestPacketNoLock(void)
 {
-  requestPacket_.length        = Atams::HEADER_SIZE_HEADER;
-  expectedResponseLength_      = Atams::HEADER_SIZE_HEADER;
+  requestPacket_.length        = Atams::PACKET_HEADER_SIZE;
+  expectedResponseLength_      = Atams::PACKET_HEADER_SIZE;
   requestPacket_.writeList.reset();
   
   for (uint16_t varID {0U}; varID < validVarCount_; varID++)
@@ -1679,7 +1685,7 @@ Atams::Error_t Node::updateRequestPatternOnReceive(const uint16_t varID)
   return (statusReturn);
 }
 
-bool Node::wouldExceedResponseBuffer(const Atams::VarInfo_t        &varInfo,
+bool Node::wouldExceedResponseBuffer(const Atams::HubVarInfo_t      &varInfo,
                                      const Atams::Access_t          accessRequest,
                                      const Atams::RequestPattern_t  requestPattern,
                                      const Atams::Access_t          currentAccess) const

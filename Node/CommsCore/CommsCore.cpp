@@ -68,12 +68,6 @@ enum NodeCommsState_t: uint8_t
   NODE_STATE_RESTART_COMMS   = 4U
 };
 
-enum NVMTransfer_t : uint8_t
-{
-  TRANSFER_LOAD = 0U,
-  TRANSFER_SAVE = 1U
-};
-
 struct ChannelResponse_t
 {
   uint8_t              buffer[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
@@ -144,7 +138,7 @@ static Atams::Error_t externalTransfer(const Access_t  accessRequest,
 {
   if (varID >= s_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
+  const Atams::NodeVarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
 
   if (TYPE_LENGTHS[varInfo.type] != length)                 return (Atams::ERROR_VAR_TYPE);       /* Early Return */
   if (bytesPtr                   == nullptr)                return (Atams::ERROR_NULLPTR);        /* Early Return */
@@ -185,7 +179,7 @@ static DataStatusReturn_t<uint8_t> getVarLength(const uint16_t varID)
     return (lengthReturn); /* Early Return */
   }
 
-  const VarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
+  const NodeVarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
 
   lengthReturn.data   = TYPE_LENGTHS[varInfo.type];
   lengthReturn.status = Atams::ERROR_NONE;
@@ -223,7 +217,7 @@ static void abortResponse(ChannelResponse_t &response, const Atams::Error_t erro
   response.buffer[ABORT_INDEX_ERROR]     = error;
   response.buffer[ABORT_INDEX_VAR_ID_HI] = static_cast<uint8_t>((varID >> ABORT_SHIFT_VAR_ID_HI) & ABORT_MASK_VAR_ID_HI);
   response.buffer[ABORT_INDEX_VAR_ID_LO] = static_cast<uint8_t>((varID >> ABORT_SHIFT_VAR_ID_LO) & ABORT_MASK_VAR_ID_LO);
-  response.index                         = ABORT_SIZE_PACKET;
+  response.index                         = ABORT_PACKET_SIZE;
   response.aborted                       = true;
 }
 
@@ -319,7 +313,7 @@ static void validateRequestPacket(ChannelResponse_t &response,
 {
   DatagramHeader_t datagramHeader;
   uint16_t         datagramStartIndex     {HEADER_INDEX_FIRST_DATAGRAM};
-  uint16_t         requiredResponseLength {HEADER_SIZE_HEADER};
+  uint16_t         requiredResponseLength {PACKET_HEADER_SIZE};
 
   while ((datagramStartIndex + DATAGRAM_SIZE_HEADER <= requestPacketLength) &&
          (response.aborted                          == false              ) )
@@ -584,9 +578,50 @@ static void signalCommsCoreInitComplete(void)
   Platform::releaseVarStorageLock();
 }
 
+/**
+ * @brief   Encodes/decodes NVMHeader_t/NVMFooter_t to/from their fixed on-NVM layout.
+ *
+ * @details Built on Atams::uint32ToBuffer()/bufferToUint32() (Shared/Utilities/AtamsUtilities.hpp) -
+ *          see the comment on NVMVarEntryHeader_t for why these types are never read/written via
+ *          reinterpret_cast<uint8_t*>/sizeof().
+ */
+static void encodeNVMHeader(uint8_t * const bytesPtr, const NVMHeader_t &header)
+{
+  Atams::uint32ToBuffer(header.identifier, &bytesPtr[Atams::NVM_HEADER_INDEX_IDENTIFIER]);
+  Atams::uint32ToBuffer(header.length,     &bytesPtr[Atams::NVM_HEADER_INDEX_LENGTH]);
+  bytesPtr[Atams::NVM_HEADER_INDEX_FORMAT_VERSION] = header.nvmFormatVersion;
+}
+
+static NVMHeader_t decodeNVMHeader(const uint8_t * const bytesPtr)
+{
+  NVMHeader_t header;
+
+  header.identifier       = Atams::bufferToUint32(&bytesPtr[Atams::NVM_HEADER_INDEX_IDENTIFIER]);
+  header.length           = Atams::bufferToUint32(&bytesPtr[Atams::NVM_HEADER_INDEX_LENGTH]);
+  header.nvmFormatVersion = bytesPtr[Atams::NVM_HEADER_INDEX_FORMAT_VERSION];
+
+  return (header);
+}
+
+static void encodeNVMFooter(uint8_t * const bytesPtr, const NVMFooter_t &footer)
+{
+  Atams::uint32ToBuffer(footer.identifier, &bytesPtr[Atams::NVM_FOOTER_INDEX_IDENTIFIER]);
+  Atams::uint32ToBuffer(footer.checksum,   &bytesPtr[Atams::NVM_FOOTER_INDEX_CHECKSUM]);
+}
+
+static NVMFooter_t decodeNVMFooter(const uint8_t * const bytesPtr)
+{
+  NVMFooter_t footer;
+
+  footer.identifier = Atams::bufferToUint32(&bytesPtr[Atams::NVM_FOOTER_INDEX_IDENTIFIER]);
+  footer.checksum   = Atams::bufferToUint32(&bytesPtr[Atams::NVM_FOOTER_INDEX_CHECKSUM]);
+
+  return (footer);
+}
+
 static Atams::Error_t validateNVMChecksum(const NVMHeader_t &nvmHeader, const NVMFooter_t &nvmFooter)
 {
-  const uint32_t endOfVarStorage {nvmHeader.length - static_cast<uint32_t>(sizeof(nvmFooter))};
+  const uint32_t endOfVarStorage {nvmHeader.length - Atams::NVM_FOOTER_SIZE};
 
   Atams::Error_t error {Atams::ERROR_NONE};
 
@@ -620,9 +655,9 @@ static uint32_t getNVMVarSpaceRequirement(void)
 
   for (uint16_t varID {0U}; varID < s_memoryMapPtr->sharedMap.genInfo.noOfVars; varID++)
   {
-    const VarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
+    const NodeVarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
 
-    if (varInfo.NVMStorage) requiredVarSpace += Atams::TYPE_LENGTHS[varInfo.type];
+    if (varInfo.NVMStorage) requiredVarSpace += Atams::NVM_VAR_ENTRY_HEADER_SIZE + Atams::TYPE_LENGTHS[varInfo.type];
   }
 
   return (requiredVarSpace);
@@ -635,22 +670,33 @@ static Atams::Error_t constructAndStoreFooter(const uint32_t nvmSpaceUsed)
   nvmFooter.identifier = Atams::NVM_HEADER_IDENTIFIER_VALID;
   nvmFooter.checksum   = s_nodeCRC.getRollingCRC();
 
-  return (s_nvmUnitHandler.writeToNVM(nvmSpaceUsed, reinterpret_cast<uint8_t*>(&nvmFooter), sizeof(NVMFooter_t)));
+  uint8_t footerBuffer[Atams::NVM_FOOTER_SIZE];
+
+  encodeNVMFooter(footerBuffer, nvmFooter);
+
+  return (s_nvmUnitHandler.writeToNVM(nvmSpaceUsed, footerBuffer, Atams::NVM_FOOTER_SIZE));
 }
 
-static Atams::Error_t nvmTransferVars(const uint32_t      maxIndex,
-                                      const NVMTransfer_t transferType,
-                                      const bool          universalBlockOnly)
+/**
+ * @brief   Encodes an NVMVarEntryHeader_t's fields into a fixed 5-byte little-endian layout.
+ *
+ * @details Deliberately does not use reinterpret_cast<uint8_t*>(&header)/sizeof(header) -
+ *          see the comment on NVMVarEntryHeader_t for why this data must stay parseable
+ *          across firmware rebuilds regardless of struct padding.
+ */
+static void encodeNVMVarEntryHeader(uint8_t * const bytesPtr, const uint32_t nvmHash, const Atams::VarType_t type)
 {
-  const uint16_t numberOfVarsToTransfer {universalBlockOnly == true                            ?
-                                         static_cast<uint16_t>(BlockUniversal::NUMBER_OF_VARS) :
-                                         s_memoryMapPtr->sharedMap.genInfo.noOfVars            };
+  Atams::uint32ToBuffer(nvmHash, &bytesPtr[Atams::NVM_VAR_ENTRY_INDEX_NVM_HASH]);
+  bytesPtr[Atams::NVM_VAR_ENTRY_INDEX_TYPE] = static_cast<uint8_t>(type);
+}
 
-  uint32_t nvmIndex {sizeof(NVMHeader_t)};
+static Atams::Error_t writeVarsToNVM(const uint32_t maxIndex)
+{
+  uint32_t nvmIndex {Atams::NVM_HEADER_SIZE};
 
-  for (uint16_t varID {0U}; varID < numberOfVarsToTransfer; varID++)
+  for (uint16_t varID {0U}; varID < s_memoryMapPtr->sharedMap.genInfo.noOfVars; varID++)
   {
-    const VarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
+    const NodeVarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
 
     if (varInfo.NVMStorage)
     {
@@ -659,52 +705,185 @@ static Atams::Error_t nvmTransferVars(const uint32_t      maxIndex,
         return (Atams::ERROR_MEMORY_MAP);        /* Early Return */
       }
 
-      const uint8_t varLength {Atams::TYPE_LENGTHS[varInfo.type]};
+      const uint8_t  varLength {Atams::TYPE_LENGTHS[varInfo.type]};
+      const uint32_t entrySize {Atams::NVM_VAR_ENTRY_HEADER_SIZE + varLength};
 
-      if ((nvmIndex + varLength) > maxIndex)
+      if ((nvmIndex + entrySize) > maxIndex)
       {
         return (Atams::ERROR_NVM_PLATFORM_SIZE); /* Early Return */
       }
 
-      switch (transferType)
+      uint8_t entryBuffer[Atams::NVM_VAR_ENTRY_HEADER_SIZE + Atams::MAX_TYPE_SIZE];
+
+      encodeNVMVarEntryHeader(entryBuffer, varInfo.nvmHash, varInfo.type);
+
+      Platform::acquireVarStorageLock();
+      memcpy(&entryBuffer[Atams::NVM_VAR_ENTRY_HEADER_SIZE], s_sharedData.varStorage[varID], varLength);
+      Platform::releaseVarStorageLock();
+
+      if (s_nvmUnitHandler.writeToNVM(nvmIndex, entryBuffer, entrySize) != Atams::ERROR_NONE)
       {
-        case TRANSFER_LOAD:
-          if (s_nvmUnitHandler.readFromNVM(nvmIndex, s_sharedData.varStorage[varID], varLength) != Atams::ERROR_NONE)
-          {
-            return (Atams::ERROR_PLATFORM);      /* Early Return */
-          }
-          break;
-        case TRANSFER_SAVE:
-          if (s_nvmUnitHandler.writeToNVM(nvmIndex, s_sharedData.varStorage[varID], varLength) != Atams::ERROR_NONE)
-          {
-            return (Atams::ERROR_PLATFORM);      /* Early Return */
-          }
-          break;
-        default:
-          /* Do Nothing */
-          break;
+        return (Atams::ERROR_PLATFORM);          /* Early Return */
       }
 
-      nvmIndex += varLength;
+      nvmIndex += entrySize;
     }
   }
 
   return (Atams::ERROR_NONE);
 }
 
-static Atams::Error_t loadNVMVarsAllBlocks(const NVMHeader_t &nvmHeader)
+/**
+ * @brief   Decodes an NVMVarEntryHeader_t's fields from their fixed 5-byte little-endian layout.
+ *
+ * @details Mirrors encodeNVMVarEntryHeader() - see the comment on NVMVarEntryHeader_t for why
+ *          this must stay a fixed-width decode rather than reinterpret_cast<NVMVarEntryHeader_t*>.
+ */
+static Atams::NVMVarEntryHeader_t decodeNVMVarEntryHeader(const uint8_t * const bytesPtr)
 {
-  return (nvmTransferVars(nvmHeader.length, TRANSFER_LOAD, false));
+  Atams::NVMVarEntryHeader_t entryHeader;
+
+  entryHeader.nvmHash = Atams::bufferToUint32(&bytesPtr[Atams::NVM_VAR_ENTRY_INDEX_NVM_HASH]);
+  entryHeader.type    = static_cast<Atams::VarType_t>(bytesPtr[Atams::NVM_VAR_ENTRY_INDEX_TYPE]);
+
+  return (entryHeader);
 }
 
-static Atams::Error_t loadNVMVarsUniversalBlock(const NVMHeader_t &nvmHeader)
+/**
+ * @brief   Finds the varID whose NodeVarInfo_t::nvmHash matches nvmHash.
+ *
+ * @details Linear scan - this runs once per stored entry at boot, and the autogen tool already
+ *          guarantees nvmHash is unique per variable (Autogen/Modules/FileAutogen.py), so at
+ *          most one match is possible.
+ */
+static bool findVarIDByNvmHash(const uint32_t nvmHash, uint16_t &varID)
 {
-  return (nvmTransferVars(nvmHeader.length, TRANSFER_LOAD, true));
+  for (uint16_t candidateID {0U}; candidateID < s_memoryMapPtr->sharedMap.genInfo.noOfVars; candidateID++)
+  {
+    const NodeVarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[candidateID]};
+
+    if ((varInfo.NVMStorage) && (varInfo.nvmHash == nvmHash))
+    {
+      varID = candidateID;
+      return (true);
+    }
+  }
+
+  return (false);
+}
+
+static uint16_t countNVMStorageVars(void)
+{
+  uint16_t count {0U};
+
+  for (uint16_t varID {0U}; varID < s_memoryMapPtr->sharedMap.genInfo.noOfVars; varID++)
+  {
+    if (s_memoryMapPtr->sharedMap.varInfoList[varID].NVMStorage) count++;
+  }
+
+  return (count);
+}
+
+/**
+ * @brief   Walks the hash-tagged var entry stream, migrating whatever it can into varStorage.
+ *
+ * @param   maxIndex          NVM offset immediately after the last var entry (i.e. where the
+ *                              footer starts) - NOT nvmHeader.length, which also includes the
+ *                              footer itself.
+ * @param[out] migrationOccurred Set true if anything was left at default that the stream didn't
+ *                              already exactly account for (dropped entry, retyped variable, or
+ *                              a current variable never encountered in the stream) - i.e. NVM no
+ *                              longer exactly matches what a fresh storeAll() would produce. Only
+ *                              ever set true, never reset - callers should initialise it false.
+ *
+ * @details For each stored entry: a matching, same-type variable is loaded; a matching but
+ *          different-type variable (retyped since this was stored) is left at whatever
+ *          initAllDefaults() already set, since its old bytes cannot be safely reinterpreted
+ *          under the new type; an entry matching no current variable (removed/renamed since this
+ *          was stored) is simply skipped over using its stored type's length. A variable that is
+ *          never encountered in the stream (newly added, or NVMStorage newly enabled) is likewise
+ *          left at its default - initAllDefaults() already ran before this function is called.
+ */
+static Atams::Error_t loadNVMVarsFromStream(const uint32_t maxIndex, bool &migrationOccurred)
+{
+  uint32_t nvmIndex   {Atams::NVM_HEADER_SIZE};
+  uint16_t matchCount {0U};
+
+  while (nvmIndex < maxIndex)
+  {
+    if ((nvmIndex + Atams::NVM_VAR_ENTRY_HEADER_SIZE) > maxIndex)
+    {
+      return (Atams::ERROR_NVM_PLATFORM_SIZE); /* Early Return - truncated entry stream */
+    }
+
+    uint8_t headerBuffer[Atams::NVM_VAR_ENTRY_HEADER_SIZE];
+
+    if (s_nvmUnitHandler.readFromNVM(nvmIndex, headerBuffer, Atams::NVM_VAR_ENTRY_HEADER_SIZE) != Atams::ERROR_NONE)
+    {
+      return (Atams::ERROR_PLATFORM);          /* Early Return */
+    }
+
+    const Atams::NVMVarEntryHeader_t entryHeader {decodeNVMVarEntryHeader(headerBuffer)};
+
+    nvmIndex += Atams::NVM_VAR_ENTRY_HEADER_SIZE;
+
+    if (entryHeader.type >= Atams::NUMBER_OF_VAR_TYPES)
+    {
+      return (Atams::ERROR_NVM_ENTRY_CORRUPT); /* Early Return - corrupt entry stream */
+    }
+
+    const uint8_t valueLength {Atams::TYPE_LENGTHS[entryHeader.type]};
+
+    if ((nvmIndex + valueLength) > maxIndex)
+    {
+      return (Atams::ERROR_NVM_PLATFORM_SIZE); /* Early Return - truncated entry stream */
+    }
+
+    uint16_t varID {0U};
+
+    if (findVarIDByNvmHash(entryHeader.nvmHash, varID))
+    {
+      const NodeVarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
+
+      matchCount++;
+
+      if (varInfo.type == entryHeader.type)
+      {
+        uint8_t valueBuffer[Atams::MAX_TYPE_SIZE];
+
+        if (s_nvmUnitHandler.readFromNVM(nvmIndex, valueBuffer, valueLength) != Atams::ERROR_NONE)
+        {
+          return (Atams::ERROR_PLATFORM);      /* Early Return */
+        }
+
+        Platform::acquireVarStorageLock();
+        memcpy(s_sharedData.varStorage[varID], valueBuffer, valueLength);
+        Platform::releaseVarStorageLock();
+      }
+      else
+      {
+        migrationOccurred = true; /* Type changed since this was stored - can't safely reinterpret. */
+      }
+    }
+    else
+    {
+      migrationOccurred = true;  /* Removed/renamed since this was stored. */
+    }
+
+    nvmIndex += valueLength;
+  }
+
+  if (matchCount < countNVMStorageVars())
+  {
+    migrationOccurred = true;    /* At least one current variable was never seen in the stream. */
+  }
+
+  return (Atams::ERROR_NONE);
 }
 
 static Atams::Error_t saveVarsToNVM(const uint32_t availableNVMSpace)
 {
-  return (nvmTransferVars(availableNVMSpace, TRANSFER_SAVE, false));
+  return (writeVarsToNVM(availableNVMSpace));
 }
 
 static void initCommsBuffers(void)
@@ -747,77 +926,75 @@ static Atams::Error_t initAllDefaults(void)
 
 static Atams::Error_t storeNVMHeader(const NVMHeader_t &nvmHeader)
 {
-  return (s_nvmUnitHandler.writeToNVM(0U, reinterpret_cast<const uint8_t*>(&nvmHeader), sizeof(nvmHeader)));
+  uint8_t headerBuffer[Atams::NVM_HEADER_SIZE];
+
+  encodeNVMHeader(headerBuffer, nvmHeader);
+
+  return (s_nvmUnitHandler.writeToNVM(0U, headerBuffer, Atams::NVM_HEADER_SIZE));
 }
 
 static Atams::Error_t extractNVMHeader(NVMHeader_t &nvmHeader)
 {
-  return (s_nvmUnitHandler.readFromNVM(0U, reinterpret_cast<uint8_t*>(&nvmHeader), sizeof(nvmHeader)));
+  uint8_t headerBuffer[Atams::NVM_HEADER_SIZE];
+
+  Atams::Error_t error {s_nvmUnitHandler.readFromNVM(0U, headerBuffer, Atams::NVM_HEADER_SIZE)};
+
+  if (!error) nvmHeader = decodeNVMHeader(headerBuffer);
+
+  return (error);
 }
 
 static Atams::Error_t extractNVMFooter(const NVMHeader_t &nvmHeader, NVMFooter_t &nvmFooter)
 {
-  const uint32_t nvmFooterIndex {nvmHeader.length - static_cast<uint32_t>(sizeof(nvmFooter))};
+  const uint32_t nvmFooterIndex {nvmHeader.length - Atams::NVM_FOOTER_SIZE};
 
-  return (s_nvmUnitHandler.readFromNVM(nvmFooterIndex, reinterpret_cast<uint8_t*>(&nvmFooter), sizeof(nvmFooter)));
+  uint8_t footerBuffer[Atams::NVM_FOOTER_SIZE];
+
+  Atams::Error_t error {s_nvmUnitHandler.readFromNVM(nvmFooterIndex, footerBuffer, Atams::NVM_FOOTER_SIZE)};
+
+  if (!error) nvmFooter = decodeNVMFooter(footerBuffer);
+
+  return (error);
 }
 
 static Atams::Error_t validateNVMHeaderFooter(NVMHeader_t &nvmHeader, NVMFooter_t &nvmFooter)
 {
-  if (Platform::NVM_STORAGE_SIZE < sizeof(NVMHeader_t))            return (Atams::ERROR_NVM_PLATFORM_SIZE);   /* Early Return */
+  if (Platform::NVM_STORAGE_SIZE < Atams::NVM_HEADER_SIZE)            return (Atams::ERROR_NVM_PLATFORM_SIZE);          /* Early Return */
 
-  if (extractNVMHeader(nvmHeader) != Atams::ERROR_NONE)            return (Atams::ERROR_PLATFORM);            /* Early Return */
+  if (extractNVMHeader(nvmHeader) != Atams::ERROR_NONE)              return (Atams::ERROR_PLATFORM);                   /* Early Return */
 
-  if (nvmHeader.identifier != Atams::NVM_HEADER_IDENTIFIER_VALID)  return (Atams::ERROR_NVM_HEADER_VALIDITY); /* Early Return */
+  if (nvmHeader.identifier != Atams::NVM_HEADER_IDENTIFIER_VALID)    return (Atams::ERROR_NVM_HEADER_VALIDITY);        /* Early Return */
 
-  if (Platform::NVM_STORAGE_SIZE < nvmHeader.length)               return (Atams::ERROR_NVM_HEADER_LENGTH);   /* Early Return */
+  if (nvmHeader.nvmFormatVersion != Atams::NVM_FORMAT_VERSION)       return (Atams::ERROR_NVM_FORMAT_VERSION_MISMATCH);/* Early Return */
 
-  if (extractNVMFooter(nvmHeader, nvmFooter) != Atams::ERROR_NONE) return (Atams::ERROR_PLATFORM);            /* Early Return */
+  if (Platform::NVM_STORAGE_SIZE < nvmHeader.length)                 return (Atams::ERROR_NVM_HEADER_LENGTH);          /* Early Return */
 
-  if (nvmFooter.identifier != Atams::NVM_HEADER_IDENTIFIER_VALID)  return (Atams::ERROR_NVM_HEADER_VALIDITY); /* Early Return */
+  if (extractNVMFooter(nvmHeader, nvmFooter) != Atams::ERROR_NONE)   return (Atams::ERROR_PLATFORM);                   /* Early Return */
+
+  if (nvmFooter.identifier != Atams::NVM_HEADER_IDENTIFIER_VALID)    return (Atams::ERROR_NVM_HEADER_VALIDITY);        /* Early Return */
 
   return (validateNVMChecksum(nvmHeader, nvmFooter));
-}
-
-static Atams::Error_t validateNVMGenInfo(const NVMHeader_t &nvmHeader)
-{
-  Atams::GenInfo_t nvmGenInfo {nvmHeader.genInfo};
-  Atams::GenInfo_t mapGenInfo {s_memoryMapPtr->sharedMap.genInfo};
-
-  Atams::Error_t error {Atams::ERROR_NONE};
-
-  if ((nvmGenInfo.atamsVersionMajor != mapGenInfo.atamsVersionMajor) ||
-      (nvmGenInfo.atamsVersionMinor != mapGenInfo.atamsVersionMinor) )
-  {
-    error = Atams::ERROR_ATAMS_VERSION_MISMATCH;
-  }
-  else if (nvmGenInfo != mapGenInfo)
-  {
-    error = Atams::ERROR_NVM_USER_BLOCKS_INVALID;
-  }
-
-  return (error);
 }
 
 static Atams::Error_t initNVM(void)
 {
   NVMHeader_t nvmHeader;
   NVMFooter_t nvmFooter;
+  bool        migrationOccurred {false};
 
   Atams::Error_t error {getMemoryMapIsValid()};
 
   if (!error) error = validateNVMHeaderFooter(nvmHeader, nvmFooter);
 
-  if (!error) error = validateNVMGenInfo(nvmHeader);
+  if (!error) error = loadNVMVarsFromStream(nvmHeader.length - Atams::NVM_FOOTER_SIZE, migrationOccurred);
 
-  if (!error) error = loadNVMVarsAllBlocks(nvmHeader);
-
-  else if (error == Atams::ERROR_NVM_USER_BLOCKS_INVALID)
-  {
-    error = loadNVMVarsUniversalBlock(nvmHeader);
-
-    if (!error) error = Atams::ERROR_NVM_USER_BLOCKS_INVALID;
-  }
+  /* Best-effort compaction: rewrite NVM in the current map's entry form so dropped/retyped entries
+   * are reclaimed and newly-added variables get an entry, but only once, right here, rather than
+   * on every boot. A failed rewrite does not affect the value returned below - the variables
+   * above were already loaded successfully into RAM; NVM simply keeps its previous (still valid,
+   * still migratable) contents and the same rewrite will be attempted again next time this runs
+   * with something to migrate. */
+  if ((!error) && (migrationOccurred)) Atams::storeAll();
 
   s_uniBlockManager.notifyStorageProcessComplete(error);
 
@@ -861,7 +1038,7 @@ static Atams::Error_t setVarImpl(const uint16_t varID, const T writeValue)
 {
   if (varID >= s_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
+  const Atams::NodeVarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
 
   if (getAtamsType<T>() != varInfo.type) return (Atams::ERROR_VAR_TYPE); /* Early Return */
 
@@ -900,7 +1077,7 @@ Atams::Error_t getVarImpl(const uint16_t varID, T &outputRef)
 {
   if (varID >= s_validVarCount) return (Atams:: ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
+  const Atams::NodeVarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
 
   if (getAtamsType<T>() != varInfo.type) return (Atams::ERROR_VAR_TYPE); /* Early Return */
 
@@ -928,10 +1105,12 @@ Atams::Error_t getVarImpl(const uint16_t varID, T &outputRef)
  *
  * @param      memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
  * @param[out] nvmError  Reference to an @c Atams::Error_t variable. On return, this will contain the result of the NVM
- *                       validation and load process. If @c ERROR_NONE, all NVM validation and load operations succeeded.
- *                       If set to @c ERROR_NVM_USER_BLOCKS_INVALID, only Universal Block variables were restored from NVM;
- *                       User Data Block variables were not restored. Any other error indicates a platform or NVM validation
- *                       failure.
+ *                       validation and load process. If @c ERROR_NONE, NVM data was present, valid, and loaded -
+ *                       possibly with some variables migrated to their defaults if they were added, removed, renamed,
+ *                       or retyped since the data was last stored (see NVMVarEntryHeader_t). Any other error means no
+ *                       NVM data was loaded and all variables are at their defaults - either the stored data was
+ *                       corrupt/absent, or @c ERROR_NVM_FORMAT_VERSION_MISMATCH if it was written by an incompatible
+ *                       version of the Atams library.
  *
  * @retval @c ERROR_NONE                   Initialisation successful; Node is ready for operation.
  * @retval @c ERROR_MEMORY_MAP             Memory Map validation failed (Invalid structure, length, universal block, or checksum).
@@ -961,10 +1140,12 @@ Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmE
  *
  * @param      memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
  * @param[out] nvmError  Reference to an @c Atams::Error_t variable. On return, this will contain the result of the NVM
- *                       validation and load process. If @c ERROR_NONE, all NVM validation and load operations succeeded. 
- *                       If set to @c ERROR_NVM_USER_BLOCKS_INVALID, only Universal Block variables were restored from NVM;
- *                       User Data Block variables were not restored. Any other error indicates a platform or NVM validation
- *                       failure.
+ *                       validation and load process. If @c ERROR_NONE, NVM data was present, valid, and loaded -
+ *                       possibly with some variables migrated to their defaults if they were added, removed, renamed,
+ *                       or retyped since the data was last stored (see NVMVarEntryHeader_t). Any other error means no
+ *                       NVM data was loaded and all variables are at their defaults - either the stored data was
+ *                       corrupt/absent, or @c ERROR_NVM_FORMAT_VERSION_MISMATCH if it was written by an incompatible
+ *                       version of the Atams library.
  *
  * @retval @c ERROR_NONE                   Initialisation successful; Node is ready for operation.
  * @retval @c ERROR_MEMORY_MAP             Memory Map validation failed (Invalid structure, length, universal block, or checksum).
@@ -982,6 +1163,8 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmEr
 
   Atams::Error_t error {Atams::validateMemoryMap(memoryMap.sharedMap, Platform::NODE_NUMBER_OF_VARS)};
 
+  if (!error) error = Atams::validateNodeMemoryMap(memoryMap.sharedMap);
+
   if (!error)
   {
     s_memoryMapPtr  = &memoryMap;
@@ -993,8 +1176,7 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmEr
   if (!error) error    = initAllDefaults();
   if (!error) nvmError = initNVM();
 
-  if ((nvmError != Atams::ERROR_NONE                   ) &&
-      (nvmError != Atams::ERROR_NVM_USER_BLOCKS_INVALID) )
+  if (nvmError != Atams::ERROR_NONE)
   {
     resetVars();
     s_uniBlockManager.notifyStorageProcessComplete(nvmError);
@@ -1284,14 +1466,13 @@ Atams::Error_t storeAll(void)
   if (getMemoryMapIsValid() != Atams::ERROR_NONE) return (Atams::ERROR_MEMORY_MAP); /* Early Return */
 
   const uint32_t requiredNVMVarSpace {getNVMVarSpaceRequirement()};
-  const uint32_t requiredNVMSpace    {static_cast<uint32_t>(sizeof(NVMHeader_t)) + requiredNVMVarSpace + static_cast<uint32_t>(sizeof(NVMFooter_t))};
-  const uint32_t nvmFooterIndex      {static_cast<uint32_t>(sizeof(NVMHeader_t)) + requiredNVMVarSpace};
+  const uint32_t requiredNVMSpace    {Atams::NVM_HEADER_SIZE + requiredNVMVarSpace + Atams::NVM_FOOTER_SIZE};
+  const uint32_t nvmFooterIndex      {Atams::NVM_HEADER_SIZE + requiredNVMVarSpace};
 
   if (requiredNVMSpace > Platform::NVM_STORAGE_SIZE) return (Atams::ERROR_NVM_PLATFORM_SIZE); /* Early Return */
 
   nvmHeader.identifier = Atams::NVM_HEADER_IDENTIFIER_VALID;
   nvmHeader.length     = requiredNVMSpace;
-  nvmHeader.genInfo    = s_memoryMapPtr->sharedMap.genInfo;
 
   /* Erase NVM to invalidate */
   Atams::Error_t error {s_nvmUnitHandler.eraseNVM()};

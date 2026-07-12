@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
-  * @file    MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.hpp
+  * @file    MemoryMap$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$.hpp
   *
   * @author  D. Baines
   *
   * @brief   Auto-generated file containing typedefs, constants, and function
-  *          declarations for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
+  *          declarations for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Memory Map with name: $$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$.
   *
   * @version v1.0
   ******************************************************************************
@@ -37,7 +37,7 @@ $$$AUTOGEN$$$DATA_BLOCK_FILE_INCLUDES$$$AUTOGEN$$$
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
+namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$ {
 
 /*************************************************************************************/
 /* CONST EXTERNS                                                                     */
@@ -46,7 +46,7 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 extern const Node::MemoryMap_t memoryMap;
 
 
-} } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
+} } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$ */
 
 /**
   * @}End of File

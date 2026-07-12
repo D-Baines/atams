@@ -143,7 +143,7 @@ static Atams::Error_t setVarImpl(const uint16_t varID, const T writeValue)
 {
   if (varID >= s_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
+  const Atams::NodeVarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
 
   if (getAtamsType<T>() != varInfo.type) return (Atams::ERROR_VAR_TYPE); /* Early Return */
 
@@ -182,7 +182,7 @@ Atams::Error_t getVarImpl(const uint16_t varID, T &outputRef)
 {
   if (varID >= s_validVarCount) return (Atams:: ERROR_VAR_ID); /* Early Return */
 
-  const Atams::VarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
+  const Atams::NodeVarInfo_t &varInfo {s_memoryMapPtr->sharedMap.varInfoList[varID]};
 
   if (getAtamsType<T>() != varInfo.type) return (Atams::ERROR_VAR_TYPE); /* Early Return */
 
@@ -221,6 +221,8 @@ Atams::Error_t getVarImpl(const uint16_t varID, T &outputRef)
 Atams::Error_t initAppCore(const MemoryMap_t &memoryMap)
 {
   Atams::Error_t error {Atams::validateMemoryMap(memoryMap.sharedMap, Platform::NODE_NUMBER_OF_VARS)};
+
+  if (error == Atams::ERROR_NONE) error = Atams::validateNodeMemoryMap(memoryMap.sharedMap);
 
   if (error == Atams::ERROR_NONE)
   {

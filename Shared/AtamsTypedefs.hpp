@@ -58,34 +58,32 @@ constexpr uint8_t ATAMS_VERSION_MAJOR {0U};
 constexpr uint8_t ATAMS_VERSION_MINOR {1U};
 constexpr uint8_t ATAMS_VERSION_PATCH {0U};
 
-constexpr uint8_t  NODE_ID_MAX                     {254U};
-constexpr uint8_t  MAX_NUMBER_OF_NODES_PER_BUS     {255U};
-constexpr uint16_t MAX_NUMBER_OF_VARS              {8191U};
-constexpr uint16_t VAR_ID_NULL                     {8191U};
-constexpr uint8_t  MAX_TYPE_SIZE                   {4U};
-constexpr uint8_t  EOL_BYTE                        {0U};
-constexpr int32_t  MAX_INT32                       {2147483647L};
-constexpr int32_t  MIN_INT32                       {-2147483648L};
-constexpr uint32_t MAX_UINT32                      {4294967295U};
-constexpr uint32_t MIN_UINT32                      {0U};
-constexpr uint8_t  BITS_IN_A_BYTE                  {8U};
-constexpr uint32_t CRC32_POLYNOMIAL                {0x82F63B78U};
-constexpr uint32_t NVM_HEADER_IDENTIFIER_INVALID   {0x00000000U};
-constexpr uint32_t NVM_HEADER_IDENTIFIER_VALID     {0xD0D0CACAU};
-constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS    {0x454E5452U};
-constexpr uint32_t CONFIGURATION_PASSKEY_APPLY     {0x41504C59U};
-constexpr uint32_t CONFIGURATION_PASSKEY_CANCEL    {0x00000000U};
-constexpr uint32_t STORE_ALL_PASSCODE              {0x53415645U};
-constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE    {0x55534552U};
-constexpr uint32_t RESTORE_ALL_PASSCODE            {0x52535452U};
-constexpr uint32_t RESET_NODE_PASSCODE             {0x4E525354U};
-constexpr uint32_t WATCHDOG_RESET_PASSCODE         {0x57444F47U};
-constexpr uint32_t COBS_MAX_DATA_PER_CODE                         {254U};
-constexpr uint32_t COBS_TERMINATOR_SIZE                           {1U};
-constexpr uint32_t MINIMUM_MAXIMUM_BUS_PACKET_SIZE                {64U};
-constexpr uint32_t MINIMUM_COBS_MAX_CODE_BYTES                    {(MINIMUM_MAXIMUM_BUS_PACKET_SIZE + (COBS_MAX_DATA_PER_CODE - 1U)) / COBS_MAX_DATA_PER_CODE};
-constexpr uint32_t MINIMUM_COBS_OVERHEAD                          {MINIMUM_COBS_MAX_CODE_BYTES + COBS_TERMINATOR_SIZE};
-constexpr uint32_t MINIMUM_MAXIMUM_BUS_PACKET_SIZE_PRE_FRAMING    {MINIMUM_MAXIMUM_BUS_PACKET_SIZE - MINIMUM_COBS_OVERHEAD};
+constexpr uint8_t  NODE_ID_MAX                                 {254U};
+constexpr uint8_t  MAX_NUMBER_OF_NODES_PER_BUS                 {255U};
+constexpr uint16_t MAX_NUMBER_OF_VARS                          {8191U};
+constexpr uint16_t VAR_ID_NULL                                 {8191U};
+constexpr uint8_t  MAX_TYPE_SIZE                               {4U};
+constexpr uint8_t  EOL_BYTE                                    {0U};
+constexpr int32_t  MAX_INT32                                   {2147483647L};
+constexpr int32_t  MIN_INT32                                   {-2147483648L};
+constexpr uint32_t MAX_UINT32                                  {4294967295U};
+constexpr uint32_t MIN_UINT32                                  {0U};
+constexpr uint8_t  BITS_IN_A_BYTE                              {8U};
+constexpr uint32_t CRC32_POLYNOMIAL                            {0x82F63B78U};
+constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS                {0x454E5452U};
+constexpr uint32_t CONFIGURATION_PASSKEY_APPLY                 {0x41504C59U};
+constexpr uint32_t CONFIGURATION_PASSKEY_CANCEL                {0x00000000U};
+constexpr uint32_t STORE_ALL_PASSCODE                          {0x53415645U};
+constexpr uint32_t RESTORE_USER_BLOCKS_PASSCODE                {0x55534552U};
+constexpr uint32_t RESTORE_ALL_PASSCODE                        {0x52535452U};
+constexpr uint32_t RESET_NODE_PASSCODE                         {0x4E525354U};
+constexpr uint32_t WATCHDOG_RESET_PASSCODE                     {0x57444F47U};
+constexpr uint32_t COBS_MAX_DATA_PER_CODE                      {254U};
+constexpr uint32_t COBS_TERMINATOR_SIZE                        {1U};
+constexpr uint32_t MINIMUM_MAXIMUM_BUS_PACKET_SIZE             {64U};
+constexpr uint32_t MINIMUM_COBS_MAX_CODE_BYTES                 {(MINIMUM_MAXIMUM_BUS_PACKET_SIZE + (COBS_MAX_DATA_PER_CODE - 1U)) / COBS_MAX_DATA_PER_CODE};
+constexpr uint32_t MINIMUM_COBS_OVERHEAD                       {MINIMUM_COBS_MAX_CODE_BYTES + COBS_TERMINATOR_SIZE};
+constexpr uint32_t MINIMUM_MAXIMUM_BUS_PACKET_SIZE_PRE_FRAMING {MINIMUM_MAXIMUM_BUS_PACKET_SIZE - MINIMUM_COBS_OVERHEAD};
 
 constexpr uint8_t THREE_BYTE_SHIFT  {24U};
 constexpr uint8_t TWO_BYTE_SHIFT    {16U};
@@ -138,10 +136,11 @@ enum HeaderSize_t: uint8_t
   HEADER_SIZE_SYNC     = sizeof(uint8_t),
   HEADER_SIZE_CRC      = sizeof(uint32_t),
   HEADER_SIZE_NODE_ID  = sizeof(uint8_t),
-  HEADER_SIZE_HEADER   = HEADER_SIZE_MSG_TYPE + HEADER_SIZE_SYNC + HEADER_SIZE_CRC + HEADER_SIZE_NODE_ID,
 };
 
-constexpr uint32_t MINIMUM_MAXIMUM_BUS_PAYLOAD_SIZE {MINIMUM_MAXIMUM_BUS_PACKET_SIZE_PRE_FRAMING - HEADER_SIZE_HEADER};
+constexpr uint8_t PACKET_HEADER_SIZE {HEADER_SIZE_MSG_TYPE + HEADER_SIZE_SYNC + HEADER_SIZE_CRC + HEADER_SIZE_NODE_ID};
+
+constexpr uint32_t MINIMUM_MAXIMUM_BUS_PAYLOAD_SIZE {MINIMUM_MAXIMUM_BUS_PACKET_SIZE_PRE_FRAMING - PACKET_HEADER_SIZE};
 
 enum HeaderIndex_t: uint8_t
 {
@@ -149,7 +148,7 @@ enum HeaderIndex_t: uint8_t
   HEADER_INDEX_SYNC           = HEADER_INDEX_MSG_TYPE + HEADER_SIZE_MSG_TYPE,
   HEADER_INDEX_CRC            = HEADER_INDEX_SYNC     + HEADER_SIZE_SYNC,
   HEADER_INDEX_NODE_ID        = HEADER_INDEX_CRC      + HEADER_SIZE_CRC,
-  HEADER_INDEX_FIRST_DATAGRAM = HEADER_SIZE_HEADER,
+  HEADER_INDEX_FIRST_DATAGRAM = PACKET_HEADER_SIZE,
 };
 
 enum DatagramSize_t: uint8_t
@@ -182,12 +181,13 @@ enum AbortSize_t: uint8_t
   ABORT_SIZE_ERROR     = sizeof(uint8_t),
   ABORT_SIZE_VAR_ID_HI = sizeof(uint8_t),
   ABORT_SIZE_VAR_ID_LO = sizeof(uint8_t),
-  ABORT_SIZE_PACKET    = HEADER_SIZE_HEADER + ABORT_SIZE_ERROR + ABORT_SIZE_VAR_ID_HI + ABORT_SIZE_VAR_ID_LO
 };
+
+constexpr uint8_t ABORT_PACKET_SIZE {PACKET_HEADER_SIZE + ABORT_SIZE_ERROR + ABORT_SIZE_VAR_ID_HI + ABORT_SIZE_VAR_ID_LO};
 
 enum AbortIndex_t: uint8_t
 {
-  ABORT_INDEX_ERROR     = HEADER_SIZE_HEADER,
+  ABORT_INDEX_ERROR     = PACKET_HEADER_SIZE,
   ABORT_INDEX_VAR_ID_HI = ABORT_INDEX_ERROR     + ABORT_SIZE_ERROR,
   ABORT_INDEX_VAR_ID_LO = ABORT_INDEX_VAR_ID_HI + ABORT_SIZE_VAR_ID_HI
 };
@@ -241,19 +241,20 @@ enum Error_t: uint8_t
   ERROR_NVM_HEADER_VALIDITY          = 32U,
   ERROR_NVM_PLATFORM_SIZE            = 33U,
   ERROR_NVM_WRITE_ORDER              = 34U,
-  ERROR_NVM_USER_BLOCKS_INVALID      = 35U,
-  ERROR_INVALID_NACK                 = 36U,
-  ERROR_CONFIGURATION_STATE_DENIED   = 37U,
-  ERROR_CONFIGURATION_STATE_INACTIVE = 38U,
-  ERROR_REQUEST_PACKET_FATAL         = 39U,
-  ERROR_INVALID_CASE                 = 40U,
-  ERROR_SET_CONFIG_VAR_FAILED        = 41U,
-  ERROR_STORAGE_PROCESS_FAILED       = 42U,
-  ERROR_PROCESS_TIMEOUT              = 43U,
-  ERROR_CONFIGURATION_EXIT           = 44U,
-  ERROR_NODE_ALREADY_ON_BUS          = 45U,
-  ERROR_NODE_NOT_ON_BUS              = 46U,
-  ERROR_CONFIGURATION_CANCEL_FAILED  = 47U,
+  ERROR_INVALID_NACK                 = 35U,
+  ERROR_CONFIGURATION_STATE_DENIED   = 36U,
+  ERROR_CONFIGURATION_STATE_INACTIVE = 37U,
+  ERROR_REQUEST_PACKET_FATAL         = 38U,
+  ERROR_INVALID_CASE                 = 39U,
+  ERROR_SET_CONFIG_VAR_FAILED        = 40U,
+  ERROR_STORAGE_PROCESS_FAILED       = 41U,
+  ERROR_PROCESS_TIMEOUT              = 42U,
+  ERROR_CONFIGURATION_EXIT           = 43U,
+  ERROR_NODE_ALREADY_ON_BUS          = 44U,
+  ERROR_NODE_NOT_ON_BUS              = 45U,
+  ERROR_CONFIGURATION_CANCEL_FAILED  = 46U,
+  ERROR_NVM_FORMAT_VERSION_MISMATCH  = 47U,
+  ERROR_NVM_ENTRY_CORRUPT            = 48U,
 
   NUMBER_OF_ATAMS_ERRORS
 };
@@ -342,24 +343,28 @@ struct VarInfo_t
   VarType_t type           {Atams::TYPE_NULL};
   Access_t  externalAccess {Atams::ACCESS_NONE};
   uint8_t   NVMStorage     {Atams::ATAMS_FALSE};
+  uint32_t  nvmHash        {0U}; /* CRC32 of the variable's name, generated - see NVMHeader_t/GenInfo_t comment. */
 
   bool operator==(const VarInfo_t &other)
   {
     return ((type           == other.type          ) &&
             (externalAccess == other.externalAccess) &&
-            (NVMStorage     == other.NVMStorage    ) );
+            (NVMStorage     == other.NVMStorage    ) &&
+            (nvmHash        == other.nvmHash       ) );
   }
 
   bool operator!=(const VarInfo_t &other)
   {
     return ((type           != other.type          ) ||
             (externalAccess != other.externalAccess) ||
-            (NVMStorage     != other.NVMStorage    ) );
+            (NVMStorage     != other.NVMStorage    ) ||
+            (nvmHash        != other.nvmHash       ) );
   }
 
   static_assert(sizeof(type)           == 1U, "VarInfo_t type size invalid");
   static_assert(sizeof(externalAccess) == 1U, "VarInfo_t accessLevel size invalid");
   static_assert(sizeof(NVMStorage)     == 1U, "VarInfo_t NVMStorage size invalid");
+  static_assert(sizeof(nvmHash)        == 4U, "VarInfo_t nvmHash size invalid");
 };
 
 struct DatagramHeader_t
@@ -368,7 +373,14 @@ struct DatagramHeader_t
   uint16_t varID;
 };
 
-/* Layout changes to GenInfo_t, NVMHeader_t or NVMFooter_t require at least a minor version bump. */
+/* Used for Bus/Hub-Node compatibility checking (Hub/Node.cpp: Node::validateGenInfo()) - not
+ * stored in NVM (see NVM_FORMAT_VERSION for that). Layout changes here, or changes to
+ * BlockUniversal's variable set, still require at least a minor ATAMS_VERSION bump, same as any
+ * other Bus-visible change - the Hub compares its own compiled GenInfo_t against the Node's, so
+ * a BlockUniversal edit that isn't reflected in both sides' compiled version would go undetected
+ * without one. NVM_FORMAT_VERSION does NOT need to change for a BlockUniversal edit though: NVM
+ * migration matches variables by name hash, never by stored position, so it doesn't care that a
+ * BlockUniversal variable count change shifts every user variable's numeric varID underneath it. */
 struct GenInfo_t
 {
   uint8_t  atamsVersionMajor {ATAMS_VERSION_MAJOR};
@@ -404,25 +416,6 @@ struct GenInfo_t
 
 static_assert(std::is_standard_layout_v<GenInfo_t>);
 static_assert(std::is_trivially_copyable_v<GenInfo_t>);
-
-struct NVMHeader_t
-{
-  uint32_t  identifier {NVM_HEADER_IDENTIFIER_INVALID};
-  uint32_t  length     {0U};
-  GenInfo_t genInfo;
-};
-
-static_assert(std::is_standard_layout_v<NVMHeader_t>);
-static_assert(std::is_trivially_copyable_v<NVMHeader_t>);
-
-struct NVMFooter_t
-{
-  uint32_t identifier {NVM_HEADER_IDENTIFIER_INVALID};
-  uint32_t checksum   {0U};
-};
-
-static_assert(std::is_standard_layout_v<NVMFooter_t>);
-static_assert(std::is_trivially_copyable_v<NVMFooter_t>);
 
 template <typename T>
 struct DataStatusReturn_t
@@ -515,13 +508,18 @@ struct TXMessage_t
 
 typedef void (*CommsTransmitCallback_t)(TXMessage_t message);
 
+/* Parameterised on the per-variable metadata type so Hub and Node can each carry only the
+ * fields they actually need (see HubVarInfo_t in Hub/Node.hpp) - Node uses
+ * SharedMemoryMap_t<VarInfo_t> (see NodeSharedMemoryMap_t), Hub uses
+ * SharedMemoryMap_t<HubVarInfo_t> (see HubSharedMemoryMap_t). */
+template<typename VarInfoT>
 struct SharedMemoryMap_t
 {
-  const GenInfo_t  genInfo;
-  const VarInfo_t *varInfoList;
+  const GenInfo_t genInfo;
+  const VarInfoT  *varInfoList;
 
-  SharedMemoryMap_t(const GenInfo_t  initGenInfo,
-                    const VarInfo_t (*initVarInfoList)) :
+  SharedMemoryMap_t(const GenInfo_t initGenInfo,
+                    const VarInfoT (*initVarInfoList)) :
   genInfo(initGenInfo),
   varInfoList(initVarInfoList){};
 
@@ -601,7 +599,6 @@ constexpr const char *ERROR_STRINGS[NUMBER_OF_ATAMS_ERRORS]
   /* [Atams::ERROR_NVM_HEADER_VALIDITY         ] = */ "NVM Header Invalid",
   /* [Atams::ERROR_NVM_PLATFORM_SIZE           ] = */ "NVM Platform Size Mismatch",
   /* [Atams::ERROR_NVM_WRITE_ORDER             ] = */ "NVM Write Order Incorrect",
-  /* [Atams::ERROR_NVM_USER_BLOCKS_INVALID     ] = */ "NVM User Blocks Invalid",
   /* [Atams::ERROR_INVALID_NACK                ] = */ "Invalid NACK Received",
   /* [Atams::ERROR_CONFIGURATION_STATE_DENIED  ] = */ "Configuration State Denied",
   /* [Atams::ERROR_CONFIGURATION_STATE_INACTIVE] = */ "Configuration State Inactive",
@@ -613,7 +610,9 @@ constexpr const char *ERROR_STRINGS[NUMBER_OF_ATAMS_ERRORS]
   /* [Atams::ERROR_CONFIGURATION_EXIT          ] = */ "Configuration Exit",
   /* [Atams::ERROR_NODE_ALREADY_ON_BUS         ] = */ "Node Already On Bus",
   /* [Atams::ERROR_NODE_NOT_ON_BUS             ] = */ "Node Not On Bus",
-  /* [Atams::ERROR_CONFIGURATION_CANCEL_FAILED ] = */ "Configuration Cancel Failed - Node May Be Stuck In Configuration Mode"
+  /* [Atams::ERROR_CONFIGURATION_CANCEL_FAILED ] = */ "Configuration Cancel Failed - Node May Be Stuck In Configuration Mode",
+  /* [Atams::ERROR_NVM_FORMAT_VERSION_MISMATCH ] = */ "NVM Format Version Mismatch",
+  /* [Atams::ERROR_NVM_ENTRY_CORRUPT           ] = */ "NVM Entry Corrupt"
 };
 
 constexpr const char *MESSAGE_TYPE_STRINGS[NUMBER_OF_MESSAGE_TYPES]

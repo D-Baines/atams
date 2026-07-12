@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
-  * @file    MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.hpp
+  * @file    MemoryMap$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$.hpp
   *
   * @author  D. Baines
   *
   * @brief   Auto-generated file containing typedefs, constants, and function
-  *          declarations for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
+  *          declarations for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Memory Map with name: $$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$.
   *
   * @version v1.0
   ******************************************************************************
@@ -38,7 +38,21 @@ $$$AUTOGEN$$$DATA_BLOCK_FILE_INCLUDES$$$AUTOGEN$$$
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
+namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$ {
+
+/*************************************************************************************/
+/* PUBLIC CONSTANTS                                                                  */
+/*************************************************************************************/
+
+/* Minimum Platform::NVM_STORAGE_SIZE required to store this map's NVMStorage variables. */
+constexpr uint32_t REQUIRED_NVM_SIZE {$$$AUTOGEN$$$REQUIRED_NVM_SIZE$$$AUTOGEN$$$};
+
+/* Autogen's own mirrored size constants (used to compute REQUIRED_NVM_SIZE above) must match
+ * the Atams library this map is being compiled against - if these fail, regenerate this map
+ * against the current Atams library. */
+static_assert($$$AUTOGEN$$$NVM_HEADER_SIZE_MIRROR$$$AUTOGEN$$$ == Atams::NVM_HEADER_SIZE,           "Autogen NVM_HEADER_SIZE mirror out of sync with Atams::NVM_HEADER_SIZE");
+static_assert($$$AUTOGEN$$$NVM_FOOTER_SIZE_MIRROR$$$AUTOGEN$$$ == Atams::NVM_FOOTER_SIZE,           "Autogen NVM_FOOTER_SIZE mirror out of sync with Atams::NVM_FOOTER_SIZE");
+static_assert($$$AUTOGEN$$$NVM_VAR_ENTRY_HEADER_SIZE_MIRROR$$$AUTOGEN$$$ == Atams::NVM_VAR_ENTRY_HEADER_SIZE, "Autogen NVM_VAR_ENTRY_HEADER_SIZE mirror out of sync with Atams::NVM_VAR_ENTRY_HEADER_SIZE");
 
 /*************************************************************************************/
 /* CONST EXTERNS                                                                     */
@@ -47,7 +61,7 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 extern const MemoryMap_t memoryMap;
 
 
-} } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
+} } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$ */
 
 /**
   * @}End of File

@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
-  * @file    MemoryMap$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.cpp
+  * @file    MemoryMap$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$.cpp
   *
   * @author  D. Baines
   *
   * @brief   Auto-generated file containing public function definitions
-  *          for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Memory Map with name: $$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.
+  *          for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Memory Map with name: $$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$.
   *
   * @version v1.0
   ******************************************************************************
@@ -25,7 +25,7 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$.hpp"
+#include "Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$.hpp"
 
 #include "../../SharedPlatform.hpp"
 
@@ -41,7 +41,7 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ {
+namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$ {
 
 /*************************************************************************************/
 /* STATIC CONSTANTS                                                                  */
@@ -61,7 +61,12 @@ static const GenInfo_t s_genInfo
   /* .noOfVars          = */ $$$AUTOGEN$$$NUMBER_OF_VARS$$$AUTOGEN$$$
 };
 
-static const VarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS] 
+/* Autogen's own version stamp above must match the Atams library this map is being compiled
+ * against - if these fail, regenerate this map against the current Atams library. */
+static_assert($$$AUTOGEN$$$VERSION_MAJOR$$$AUTOGEN$$$ == Atams::ATAMS_VERSION_MAJOR, "Autogen VERSION_MAJOR out of sync with Atams::ATAMS_VERSION_MAJOR");
+static_assert($$$AUTOGEN$$$VERSION_MINOR$$$AUTOGEN$$$ == Atams::ATAMS_VERSION_MINOR, "Autogen VERSION_MINOR out of sync with Atams::ATAMS_VERSION_MINOR");
+
+static const NodeVarInfo_t s_varInfoList[Platform::NODE_NUMBER_OF_VARS]
 {
   /*------------------------ Universal Var Info -------------------------*/
   
@@ -135,14 +140,14 @@ const MemoryMap_t memoryMap
 {
   /* .sharedMap */
   {
-    /* .genInfo     = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::s_genInfo,
-    /* .varInfoList = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::s_varInfoList
+    /* .genInfo     = */ Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$::s_genInfo,
+    /* .varInfoList = */ Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$::s_varInfoList
   },
-  /* initGenInfo      = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::initGenInfo,
-  /* initUserDefaults = */ Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$::initUserDefaults,
+  /* initGenInfo      = */ Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$::initGenInfo,
+  /* initUserDefaults = */ Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$::initUserDefaults,
 };
 
-} } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_CAMEL$$$AUTOGEN$$$ */
+} } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$ */
 
 /**
   * @}End of File

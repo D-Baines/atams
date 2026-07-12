@@ -7,7 +7,7 @@ from   tkinter             import filedialog
 from   CTkToolTip          import *
 from   PIL                 import Image
 from   enum                import Enum
-from   Modules.FileAutogen import Error, OpenMethods, generateCppFiles
+from   Modules.FileAutogen import Error, OpenMethods, generateCppFiles, sanitisePascalName
 from   tkinter             import PhotoImage
 
 FRAMEWORK_NAME         = "Atams"
@@ -137,16 +137,15 @@ def generateButtonPressed(memoryMapName: str, memoryMapXlsxPath:str, nodeDir: st
     statusLabel.configure(text="Memory Map Name Unset")
     return # Early Return
 
-  memoryMapNameCamel = memoryMapName.lower().title()
-  memoryMapNameCamel = memoryMapNameCamel.replace(" ", "")
-  nodeMemoryMapDir   = os.path.join(nodeDir, 'Maps', 'Map' + memoryMapNameCamel)
-  hubMemoryMapDir    = os.path.join(hubDir,  'Maps', 'Map' + memoryMapNameCamel)
+  memoryMapNamePascal = sanitisePascalName(memoryMapName)
+  nodeMemoryMapDir     = os.path.join(nodeDir, 'Maps', 'Map' + memoryMapNamePascal)
+  hubMemoryMapDir      = os.path.join(hubDir,  'Maps', 'Map' + memoryMapNamePascal)
 
   if ((os.path.isdir(nodeMemoryMapDir)) or
       (os.path.isdir(hubMemoryMapDir)) ):
-    overwritePopup(memoryMapNameCamel, memoryMapXlsxPath, nodeDir, hubDir)
+    overwritePopup(memoryMapNamePascal, memoryMapXlsxPath, nodeDir, hubDir)
   else:
-    runFileGeneration(memoryMapNameCamel, memoryMapXlsxPath, nodeDir, hubDir)
+    runFileGeneration(memoryMapNamePascal, memoryMapXlsxPath, nodeDir, hubDir)
 
 def main():
   global app, statusLabel
@@ -212,7 +211,7 @@ def main():
                                       "Ensure access is permitted to all \n"
                                       "sub-directories.\n")
 
-  statusLabel = customtkinter.CTkLabel(fullFrame, text="Confirm file paths, input map name, then click 'Generate' to generate C++ Files")
+  statusLabel = customtkinter.CTkLabel(fullFrame, text="Confirm file paths, input map name, then click 'Generate' to generate C++ Files", wraplength=400, justify="center")
   statusLabel.pack(side='bottom')
 
   generateFrame = customtkinter.CTkFrame(fullFrame, width=800, height=100, fg_color="transparent")

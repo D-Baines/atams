@@ -192,7 +192,7 @@ void TestNode::runFunctionArgTests(void)
   {
     error = Node::setRequestPattern(BlockTest1::VAR_WRITE_UINT8, Atams::ACCESS_WRITE, Atams::REQUEST_STREAM);
 
-    if (Node::getRequestPacketLength() != Atams::HEADER_SIZE_HEADER + Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t))
+    if (Node::getRequestPacketLength() != Atams::PACKET_HEADER_SIZE + Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t))
     {
       errorHandler(Atams::ERROR_NONE, "Request Packet Duplication Test Failure On Node ");
     }
@@ -209,7 +209,7 @@ void TestNode::runFunctionArgTests(void)
 
   /* Request Packet and Write List Overflow Test */
   uint16_t      expectedWriteListLength     {0U};
-  uint16_t      expectedRequestPacketLength {Atams::HEADER_SIZE_HEADER};
+  uint16_t      expectedRequestPacketLength {Atams::PACKET_HEADER_SIZE};
   const uint8_t setVarDatagramLength        {Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t)};
   
   for (uint16_t varID {BlockTest3::VAR_WRITE_UINT8_1}; varID <= BlockTest3::VAR_WRITE_UINT8_20; varID++)
@@ -238,8 +238,8 @@ void TestNode::runFunctionArgTests(void)
   Node::clearAllRequestPatterns();
 
   /* Response Buffer Length Overflow Test (Read Requests) */
-  uint16_t       expectedResponseLength     {Atams::HEADER_SIZE_HEADER};
-  uint16_t       expectedReadPacketLength   {Atams::HEADER_SIZE_HEADER};
+  uint16_t       expectedResponseLength     {Atams::PACKET_HEADER_SIZE};
+  uint16_t       expectedReadPacketLength   {Atams::PACKET_HEADER_SIZE};
   const uint16_t nodeMaxPacketSize          {Node::getNodeMaxPacketSize()};
   const uint8_t  readResponseDatagramLength {Atams::DATAGRAM_SIZE_HEADER + sizeof(uint32_t)};
 
@@ -476,7 +476,7 @@ void TestNode::updateErrorInjection(void)
     expectedBusError_     = Atams::ERROR_NONE;
     expectedAbortDetails_ = {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
 
-    if (Node::getRequestPacketLength() == Atams::HEADER_SIZE_HEADER)
+    if (Node::getRequestPacketLength() == Atams::PACKET_HEADER_SIZE)
     {
       for (uint16_t varID {BlockTest1::VAR_WRITE_UINT8}; varID <= BlockTest1::VAR_WRITE_FLOAT; varID++)
       {
@@ -523,8 +523,8 @@ void TestNode::updateErrorInjection(void)
 
       for (Atams::RequestPattern_t &pattern : prevRequestPatterns_) pattern = Atams::REQUEST_INACTIVE;
       for (Atams::Access_t         &access  : prevAccess_         ) access  = Atams::ACCESS_NONE;
-      expectedRequestPacketLength_ = Atams::HEADER_SIZE_HEADER;
-      expectedResponseLength_      = Atams::HEADER_SIZE_HEADER;
+      expectedRequestPacketLength_ = Atams::PACKET_HEADER_SIZE;
+      expectedResponseLength_      = Atams::PACKET_HEADER_SIZE;
       expectedWriteListLength_     = 0U;
     }
   }

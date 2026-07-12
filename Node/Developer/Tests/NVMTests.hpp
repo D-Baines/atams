@@ -1,12 +1,11 @@
 /**
   ******************************************************************************
-  * @file    Block$$$AUTOGEN$$$BLOCK_NAME_PASCAL$$$AUTOGEN$$$.hpp
+  * @file    NVMTests.hpp
   *
   * @author  D. Baines
   *
-  * @brief   Auto-generated file containing typedefs, constants, and function
-  *          declarations for an $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ Data Block with name: $$$AUTOGEN$$$BLOCK_NAME_PASCAL$$$AUTOGEN$$$.
-  *          The Data Block is part of an Atams Memory Map with name: $$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$.
+  * @brief   Manual test entry point for exercising the Node's NVM store/load
+  *          behaviour on real hardware.
   *
   * @version v1.0
   ******************************************************************************
@@ -35,26 +34,22 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$ { namespace Block$$$AUTOGEN$$$BLOCK_NAME_PASCAL$$$AUTOGEN$$$ {
+namespace Atams { namespace NVMTests {
 
 /*************************************************************************************/
-/* PUBLIC TYPEDEFS                                                                   */
+/* PUBLIC FUNCTION DECLARATIONS                                                      */
 /*************************************************************************************/
 
-enum VarID_t: uint16_t
-{
-$$$AUTOGEN$$$VAR_ID_LIST$$$AUTOGEN$$$
-};
+/**
+ * @brief Runs the NVM store/load test scenarios.
+ *
+ * @retval 0     All tests passed.
+ * @retval other Number of failed checks - set a breakpoint in checkCondition()'s
+ *               failure branch (NVMTests.cpp) to catch the exact failing check.
+ */
+uint16_t runTests(void);
 
-/*************************************************************************************/
-/* PUBLIC CONSTANTS                                                                  */
-/*************************************************************************************/
-
-constexpr uint16_t NUMBER_OF_VARS {$$$AUTOGEN$$$NUMBER_OF_VARS$$$AUTOGEN$$$};
-
-$$$AUTOGEN$$$DEFAULTS$$$AUTOGEN$$$
-
-} } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$::Block$$$AUTOGEN$$$BLOCK_NAME_PASCAL$$$AUTOGEN$$$ */
+} } /* End Namespace - Atams::NVMTests */
 
 /**
   * @}End of File

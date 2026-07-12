@@ -19,7 +19,7 @@
 
 # Introduction
 
-Atams is a C++ framework designed for use in embedded systems where a single central device (Hub) communicates with and manages multiple distributed devices (Nodes). It simplifies variable sharing, synchronisation, and non-volatile storage, making it ideal for robotics, automation, and control applications.
+Atams is a C++ framework designed for use in embedded systems where a single central device (Hub) communicates with and manages multiple distributed devices (Nodes). It simplifies variable sharing, synchronisation, and non-volatile storage, making it ideal for robotics, automation, and control applications. The main aim of Atams is to handle all of the work that gets repeated when creating new embedded devices, allowing users to focus almost entirely on their application specific functionality.
 
 <p align="center">
   <img height="500" src="https://atams.io/HubRunUpdateCycle.gif">
@@ -38,9 +38,10 @@ The Atams Hub and Node libraries support the following features:
 - Dynamic packet generation to fascilitate adaptive variable exchange.
 - Packet checksumming and framing to ensure safe variable transport.
 - Endianness agnostic variable transport to maximise platform compatibility.
-- Hub-triggered saving of selected variables to non-volatile memory on Nodes.
-- Hub-triggered restoration of factory defaults to non-volatile memory on Nodes.
-- Checksumming and version tracking of non-volatile memory storage.
+- Hub-triggered saving of selected variables to non-volatile storage on Nodes.
+- Hub-triggered restoration of factory defaults to non-volatile storage on Nodes.
+- Checksumming and version tracking of Node non-volatile storage.
+- Automatic migration of Node non-volatile storage across Memory Map changes — added, removed, renamed, and retyped variables are each handled individually, without losing unrelated stored data.
 - Coordination of Memory Map versioning between Node and Hub implementations to ensure safe variable sharing.
 - Node watchdog timers to trigger safe state entry should Hub communications fail.
 - Hub-triggered communications bitrate changes on Nodes.
@@ -50,7 +51,6 @@ The Atams Hub and Node libraries support the following features:
 
 ### Not Yet Supported:
 
-- Automatic migration of Node non-volatile storage between compatible Memory Map versions.
 - Maximum and minimum value limits for variable storage.
 - Large raw buffer transport.
 
@@ -109,7 +109,7 @@ Memory Maps are divided into variable groups, or "Data Blocks", to enable users 
     VAR_EXAMPLE_3 = 30U,
   };
   ```
-- **Variable Information:** Each Data Block file also contains an array of structs holding information related to each variable. The information includes the variables type, access permission, and non-volatile storage option. Atams is compatible with the following variable types from `<stdint.h>`, as well as floats:
+- **Variable Information:** Each Data Block file also contains an array of structs holding information related to each variable. The information includes the variable's type and access permission on both Hub and Node, plus a non-volatile storage option present only in the Node-side generated files — Hub never persists variables to its own storage, so it has no use for that information. Atams is compatible with the following variable types from `<stdint.h>`, as well as floats:
 
   ```cpp
   uint8_t
@@ -168,7 +168,7 @@ Only `Required` columns must be completed for successful generation. `Optional` 
 
 | Column Name     | Requirement  | Description                                                                                          |
 | :-------------: | :----------: | :--------------------------------------------------------------------------------------------------: |
-| Var ID          | Required     | Name of the device variable. Any format accepted — converted to `SCREAMING_SNAKE_CASE` with a `VAR_` prefix in the `VarID_t` enum. Used as an input argument to Atams functions; keep names concise where possible. |
+| Var Name        | Required     | Name of the device variable. Any format accepted — converted to `SCREAMING_SNAKE_CASE` with a `VAR_` prefix in the `VarID_t` enum. Used as an input argument to Atams functions; keep names concise where possible. Also hashed, together with its Data Block name, to drive [Automatic NVM Migration](#automatic-nvm-migration) — renaming a variable is treated as removing the old one and adding a new one, so its previously stored NVM value is not carried over. |
 | Data Type       | Required     | Select from the dropdown list. Atams will return errors if this variable is accessed with a mismatched type. Only the listed types are supported. |
 | External Access | Required     | `RO` (Read Only) — Hub can only read this variable. `RW` (Read/Write) — Hub can read and write this variable. |
 | Units           | Optional     | Documentation only.                                                                                  |
@@ -378,11 +378,12 @@ The majority of Node library functions return the following type:
 - **Overview:**
 
     The Comms Core is responsible for updating the Node's communications interface - allowing external Hub devices to access the Node's variable storage, and trigger Node processes. On single-core platforms, user application code can access the variable storage using the Comms Core setter and getter functions.
+    
 - **Initialisation:** 
 
     The Comms Core should be initialised with the Memory Map generated for the device-in-development. During initialisation, the Memory Map is validated, before the default values are loaded into the Atams variable storage. If compatible values exist in non-volatile memory (NVM), they are restored - replacing the default values where applicable. If all checks pass, and the init function returns `Atams::ERROR_NONE`, the Comms Core is ready for operation. 
 
-    The NVM restoration status can be checked by passing a second Atams::Error_t variable by reference to the init functions. This error is separated from the main error return, so that the Node can continue to operate if non-volatile storage cannot be restored. It is currently not possible to restore data from non-volatile memory if the version of the Node's Memory Map has changed since the values were stored.
+    The NVM restoration status can be checked by passing a second Atams::Error_t variable by reference to the init functions. This error is separated from the main error return, so that the Node can continue to operate if non-volatile storage cannot be restored. Each stored variable is matched against the current Memory Map by name, so ordinary Memory Map changes - adding, removing, renaming, or retyping variables - do not prevent full restoration. Unaffected variables are still restored from non-volatile memory, while a renamed or retyped variable simply starts again from its default value. Restoration only fails outright if the stored data itself was written by an incompatible version of the Atams library or if a Platform layer error occurs.
 
     There are two versions of the Comms Core init function found in `Atams/Node/CommsCore.hpp`:
 
@@ -507,6 +508,21 @@ The majority of Node library functions return the following type:
   <img height="500" src="https://atams.io/NodeCommsUpdate.gif">
   </p>
 
+### Automatic NVM Migration
+
+Non-volatile memory (NVM) storage survives ordinary Memory Map changes. Each stored variable is matched against the current Memory Map by name — specifically, a hash of its Data Block name and Var Name (see [Memory Map Tables](#memory-map-tables)) — rather than by its position in the Memory Map. This means adding, removing, reordering, renaming, or retyping variables does not require a factory reset of the rest of the Node's stored data.
+
+| Memory Map Change  | Behaviour on next boot                                                                                                                            |
+| :------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Variable unchanged   | Restored from non-volatile memory as normal.                                                                                                         |
+| Variable added       | Restored to its default value, the same as any variable seeing non-volatile memory for the first time.                                              |
+| Variable removed     | Its stored value is dropped and the space it used is reclaimed.                                                                                      |
+| Variable renamed     | Treated as one variable removed and a different variable added — its previous value is not carried over, and it restarts at its default value.      |
+| Variable retyped     | Restarts at its default value — a stored value can never be reinterpreted as a different type, even between types of the same size (e.g. `float` and `uint32_t`). |
+
+Migration only affects the specific variables that changed — unrelated variables are restored normally, no matter how many other variables were added, removed, renamed, or retyped in the same update. After a boot that migrates any data, the Node automatically rewrites its non-volatile memory in the current Memory Map's format, so reclaimed space does not accumulate indefinitely.
+
+Restoration only fails outright, resetting every variable to its default value, if the stored data itself is unreadable — for example, if it was written by an incompatible version of the Atams library. Matching is hash-based rather than absolute, so safety-critical stored values should still be validated by the application on startup, independent of NVM status.
 
 ### App Core (Dual-Core Only)
 
