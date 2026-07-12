@@ -64,28 +64,6 @@ constexpr uint16_t MAX_BUS_PACKET_SIZE {64U};
 constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};
 
 /**
- * @brief The size of non-volatile memory (NVM) reserved for Atams use.
- *
- * @details The size required depends on the number of vars selected for non-volatile
- *          storage in the Atams Memory Map. Once a Memory Map has been generated, set this to
- *          Atams::Map<YourMapName>::REQUIRED_NVM_SIZE + Platform::NVM_UNIT_SIZE - autogen
- *          computes the exact minimum for the Memory Map but REQUIRED_NVM_SIZE itself does
- *          not include the trailing NVM_UNIT_SIZE write-unit headroom below. There is no need 
- *          to recompute the formula below by hand or keep it in sync as vars are added/removed. 
- *      
- *          The formula (for reference only) is:
- *
- *          (noOfNVMVars * (sizeOfEachVar + entryHeaderSize)) + headerSize + footerSize + NVM_UNIT_SIZE
- *
- *          Where:
- *
- *          entryHeaderSize = Atams::NVM_VAR_ENTRY_HEADER_SIZE (per NVMStorage var)
- *          headerSize      = Atams::NVM_HEADER_SIZE
- *          footerSize      = Atams::NVM_FOOTER_SIZE
- */
-constexpr uint32_t NVM_STORAGE_SIZE {1024U};
-
-/** 
  * @brief   The size of each NVM write unit in bytes.
  *
  * @details This value defines the size of each write operation to non-volatile memory.
@@ -95,6 +73,25 @@ constexpr uint32_t NVM_STORAGE_SIZE {1024U};
  *          size Platform::NVM_UNIT_SIZE.
  */
 constexpr uint32_t NVM_UNIT_SIZE {32U};
+
+/**
+ * @brief The size of non-volatile memory (NVM) reserved for Atams use.
+ *
+ * @details Two ways to set this, depending on the platform:
+ *
+ *          - Exact size: Atams::Map<YourMapName>::REQUIRED_NVM_SIZE + Platform::NVM_UNIT_SIZE,
+ *            once a Memory Map has been generated. REQUIRED_NVM_SIZE is the exact minimum for
+ *            the Memory Map's NVM-stored variable. NVM_UNIT_SIZE must be added to allow for 
+ *            write-unit headroom.
+ *
+ *          - Platform maximum: the full NVM region available on the platform (e.g. a whole
+ *            flash erase sector, if that's the platform's allocation granularity). Does not
+ *            depend on a specific generated Memory Map, so it can be set before one exists. If
+ *            the Memory Map ever needs more space than is available, initSingleCore()/
+ *            initCommsCore() will report this safely through their nvmError output parameter
+ *            (Atams::ERROR_NVM_PLATFORM_SIZE).
+ */
+constexpr uint32_t NVM_STORAGE_SIZE {1024U};
 
 /*************************************************************************************/
 /* PUBLIC TYPEDEFS                                                                   */
