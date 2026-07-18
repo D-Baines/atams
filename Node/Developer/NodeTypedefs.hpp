@@ -89,18 +89,6 @@ struct NVMHeader_t
 static_assert(std::is_standard_layout_v<NVMHeader_t>);
 static_assert(std::is_trivially_copyable_v<NVMHeader_t>);
 
-/* Fixed on-NVM field sizes/offsets for NVMHeader_t, serialised individually - deliberately not
- * sizeof(NVMHeader_t), which is struct-padding-dependent and therefore platform/compiler
- * dependent. Two different reasons this matters here specifically:
- *  - the entry stream's start offset is derived from this size, so an incidental padding
- *    difference between the firmware that wrote NVM data and the firmware now reading it
- *    (e.g. a toolchain/pack-setting change that touches no field at all, so nobody would think
- *    to bump NVM_FORMAT_VERSION for it) would misplace every following read, the same cascading
- *    risk NVMVarEntryHeader_t is designed to avoid;
- *  - it removes an entire class of accidental incompatibility from NVM_FORMAT_VERSION's job,
- *    leaving it to guard only deliberate encoding changes (a field added, a width changed) -
- *    the risk inherent to any versioned format, not something packing alone can remove.
- * Never read/write NVMHeader_t via reinterpret_cast<uint8_t*>(&header)/sizeof(header). */
 enum NVMHeaderFieldSize_t: uint8_t
 {
   NVM_HEADER_FIELD_SIZE_IDENTIFIER     = sizeof(uint32_t),
@@ -148,13 +136,6 @@ enum NVMFooterIndex_t: uint8_t
 constexpr uint32_t NVM_FOOTER_SIZE {NVM_FOOTER_FIELD_SIZE_IDENTIFIER + NVM_FOOTER_FIELD_SIZE_CHECKSUM};
 static_assert(NVM_FOOTER_SIZE == 8U, "NVM_FOOTER_SIZE changed");
 
-/* Precedes each NVMStorage variable's value bytes in NVM - see Atams::VarInfo_t::nvmHash.
- * Stores the variable's Atams::VarType_t rather than its raw byte length - the value's length is
- * always Atams::TYPE_LENGTHS[type], so storing type instead is strictly more informative at the
- * same 1-byte cost, and lets a retype be detected exactly even when it doesn't change byte length
- * (e.g. float to uint32_t, or int8_t to uint8_t), rather than silently reinterpreting the stored
- * bytes under the new type.
- */
 struct NVMVarEntryHeader_t
 {
   uint32_t  nvmHash {0U};

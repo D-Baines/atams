@@ -64,7 +64,7 @@ enum NodeCommsState_t: uint8_t
   NODE_STATE_UNINITIALISED   = 0U,
   NODE_STATE_INITIALISED     = 1U,
   NODE_STATE_ACTIVE          = 2U,
-  NODE_STATE_PROCESS_PENDING = 3U,
+  NODE_STATE_PROCESS_PENDING = 3U, 
   NODE_STATE_RESTART_COMMS   = 4U
 };
 
@@ -578,13 +578,6 @@ static void signalCommsCoreInitComplete(void)
   Platform::releaseVarStorageLock();
 }
 
-/**
- * @brief   Encodes/decodes NVMHeader_t/NVMFooter_t to/from their fixed on-NVM layout.
- *
- * @details Built on Atams::uint32ToBuffer()/bufferToUint32() (Shared/Utilities/AtamsUtilities.hpp) -
- *          see the comment on NVMVarEntryHeader_t for why these types are never read/written via
- *          reinterpret_cast<uint8_t*>/sizeof().
- */
 static void encodeNVMHeader(uint8_t * const bytesPtr, const NVMHeader_t &header)
 {
   Atams::uint32ToBuffer(header.identifier, &bytesPtr[Atams::NVM_HEADER_INDEX_IDENTIFIER]);
@@ -677,13 +670,6 @@ static Atams::Error_t constructAndStoreFooter(const uint32_t nvmSpaceUsed)
   return (s_nvmUnitHandler.writeToNVM(nvmSpaceUsed, footerBuffer, Atams::NVM_FOOTER_SIZE));
 }
 
-/**
- * @brief   Encodes an NVMVarEntryHeader_t's fields into a fixed 5-byte little-endian layout.
- *
- * @details Deliberately does not use reinterpret_cast<uint8_t*>(&header)/sizeof(header) -
- *          see the comment on NVMVarEntryHeader_t for why this data must stay parseable
- *          across firmware rebuilds regardless of struct padding.
- */
 static void encodeNVMVarEntryHeader(uint8_t * const bytesPtr, const uint32_t nvmHash, const Atams::VarType_t type)
 {
   Atams::uint32ToBuffer(nvmHash, &bytesPtr[Atams::NVM_VAR_ENTRY_INDEX_NVM_HASH]);
@@ -733,12 +719,6 @@ static Atams::Error_t writeVarsToNVM(const uint32_t maxIndex)
   return (Atams::ERROR_NONE);
 }
 
-/**
- * @brief   Decodes an NVMVarEntryHeader_t's fields from their fixed 5-byte little-endian layout.
- *
- * @details Mirrors encodeNVMVarEntryHeader() - see the comment on NVMVarEntryHeader_t for why
- *          this must stay a fixed-width decode rather than reinterpret_cast<NVMVarEntryHeader_t*>.
- */
 static Atams::NVMVarEntryHeader_t decodeNVMVarEntryHeader(const uint8_t * const bytesPtr)
 {
   Atams::NVMVarEntryHeader_t entryHeader;
@@ -749,13 +729,6 @@ static Atams::NVMVarEntryHeader_t decodeNVMVarEntryHeader(const uint8_t * const 
   return (entryHeader);
 }
 
-/**
- * @brief   Finds the varID whose NodeVarInfo_t::nvmHash matches nvmHash.
- *
- * @details Linear scan - this runs once per stored entry at boot, and the autogen tool already
- *          guarantees nvmHash is unique per variable (Autogen/Modules/FileAutogen.py), so at
- *          most one match is possible.
- */
 static bool findVarIDByNvmHash(const uint32_t nvmHash, uint16_t &varID)
 {
   for (uint16_t candidateID {0U}; candidateID < s_memoryMapPtr->sharedMap.genInfo.noOfVars; candidateID++)
@@ -765,7 +738,8 @@ static bool findVarIDByNvmHash(const uint32_t nvmHash, uint16_t &varID)
     if ((varInfo.NVMStorage) && (varInfo.nvmHash == nvmHash))
     {
       varID = candidateID;
-      return (true);
+
+      return (true); /* Early Return */
     }
   }
 
@@ -784,26 +758,6 @@ static uint16_t countNVMStorageVars(void)
   return (count);
 }
 
-/**
- * @brief   Walks the hash-tagged var entry stream, migrating whatever it can into varStorage.
- *
- * @param   maxIndex          NVM offset immediately after the last var entry (i.e. where the
- *                              footer starts) - NOT nvmHeader.length, which also includes the
- *                              footer itself.
- * @param[out] migrationOccurred Set true if anything was left at default that the stream didn't
- *                              already exactly account for (dropped entry, retyped variable, or
- *                              a current variable never encountered in the stream) - i.e. NVM no
- *                              longer exactly matches what a fresh storeAll() would produce. Only
- *                              ever set true, never reset - callers should initialise it false.
- *
- * @details For each stored entry: a matching, same-type variable is loaded; a matching but
- *          different-type variable (retyped since this was stored) is left at whatever
- *          initAllDefaults() already set, since its old bytes cannot be safely reinterpreted
- *          under the new type; an entry matching no current variable (removed/renamed since this
- *          was stored) is simply skipped over using its stored type's length. A variable that is
- *          never encountered in the stream (newly added, or NVMStorage newly enabled) is likewise
- *          left at its default - initAllDefaults() already ran before this function is called.
- */
 static Atams::Error_t loadNVMVarsFromStream(const uint32_t maxIndex, bool &migrationOccurred)
 {
   uint32_t nvmIndex   {Atams::NVM_HEADER_SIZE};
@@ -879,11 +833,6 @@ static Atams::Error_t loadNVMVarsFromStream(const uint32_t maxIndex, bool &migra
   }
 
   return (Atams::ERROR_NONE);
-}
-
-static Atams::Error_t saveVarsToNVM(const uint32_t availableNVMSpace)
-{
-  return (writeVarsToNVM(availableNVMSpace));
 }
 
 static void initCommsBuffers(void)
@@ -988,12 +937,6 @@ static Atams::Error_t initNVM(void)
 
   if (!error) error = loadNVMVarsFromStream(nvmHeader.length - Atams::NVM_FOOTER_SIZE, migrationOccurred);
 
-  /* Best-effort compaction: rewrite NVM in the current map's entry form so dropped/retyped entries
-   * are reclaimed and newly-added variables get an entry, but only once, right here, rather than
-   * on every boot. A failed rewrite does not affect the value returned below - the variables
-   * above were already loaded successfully into RAM; NVM simply keeps its previous (still valid,
-   * still migratable) contents and the same rewrite will be attempted again next time this runs
-   * with something to migrate. */
   if ((!error) && (migrationOccurred)) Atams::storeAll();
 
   s_uniBlockManager.notifyStorageProcessComplete(error);
@@ -1479,7 +1422,7 @@ Atams::Error_t storeAll(void)
 
   if (!error) error = storeNVMHeader(nvmHeader);
 
-  if (!error) error = saveVarsToNVM(nvmFooterIndex);
+  if (!error) error = writeVarsToNVM(nvmFooterIndex);
 
   if (!error) error = constructAndStoreFooter(nvmFooterIndex);
 
