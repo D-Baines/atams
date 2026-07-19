@@ -31,7 +31,7 @@
 #include <stdint.h>
 
 #include "../../Hub/Node.hpp"
-#include "MapTest/MapTest.hpp"
+#include "HubTestMap/MapTest.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
