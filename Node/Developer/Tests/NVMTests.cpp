@@ -48,7 +48,6 @@
 #include "NVMTests.hpp"
 
 #include "../../CommsCore/CommsCore.hpp"
-#include "../../Maps/MapTest/MapTest.hpp"
 #include "../../../Shared/Maps/BlockUniversal.hpp"
 #include "MapNvmTest1/MapNvmTest1.hpp"
 #include "MapNvmTest2/MapNvmTest2.hpp"
@@ -216,7 +215,7 @@ uint16_t runTests(void)
   /* Inspect in a debugger if the initial load result is of interest - not asserted on,
      since prior test runs on the same hardware can leave NVM in several valid states. */
   Atams::Error_t initialNvmError {Atams::ERROR_NONE};
-  Atams::Error_t error           {Atams::initSingleCore(Atams::MapTest::memoryMap, initialNvmError)};
+  Atams::Error_t error           {Atams::initSingleCore(Atams::MapNvmTest1::memoryMap, initialNvmError)};
 
   checkCondition("Initial init succeeds", error == Atams::ERROR_NONE);
 
@@ -227,7 +226,7 @@ uint16_t runTests(void)
   /* Simulate a reboot - re-init reloads NVM contents actually persisted to flash. */
   Atams::Error_t postStoreNvmError {Atams::ERROR_NONE};
 
-  error = Atams::initSingleCore(Atams::MapTest::memoryMap, postStoreNvmError);
+  error = Atams::initSingleCore(Atams::MapNvmTest1::memoryMap, postStoreNvmError);
 
   checkCondition("Re-init after storeAll succeeds",    error             == Atams::ERROR_NONE);
   checkCondition("Re-init after storeAll NVM load ok", postStoreNvmError == Atams::ERROR_NONE);
@@ -244,7 +243,7 @@ uint16_t runTests(void)
   /* Simulate a second reboot - confirms restoreAll() actually persisted the defaults. */
   Atams::Error_t postRestoreNvmError {Atams::ERROR_NONE};
 
-  error = Atams::initSingleCore(Atams::MapTest::memoryMap, postRestoreNvmError);
+  error = Atams::initSingleCore(Atams::MapNvmTest1::memoryMap, postRestoreNvmError);
 
   checkCondition("Re-init after restoreAll succeeds",    error               == Atams::ERROR_NONE);
   checkCondition("Re-init after restoreAll NVM load ok", postRestoreNvmError == Atams::ERROR_NONE);
