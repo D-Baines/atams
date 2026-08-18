@@ -343,10 +343,9 @@ The Node library is compatible with single and dual-core micro-controllers. The 
   #include "Atams/Node/CommsCore/CommsCore.hpp"
   ```
 
-    <p align="center">
-
+<p align="center">
   <img height="500" src="https://atams.io/CommsCoreInclude.gif">
-  </p>
+</p>
 - **Dual-Core Includes:** 
 
     If a dual-core setup is used, user application-core files should include the following header:
@@ -434,10 +433,10 @@ The majority of Node library functions return the following type:
   }
   ```
 
-    <p align="center">
-
+<p align="center">
   <img height="500" src="https://atams.io/NodeInit.gif">
-  </p>
+</p>
+
 - **Setting and Getting Variables:** 
 
     The Node library `Atams::getVar` and `Atams::setVar` functions can be used to read from, and write to, the Atams variable storage from the user application code. The functions will return an error if the Memory Map has not be initialised successfully, if the variable ID is outside of the Memory Map range, or if the template argument variable type does not match the type specified for the variable in the Memory Map. A return of `Atams::ERROR_NONE` indicates a successful transfer.
@@ -460,10 +459,9 @@ The majority of Node library functions return the following type:
   }
   ```
 
-    <p align="center">
-
+<p align="center">
   <img height="500" src="https://atams.io/NodeGetVar.gif">
-  </p>
+</p>
 
     **Setter example:**
 
@@ -483,10 +481,10 @@ The majority of Node library functions return the following type:
   }
   ```
 
-    <p align="center">
-
+<p align="center">
   <img height="500" src="https://atams.io/NodeSetVar.gif">
-  </p>
+</p>
+
 - **Communications Update:** 
 
     The Atams communications update functions look for, and process, all incoming Bus messages. A single Request Packet from an Atams Hub can include read and write requests for multiple Atams variables. When a Request Packet is received, it is stored for processing at the appropriate time. During processing, the Comms Core validates the request packet, writes received write data to the Atams variable storage, transfers read data from the variable storage into a Response packet, and transmits the Response packet back to the Hub at the appropriate time.
@@ -503,10 +501,9 @@ The majority of Node library functions return the following type:
   void updateCommsBlocking(void);
   ```
 
-    <p align="center">
-
+<p align="center">
   <img height="500" src="https://atams.io/NodeCommsUpdate.gif">
-  </p>
+</p>
 
 ### Automatic NVM Migration
 
@@ -621,7 +618,7 @@ The blocking variant (`Atams::updateCommsBlocking()`) suspends the calling threa
 # Hub Library
 
 <p align="center">
-    <img height="500" src="https://atams.io/BusConstruction.gif">
+  <img height="500" src="https://atams.io/BusConstruction.gif">
 </p>
 
 The Hub library includes two key classes: a Node class, and a Bus class. 
