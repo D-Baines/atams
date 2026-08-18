@@ -218,7 +218,7 @@ CircularBufferBase<LockPolicy>::getPacket(uint8_t * const targetBuffer,
 
   Error_t eolSearchResult {eolSearch()};
 
-  if (eolSearchResult != ERROR_NONE)
+  if (eolSearchResult != CircularBufferBase::ERROR_NONE)
   {
     lockPolicy_.releaseLock();
     return (eolSearchResult); /* Early Return */
@@ -361,12 +361,12 @@ inline typename CircularBufferBase<LockPolicy>::Error_t CircularBufferBase<LockP
 
     if (eolFound)
     {
-      return (ERROR_NONE);
+      return (CircularBufferBase::ERROR_NONE);
     }
   }
 
-  if (byteCount_ >= STATIC_BUFFER_SIZE) return (ERROR_NO_EOL_BUFFER_FULL);
-  else                                  return (ERROR_NO_EOL_FOUND);
+  if (byteCount_ >= STATIC_BUFFER_SIZE) return (CircularBufferBase::ERROR_NO_EOL_BUFFER_FULL);
+  else                                  return (CircularBufferBase::ERROR_NO_EOL_FOUND);
 }
 
 } /* End Namespace - Atams */

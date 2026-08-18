@@ -135,7 +135,7 @@ COBS::Result_t decode(const uint8_t * const srcBufferPtr,
                             uint8_t * const destBufferPtr,
                       const uint16_t        destBufferLength)
 {
-  COBS::Result_t result = {COBS::ERROR_NONE, 0U};
+  COBS::Result_t result {COBS::ERROR_NONE, 0U};
 
   if ((srcBufferPtr == nullptr) || (destBufferPtr == nullptr))
   {

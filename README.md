@@ -19,7 +19,7 @@
 
 # Introduction
 
-Atams is a C++ framework designed for use in embedded systems where a single central device (Hub) communicates with and manages multiple distributed devices (Nodes). It simplifies variable sharing, synchronisation, and non-volatile storage, making it ideal for robotics, automation, and control applications. The main aim of Atams is to handle all of the work that gets repeated when creating new embedded devices, allowing users to focus almost entirely on their application specific functionality.
+Atams is a C++ framework designed for use in embedded systems where a single central device (Hub) communicates with and manages multiple distributed devices (Nodes). It simplifies variable sharing, synchronisation, and non-volatile storage, making it ideal for robotics, automation, and control applications. The aim of Atams is to handle all of the work that gets repeated when creating new embedded devices, allowing users to focus almost entirely on their application specific functionality.
 
 <p align="center">
   <img height="500" src="https://atams.io/HubRunUpdateCycle.gif">
@@ -399,9 +399,9 @@ The majority of Node library functions return the following type:
   Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmError)
   ```
 
-  > [!NOTE]  
-  >
-  > The dual-core init function handles synchronisation with the App Core. The function will hang if the App Core init is never run or does not complete successfully.
+> [!NOTE]  
+>
+> The dual-core init function handles synchronisation with the App Core. The function will hang if the App Core init is never run or does not complete successfully.
 
     Single-core initialisation example:
 
@@ -584,9 +584,9 @@ The Node library is written to maximise compatibility with different user applic
 
   `enterConfigurationState()` should return `true` if the application is in a safe state to accept these operations, or `false` to defer them until the next Hub attempt. The application must remain in the safe state until `exitConfigurationState()` is called, which signals that the library will not trigger any further blocking operations or resets until config state is entered again.
 
-  > [!WARNING]
-  >
-  > Do not return `true` from `enterConfigurationState()` if blocking functions cannot be safely called, or if a Node reset at that moment would cause unacceptable behaviour in the application.
+> [!WARNING]
+>
+> Do not return `true` from `enterConfigurationState()` if blocking functions cannot be safely called, or if a Node reset at that moment would cause unacceptable behaviour in the application.
 
 ### Watchdog Fault Handling
 
@@ -1404,9 +1404,9 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
   }
   ```
 
-  > [!WARNING]
-  >
-  > An aborted response during normal operation indicates a serious configuration error — most likely a Hub/Node Memory Map mismatch. Verify that both sides were generated from the same Memory Map source and that the Bus Initialisation Process completed successfully. Do not suppress or ignore this error.
+> [!WARNING]
+>
+> An aborted response during normal operation indicates a serious configuration error — most likely a Hub/Node Memory Map mismatch. Verify that both sides were generated from the same Memory Map source and that the Bus Initialisation Process completed successfully. Do not suppress or ignore this error.
 
 ### Asynchronous Bus Update Cycle
 
@@ -1524,6 +1524,7 @@ Include the following header to use `NodeActions`:
 - **How it interleaves with the Bus Update Cycle:**
 
     `NodeActions` processes are polled incrementally — call a `NodeActions` update function (e.g. `updateStoreAll`) each Bus Update Cycle until it returns `Atams::PROCESS_COMPLETE` or `Atams::PROCESS_ERROR`. At least one Bus Update Cycle must complete between calls, but multiple cycles can safely pass since response flags persist until cleared, so `NodeActions` can equally be driven from a slower loop or a separate context. Only one `NodeActions` process can be active at a time per `NodeActions` instance; to run processes on two Nodes concurrently, two separate `NodeActions` instances are required.
+    
 - **NVM Storage Operations:**
 
     All three storage operations share the same begin function. The update function called determines the operation performed.
@@ -1540,8 +1541,8 @@ Include the following header to use `NodeActions`:
 
   nodeActions.beginStorageProcess(node1);
 
-  do { state = nodeActions.updateStoreAll(error); }
-  while (state == Atams::PROCESS_IN_PROGRESS);
+  // Called once per Bus Update Cycle, until state is no longer PROCESS_IN_PROGRESS
+  state = nodeActions.updateStoreAll(error);
   ```
 - **Node Reset:**
 
@@ -1550,8 +1551,8 @@ Include the following header to use `NodeActions`:
   ```cpp
   nodeActions.beginResetNode(node1);
 
-  do { state = nodeActions.updateResetNode(error); }
-  while (state == Atams::PROCESS_IN_PROGRESS);
+  // Called once per Bus Update Cycle, until state is no longer PROCESS_IN_PROGRESS
+  state = nodeActions.updateResetNode(error);
   ```
 - **Clear Watchdog Fault:**
 
@@ -1560,8 +1561,8 @@ Include the following header to use `NodeActions`:
   ```cpp
   nodeActions.beginClearWatchdogFault(node1);
 
-  do { state = nodeActions.updateClearWatchdogFault(error); }
-  while (state == Atams::PROCESS_IN_PROGRESS);
+  // Called once per Bus Update Cycle, until state is no longer PROCESS_IN_PROGRESS
+  state = nodeActions.updateClearWatchdogFault(error);
   ```
 - **Individual Configuration Changes:**
 
@@ -1573,9 +1574,9 @@ Include the following header to use `NodeActions`:
   | Change Bitrate | `beginSetBitrate(node, bitrateOption)` | `updateSetBitrate(error)` |
   | Change Watchdog Period | `beginSetWatchdogPeriod(node, periodMs)` | `updateSetWatchdogPeriod(error)` |
 
-  > [!NOTE]
-  >
-  > Configuration changes are written to non-volatile memory on the Node and persist between power cycles. If the Node ID is changed, the Node class instance must be updated to match using `Node::setNodeID`, and the Bus Initialisation Process should be re-run.
+> [!NOTE]
+>
+> Configuration changes are written to non-volatile memory on the Node and persist between power cycles. If the Node ID is changed, the Node class instance must be updated to match using `Node::setNodeID`, and the Bus Initialisation Process should be re-run.
 
 ### Platform Setup
 
