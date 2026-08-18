@@ -211,26 +211,26 @@ Once the Memory Map C++ files have been generated, they are ready to be used in 
 
 - **Full Map Access:** If a user file needs access to all variables from an Atams Memory Map, it should include the Map file from the associated Map folder found in either `Atams/Node/Maps` for Node projects, or `Atams/Hub/Maps` for Hub projects. 
 
-    Hub example:
+    **Hub example:**
 
   ```cpp
   #include "Atams/Hub/Maps/MapExample/MapExample.hpp"
   ```
 
-    Node example:
+    **Node example:**
 
   ```cpp
   #include "Atams/Node/Maps/MapExample/MapExample.hpp"
   ```
 - **Limited Data Block Access:** If a user file only requires access to a specific Data Block, it should only include the associated Block file found in the associated Map folder.
 
-    Hub example:
+    **Hub example:**
 
   ```cpp
   #include "Atams/Hub/Maps/MapExample/BlockExample1.hpp"
   ```
 
-    Node example:
+    **Node example:**
 
   ```cpp
   #include "Atams/Node/Maps/MapExample/BlockExample1.hpp"
@@ -346,6 +346,7 @@ The Node library is compatible with single and dual-core micro-controllers. The 
 <p align="center">
   <img height="500" src="https://atams.io/CommsCoreInclude.gif">
 </p>
+
 - **Dual-Core Includes:** 
 
     If a dual-core setup is used, user application-core files should include the following header:
@@ -382,7 +383,7 @@ The majority of Node library functions return the following type:
 
     The Comms Core should be initialised with the Memory Map generated for the device-in-development. During initialisation, the Memory Map is validated, before the default values are loaded into the Atams variable storage. If compatible values exist in non-volatile memory (NVM), they are restored - replacing the default values where applicable. If all checks pass, and the init function returns `Atams::ERROR_NONE`, the Comms Core is ready for operation. 
 
-    The NVM restoration status can be checked by passing a second Atams::Error_t variable by reference to the init functions. This error is separated from the main error return, so that the Node can continue to operate if non-volatile storage cannot be restored. Each stored variable is matched against the current Memory Map by name, so ordinary Memory Map changes - adding, removing, renaming, or retyping variables - do not prevent full restoration. Unaffected variables are still restored from non-volatile memory, while a renamed or retyped variable simply starts again from its default value. Restoration only fails outright if the stored data itself was written by an incompatible version of the Atams library or if a Platform layer error occurs.
+    The NVM restoration status can be checked by passing a second Atams::Error_t variable by reference to the init functions. This error is separated from the main error return, so that the Node can continue to operate if non-volatile storage cannot be restored. Each stored variable is matched against the current Memory Map by name, so ordinary Memory Map changes - adding, removing, renaming, or retyping variables - do not prevent full restoration. Unaffected variables are still restored from non-volatile memory, while a renamed or retyped variable simply starts again from its default value. Restoration only fails outright if the stoƒred data itself was written by an incompatible version of the Atams library or if a Platform layer error occurs.
 
     There are two versions of the Comms Core init function found in `Atams/Node/CommsCore.hpp`:
 
@@ -402,7 +403,7 @@ The majority of Node library functions return the following type:
 >
 > The dual-core init function handles synchronisation with the App Core. The function will hang if the App Core init is never run or does not complete successfully.
 
-    Single-core initialisation example:
+**Single-core initialisation example:**
 
   ```cpp
 
@@ -459,9 +460,9 @@ The majority of Node library functions return the following type:
   }
   ```
 
-<p align="center">
-  <img height="500" src="https://atams.io/NodeGetVar.gif">
-</p>
+    <p align="center">
+    <img height="500" src="https://atams.io/NodeGetVar.gif">
+    </p>
 
     **Setter example:**
 
@@ -1226,7 +1227,7 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
 
   The begin function also clears any previously asserted Bus errors stored in the Node instances from previous Update Cycles.
 
-  Example:
+  **Example:**
 
   ```cpp
   #include "Atams/Hub/Bus.hpp"
@@ -1449,7 +1450,7 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
 
   The begin function also clears any previously asserted Bus errors stored in the Node instance from previous Update Cycles.
 
-  Example:
+  **Example:**
 
   ```cpp
   #include "Atams/Hub/Node.hpp"
@@ -1475,7 +1476,7 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
 
   If the Single Node Update Cycle returns Atams::PROCESS_COMPLETE, all the read values received from the selected Node device will be written to the Node class instances' variable storage, and the data ready and write acknowledgement flags will be set appropriately.
 
-  Example:
+  **Example:**
 
   ```cpp
   #include "Atams/Hub/Node.hpp"
