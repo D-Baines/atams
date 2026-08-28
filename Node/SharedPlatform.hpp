@@ -64,7 +64,7 @@ namespace Atams { namespace Platform {
 *
 *   @note    ATAMS PLATFORM REQUIREMENT - DUAL-CORE
 */
-#define ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE __attribute__((section(".atamsSharedRAM")))
+#define ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 
 /**
 *   @brief Replace ATAMS_COMMS_CORE in the #ifdef below with the preprocessor symbol your
@@ -76,8 +76,8 @@ namespace Atams { namespace Platform {
 *
 *   @note  ATAMS PLATFORM REQUIREMENT - DUAL-CORE
 */
-#ifdef CORE_CM4 //ATAMS_COMMS_CORE
-#define COMMS_CORE_DETECT 1
+#ifdef ATAMS_COMMS_CORE
+#define COMMS_CORE_DETECT true
 #endif
 
 /*************************************************************************************/
@@ -88,7 +88,7 @@ namespace Atams { namespace Platform {
 *   @brief The number of vars in the Atams Memory Map that will be used to initialise the Node.
 *          This value must be less than or equal to @ref Atams::MAX_NUMBER_OF_VARS.
 */
-constexpr uint16_t NODE_NUMBER_OF_VARS {100U};
+constexpr uint16_t NODE_NUMBER_OF_VARS {Atams::MAX_NUMBER_OF_VARS};
 
 
 } } /* End Namespace - Atams::Platform */

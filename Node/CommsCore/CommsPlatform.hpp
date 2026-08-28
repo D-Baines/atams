@@ -52,10 +52,10 @@ namespace Atams { namespace Platform {
 /**
  * @brief The maximum packet size across all of the Node's communications peripherals.
  *
- * @details Used to set the size of static request and response buffers.
+ * @details Used to set the size of the request and response buffers.
  *
  */
-constexpr uint16_t MAX_BUS_PACKET_SIZE {64U};
+constexpr uint16_t MAX_BUS_PACKET_SIZE {Atams::MINIMUM_MAXIMUM_BUS_PACKET_SIZE};
 
 /**
  * @brief The circular buffer size used for receiving Atams packets.
@@ -171,7 +171,6 @@ Atams::Error_t resetNode(void);
 
 
 } } /* End Namespace - Atams::Platform */
-
 
 /**
   * @}End of File

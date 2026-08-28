@@ -90,9 +90,6 @@ bool getWatchdogFault(void);
 
 } /* End Namespace - Atams */
 
-
 /**
   * @}End of File
   */
-
-

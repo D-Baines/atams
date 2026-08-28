@@ -30,12 +30,12 @@
 
 #include "AppPlatform.hpp"
 
+#include <stdint.h>
+
 /*************************************************************************************/
 /* USER INCLUDES                                                                     */
 /*************************************************************************************/
 
-#include "main.h"
-#include "stm32h7xx_hal.h"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -56,7 +56,7 @@ namespace Atams { namespace Platform {
  */
 uint32_t getMillis(void)
 {
-  return (HAL_GetTick());
+
 }
 
 /**
@@ -77,10 +77,7 @@ uint32_t getMillis(void)
  */
 void acquireVarStorageLock(void)
 {
-  while (HAL_HSEM_FastTake(0U) != HAL_OK)
-  {
-    /* Wait */
-  };
+
 }
 
 /**
@@ -96,11 +93,11 @@ void acquireVarStorageLock(void)
  */
 void releaseVarStorageLock(void)
 {
-  HAL_HSEM_Release(0U, 0);
+
 }
 
-} } /* End Namespace - Atams::Platform */
 
+} } /* End Namespace - Atams::Platform */
 
 /**
   * @}End of File

@@ -35,14 +35,12 @@
 
 #include <stdint.h>
 
+#include "../../Shared/AtamsTypedefs.hpp"
+
 /*************************************************************************************/
 /* USER INCLUDES                                                                     */
 /*************************************************************************************/
 
-#include <chrono>
-#include <condition_variable>
-#include <mutex>
-#include "asio.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -55,13 +53,13 @@ namespace Atams { namespace Platform {
 /*************************************************************************************/
 
 /** @brief The maximum number of Nodes that can be added to any of the application's Atams::Bus objects */
-constexpr uint16_t NUMBER_OF_NODES_PER_BUS {3U};
+constexpr uint16_t NUMBER_OF_NODES_PER_BUS {Atams::MAX_NUMBER_OF_NODES_PER_BUS};
 
 /** @brief The maximum number of Atams vars used by any of the application's Atams::Node objects */
-constexpr uint16_t NODE_NUMBER_OF_VARS {100U};
+constexpr uint16_t NODE_NUMBER_OF_VARS {Atams::MAX_NUMBER_OF_VARS};
 
 /** @brief The maximum packet size compatible with the applications communications peripheral */
-constexpr uint16_t MAX_BUS_PACKET_SIZE {64U};
+constexpr uint16_t MAX_BUS_PACKET_SIZE {Atams::MINIMUM_MAXIMUM_BUS_PACKET_SIZE};
 
 /**
 *  @brief The circular buffer size used for receiving Atams packets.
@@ -120,8 +118,7 @@ class BusPeripheral
    */
   struct UserData_t
   {
-    asio::io_context  &ioContext;
-    asio::serial_port &serialPort;
+
   };
 
   /*-- Required Public Function Declarations ----------------------------------------*/
@@ -143,7 +140,6 @@ class BusPeripheral
 
   /*-- User Private Variables -------------------------------------------------------*/
 
-  uint8_t rxBuffer_[MAX_BUS_PACKET_SIZE];
 
   /*-- Required Private Function Declarations ---------------------------------------*/
 
@@ -177,9 +173,7 @@ class BusPeripheral
 
   /*-- User Private Function Declarations -------------------------------------------*/
 
-  void rxHandler(asio::error_code ec, size_t xfr);
 
-  void txHandler(asio::error_code ec, size_t xfr);
 };
 
 /** 
@@ -206,7 +200,7 @@ class MemoryLock
 
   /*-- User Private Variables -------------------------------------------------------*/
 
-  std::mutex _memoryLock;
+
 };
 
 /**
@@ -233,7 +227,7 @@ class CommsLock
 
   /*-- User Private Variables -------------------------------------------------------*/
 
-  std::mutex _commsLock;
+
 };
 
 /**
@@ -263,9 +257,7 @@ class BinarySemaphore
 
   /*-- User Private Variables -------------------------------------------------------*/
 
-  std::mutex              mutex_;
-  std::condition_variable cv_;
-  bool                    released_ {false};
+
 };
 
 /*************************************************************************************/
@@ -281,8 +273,9 @@ class BinarySemaphore
  */
 inline uint32_t getMillis(void)
 {
-  return (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
+
 }
+
 
 } } /* End Namespace - Atams::Platform */
 

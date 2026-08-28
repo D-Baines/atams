@@ -35,9 +35,6 @@
 /* USER INCLUDES                                                                     */
 /*************************************************************************************/
 
-#include "main.h"
-#include "string.h"
-#include "PeripheralLayer/SerialPort.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -59,7 +56,6 @@ namespace Atams { namespace Platform {
 /* PRIVATE VARIABLES                                                                 */
 /*************************************************************************************/
 
-static SerialPort s_serialPort(SerialPort::PORT_ID_MESH);
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -79,7 +75,7 @@ static SerialPort s_serialPort(SerialPort::PORT_ID_MESH);
  */
 uint32_t getMillis(void)
 {
-  return (HAL_GetTick());
+
 }
 
 /**
@@ -100,10 +96,7 @@ uint32_t getMillis(void)
  */
 void acquireVarStorageLock(void)
 {
-  while (HAL_HSEM_FastTake(0U) != HAL_OK)
-  {
-    /* Wait */
-  };
+
 }
 
 /**
@@ -119,7 +112,7 @@ void acquireVarStorageLock(void)
  */
 void releaseVarStorageLock(void)
 {
-  HAL_HSEM_Release(0U, 0);
+
 }
 
 /**
@@ -138,13 +131,7 @@ void releaseVarStorageLock(void)
  */
 bool beginReceive(CommsReceiveCallback_t receiveCallback)
 {
-  s_serialPort.setReceiveCallback(receiveCallback);
 
-
-  HAL_GPIO_WritePin(RS485_RE_GPIO_Port, RS485_RE_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_RESET);
-
-  return (s_serialPort.beginReceive() == SerialPort::ERROR_NONE);
 }
 
 /**
@@ -156,8 +143,7 @@ bool beginReceive(CommsReceiveCallback_t receiveCallback)
  */
 void stopReceive(void)
 {
-  s_serialPort.stopReceive();
-  HAL_GPIO_WritePin(RS485_RE_GPIO_Port, RS485_RE_Pin, GPIO_PIN_SET);
+
 }
 
 /**
@@ -172,13 +158,7 @@ void stopReceive(void)
  */
 void update(void)
 {
-  if (s_serialPort.getError() != SerialPort::ERROR_NONE)
-  {
-    while (s_serialPort.beginReceive() != SerialPort::ERROR_NONE)
-    {
-      s_serialPort.stopReceive();
-    }
-  }
+
 }
 
 /**
@@ -194,9 +174,7 @@ void update(void)
  */
 bool transmitReady(const CommsPeripheralID_t peripheralID)
 {
-  static_cast<void>(peripheralID);
 
-  return (s_serialPort.transmitReady());
 }
 
 /**
@@ -219,16 +197,7 @@ bool transmitReady(const CommsPeripheralID_t peripheralID)
  */
 bool transmitBuffer(const CommsPeripheralID_t peripheralID, uint8_t * buffer, const uint16_t length)
 {
-  static_cast<void>(peripheralID);
 
-  HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_SET);               // @suppress("C-Style cast instead of C++ cast")
-  HAL_GPIO_WritePin(LED_RS485_GREEN_GPIO_Port, LED_RS485_GREEN_Pin, GPIO_PIN_SET); // @suppress("C-Style cast instead of C++ cast")
-
-  SerialPort::Error_t transmitResult = s_serialPort.transmitBuffer(buffer, length);
-
-  if (transmitResult != SerialPort::ERROR_NONE) return (false);
-
-  return (true);
 }
 
 /**
@@ -249,9 +218,7 @@ bool transmitBuffer(const CommsPeripheralID_t peripheralID, uint8_t * buffer, co
  */
 void acquireCommsBufferLock(const CommsPeripheralID_t peripheralToLock)
 {
-  static_cast<void>(peripheralToLock);
-  HAL_NVIC_DisableIRQ(USART2_IRQn);
-  HAL_NVIC_DisableIRQ(DMA1_Stream0_IRQn);
+
 }
 
 /**
@@ -270,9 +237,7 @@ void acquireCommsBufferLock(const CommsPeripheralID_t peripheralToLock)
  */
 void releaseCommsBufferLock(const CommsPeripheralID_t peripheralToUnlock)
 {
-  static_cast<void>(peripheralToUnlock);
-  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
-  HAL_NVIC_EnableIRQ(USART2_IRQn);
+
 }
 
 /**
@@ -291,7 +256,7 @@ void releaseCommsBufferLock(const CommsPeripheralID_t peripheralToUnlock)
  */
 void acquireWaitOnReceiveSempahore(const uint32_t timeoutMilliseconds)
 {
-  static_cast<void>(timeoutMilliseconds);
+
 }
 
 /**
@@ -324,29 +289,7 @@ void releaseWaitOnReceiveSemaphore(void)
  */
 bool eraseNVM(void)
 {
-  FLASH_EraseInitTypeDef eraseInitStruct;
-  uint32_t               sectorError {0U};
 
-  /* Fill EraseInit structure*/
-  eraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
-  eraseInitStruct.VoltageRange  = FLASH_VOLTAGE_RANGE_3;
-  eraseInitStruct.Banks         = FLASH_BANK_2;
-  eraseInitStruct.Sector        = FLASH_SECTOR_7;
-  eraseInitStruct.NbSectors     = 1U;
-
-  __HAL_FLASH_CLEAR_FLAG_BANK2(FLASH_FLAG_ALL_ERRORS_BANK2);
-
-  if (HAL_FLASH_Unlock() != HAL_OK) return (false);
-
-  if (HAL_FLASHEx_Erase(&eraseInitStruct, &sectorError) != HAL_OK)
-  {
-    HAL_FLASH_Lock();
-    return (false);
-  }
-
-  if (HAL_FLASH_Lock() != HAL_OK) return (false);
-
-  return (true);
 }
 
 /**
@@ -364,11 +307,7 @@ bool eraseNVM(void)
  */
 bool readFromNVM(const uint32_t readIndex, uint8_t * outputPtr, const uint32_t readLength)
 {
-  if (outputPtr == nullptr) return (false);
 
-  memcpy(outputPtr, reinterpret_cast<uint8_t*>(0x081E0000 + readIndex), readLength);
-
-  return (HAL_FLASH_GetError() == HAL_OK);
 }
 
 /**
@@ -392,17 +331,7 @@ bool readFromNVM(const uint32_t readIndex, uint8_t * outputPtr, const uint32_t r
  */
 bool writeToNVM(const uint32_t writeIndex, const uint8_t (&nvmUnit)[Platform::NVM_UNIT_SIZE])
 {
-  if (HAL_FLASH_Unlock() != HAL_OK) return (false);
 
-  if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_FLASHWORD, (0x081E0000 + writeIndex), reinterpret_cast<uint32_t>(nvmUnit)) != HAL_OK)
-  {
-    HAL_FLASH_Lock();
-    return (false);
-  }
-
-  if (HAL_FLASH_Lock() != HAL_OK) return (false);
-
-  return (true);
 }
 
 /**
@@ -427,7 +356,7 @@ bool writeToNVM(const uint32_t writeIndex, const uint8_t (&nvmUnit)[Platform::NV
  */
 bool enterConfigurationState(void)
 {
-  return (true);
+
 }
 
 /**
@@ -459,7 +388,7 @@ void exitConfigurationState(void)
  */
 void setBitrate(Atams::BitrateOption_t bitrateOption)
 {
-  static_cast<void>(bitrateOption);
+
 }
 
 /**
@@ -474,13 +403,11 @@ void setBitrate(Atams::BitrateOption_t bitrateOption)
  */
 Atams::Error_t resetNode(void)
 {
-  HAL_NVIC_SystemReset();
 
-  return (Atams::ERROR_PLATFORM);
 }
 
-} } /* End Namespace - Atams::Platform */
 
+} } /* End Namespace - Atams::Platform */
 
 /**
   * @}End of File

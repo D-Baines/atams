@@ -54,7 +54,6 @@ void releaseVarStorageLock(void);
 
 } } /* End Namespace - Atams::Platform */
 
-
 /**
   * @}End of File
   */

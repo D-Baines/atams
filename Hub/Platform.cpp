@@ -37,14 +37,6 @@
 /*************************************************************************************/
 
 #include "Platform.hpp"
-#include <cstdio>
-
-static uint32_t txCBCount_ {0U};
-static uint32_t rxCBCount_ {0U};
-
-/* Diagnostic instrumentation: log if a posted transmit sits queued on the
- * io_context for longer than this before async_write is actually called. */
-static constexpr uint32_t TX_DISPATCH_DELAY_WARN_MS {5U};
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -73,22 +65,17 @@ userData_(userData)
  */
 bool BusPeripheral::startReceive(void)
 {
-  userData_.serialPort.async_read_some(asio::buffer(rxBuffer_), 
-                                       std::bind(&BusPeripheral::rxHandler, 
-                                                 this, 
-                                                 asio::placeholders::error, 
-                                                 asio::placeholders::bytes_transferred));
-  return (true);
+
 }
 
 /** @brief   Transmit bytes using the user comms peripheral.
  *
  *  @details This function is called from the Atams::Bus class during a bus update cycle.
  *           Regardless of whether the implementation is synchronous (blocking) or
- *           asynchronous (interrupt / DMA / async), @c txCallback() must be called exactly
+ *           asynchronous (interrupt / DMA / async), txCallback() must be called exactly
  *           once when the transmission completes. For a blocking implementation, call
- *           @c txCallback() at the end of this function before returning. For an
- *           asynchronous implementation, call @c txCallback() from the transmit-complete
+ *           txCallback() at the end of this function before returning. For an
+ *           asynchronous implementation, call txCallback() from the transmit-complete
  *           interrupt, DMA callback, or async handler.
  *
  *  @param   buffer Pointer to the data buffer to transmit.
@@ -103,26 +90,7 @@ bool BusPeripheral::startReceive(void)
  */
 bool BusPeripheral::transmit(uint8_t *buffer, const uint16_t length)
 {
-  uint32_t postedTime {Platform::getMillis()};
 
-  asio::post(userData_.ioContext, [this, buffer, length, postedTime]()
-  {
-    uint32_t dispatchDelay {Platform::getMillis() - postedTime};
-
-    if (dispatchDelay >= TX_DISPATCH_DELAY_WARN_MS)
-    {
-      printf("BusPeripheral::transmit dispatch delay: %u ms\n", dispatchDelay);
-    }
-
-    asio::async_write(userData_.serialPort,
-                      asio::buffer(buffer, length),
-                      std::bind(&BusPeripheral::txHandler,
-                                this,
-                                asio::placeholders::error,
-                                asio::placeholders::bytes_transferred));
-  });
-
-  return (true);
 }
 
 /*
@@ -131,58 +99,18 @@ bool BusPeripheral::transmit(uint8_t *buffer, const uint16_t length)
  * @details Users can use this function to poll communications peripherals, check for
  *          peripheral errors, and/or restart peripheral reception if required.
  *
- *  @note    ATAMS PLATFORM REQUIREMENT - POLLING COMMS
+ *  @note   ATAMS PLATFORM REQUIREMENT - POLLING COMMS
  */
 void BusPeripheral::update(void)
 {
-  //userData_.ioContext.poll();
-  //userData_.ioContext.restart();
+
 }
 
 /*************************************************************************************/
 /* BusPeripheral - USER PRIVATE FUNCTION DEFINITIONS                                 */
 /*************************************************************************************/
 
-static uint8_t breakpoint {0U};
 
-void BusPeripheral::rxHandler(asio::error_code ec, size_t xfr)
-{
-  static_cast<void>(ec);
-
-  if (ec)
-  {
-    breakpoint++;
-  }
-
-  if (xfr > 0)
-  {
-    rxCallback(rxBuffer_, xfr);
-
-    rxCBCount_++;
-  }
-
-  userData_.serialPort.async_read_some(asio::buffer(rxBuffer_), 
-                                       std::bind(&BusPeripheral::rxHandler, 
-                                                 this, 
-                                                 asio::placeholders::error, 
-                                                 asio::placeholders::bytes_transferred));
-}
-
-void BusPeripheral::txHandler(asio::error_code ec, size_t xfr)
-{
-  static_cast<void>(xfr);
-
-  txCBCount_++;
-
-  if (!ec)
-  {
-    txCallback();
-  }
-  else 
-  {
-    breakpoint++;
-  }
-}
 
 /*************************************************************************************/
 /* MemoryLock - REQUIRED PUBLIC FUNCTION DEFINITIONS                                 */
@@ -195,7 +123,7 @@ void BusPeripheral::txHandler(asio::error_code ec, size_t xfr)
  */
 void MemoryLock::acquireLock(void)
 {
-  _memoryLock.lock();
+
 }
 
 /** 
@@ -205,7 +133,7 @@ void MemoryLock::acquireLock(void)
  */
 void MemoryLock::releaseLock(void)
 {
-  _memoryLock.unlock();
+
 }
 
 /*************************************************************************************/
@@ -219,7 +147,7 @@ void MemoryLock::releaseLock(void)
  */
 void CommsLock::acquireLock(void)
 {
-  _commsLock.lock();
+
 }
 
 /** 
@@ -229,7 +157,7 @@ void CommsLock::acquireLock(void)
  */
 void CommsLock::releaseLock(void)
 {
-  _commsLock.unlock();
+
 }
 
 
@@ -244,13 +172,7 @@ void CommsLock::releaseLock(void)
  */
 void BinarySemaphore::waitWithTimeout(uint32_t timeoutMilliseconds)
 {
-  std::unique_lock<std::mutex> lock(mutex_);
 
-  cv_.wait_for(lock,
-               std::chrono::milliseconds(timeoutMilliseconds),
-               [this]{ return released_; });
-
-  released_ = false;
 }
 
 /**
@@ -260,12 +182,9 @@ void BinarySemaphore::waitWithTimeout(uint32_t timeoutMilliseconds)
  */
 void BinarySemaphore::release(void)
 {
-  std::unique_lock<std::mutex> lock(mutex_);
-  released_ = true;
-  lock.unlock();
 
-  cv_.notify_one();
 }
+
 
 } } /* End Namespace - Atams::Platform */
 

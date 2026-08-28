@@ -33,6 +33,7 @@
 
 #include "CommsCore.hpp"
 
+#include <stdint.h>
 #include <string.h>
 #include <atomic>
 
