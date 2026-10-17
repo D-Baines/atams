@@ -176,14 +176,20 @@ Atams::Error_t Bus::removeNodeFromBus(Node &node)
  * @note The initialisation procedure will be significantly faster after the first time, provided the set of Nodes on the physical Bus
  *       remains unchanged. If Nodes are added or removed, the full initialisation process will be required again.
  *
- * @retval @c ERROR_NONE      Bus initialisation process successfully started.
- * @retval @c ERROR_BUS_EMPTY No Nodes are registered on the Bus.
- * @retval @c ERROR_NULLPTR   A registered Node pointer is null.
- * @retval @c ERROR_PLATFORM  Failed to start data reception on the platform bus peripheral.
+ * @retval @c ERROR_NONE                     Bus initialisation process successfully started.
+ * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS A Bus process (initialisation, configuration or update cycle) is currently in progress; try again when the Bus is idle.
+ * @retval @c ERROR_BUS_EMPTY                No Nodes are registered on the Bus.
+ * @retval @c ERROR_NULLPTR                  A registered Node pointer is null.
+ * @retval @c ERROR_PLATFORM                 Failed to start data reception on the platform bus peripheral.
  */
 Atams::Error_t Bus::beginBusInitProcess(void)
 {
-  if (noOfNodesOnBus_ == 0U) 
+  if (isAnyProcessInProgress())
+  {
+    return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
+  }
+
+  if (noOfNodesOnBus_ == 0U)
   {
     return (Atams::ERROR_BUS_EMPTY); /* Early Return */
   }
@@ -262,7 +268,7 @@ Atams::ProcessState_t Bus::updateBusInitProcess(Atams::Error_t &error)
   }
 
   if ((initState != Bus::InitState::START                                            ) &&
-      (runSingleNodeUpdateCycle(cycleError, *initNodePtr) == Atams::PROCESS_IN_PROGRESS) )
+      (runSingleNodeUpdateCycleCore(cycleError, *initNodePtr, false) == Atams::PROCESS_IN_PROGRESS) )
   {
     error = process.error;
     return (processState); /* Early Return */
@@ -325,7 +331,7 @@ Atams::ProcessState_t Bus::updateBusInitProcess(Atams::Error_t &error)
 
   error = process.error;
 
-  return (processState);
+  return (stopReceiveOnProcessExit(processState));
 }
 
 /**
@@ -341,7 +347,8 @@ Atams::ProcessState_t Bus::updateBusInitProcess(Atams::Error_t &error)
  * @retval @c ERROR_NONE                     Update cycle started successfully.
  * @retval @c ERROR_INIT_ORDER               The Bus has not been initialised; call @ref Bus::beginBusInitProcess and complete the 
  *                                           initialisation before starting an update cycle.
- * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS An update cycle is already in progress.
+ * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS A Bus process (initialisation, configuration or update cycle) is currently in progress; try again when the Bus is idle.
+ * @retval @c ERROR_PLATFORM                 Failed to start data reception on the platform bus peripheral.
  */
 Atams::Error_t Bus::beginUpdateCycle(void)
 {
@@ -350,8 +357,25 @@ Atams::Error_t Bus::beginUpdateCycle(void)
     return (Atams::ERROR_INIT_ORDER); /* Early Return */
   }
 
-  return (beginUpdateCyclePrivate());
-} 
+  if (isAnyProcessInProgress())
+  {
+    return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
+  }
+
+  if (BusPeripheral::startReceive() == false)
+  {
+    return (Atams::ERROR_PLATFORM); /* Early Return */
+  }
+
+  const Atams::Error_t error {beginUpdateCyclePrivate()};
+
+  if (error != Atams::ERROR_NONE)
+  {
+    BusPeripheral::stopReceive();
+  }
+
+  return (error);
+}
 
 /**
  * @brief Begins an update cycle for a single Node on the Bus.
@@ -365,7 +389,8 @@ Atams::Error_t Bus::beginUpdateCycle(void)
  *
  * @retval @c ERROR_NONE       Update cycle started successfully.
  * @retval @c ERROR_INIT_ORDER The Bus has not been initialised; call @ref Bus::beginBusInitProcess and complete the initialisation before starting an update cycle.
- * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS An update cycle is already in progress.
+ * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS A Bus process (initialisation, configuration or update cycle) is currently in progress; try again when the Bus is idle.
+ * @retval @c ERROR_PLATFORM   Failed to start data reception on the platform bus peripheral.
  */
 Atams::Error_t Bus::beginSingleNodeUpdateCycle(Atams::Node &node)
 {
@@ -374,7 +399,24 @@ Atams::Error_t Bus::beginSingleNodeUpdateCycle(Atams::Node &node)
     return (Atams::ERROR_INIT_ORDER); /* Early Return */
   }
 
-  return (beginSingleNodeUpdateCyclePrivate(node));
+  if (isAnyProcessInProgress())
+  {
+    return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
+  }
+
+  if (BusPeripheral::startReceive() == false)
+  {
+    return (Atams::ERROR_PLATFORM); /* Early Return */
+  }
+
+  const Atams::Error_t error {beginSingleNodeUpdateCyclePrivate(node)};
+
+  if (error != Atams::ERROR_NONE)
+  {
+    BusPeripheral::stopReceive();
+  }
+
+  return (error);
 }
 
 /**
@@ -409,7 +451,7 @@ Atams::Error_t Bus::beginSingleNodeUpdateCycle(Atams::Node &node)
  */
 Atams::ProcessState_t Bus::runUpdateCycleSync(Atams::Error_t &error)
 {
-  return (runUpdateCycleSyncCore(error, false));
+  return (stopReceiveOnProcessExit(runUpdateCycleSyncCore(error, false)));
 }
 
 /**
@@ -439,7 +481,7 @@ Atams::ProcessState_t Bus::runUpdateCycleSync(Atams::Error_t &error)
  */
 Atams::ProcessState_t Bus::runUpdateCycleSyncBlocking(Atams::Error_t &error)
 {
-  return (runUpdateCycleSyncCore(error, true));
+  return (stopReceiveOnProcessExit(runUpdateCycleSyncCore(error, true)));
 }
 
 /**
@@ -467,7 +509,7 @@ Atams::ProcessState_t Bus::runUpdateCycleSyncBlocking(Atams::Error_t &error)
  */
 Atams::ProcessState_t Bus::runUpdateCycleAsync(Atams::Error_t &error)
 {
-  return (runUpdateCycleAsyncCore(error, false));
+  return (stopReceiveOnProcessExit(runUpdateCycleAsyncCore(error, false)));
 }
 
 /**
@@ -492,7 +534,7 @@ Atams::ProcessState_t Bus::runUpdateCycleAsync(Atams::Error_t &error)
  */
 Atams::ProcessState_t Bus::runUpdateCycleAsyncBlocking(Atams::Error_t &error)
 {
-  return (runUpdateCycleAsyncCore(error, true));
+  return (stopReceiveOnProcessExit(runUpdateCycleAsyncCore(error, true)));
 }
 
 /**
@@ -522,7 +564,7 @@ Atams::ProcessState_t Bus::runUpdateCycleAsyncBlocking(Atams::Error_t &error)
  */
 Atams::ProcessState_t Bus::runSingleNodeUpdateCycle(Atams::Error_t &error, Atams::Node &node)
 {
-  return (runSingleNodeUpdateCycleCore(error, node, false));
+  return (stopReceiveOnProcessExit(runSingleNodeUpdateCycleCore(error, node, false)));
 }
 
 /**
@@ -549,7 +591,7 @@ Atams::ProcessState_t Bus::runSingleNodeUpdateCycle(Atams::Error_t &error, Atams
  */
 Atams::ProcessState_t Bus::runSingleNodeUpdateCycleBlocking(Atams::Error_t &error, Atams::Node &node)
 {
-  return (runSingleNodeUpdateCycleCore(error, node, true));
+  return (stopReceiveOnProcessExit(runSingleNodeUpdateCycleCore(error, node, true)));
 }
 
 /**
@@ -561,8 +603,8 @@ Atams::ProcessState_t Bus::runSingleNodeUpdateCycleBlocking(Atams::Error_t &erro
  * write acknowledgement and new data ready flags.
  *
  * @return An @c Atams::Error_t code:
- *         - @c ERROR_NONE if all response buffers were processed successfully and no bus errors occurred.
- *         - @c ERROR_UPDATE_CYCLE_IN_PROGRESS if the synchronous update cycle is still in progress (not related to a Node).
+ *         - @c ERROR_NONE                     If all response buffers were processed successfully and no bus errors occurred.
+ *         - @c ERROR_UPDATE_CYCLE_IN_PROGRESS If the synchronous update cycle is still in progress (not related to a Node).
  *         - Otherwise, the first error code encountered while processing a Node's response buffer (other Nodes may also have errors).
  *
  * @note This function is only required for synchronous update cycles. Asynchronous and single-node update cycles process
@@ -611,17 +653,17 @@ Atams::Error_t Bus::processResponseBuffers(void)
  * @param userConfig Structure containing the current Node ID, desired Node ID, and other configuration parameters.
  *
  * @retval @c ERROR_NONE                     Configuration process started successfully.
- * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS An update cycle is currently in progress; configuration cannot be started.
+ * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS A Bus process (initialisation, configuration or update cycle) is currently in progress; try again when the Bus is idle.
  * @retval @c ERROR_PLATFORM                 Failed to start data reception on the platform bus peripheral.
  */
 Atams::Error_t Bus::beginSetNodeConfigProcess(const Atams::NodeConfig_t &userConfig)
 {
-  if (updateProcessHandler_.processState == Atams::PROCESS_IN_PROGRESS)
+  if (isAnyProcessInProgress())
   {
-    return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); 
+    return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
   }
 
-  if (BusPeripheral::startReceive() == false) 
+  if (BusPeripheral::startReceive() == false)
   {
     return (Atams::ERROR_PLATFORM); /* Early Return */
   }
@@ -641,7 +683,11 @@ Atams::Error_t Bus::beginSetNodeConfigProcess(const Atams::NodeConfig_t &userCon
  *
  * Advances the configuration sequence started by @ref Bus::beginSetNodeConfigProcess. This function should be called repeatedly
  * until the configuration process completes or an error occurs. Each call advances the internal state machine by a single step,
- * such as writing configuration data, storing it to non-volatile memory, or verifying the result.
+ * such as validating the Node's Atams version, writing configuration data, storing it to non-volatile memory, or verifying the result.
+ *
+ * Before any configuration data is written, the Node's Atams version is read and compared against the Hub's. If they do not match,
+ * the process terminates with @c Atams::ERROR_ATAMS_VERSION_MISMATCH and the Node is left unchanged, as its configuration variables
+ * may not be compatible with this Hub.
  *
  * The configuration process adjusts values in the Universal Data Block of the Node, including Node ID, communications bitrate,
  * and watchdog period. The user must provide the current and desired Node IDs, as well as other parameters, in the @c NodeConfig_t structure.
@@ -664,6 +710,7 @@ Atams::ProcessState_t Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
   Atams::ProcessState_t                       &subProcessState   {process.subProcessState};
   Bus::ConfigUpdateState                      &configUpdateState {process.specificState};
   Atams::Error_t                               cycleError        {Atams::ERROR_NONE};
+  bool                                         dataIsValid       {false};
 
   if (processState != Atams::PROCESS_IN_PROGRESS)
   {
@@ -671,8 +718,8 @@ Atams::ProcessState_t Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
     return (processState); /* Early Return */
   }
 
-  if ((configUpdateState != Bus::ConfigUpdateState::START                             ) &&
-      (runSingleNodeUpdateCycle(cycleError, dummyNode_) == Atams::PROCESS_IN_PROGRESS) )
+  if ((configUpdateState != Bus::ConfigUpdateState::START                            ) &&
+      (runSingleNodeUpdateCycleCore(cycleError, dummyNode_, false) == Atams::PROCESS_IN_PROGRESS) )
   {
     error = process.error;
     return (processState); /* Early Return */
@@ -683,7 +730,13 @@ Atams::ProcessState_t Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
     case Bus::ConfigUpdateState::START:
       process.error = dummyNode_.init(s_dummyMemoryMap);
       if (process.error) process.terminate(process.error);
-      else               beginSetConfigWrite();
+      else               beginSetConfigValidateVersion();
+      break;
+    case Bus::ConfigUpdateState::VALIDATE_ATAMS_VERSION:
+      subProcessState = nodeProcessHandler_.updateValidateAtamsVersion(process.error, dataIsValid);
+      if      (dataIsValid     == true)                    beginSetConfigWrite();
+      else if (subProcessState == Atams::PROCESS_COMPLETE) process.terminate(Atams::ERROR_ATAMS_VERSION_MISMATCH);
+      else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(process.error);
       break;
     case Bus::ConfigUpdateState::WRITE_CONFIG:
       subProcessState = nodeProcessHandler_.updateSetNodeConfig(process.error);
@@ -723,7 +776,7 @@ Atams::ProcessState_t Bus::updateSetNodeConfigProcess(Atams::Error_t &error)
 
   error = process.error;
 
-  return (process.processState);
+  return (stopReceiveOnProcessExit(process.processState));
 }
 
 /*************************************************************************************/
@@ -915,12 +968,17 @@ void Bus::validateNodeUniversalBlock(Node &node)
   }
 }
 
-bool Bus::safeToRemoveNode(void) 
+bool Bus::isAnyProcessInProgress(void)
 {
-    return ((updateProcessHandler_.processState           != Atams::PROCESS_IN_PROGRESS) &&
-            (singleNodeUpdateProcessHandler_.processState != Atams::PROCESS_IN_PROGRESS) &&
-            (initProcessHandler_.processState             != Atams::PROCESS_IN_PROGRESS) &&
-            (configUpdateProcessHandler_.processState     != Atams::PROCESS_IN_PROGRESS) );
+  return ((updateProcessHandler_.processState           == Atams::PROCESS_IN_PROGRESS) ||
+          (singleNodeUpdateProcessHandler_.processState == Atams::PROCESS_IN_PROGRESS) ||
+          (initProcessHandler_.processState             == Atams::PROCESS_IN_PROGRESS) ||
+          (configUpdateProcessHandler_.processState     == Atams::PROCESS_IN_PROGRESS) );
+}
+
+bool Bus::safeToRemoveNode(void)
+{
+  return (!isAnyProcessInProgress());
 }
 
 bool Bus::findNodeOnBus(Node &node)
@@ -1000,6 +1058,16 @@ Atams::Error_t Bus::beginSingleNodeUpdateCyclePrivate(Atams::Node &node)
 bool Bus::nodeHasQueuedRequestData(Atams::Node &node)
 {
   return (node.getRequestPacketLength() > Atams::PACKET_HEADER_SIZE);
+}
+
+Atams::ProcessState_t Bus::stopReceiveOnProcessExit(const Atams::ProcessState_t processState)
+{
+  if (processState != Atams::PROCESS_IN_PROGRESS)
+  {
+    BusPeripheral::stopReceive();
+  }
+
+  return (processState);
 }
 
 void Bus::clearAllBusErrors(void)
@@ -1316,6 +1384,12 @@ void Bus::startNextNodeInit(void)
   {
     process.setProcessComplete();
   }
+}
+
+void Bus::beginSetConfigValidateVersion(void)
+{
+  configUpdateProcessHandler_.specificState = Bus::ConfigUpdateState::VALIDATE_ATAMS_VERSION;
+  nodeProcessHandler_.beginValidateAtamsVersion(dummyNode_);
 }
 
 void Bus::beginSetConfigWrite(void)

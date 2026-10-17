@@ -156,6 +156,8 @@ public Node
 
   void errorHandler(const Atams::Error_t error, const char * errorMessage);
 
+  bool requestIsActive(const uint16_t varID);
+
   template<typename T>
   void updateWriteValue(const uint16_t varID, T &feedbackVar, T &writeVar);
 

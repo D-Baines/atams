@@ -156,13 +156,14 @@ private Platform::BusPeripheral
 
   enum class ConfigUpdateState: uint8_t
   {
-    START        = 0U,
-    WRITE_CONFIG = 2U,
-    STORE_CONFIG = 3U,
-    SEND_REQUEST = 4U,
-    GET_RESPONSE = 5U,
-    COMPLETE     = 6U,
-    ERROR        = 7U
+    START                  = 0U,
+    VALIDATE_ATAMS_VERSION = 1U,
+    WRITE_CONFIG           = 2U,
+    STORE_CONFIG           = 3U,
+    SEND_REQUEST           = 4U,
+    GET_RESPONSE           = 5U,
+    COMPLETE               = 6U,
+    ERROR                  = 7U
   };
 
   enum class UpdateState: uint8_t
@@ -272,6 +273,8 @@ private Platform::BusPeripheral
 
   void validateNodeUniversalBlock(Node &node);
 
+  bool isAnyProcessInProgress(void);
+
   bool safeToRemoveNode(void);
 
   bool findNodeOnBus(Node &node);
@@ -281,6 +284,8 @@ private Platform::BusPeripheral
   Atams::Error_t beginSingleNodeUpdateCyclePrivate(Atams::Node &node);
 
   bool nodeHasQueuedRequestData(Atams::Node &node);
+
+  Atams::ProcessState_t stopReceiveOnProcessExit(const Atams::ProcessState_t processState);
 
   void clearAllBusErrors(void);
 
@@ -333,6 +338,8 @@ private Platform::BusPeripheral
   void beginInitStore(Atams::Node &node);
 
   void startNextNodeInit(void);
+
+  void beginSetConfigValidateVersion(void);
 
   void beginSetConfigWrite(void);
 

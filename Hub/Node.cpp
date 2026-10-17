@@ -237,7 +237,8 @@ template Atams::Error_t Node::getVar<float   >(const uint16_t varID, float    &o
  * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
  * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions.
  * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error - the request packet is corrupt and all request patterns have been reset.
- * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed the effective maximum packet size (the smaller of the Node and Hub limits).
+ * @retval @c ERROR_RESPONSE_BUFFER_LENGTH  Expected response would exceed the effective maximum packet size (the smaller of the Node and Hub limits).
  * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
  * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
  * @retval @c ERROR_NULLPTR                 Null pointer encountered.
@@ -247,11 +248,35 @@ template Atams::Error_t Node::getVar<float   >(const uint16_t varID, float    &o
 Atams::Error_t Node::setRequestPattern(const uint16_t                varID,
                                        const Atams::Access_t         accessRequest,
                                        const Atams::RequestPattern_t requestPattern)
-{ 
+{
+  return (Node::setRequestPatternOwned(nullptr, varID, accessRequest, requestPattern));
+}
+
+/**
+ * @brief Sets the request pattern for a variable, recording an owner against the request.
+ *
+ * Operates identically to @c setRequestPattern(), and additionally records @p owner against the variable's active request, allowing
+ * all requests held by an owner to be removed together with @c clearRequestPatternsOwned(). Requests set through all other request
+ * functions are recorded with a @c nullptr owner. Removing a request also removes its owner.
+ *
+ * @param owner          Owner to record against the request.
+ * @param varID          Variable ID to configure.
+ * @param accessRequest  Access type to request for the variable. See @c setRequestPattern().
+ * @param requestPattern Request pattern to set. See @c setRequestPattern().
+ *
+ * @return See @c setRequestPattern().
+ *
+ * @note Ownership is not enforced. Any caller may change or remove any request, and the most recent change records the owner.
+ *       Different owners should not use the same variables at the same time.
+ */
+Atams::Error_t Node::setRequestPatternOwned(const RequestOwner           *owner,
+                                            const uint16_t                varID,
+                                            const Atams::Access_t         accessRequest,
+                                            const Atams::RequestPattern_t requestPattern)
+{
   if (varID          >= validVarCount_)                    return (Atams::ERROR_VAR_ID);                  /* Early Return */
   if (requestPattern >= Atams::NUMBER_OF_REQUEST_PATTERNS) return (Atams::ERROR_REQUEST_PATTERN_INVALID); /* Early Return */
-  
-  Node::Var_t     &var     {varStorage_[varID]};
+
   const HubVarInfo_t &varInfo {memoryMap_->varInfoList[varID]};
 
   if (accessRequest > varInfo.externalAccess)
@@ -261,26 +286,7 @@ Atams::Error_t Node::setRequestPattern(const uint16_t                varID,
 
   requestPacketLock_.acquireLock();
 
-  if ((accessRequest  == var.requestAccess ) &&
-      (requestPattern == var.requestPattern) )
-  {
-    requestPacketLock_.releaseLock();
-    return (Atams::ERROR_NONE); /* Early Return */
-  }
-
-  if (wouldExceedResponseBuffer(varInfo, accessRequest, requestPattern, var.requestAccess))
-  {
-    requestPacketLock_.releaseLock();
-    return (Atams::ERROR_RESPONSE_BUFFER_LENGTH); /* Early Return */
-  }
-
-  Atams::Error_t statusReturn {processRequestPacketChange(varID, accessRequest, requestPattern)};
-  
-  if (statusReturn == Atams::ERROR_NONE)
-  {
-    var.requestAccess  = accessRequest;
-    var.requestPattern = requestPattern;
-  }
+  Atams::Error_t statusReturn {applyRequestPatternNoLock(varID, accessRequest, requestPattern, owner)};
 
   requestPacketLock_.releaseLock();
 
@@ -323,13 +329,46 @@ Atams::Error_t Node::getRequestPattern(const uint16_t           varID,
  * @brief Clears all active request patterns for variables in this Node instance.
  *
  * Resets the request pattern and access type for every variable in the Node's internal storage,
- * and resets the internal request packet. This removes all read and write requests from the packet.
+ * and resets the internal request packet. This removes all read and write requests from the packet,
+ * regardless of owner, including those set by Node Actions processes.
  */
 void Node::clearAllRequestPatterns(void)
 {
   requestPacketLock_.acquireLock();
 
   resetRequestPacketNoLock();
+
+  requestPacketLock_.releaseLock();
+}
+
+/**
+ * @brief Clears all active request patterns held by an owner.
+ *
+ * Removes every active read and write request recorded against @p owner by @c setRequestPatternOwned(). Requests held by other
+ * owners are not affected. Passing @c nullptr removes all requests set without an owner.
+ *
+ * @param owner Owner whose requests should be removed.
+ *
+ * @note If an internal request packet error occurs, the request packet is reset and all request patterns are cleared. See
+ *       @c getFatalErrorCount().
+ */
+void Node::clearRequestPatternsOwned(const RequestOwner *owner)
+{
+  requestPacketLock_.acquireLock();
+
+  for (uint16_t varID {0U}; varID < validVarCount_; varID++)
+  {
+    const Node::Var_t &var {varStorage_[varID]};
+
+    if ((var.requestPattern != Atams::REQUEST_INACTIVE) &&
+        (var.requestOwner   == owner                  ) )
+    {
+      if (applyRequestPatternNoLock(varID, Atams::ACCESS_NONE, Atams::REQUEST_INACTIVE, owner) == Atams::ERROR_REQUEST_PACKET_FATAL)
+      {
+        break; /* Request packet has been reset - no requests remain */
+      }
+    }
+  }
 
   requestPacketLock_.releaseLock();
 }
@@ -356,6 +395,30 @@ Atams::Error_t Node::getBusError(void)
   return (error);
 }
 
+/**
+ * @brief Returns the number of fatal request packet errors that have occurred for this Node instance.
+ *
+ * A fatal error occurs when an internal request packet consistency check fails. When this happens, the request packet is reset and
+ * all request patterns for this Node are cleared, including those set by other threads or Node Actions processes. The function call
+ * that detected the error returns @c ERROR_REQUEST_PACKET_FATAL, but other users of the request packet are not notified. This count
+ * allows systems that need to detect internal faults to do so without checking every return value.
+ *
+ * @return The number of fatal errors detected over the lifetime of this Node instance. The count is never cleared, and stops
+ *         increasing at @c UINT32_MAX.
+ *
+ * @note Use of this function is optional. Deliberate resets via @c clearAllRequestPatterns() are not counted.
+ */
+uint32_t Node::getFatalErrorCount(void)
+{
+  requestPacketLock_.acquireLock();
+
+  uint32_t fatalErrorCount {fatalErrorCount_};
+
+  requestPacketLock_.releaseLock();
+
+  return (fatalErrorCount);
+}
+
 
 /**
  * @brief Returns the maximum packet size limit for this Node's response packet.
@@ -366,9 +429,41 @@ Atams::Error_t Node::getBusError(void)
  *
  * @return The maximum response packet size in bytes.
  */
-uint16_t Node::getNodeMaxPacketSize(void) const
+uint16_t Node::getNodeMaxPacketSize(void)
 {
-  return (nodeMaxPacketSize_);
+  requestPacketLock_.acquireLock();
+
+  uint16_t nodeMaxPacketSize {nodeMaxPacketSize_};
+
+  requestPacketLock_.releaseLock();
+
+  return (nodeMaxPacketSize);
+}
+
+/**
+ * @brief Returns the effective maximum packet size used to limit this Node's request and response packets.
+ *
+ * The effective limit is the smaller of the Node's maximum packet size and the Hub's @c Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING.
+ * Until the Node's maximum packet size is collected during the Bus initialisation cycle, the protocol minimum
+ * @c Atams::MINIMUM_MAXIMUM_BUS_PACKET_SIZE_PRE_FRAMING is used in its place. The remaining space in each packet can be tracked by
+ * comparing this limit against @c getRequestPacketLength() and @c getExpectedResponseLength().
+ *
+ * @return The effective maximum packet size in bytes.
+ *
+ * @note Read requests consume more response space than request space, so the expected response length is usually the first to
+ *       reach the limit.
+ * @note The returned value is a snapshot. Other threads may change the request packet before it is used, so request pattern
+ *       functions returning @c ERROR_REQUEST_BUFFER_LENGTH or @c ERROR_RESPONSE_BUFFER_LENGTH remain the definitive check.
+ */
+uint16_t Node::getEffectivePacketLimit(void)
+{
+  requestPacketLock_.acquireLock();
+
+  uint16_t effectivePacketLimit {getEffectivePacketLimitNoLock()};
+
+  requestPacketLock_.releaseLock();
+
+  return (effectivePacketLimit);
 }
 
 /**
@@ -388,7 +483,7 @@ uint16_t Node::getNodeMaxPacketSize(void) const
  * @retval @c ERROR_VAR_TYPE              The data type for the specified variable ID does not match @c T.
  * @retval @c ERROR_ACCESS_INVALID        Insufficient access permissions to write to the specified variable.
  * @retval @c ERROR_REQUEST_PACKET_FATAL  Internal packet error - the request packet is corrupt and all request patterns have been reset.
- * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed the effective maximum packet size (the smaller of the Node and Hub limits).
  * @retval @c ERROR_WRITE_LIST_FULL       Write list is full.
  * @retval @c ERROR_NULLPTR               Null pointer encountered.
  *
@@ -429,7 +524,7 @@ template Atams::Error_t Node::setWriteUntilAck<float   >(const uint16_t varID, c
  * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
  * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions to read the specified variable.
  * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
- * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed the effective maximum packet size (the smaller of the Node and Hub limits).
  * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
  * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
  * @retval @c ERROR_NULLPTR                 Null pointer encountered.
@@ -455,7 +550,7 @@ Atams::Error_t Node::setReadUntilAck(const uint16_t varID)
  * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
  * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions to write to the specified variable.
  * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
- * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed the effective maximum packet size (the smaller of the Node and Hub limits).
  * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
  * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
  * @retval @c ERROR_NULLPTR                 Null pointer encountered.
@@ -481,7 +576,7 @@ Atams::Error_t Node::setWriteStream(const uint16_t varID)
  * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
  * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions to read the specified variable.
  * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
- * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed the effective maximum packet size (the smaller of the Node and Hub limits).
  * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
  * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
  * @retval @c ERROR_NULLPTR                 Null pointer encountered.
@@ -507,7 +602,7 @@ Atams::Error_t Node::setReadStream(const uint16_t varID)
  * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
  * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions to read the specified variable.
  * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
- * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed the effective maximum packet size (the smaller of the Node and Hub limits).
  * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
  * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
  * @retval @c ERROR_NULLPTR                 Null pointer encountered.
@@ -642,7 +737,7 @@ Atams::Error_t Node::clearWriteAck(const uint16_t varID)
  * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
  * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions to read the specified variable.
  * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
- * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed the effective maximum packet size (the smaller of the Node and Hub limits).
  * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
  * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
  * @retval @c ERROR_NULLPTR                 Null pointer encountered.
@@ -674,7 +769,7 @@ Atams::Error_t Node::clearDataReadySetReadStream(const uint16_t varID)
  * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
  * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions.
  * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
- * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed the effective maximum packet size (the smaller of the Node and Hub limits).
  * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
  * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
  * @retval @c ERROR_NULLPTR                 Null pointer encountered.
@@ -760,7 +855,7 @@ template Atams::Error_t Node::getVarIfDataReady<float   >(const uint16_t varID, 
  * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
  * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions.
  * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
- * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed the effective maximum packet size (the smaller of the Node and Hub limits).
  * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
  * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
  * @retval @c ERROR_NULLPTR                 Null pointer encountered.
@@ -804,7 +899,7 @@ template Atams::Error_t Node::stopStreamGetVarIfDataReady<float   >(const uint16
  * @retval @c ERROR_ACCESS_INVALID          Insufficient access permissions to write to the specified variable.
  * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
  * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
- * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed the effective maximum packet size (the smaller of the Node and Hub limits).
  * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
  * @retval @c ERROR_NULLPTR                 Null pointer encountered.
  *
@@ -844,7 +939,7 @@ template Atams::Error_t Node::clearAckSetWriteStream<float   >(const uint16_t va
  * @retval @c ERROR_VAR_ID                  The specified variable ID is out of range for the initialised Memory Map.
  * @retval @c ERROR_REQUEST_PATTERN_INVALID Invalid request pattern.
  * @retval @c ERROR_REQUEST_PACKET_FATAL    Internal packet error – the request packet is corrupt and all request patterns have been reset.
- * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed @c Atams::Platform::MAX_BUS_PACKET_SIZE.
+ * @retval @c ERROR_REQUEST_BUFFER_LENGTH   Request packet buffer is full. Updated size would exceed the effective maximum packet size (the smaller of the Node and Hub limits).
  * @retval @c ERROR_WRITE_LIST_FULL         Write list is full.
  * @retval @c ERROR_VAR_TYPE                Variable type mismatch.
  * @retval @c ERROR_NULLPTR                 Null pointer encountered.
@@ -1588,6 +1683,13 @@ Atams::Error_t Node::constructDatagramBuffer(RequestChangeConfig_t &changeConfig
   return (statusReturn);
 }
 
+void Node::handleFatalErrorNoLock(void)
+{
+  resetRequestPacketNoLock();
+
+  if (fatalErrorCount_ < UINT32_MAX) fatalErrorCount_++;
+}
+
 void Node::resetRequestPacketNoLock(void)
 {
   requestPacket_.length        = Atams::PACKET_HEADER_SIZE;
@@ -1600,6 +1702,7 @@ void Node::resetRequestPacketNoLock(void)
 
     var.requestAccess  = Atams::ACCESS_NONE;
     var.requestPattern = Atams::REQUEST_INACTIVE;
+    var.requestOwner   = nullptr;
   }
 }
 
@@ -1621,11 +1724,11 @@ Atams::Error_t Node::processRequestPacketChange(const uint16_t                va
   packetChangeConfig.newDatagramHeader.varID   = varID;
 
   /* Search Node packet for a datagram matching the new datagram */
-  DataStatusReturn_t<bool> datagramFoundInPacket {findDatagramMatchInPacket(packetChangeConfig)};
+  Atams::DataStatusReturn_t<bool> datagramFoundInPacket {findDatagramMatchInPacket(packetChangeConfig)};
 
   if (datagramFoundInPacket.status != Atams::ERROR_NONE)
   {
-    resetRequestPacketNoLock();
+    handleFatalErrorNoLock();
     return (Atams::ERROR_REQUEST_PACKET_FATAL); /* Early Return */
   }
 
@@ -1644,17 +1747,25 @@ Atams::Error_t Node::processRequestPacketChange(const uint16_t                va
     {
       error = Atams::ERROR_REQUEST_PACKET_FATAL;
     }
-    else if (datagramFoundInPacket.data == true)
-    {
-      error = requestPacketAdjustCurrentDatagram(packetChangeConfig);
-    }
     else
     {
-      error = requestPacketAppendDatagram(packetChangeConfig);
+      error = checkPacketLimits(packetChangeConfig, datagramFoundInPacket.data);
+    }
+
+    if (error == Atams::ERROR_NONE)
+    {
+      if (datagramFoundInPacket.data == true)
+      {
+        error = requestPacketAdjustCurrentDatagram(packetChangeConfig);
+      }
+      else
+      {
+        error = requestPacketAppendDatagram(packetChangeConfig);
+      }
     }
   }
 
-  if (error == Atams::ERROR_REQUEST_PACKET_FATAL) resetRequestPacketNoLock();
+  if (error == Atams::ERROR_REQUEST_PACKET_FATAL) handleFatalErrorNoLock();
 
   return (error);
 }
@@ -1671,13 +1782,7 @@ Atams::Error_t Node::updateRequestPatternOnReceive(const uint16_t varID)
   
   if (currentRequestPattern == Atams::REQUEST_UNTIL_ACK)
   {
-    statusReturn = processRequestPacketChange(varID, ACCESS_NONE, REQUEST_INACTIVE);
-
-    if (statusReturn == Atams::ERROR_NONE)
-    {
-      var.requestAccess  = ACCESS_NONE;
-      var.requestPattern = REQUEST_INACTIVE;
-    }
+    statusReturn = applyRequestPatternNoLock(varID, ACCESS_NONE, REQUEST_INACTIVE, nullptr);
   }
 
   requestPacketLock_.releaseLock();
@@ -1685,29 +1790,73 @@ Atams::Error_t Node::updateRequestPatternOnReceive(const uint16_t varID)
   return (statusReturn);
 }
 
-bool Node::wouldExceedResponseBuffer(const Atams::HubVarInfo_t      &varInfo,
-                                     const Atams::Access_t          accessRequest,
-                                     const Atams::RequestPattern_t  requestPattern,
-                                     const Atams::Access_t          currentAccess) const
+/* Warning - varID must be pre-validated and requestPacketLock_ must be held by the caller */
+Atams::Error_t Node::applyRequestPatternNoLock(const uint16_t                varID,
+                                               const Atams::Access_t         accessRequest,
+                                               const Atams::RequestPattern_t requestPattern,
+                                               const RequestOwner           *owner)
 {
-  if (nodeMaxPacketSize_ == 0U) 
+  Node::Var_t   &var   {varStorage_[varID]};
+  Atams::Error_t error {Atams::ERROR_NONE};
+
+  const bool requestRemoved {(requestPattern == Atams::REQUEST_INACTIVE) || (accessRequest == Atams::ACCESS_NONE)};
+
+  if ((accessRequest  != var.requestAccess ) ||
+      (requestPattern != var.requestPattern) )
   {
-    return (false); /* Early Return */
+    error = processRequestPacketChange(varID, accessRequest, requestPattern);
   }
 
-  const uint16_t varLength {TYPE_LENGTHS[varInfo.type]};
+  if (error == Atams::ERROR_NONE)
+  {
+    var.requestAccess  = accessRequest;
+    var.requestPattern = requestPattern;
+    var.requestOwner   = requestRemoved ? nullptr : owner;
+  }
 
-  const uint16_t currentContrib {(currentAccess == Atams::ACCESS_READ ) ? static_cast<uint16_t>(Atams::DATAGRAM_SIZE_HEADER + varLength) :
-                                 (currentAccess == Atams::ACCESS_WRITE) ? static_cast<uint16_t>(Atams::DATAGRAM_SIZE_HEADER)             :
-                                                                          static_cast<uint16_t>(0U) };
+  return (error);
+}
 
-  const uint16_t newContrib {(requestPattern == Atams::REQUEST_INACTIVE ) ? static_cast<uint16_t>(0U)                                      :
-                             (accessRequest  == Atams::ACCESS_READ      ) ? static_cast<uint16_t>(Atams::DATAGRAM_SIZE_HEADER + varLength) :
-                             (accessRequest  == Atams::ACCESS_WRITE     ) ? static_cast<uint16_t>(Atams::DATAGRAM_SIZE_HEADER)             :
-                                                                            static_cast<uint16_t>(0U) };
+uint16_t Node::getEffectivePacketLimitNoLock(void) const
+{
+  const uint16_t nodeLimit {(nodeMaxPacketSize_ == 0U) ? static_cast<uint16_t>(Atams::MINIMUM_MAXIMUM_BUS_PACKET_SIZE_PRE_FRAMING) :
+                                                         nodeMaxPacketSize_                                                       };
 
-  return ((newContrib                                                > currentContrib    ) &&
-          ((expectedResponseLength_ + (newContrib - currentContrib)) > nodeMaxPacketSize_) );
+  return ((nodeLimit < Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING) ? nodeLimit : Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING);
+}
+
+Atams::Error_t Node::checkPacketLimits(const RequestChangeConfig_t &changeConfig, const bool datagramFound) const
+{
+  const uint16_t packetLimit {getEffectivePacketLimitNoLock()};
+
+  const Atams::Access_t currentAccess {datagramFound ? static_cast<Atams::Access_t>(changeConfig.currentDatagramHeader.command) :
+                                                       Atams::ACCESS_NONE                                                       };
+
+  const uint16_t readResponseLength {static_cast<uint16_t>(Atams::DATAGRAM_SIZE_HEADER + changeConfig.writePayloadLength)};
+
+  const uint16_t currentResponseContrib {(currentAccess == Atams::ACCESS_READ ) ? readResponseLength                                 :
+                                         (currentAccess == Atams::ACCESS_WRITE) ? static_cast<uint16_t>(Atams::DATAGRAM_SIZE_HEADER) :
+                                                                                  static_cast<uint16_t>(0U)                         };
+
+  const uint16_t newResponseContrib {(changeConfig.accessRequest == Atams::ACCESS_READ) ? readResponseLength :
+                                                                                          static_cast<uint16_t>(Atams::DATAGRAM_SIZE_HEADER)};
+
+  const uint16_t currentRequestContrib {datagramFound ? static_cast<uint16_t>(changeConfig.currentDatagramLength) : static_cast<uint16_t>(0U)};
+  const uint16_t newRequestContrib     {static_cast<uint16_t>(changeConfig.newDatagramLength)};
+
+  if ((newResponseContrib                                                        > currentResponseContrib) &&
+      ((expectedResponseLength_ + (newResponseContrib - currentResponseContrib)) > packetLimit           ) )
+  {
+    return (Atams::ERROR_RESPONSE_BUFFER_LENGTH); /* Early Return */
+  }
+
+  if ((newRequestContrib                                                        > currentRequestContrib) &&
+      ((requestPacket_.length + (newRequestContrib - currentRequestContrib)) > packetLimit          ) )
+  {
+    return (Atams::ERROR_REQUEST_BUFFER_LENGTH); /* Early Return */
+  }
+
+  return (Atams::ERROR_NONE);
 }
 
 Atams::Error_t Node::updateRequestPacketWriteData(void)
@@ -1724,7 +1873,7 @@ Atams::Error_t Node::updateRequestPacketWriteData(void)
 
     if (listReturn.status != WriteList::ERROR_NONE)
     {
-      resetRequestPacketNoLock();
+      handleFatalErrorNoLock();
       requestPacketLock_.releaseLock();
       return (Atams::ERROR_REQUEST_PACKET_FATAL); /* Early Return */
     }
@@ -1733,7 +1882,7 @@ Atams::Error_t Node::updateRequestPacketWriteData(void)
                               &requestPacket_.buffer[listReturn.writeConfig.requestPacketIndex],
                               listReturn.writeConfig.dataLength) != Atams::ERROR_NONE)
     {
-      resetRequestPacketNoLock();
+      handleFatalErrorNoLock();
       requestPacketLock_.releaseLock();
       return (Atams::ERROR_REQUEST_PACKET_FATAL); /* Early Return */
     }
@@ -1746,7 +1895,9 @@ Atams::Error_t Node::updateRequestPacketWriteData(void)
 
 void Node::setNodeMaxPacketSize(const uint16_t maxPacketSize)
 {
+  requestPacketLock_.acquireLock();
   nodeMaxPacketSize_ = maxPacketSize;
+  requestPacketLock_.releaseLock();
 }
 
 void Node::reportBusError(Atams::Error_t busError)

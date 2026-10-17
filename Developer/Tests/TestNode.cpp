@@ -207,6 +207,11 @@ void TestNode::runFunctionArgTests(void)
 
   Node::clearAllRequestPatterns();
 
+  /* Effective packet limit is the smaller of the Node and Hub limits */
+  const uint16_t nodeMaxPacketSize   {Node::getNodeMaxPacketSize()};
+  const uint16_t effectivePacketSize {(nodeMaxPacketSize < Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING) ? nodeMaxPacketSize :
+                                                                                                         Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING};
+
   /* Request Packet and Write List Overflow Test */
   uint16_t      expectedWriteListLength     {0U};
   uint16_t      expectedRequestPacketLength {Atams::PACKET_HEADER_SIZE};
@@ -214,7 +219,7 @@ void TestNode::runFunctionArgTests(void)
   
   for (uint16_t varID {BlockTest3::VAR_WRITE_UINT8_1}; varID <= BlockTest3::VAR_WRITE_UINT8_20; varID++)
   {
-    if ((expectedRequestPacketLength + setVarDatagramLength) > Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING)
+    if ((expectedRequestPacketLength + setVarDatagramLength) > effectivePacketSize)
     {
       expectedError = Atams::ERROR_REQUEST_BUFFER_LENGTH;
     }
@@ -240,12 +245,11 @@ void TestNode::runFunctionArgTests(void)
   /* Response Buffer Length Overflow Test (Read Requests) */
   uint16_t       expectedResponseLength     {Atams::PACKET_HEADER_SIZE};
   uint16_t       expectedReadPacketLength   {Atams::PACKET_HEADER_SIZE};
-  const uint16_t nodeMaxPacketSize          {Node::getNodeMaxPacketSize()};
   const uint8_t  readResponseDatagramLength {Atams::DATAGRAM_SIZE_HEADER + sizeof(uint32_t)};
 
   for (uint16_t varID {BlockTest3::VAR_WRITE_UINT32_1}; varID <= BlockTest3::VAR_WRITE_UINT32_20; varID++)
   {
-    if ((expectedResponseLength + readResponseDatagramLength) > nodeMaxPacketSize)
+    if ((expectedResponseLength + readResponseDatagramLength) > effectivePacketSize)
     {
       expectedError = Atams::ERROR_RESPONSE_BUFFER_LENGTH;
     }
@@ -267,6 +271,64 @@ void TestNode::runFunctionArgTests(void)
   }
 
   Node::clearAllRequestPatterns();
+
+  /* Request Owner Tests */
+  const Atams::RequestOwner ownerA;
+  const Atams::RequestOwner ownerB;
+  const uint16_t            varOwnedA  {BlockTest3::VAR_WRITE_UINT32_1};
+  const uint16_t            varOwnedB  {BlockTest3::VAR_WRITE_UINT32_2};
+  const uint16_t            varNoOwner {BlockTest3::VAR_WRITE_UINT32_3};
+
+  error = Node::setRequestPatternOwned(&ownerA, varOwnedA, Atams::ACCESS_READ, Atams::REQUEST_STREAM);
+  if (!error) error = Node::setRequestPatternOwned(&ownerB, varOwnedB, Atams::ACCESS_READ, Atams::REQUEST_STREAM);
+  if (!error) error = Node::setReadStream(varNoOwner);
+  if (error) errorHandler(error, "Request Owner Setup Failure on Node ");
+
+  /* Clearing an owner only removes that owner's requests */
+  Node::clearRequestPatternsOwned(&ownerA);
+
+  if ( requestIsActive(varOwnedA)  ||
+      !requestIsActive(varOwnedB)  ||
+      !requestIsActive(varNoOwner) )
+  {
+    errorHandler(Atams::ERROR_NONE, "Request Owner Clear Failure on Node ");
+  }
+
+  /* Clearing nullptr only removes requests set without an owner */
+  Node::clearRequestPatternsOwned(nullptr);
+
+  if (!requestIsActive(varOwnedB) ||
+       requestIsActive(varNoOwner))
+  {
+    errorHandler(Atams::ERROR_NONE, "Request No Owner Clear Failure on Node ");
+  }
+
+  /* The most recent change to a request transfers ownership, even if the request pattern is unchanged */
+  error = Node::setRequestPatternOwned(&ownerA, varOwnedA, Atams::ACCESS_READ, Atams::REQUEST_STREAM);
+  if (!error) error = Node::setRequestPatternOwned(&ownerB, varOwnedA, Atams::ACCESS_READ, Atams::REQUEST_STREAM);
+  if (error) errorHandler(error, "Request Owner Setup Failure on Node ");
+
+  Node::clearRequestPatternsOwned(&ownerA);
+
+  if (!requestIsActive(varOwnedA))
+  {
+    errorHandler(Atams::ERROR_NONE, "Request Owner Transfer Failure on Node ");
+  }
+
+  Node::clearRequestPatternsOwned(&ownerB);
+
+  if (requestIsActive(varOwnedA) ||
+      requestIsActive(varOwnedB) )
+  {
+    errorHandler(Atams::ERROR_NONE, "Request Owner Transfer Failure on Node ");
+  }
+
+  Node::clearAllRequestPatterns();
+
+  if (Node::getRequestPacketLength() != Atams::PACKET_HEADER_SIZE)
+  {
+    errorHandler(Atams::ERROR_NONE, "Request Owner Packet Cleanup Failure on Node ");
+  }
 }
 
 void TestNode::runUpdateCycleTests(void)
@@ -553,6 +615,16 @@ void TestNode::errorHandler(const Atams::Error_t error, const char * errorMessag
   static_cast<void>(snprintf(errorBuffer_, MAX_ERROR_MESSAGE_LENGTH, "%s%d", errorMessage, nodeID_));
 
   hubErrorHandler_(error, errorBuffer_);
+}
+
+bool TestNode::requestIsActive(const uint16_t varID)
+{
+  Atams::Access_t         access  {Atams::ACCESS_NONE};
+  Atams::RequestPattern_t pattern {Atams::REQUEST_INACTIVE};
+
+  static_cast<void>(Node::getRequestPattern(varID, access, pattern));
+
+  return (pattern != Atams::REQUEST_INACTIVE);
 }
 
 template<typename T>

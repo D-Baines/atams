@@ -39,18 +39,13 @@
 #include <optional>
 
 #include "../Shared/AtamsTypedefs.hpp"
+#include "Node.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
 namespace Atams {
-
-/*************************************************************************************/
-/* FORWARD DECLARATIONS                                                              */
-/*************************************************************************************/
-
-class Node;
 
 /*************************************************************************************/
 /* PROTOTYPES/CLASS DEFINITIONS                                                      */
@@ -104,7 +99,7 @@ class NodeActions
 
   void beginReadUniversalBlock(Node &node);
 
-  void beginReadMultiVarsOrdered(Node &node, uint16_t firstVarID, uint16_t lastVarID);
+  void beginReadMultiVarsOrdered(Node &node, uint16_t firstVarID, uint16_t lastVarID, bool skipActiveReads = false);
 
   void beginSetBusIDs(Node &node, const Atams::BusIDs_t busIDs);
 
@@ -144,7 +139,8 @@ class NodeActions
 
   /*-- Private Static Constants -----------------------------------------------------*/
 
-  static constexpr uint32_t STORAGE_TIMEOUT {5000U};
+  static constexpr uint32_t STORAGE_TIMEOUT     {5000U};
+  static constexpr uint16_t MAX_READ_GROUP_VARS {32U}; /* Limited by the width of ReadMultiVarsContext::skippedMask */
 
   /*-- Private Typedefs -------------------------------------------------------------*/
 
@@ -267,9 +263,9 @@ class NodeActions
     ERROR              = 10U
   };
 
-  typedef void           (&MultiConfigWriteFn_t)    (NodeActions &actionsHandler, Atams::Node &node);
+  typedef Atams::Error_t (&MultiConfigWriteFn_t)    (NodeActions &actionsHandler, Atams::Node &node, const RequestOwner *owner);
   typedef bool           (&MultiConfigAckFn_t)      (Atams::Node &node);
-  typedef void           (&MultiConfigReadFn_t)     (Atams::Node &node);
+  typedef Atams::Error_t (&MultiConfigReadFn_t)     (Atams::Node &node, const RequestOwner *owner);
   typedef Atams::Error_t (&MultiConfigCheckFn_t)    (NodeActions &actionsHandler, Atams::Node &node, bool &checkSuccess);
 
   struct SetMultiConfigFtns_t
@@ -283,8 +279,9 @@ class NodeActions
   /*-- Private Helper Struct Declarations -------------------------------------------*/
 
   template <typename T>
-  struct ProcessHandler
-  {    
+  struct ProcessHandler :
+  public RequestOwner
+  {
     ProcessHandler(void)                                    = default;
     ~ProcessHandler(void)                                   = default;
     ProcessHandler(const ProcessHandler &other)             = delete;
@@ -309,9 +306,11 @@ class NodeActions
   struct ReadMultiVarsContext
   {
     ProcessHandler<ReadMultiVarsState> process;
-    uint16_t groupStart {0U};
-    uint16_t groupEnd   {0U};
-    uint16_t lastID     {0U};
+    uint16_t groupStart      {0U};
+    uint16_t groupEnd        {0U};
+    uint16_t lastID          {0U};
+    bool     skipActiveReads {false};
+    uint32_t skippedMask     {0U}; /* Bit n set: (groupStart + n) already has an active read request and is skipped */
   };
 
   /*-- Private Objects --------------------------------------------------------------*/
@@ -341,11 +340,21 @@ class NodeActions
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
-  void beginReadMultiVarsOrderedImpl(ReadMultiVarsContext &context, Node &node, uint16_t firstVarID, uint16_t lastVarID);
+  void beginReadMultiVarsOrderedImpl(ReadMultiVarsContext &context, Node &node, uint16_t firstVarID, uint16_t lastVarID, bool skipActiveReads);
 
   Atams::ProcessState_t updateReadMultiVarsOrderedImpl(ReadMultiVarsContext &context, Atams::Error_t &error);
 
-  static uint16_t computeReadGroupEnd(Node &node, uint16_t groupStart, uint16_t lastVarID);
+  static void streamReadGroup(ReadMultiVarsContext &context);
+
+  static void checkReadGroup(ReadMultiVarsContext &context);
+
+  static bool hasActiveRead(Atams::Node &node, const uint16_t varID);
+
+  /* Processes must set requests via these helpers so that the requests are owned by the process */
+  static Atams::Error_t clearDataReadySetReadStreamOwned(Atams::Node &node, const RequestOwner *owner, const uint16_t varID);
+
+  template <typename T>
+  static Atams::Error_t clearAckSetWriteStreamOwned(Atams::Node &node, const RequestOwner *owner, const uint16_t varID, const T writeData);
 
   template<typename T>
   void cancelConfigProcess(ProcessHandler<T> &process, Atams::Error_t error);
@@ -360,19 +369,19 @@ class NodeActions
 
   Atams::ProcessState_t updateSetMultipleConfig(Atams::Error_t &error, SetMultiConfigFtns_t &specificFunctions);
   
-  static void setUserConfigWrite(NodeActions &processHandler, Atams::Node &node);
+  static Atams::Error_t setUserConfigWrite(NodeActions &processHandler, Atams::Node &node, const RequestOwner *owner);
 
   static bool setUserConfigGetAck(Atams::Node &node);
 
-  static void setUserConfigRead(Atams::Node &node);
+  static Atams::Error_t setUserConfigRead(Atams::Node &node, const RequestOwner *owner);
 
   static Atams::Error_t setUserConfigCheck(NodeActions &processHandler, Atams::Node &node, bool &userConfigIsValid);
 
-  static void setBusIDsWrite(NodeActions &processHandler, Atams::Node &node);
+  static Atams::Error_t setBusIDsWrite(NodeActions &processHandler, Atams::Node &node, const RequestOwner *owner);
 
   static bool setBusIDsGetAck(Atams::Node &node);
 
-  static void setBusIDsRead(Atams::Node &node);
+  static Atams::Error_t setBusIDsRead(Atams::Node &node, const RequestOwner *owner);
 
   static Atams::Error_t setBusIDsCheck(NodeActions &processHandler, Atams::Node &node, bool &allIDsValid);
 };

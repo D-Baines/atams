@@ -35,6 +35,8 @@
 
 #include <stdint.h>
 
+#include "../Shared/AtamsTypedefs.hpp"
+
 /*************************************************************************************/
 /* USER INCLUDES                                                                     */
 /*************************************************************************************/
@@ -55,10 +57,10 @@ namespace Atams { namespace Platform {
 /*************************************************************************************/
 
 /** @brief The maximum number of Nodes that can be added to any of the application's Atams::Bus objects */
-constexpr uint16_t NUMBER_OF_NODES_PER_BUS {3U};
+constexpr uint16_t NUMBER_OF_NODES_PER_BUS {Atams::MAX_NUMBER_OF_NODES_PER_BUS};
 
 /** @brief The maximum number of Atams vars used by any of the application's Atams::Node objects */
-constexpr uint16_t NODE_NUMBER_OF_VARS {100U};
+constexpr uint16_t NODE_NUMBER_OF_VARS {Atams::MAX_NUMBER_OF_VARS};
 
 /** @brief The maximum packet size compatible with the applications communications peripheral */
 constexpr uint16_t MAX_BUS_PACKET_SIZE {64U};
@@ -114,7 +116,8 @@ class BusPeripheral
    *
    * @details The user should populate this structure with any data required for
    *          the platform comms peripheral to operate. This structure is passed
-   *          to the Atams::Bus constructor.
+   *          to the Atams::Bus constructor. Empty until the platform layer for
+   *          this application is implemented.
    *
    * @note    ATAMS PLATFORM REQUIREMENT - OPTIONAL
    */
@@ -130,6 +133,8 @@ class BusPeripheral
 
   bool startReceive(void);
 
+  void stopReceive(void);
+
   bool transmit(uint8_t *buffer, const uint16_t length);
 
   void update(void);
@@ -144,6 +149,9 @@ class BusPeripheral
   /*-- User Private Variables -------------------------------------------------------*/
 
   uint8_t rxBuffer_[MAX_BUS_PACKET_SIZE];
+
+  /** @brief True between startReceive() and stopReceive() */
+  bool isReceiving_ {false};
 
   /*-- Required Private Function Declarations ---------------------------------------*/
 
@@ -187,6 +195,14 @@ class BusPeripheral
  *
  *  @details This class provides a lock mechanism for protecting access to
  *           variable storage resources in a multi-threaded environment.
+ *
+ *           Lock implementations need not be recursive, as the library never acquires
+ *           the same lock twice. Each MemoryLock instance must have its own underlying
+ *           lock - for example, give each instance its own mutex rather than having
+ *           every instance use one shared global mutex. Implementations that
+ *           disable or mask interrupts must save the previous mask state on acquire and
+ *           restore it on release, rather than unconditionally re-enabling. The saved
+ *           state can be stored in the lock object.
  *
  *  @note    ATAMS PLATFORM REQUIREMENT - MULTI-THREADED
  */

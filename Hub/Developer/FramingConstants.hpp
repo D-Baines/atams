@@ -50,6 +50,9 @@ constexpr uint16_t COBS_MAX_CODE_BYTES             {static_cast<uint16_t>((Platf
 constexpr uint16_t COBS_MAX_OVERHEAD               {static_cast<uint16_t>(COBS_MAX_CODE_BYTES + Atams::COBS_TERMINATOR_SIZE)};
 constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING {static_cast<uint16_t>(Platform::MAX_BUS_PACKET_SIZE - COBS_MAX_OVERHEAD)};
 
+static_assert(MAX_BUS_PACKET_SIZE_PRE_FRAMING >= Atams::MINIMUM_MAXIMUM_BUS_PACKET_SIZE_PRE_FRAMING,
+              "Platform::MAX_BUS_PACKET_SIZE must be at least Atams::MINIMUM_MAXIMUM_BUS_PACKET_SIZE");
+
 } } /* End Namespace - Atams::Platform */
 
 

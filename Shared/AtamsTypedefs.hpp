@@ -64,10 +64,6 @@ constexpr uint16_t MAX_NUMBER_OF_VARS                          {8191U};
 constexpr uint16_t VAR_ID_NULL                                 {8191U};
 constexpr uint8_t  MAX_TYPE_SIZE                               {4U};
 constexpr uint8_t  EOL_BYTE                                    {0U};
-constexpr int32_t  MAX_INT32                                   {2147483647L};
-constexpr int32_t  MIN_INT32                                   {-2147483648L};
-constexpr uint32_t MAX_UINT32                                  {4294967295U};
-constexpr uint32_t MIN_UINT32                                  {0U};
 constexpr uint8_t  BITS_IN_A_BYTE                              {8U};
 constexpr uint32_t CRC32_POLYNOMIAL                            {0x82F63B78U};
 constexpr uint32_t CONFIGURATION_PASSKEY_ACCESS                {0x454E5452U};
@@ -515,8 +511,8 @@ typedef void (*CommsTransmitCallback_t)(TXMessage_t message);
 template<typename VarInfoT>
 struct SharedMemoryMap_t
 {
-  const GenInfo_t genInfo;
-  const VarInfoT  *varInfoList;
+  GenInfo_t      genInfo;
+  const VarInfoT *varInfoList;
 
   SharedMemoryMap_t(const GenInfo_t initGenInfo,
                     const VarInfoT (*initVarInfoList)) :
@@ -530,18 +526,16 @@ struct SharedMemoryMap_t
   ~SharedMemoryMap_t(void){};
 
   /* Copy Constructor */
-  SharedMemoryMap_t(const SharedMemoryMap_t &other) :
-  genInfo(other.genInfo),
-  varInfoList(other.varInfoList){};
+  SharedMemoryMap_t(const SharedMemoryMap_t &other) = default;
 
   /* Copy Assignment Operator */
-  SharedMemoryMap_t & operator=(const SharedMemoryMap_t &other) = delete;
+  SharedMemoryMap_t & operator=(const SharedMemoryMap_t &other) = default;
 
   /* Move Constructor */
-  SharedMemoryMap_t(SharedMemoryMap_t &&other) = delete;
+  SharedMemoryMap_t(SharedMemoryMap_t &&other) = default;
 
   /* Move Assignment Operator */
-  SharedMemoryMap_t & operator=(SharedMemoryMap_t &&other) = delete;
+  SharedMemoryMap_t & operator=(SharedMemoryMap_t &&other) = default;
 };
 
 /*************************************************************************************/

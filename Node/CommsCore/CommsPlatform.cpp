@@ -92,7 +92,11 @@ uint32_t getMillis(void)
  *          For multi-threaded platforms, the user should use a mutex or similar mechanism. For dual-core 
  *          platforms, the user should use a hardware semaphore or similar mechanism. A combination of both
  *          may be required for multi-threaded, dual-core platforms.
- *         
+ *
+ *          The lock need not be recursive, as the library never acquires it twice. Implementations that
+ *          disable or mask interrupts must save the previous mask state on acquire and restore it on release,
+ *          rather than unconditionally re-enabling. The saved state can be stored in a static variable.
+ *
  * @return  None
  *
  * @note    ATAMS PLATFORM REQUIREMENT - MULTI-THREADED
@@ -240,6 +244,11 @@ bool transmitBuffer(const CommsPeripheralID_t peripheralID, uint8_t * buffer, co
  *          Platform::releaseCommsBufferLock() is called. If the CommsReceiveCallback_t function is called
  *          from an interrupt, the user should disable the interrupt associated with the provided
  *          comms peripheral ID in this function.
+ *
+ *          The lock need not be recursive, as the library never acquires it twice. Implementations that
+ *          disable or mask interrupts must save the previous mask state on acquire and restore it on release,
+ *          rather than unconditionally re-enabling. The saved state can be stored in a static variable for
+ *          each comms peripheral ID.
  *
  * @param   peripheralToLock The ID of the communications peripheral to lock.
  *

@@ -69,7 +69,7 @@ void WatchdogHandler::update(const uint32_t currentTime)
     {
       case WATCHDOG_FAULT_INACTIVE:
 
-        if (m_watchdogCount < Atams::MAX_UINT32) m_watchdogCount++;
+        if (m_watchdogCount < UINT32_MAX) m_watchdogCount++;
 
         if ((m_watchdogPeriod > 0U              ) &&
             (m_watchdogCount  > m_watchdogPeriod) )

@@ -1,18 +1,36 @@
 import os
 import re
 import sys
+import json
 import pathlib
 import pandas
 from   dataclasses        import dataclass
 from   enum               import Enum
 from   enum               import StrEnum
-from   typing             import List, Optional, TextIO, Tuple
+from   typing             import Dict, List, Optional, TextIO, Tuple
 from   datetime           import datetime
 from   Modules.AtamsCRC32 import *
 from   pathlib            import Path
 
 FRAMEWORK_NAME           = "Atams"
 NUMBER_OF_UNIVERSAL_VARS = 30
+
+# Accepted values for the optional "Widget" column - anything else (including blank/"-")
+# falls back to WIDGET_INPUT (write access) or WIDGET_VALUE (read-only access), same lenient
+# philosophy as every other optional column. INPUT/CHECKBOX/DROPDOWN are write-capable and only
+# ever valid on an "RW" variable (enforced in generateWidgetJson - a hard generation error, not a
+# lenient fallback, since an unwritable-in-practice write widget is a real authoring mistake).
+# VALUE/BOOL_STATE/READ_OPTION are read-only and valid on either access level.
+WIDGET_INPUT       = "Input"
+WIDGET_CHECKBOX    = "Checkbox"
+WIDGET_DROPDOWN    = "Dropdown"
+WIDGET_VALUE       = "Value"
+WIDGET_BOOL_STATE  = "BoolState"
+WIDGET_READ_OPTION = "ReadOption"
+
+WRITABLE_WIDGET_OPTIONS  = [WIDGET_INPUT, WIDGET_CHECKBOX, WIDGET_DROPDOWN]
+READ_ONLY_WIDGET_OPTIONS = [WIDGET_VALUE, WIDGET_BOOL_STATE, WIDGET_READ_OPTION]
+WIDGET_OPTIONS            = WRITABLE_WIDGET_OPTIONS + READ_ONLY_WIDGET_OPTIONS
 
 # Must match the Atams::BlockUniversal namespace name (Shared/Maps/BlockUniversal.hpp) -
 # used to qualify Universal Block variable names for NVM hashing, same as user blocks.
@@ -73,6 +91,19 @@ TYPE_LENGTHS_BY_NAME = {
     "UINT16": 2, "INT16": 2,
     "UINT32": 4, "INT32": 4,
     "FLOAT":  4,
+}
+
+# (min, max) numeric range per Atams type, keyed the same way as TYPE_LENGTHS_BY_NAME above -
+# used to validate Dropdown widget option values at generation time. None for FLOAT: no
+# meaningful integer-style range check applies.
+TYPE_RANGES_BY_NAME = {
+    "UINT8":  (0, 255),
+    "INT8":   (-128, 127),
+    "UINT16": (0, 65535),
+    "INT16":  (-32768, 32767),
+    "UINT32": (0, 4294967295),
+    "INT32":  (-2147483648, 2147483647),
+    "FLOAT":  None,
 }
 
 class Platforms(Enum):
@@ -136,8 +167,16 @@ def sanitiseVarName(rawVarName: str) -> str:
   return rawVarName.replace(" ", "_").upper()
 
 def sanitisePascalName(rawName: str) -> str:
+  # Only force the first letter of each word to uppercase - unlike str.capitalize(), this never
+  # touches the rest of the word, so already-Pascal/camelCase input (e.g. "WidgetTest" typed as
+  # one word) survives unchanged instead of being lowercased to "Widgettest".
   words = re.findall(r"[A-Za-z0-9]+", rawName)
-  return "".join(word.capitalize() for word in words)
+  return "".join(word[0].upper() + word[1:] for word in words)
+
+# Shared "optional cell not set" test - covers both a truly blank Excel cell (NaN) and this
+# tool's "-" placeholder convention (see Min Limit/Max Limit example cells in TemplateMap.xlsx).
+def isUnset(value) -> bool:
+  return pandas.isnull(value) or (value == "-")
 
 def generateEnum(iteratorStartValue: int,
                  minStringLength:    int,
@@ -338,6 +377,122 @@ def generateMapChecksum(dataBlocks: List[DataBlock]) -> int:
       varID += 1
   return (crcCalculator.getRollingCrc())
 
+# Parses a "Widget Options" cell (semicolon-separated "value:label" pairs, e.g.
+# "0:Off;1:Slow;2:Fast") for a Dropdown-widget variable of the given Atams type.
+#
+# Returns (options, error):
+#   - (list-of-dicts, None) on success.
+#   - (None, None)          if the cell is unset or malformed - lenient fallback to Input,
+#                            same philosophy as every other optional column.
+#   - (None, error string)  if a value parses fine but falls outside the variable's type
+#                            range - a hard generation error, since silently letting this
+#                            through could write an out-of-range value to a real device.
+def parseWidgetOptions(rawOptions, typeUpper: str, qualifiedVarName: str) -> Tuple[Optional[List[Dict]], Optional[str]]:
+  if isUnset(rawOptions):
+    return (None, None)
+
+  valueRange     = TYPE_RANGES_BY_NAME[typeUpper]
+  parsedOptions  = []
+
+  # One "value = label" pair per line (Alt+Enter in Excel) - easier to read/author in a cell
+  # than a single delimited run, especially for rows with many options.
+  for pairText in str(rawOptions).splitlines():
+    pairText = pairText.strip()
+    if pairText == "":
+      continue
+    if "=" not in pairText:
+      return (None, None)
+
+    valueText, label = pairText.split("=", 1)
+    valueText = valueText.strip()
+    label     = label.strip()
+
+    try:
+      value = float(valueText) if (typeUpper == "FLOAT") else int(valueText)
+    except ValueError:
+      return (None, None)
+
+    if (valueRange is not None) and not (valueRange[0] <= value <= valueRange[1]):
+      return (None, f"Generation Error: Dropdown option value {value} for '{qualifiedVarName}' "
+                     f"is outside the {typeUpper} range {valueRange[0]}-{valueRange[1]}")
+
+    parsedOptions.append({"value": value, "label": label})
+
+  if not parsedOptions:
+    return (None, None)
+
+  return (parsedOptions, None)
+
+# Builds the Hub-only "Map<Name>.widgets.json" payload - the complete, standalone description
+# of a device's memory map for atams-gui: enough to both dynamically reconstruct a
+# HubVarInfo_t[]/MemoryMap_t at runtime (type/access/genInfo) and render/filter the Config
+# window (displayName/block/widget/NVMStorage). Returns the payload dict on success, or an
+# error string (same "Generation Error: ..." convention as the rest of this file) on a hard
+# validation failure (out-of-range Dropdown option value).
+def generateWidgetJson(dataBlocks: List[DataBlock], genInfoFields: Dict) -> Dict | str:
+  variables: List[Dict] = []
+  varID = NUMBER_OF_UNIVERSAL_VARS
+
+  for block in dataBlocks:
+    varNames         = block.data["Var Name"]
+    types            = block.data["Data Type"]
+    accessLevels     = block.data["External Access"]
+    nvmStorages      = block.data["NVM Storage"]
+    widgets          = block.data["Widget"]
+    widgetOptionsRaw = block.data["Widget Options"]
+
+    for varIndex in range(len(varNames)):
+      varNameUpper     = sanitiseVarName(varNames[varIndex])
+      typeUpper        = types[varIndex].replace("_t", "").upper()
+      isWriteAccess    = (accessLevels[varIndex] == "RW")
+      accessString     = "WRITE" if isWriteAccess else "READ"
+      widgetRaw        = widgets[varIndex]
+      qualifiedVarName = block.namePascal.upper() + "_" + varNameUpper
+
+      # Blank/unrecognised Widget cell falls back to the plainest widget valid for this
+      # variable's own access level, not unconditionally WIDGET_INPUT - a read-only variable
+      # with no Widget specified should never silently become a write-capable widget.
+      if (not isUnset(widgetRaw)) and (str(widgetRaw) in WIDGET_OPTIONS):
+        widget = str(widgetRaw)
+      else:
+        widget = WIDGET_INPUT if isWriteAccess else WIDGET_VALUE
+
+      # A write-capable widget only ever makes sense on a variable the Hub can actually write -
+      # this only fires when the xlsx author explicitly chose one (the fallback above already
+      # picks an access-appropriate default), so it's a real authoring mistake, not a false
+      # positive on a blank cell.
+      if (widget in WRITABLE_WIDGET_OPTIONS) and (not isWriteAccess):
+        return (f"Generation Error: '{qualifiedVarName}' has widget '{widget}', which requires "
+                f"write access, but its Access column is set to Read-only")
+
+      entry = {
+        "varID":       varID,
+        "name":        "VAR_" + varNameUpper,
+        "displayName": varNames[varIndex],
+        "block":       "Block" + block.namePascal,
+        "type":        "TYPE_" + typeUpper,
+        "access":      "ACCESS_" + accessString,
+        "NVMStorage":  (nvmStorages[varIndex] == "YES"),
+        "widget":      widget,
+      }
+
+      if widget in (WIDGET_DROPDOWN, WIDGET_READ_OPTION):
+        options, error = parseWidgetOptions(widgetOptionsRaw[varIndex], typeUpper, qualifiedVarName)
+        if error is not None:
+          return error
+        if options is None:
+          entry["widget"] = WIDGET_INPUT if (widget == WIDGET_DROPDOWN) else WIDGET_VALUE
+        else:
+          entry["options"] = options
+
+      variables.append(entry)
+      varID += 1
+
+  return {
+    "genInfo":   genInfoFields,
+    "variables": variables,
+  }
+
 def autogenCallMap(autogenHint:      str,
                    memMapNamePascal: str,
                    dataBlocks:       List[DataBlock],
@@ -528,6 +683,26 @@ def generateCppFiles(memMapNamePascal:  str,
     blockNumberOfVars = len(block.data["Var Name"])
     mapNumberOfVars += blockNumberOfVars
 
+  # Validated (and built) here, before any files are written, same as the checks above -
+  # a hard Dropdown-range error (see generateWidgetJson) shouldn't leave a partially-generated
+  # Map/Block file set on disk. Actually written to memMapHubDir further below.
+  genInfoFields = {
+    "atamsVersionMajor": 0,
+    "atamsVersionMinor": 1,
+    "genDay":            timeStamp.day,
+    "genMonth":          timeStamp.month,
+    "genYear":           timeStamp.year,
+    "genHour":           timeStamp.hour,
+    "genMinute":         timeStamp.minute,
+    "genSecond":         timeStamp.second,
+    "genChecksum":       generateMapChecksum(dataBlocks),
+    "noOfVars":          mapNumberOfVars,
+  }
+
+  widgetJson = generateWidgetJson(dataBlocks, genInfoFields)
+  if isinstance(widgetJson, str):
+    return widgetJson
+
   mapHppPathNode = os.path.join(memMapNodeDir, memMapHppName)
   mapCppPathNode = os.path.join(memMapNodeDir, memMapCppName)
   mapHppPathHub  = os.path.join(memMapHubDir,  memMapHppName)
@@ -580,6 +755,15 @@ def generateCppFiles(memMapNamePascal:  str,
                         True)
   mapCppHub.close()
   mapTemplateCppHub.close()
+
+  # Hub-only: the GUI-facing map description, already validated and built above (genInfo here
+  # is byte-identical to the compiled Hub Map<Name>.cpp's s_genInfo just written, since both
+  # come from the same timeStamp/generateMapChecksum/mapNumberOfVars - see the plan doc for why
+  # that matters). Node output is untouched - embedded firmware never needs this.
+  widgetJsonPath = os.path.join(memMapHubDir, "Map" + memMapNamePascal + ".widgets.json")
+  widgetJsonFile = open(widgetJsonPath, OpenMethods.WRITE_FORCE)
+  json.dump(widgetJson, widgetJsonFile, indent=2)
+  widgetJsonFile.close()
 
   cumulativeVarIndex = NUMBER_OF_UNIVERSAL_VARS
   blockHppTemplate   = open(blockHppTemplatePath, OpenMethods.READ_ONLY)

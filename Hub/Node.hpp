@@ -80,6 +80,11 @@ struct HubVarInfo_t
 
 using HubSharedMemoryMap_t = SharedMemoryMap_t<HubVarInfo_t>;
 
+/* Tag type identifying the owner of a group of requests - an owner's address is its identity.
+ * An owner must outlive its requests; clear them with Node::clearRequestPatternsOwned() before
+ * the owner is destroyed. */
+struct RequestOwner {};
+
 /*************************************************************************************/
 /* CLASS DEFINITIONS                                                                 */
 /*************************************************************************************/
@@ -101,7 +106,7 @@ public NodeCallbackHandler
   Node(const uint8_t nodeID);
 
   /* Default Constructor */
-  Node(void) = delete;
+  Node(void) : Node(0U) {};
 
   /* Default Destructor */
   ~Node(void) = default;
@@ -134,16 +139,27 @@ public NodeCallbackHandler
                                    const Atams::Access_t         accessRequest,
                                    const Atams::RequestPattern_t requestPattern);
 
+  Atams::Error_t setRequestPatternOwned(const RequestOwner           *owner,
+                                        const uint16_t                varID,
+                                        const Atams::Access_t         accessRequest,
+                                        const Atams::RequestPattern_t requestPattern);
+
   Atams::Error_t getRequestPattern(const uint16_t           varID,
                                    Atams::Access_t         &accessRequest,
                                    Atams::RequestPattern_t &requestPattern);
-  
+
   void clearAllRequestPatterns(void);
+
+  void clearRequestPatternsOwned(const RequestOwner *owner);
 
   Atams::Error_t getBusError(void);
 
-  uint16_t getNodeMaxPacketSize(void) const;
-  
+  uint32_t getFatalErrorCount(void);
+
+  uint16_t getNodeMaxPacketSize(void);
+
+  uint16_t getEffectivePacketLimit(void);
+
   template <typename T>
   Atams::Error_t setWriteUntilAck(const uint16_t varID, const T writeValue);
 
@@ -229,6 +245,7 @@ public NodeCallbackHandler
     Atams::VarStorage_t     storage                {0U, 0U, 0U, 0U};
     Atams::Access_t         requestAccess          {Atams::ACCESS_NONE};
     Atams::RequestPattern_t requestPattern         {Atams::REQUEST_INACTIVE};
+    const RequestOwner     *requestOwner           {nullptr};
     bool                    newDataReady           {false};
     bool                    ackReceived            {false};
   };
@@ -253,6 +270,7 @@ public NodeCallbackHandler
   uint16_t                 responseLength_         {0U};
   uint16_t                 nodeMaxPacketSize_      {0U};
   uint16_t                 expectedResponseLength_ {Atams::PACKET_HEADER_SIZE};
+  uint32_t                 fatalErrorCount_        {0U};
   bool                     newResponseReady_       {false};
   AbortedResponseDetails_t abortedResponseDetails_ {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
 
@@ -306,16 +324,22 @@ public NodeCallbackHandler
   
   void resetRequestPacketNoLock(void);
 
+  void handleFatalErrorNoLock(void);
+
   Atams::Error_t processRequestPacketChange(const uint16_t                varID,
                                             const Atams::Access_t         accessRequest,
                                             const Atams::RequestPattern_t requestPattern);
 
   Atams::Error_t updateRequestPatternOnReceive(const uint16_t varID);
 
-  bool wouldExceedResponseBuffer(const Atams::HubVarInfo_t      &varInfo,
-                                 const Atams::Access_t          accessRequest,
-                                 const Atams::RequestPattern_t  requestPattern,
-                                 const Atams::Access_t          currentAccess) const;
+  Atams::Error_t applyRequestPatternNoLock(const uint16_t                varID,
+                                           const Atams::Access_t         accessRequest,
+                                           const Atams::RequestPattern_t requestPattern,
+                                           const RequestOwner           *owner);
+
+  uint16_t getEffectivePacketLimitNoLock(void) const;
+
+  Atams::Error_t checkPacketLimits(const RequestChangeConfig_t &changeConfig, const bool datagramFound) const;
 
   virtual Atams::Error_t updateRequestPacketWriteData(void);
 

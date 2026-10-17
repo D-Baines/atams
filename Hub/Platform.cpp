@@ -37,14 +37,6 @@
 /*************************************************************************************/
 
 #include "Platform.hpp"
-#include <cstdio>
-
-static uint32_t txCBCount_ {0U};
-static uint32_t rxCBCount_ {0U};
-
-/* Diagnostic instrumentation: log if a posted transmit sits queued on the
- * io_context for longer than this before async_write is actually called. */
-static constexpr uint32_t TX_DISPATCH_DELAY_WARN_MS {5U};
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -63,22 +55,60 @@ userData_(userData)
   
 }
 
-/** @brief   Start receiving data on the user comms peripheral. 
+/** @brief   Start receiving data on the user comms peripheral.
  *
- *  @details This function is called from the Atams::Bus class when a bus init or config update process is started.
+ *  @details This function is called from the Atams::Bus class at the start of every Bus process: bus init,
+ *           config update, and each update cycle (all-node and single-node). Reception should continue,
+ *           delivering received bytes via @c rxCallback(), until @c stopReceive() is called.
  *
- *  @return  True if the user comms peripheral was started successfully, false otherwise.
+ *           Atams will not call this function again until @c stopReceive() has been called.
+ *
+ *  @return  True if reception was started successfully, false otherwise.
  *
  *  @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
  */
 bool BusPeripheral::startReceive(void)
 {
-  userData_.serialPort.async_read_some(asio::buffer(rxBuffer_), 
-                                       std::bind(&BusPeripheral::rxHandler, 
-                                                 this, 
-                                                 asio::placeholders::error, 
+  if (!userData_.serialPort.is_open())
+  {
+    return (false);
+  }
+
+  if (isReceiving_)
+  {
+    return (true); /* Only one read may be outstanding on the port. */
+  }
+
+  isReceiving_ = true;
+
+  userData_.serialPort.async_read_some(asio::buffer(rxBuffer_),
+                                       std::bind(&BusPeripheral::rxHandler,
+                                                 this,
+                                                 asio::placeholders::error,
                                                  asio::placeholders::bytes_transferred));
   return (true);
+}
+
+/** @brief   Stop receiving data on the user comms peripheral.
+ *
+ *  @details This function is called from the Atams::Bus class when a Bus process ends, or fails to begin
+ *           after reception was started. Any transmission in progress may also be stopped.
+ *
+ *           This function may be called while reception is already stopped. The user implementation must
+ *           handle this case and do nothing.
+ *
+ *  @note    ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
+ */
+void BusPeripheral::stopReceive(void)
+{
+  if (isReceiving_)
+  {
+    asio::error_code ec;
+
+    userData_.serialPort.cancel(ec);
+
+    isReceiving_ = false;
+  }
 }
 
 /** @brief   Transmit bytes using the user comms peripheral.
@@ -103,29 +133,22 @@ bool BusPeripheral::startReceive(void)
  */
 bool BusPeripheral::transmit(uint8_t *buffer, const uint16_t length)
 {
-  uint32_t postedTime {Platform::getMillis()};
-
-  asio::post(userData_.ioContext, [this, buffer, length, postedTime]()
+  if (!userData_.serialPort.is_open())
   {
-    uint32_t dispatchDelay {Platform::getMillis() - postedTime};
+    return (false);
+  }
 
-    if (dispatchDelay >= TX_DISPATCH_DELAY_WARN_MS)
-    {
-      printf("BusPeripheral::transmit dispatch delay: %u ms\n", dispatchDelay);
-    }
-
-    asio::async_write(userData_.serialPort,
-                      asio::buffer(buffer, length),
-                      std::bind(&BusPeripheral::txHandler,
-                                this,
-                                asio::placeholders::error,
-                                asio::placeholders::bytes_transferred));
-  });
+  asio::async_write(userData_.serialPort,
+                    asio::buffer(buffer, length),
+                    std::bind(&BusPeripheral::txHandler,
+                              this,
+                              asio::placeholders::error,
+                              asio::placeholders::bytes_transferred));
 
   return (true);
 }
 
-/*
+/** 
  * @brief   User update function called at regular intervals during Bus Update Cycles
  *
  * @details Users can use this function to poll communications peripherals, check for
@@ -135,30 +158,23 @@ bool BusPeripheral::transmit(uint8_t *buffer, const uint16_t length)
  */
 void BusPeripheral::update(void)
 {
-  //userData_.ioContext.poll();
-  //userData_.ioContext.restart();
+
 }
 
 /*************************************************************************************/
 /* BusPeripheral - USER PRIVATE FUNCTION DEFINITIONS                                 */
 /*************************************************************************************/
 
-static uint8_t breakpoint {0U};
-
 void BusPeripheral::rxHandler(asio::error_code ec, size_t xfr)
 {
-  static_cast<void>(ec);
-
   if (ec)
   {
-    breakpoint++;
+    return; /* Cancelled by stopReceive, port closed, or device removed - don't re-arm. */
   }
 
   if (xfr > 0)
   {
     rxCallback(rxBuffer_, xfr);
-
-    rxCBCount_++;
   }
 
   userData_.serialPort.async_read_some(asio::buffer(rxBuffer_), 
@@ -172,15 +188,9 @@ void BusPeripheral::txHandler(asio::error_code ec, size_t xfr)
 {
   static_cast<void>(xfr);
 
-  txCBCount_++;
-
   if (!ec)
   {
     txCallback();
-  }
-  else 
-  {
-    breakpoint++;
   }
 }
 

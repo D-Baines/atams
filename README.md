@@ -567,6 +567,9 @@ The Node library is written to maximise compatibility with different user applic
 | EVENT DRIVEN COMMS                 | Required when incoming bytes are received into an interrupt or event context separate from the context running the Atams comms update function. |
 | MULTI-THREAD + EVENT DRIVEN COMMS  | Required when Atams::updateCommsBlocking() is used in combination with an event driven receive setup. |
 
+- **Platform Locks:** 
+
+  Lock implementations need not be recursive, as the library never acquires the same lock twice. Implementations that disable or mask interrupts must save the previous mask state on acquire and restore it on release, rather than unconditionally re-enabling. The saved state can be stored in a static variable, per comms peripheral ID for the comms buffer lock.
 - **Platform Byte Pre-Processing:** 
 
   No pre-processing of incoming bytes is required at the platform level. All incoming bytes can be passed directly to Atams using the provided receive callback functions. The incoming bytes must be passed to Atams in order, and the same bytes should not be passed to Atams more than once.
@@ -1406,6 +1409,14 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
 >
 > An aborted response during normal operation indicates a serious configuration error — most likely a Hub/Node Memory Map mismatch. Verify that both sides were generated from the same Memory Map source and that the Bus Initialisation Process completed successfully. Do not suppress or ignore this error.
 
+- **Fatal Request Packet Errors**
+
+  If an internal consistency check on a Node's Request Packet fails, the Request Packet is reset and all request patterns for that Node are cleared, including those set by other threads or Node Actions processes. Only the function call that detected the error returns `ERROR_REQUEST_PACKET_FATAL`. Systems that need to detect these internal faults can optionally monitor the count of fatal errors over the lifetime of each Node instance:
+
+  ```cpp
+  uint32_t getFatalErrorCount(void);
+  ```
+
 ### Asynchronous Bus Update Cycle
 
 - **Overview**
@@ -1522,6 +1533,10 @@ Include the following header to use `NodeActions`:
 - **How it interleaves with the Bus Update Cycle:**
 
     `NodeActions` processes are polled incrementally — call a `NodeActions` update function (e.g. `updateStoreAll`) each Bus Update Cycle until it returns `Atams::PROCESS_COMPLETE` or `Atams::PROCESS_ERROR`. At least one Bus Update Cycle must complete between calls, but multiple cycles can safely pass since response flags persist until cleared, so `NodeActions` can equally be driven from a slower loop or a separate context. Only one `NodeActions` process can be active at a time per `NodeActions` instance; to run processes on two Nodes concurrently, two separate `NodeActions` instances are required.
+
+- **Sharing the Request Packet:**
+
+    `NodeActions` processes only add and remove their own requests, so user requests on the same Node remain active while a process runs. Processes and user requests must not use the same variables at the same time. Calling `clearAllRequestPatterns()` also removes the requests of any running process, causing it to fail. Pass `skipActiveReads = true` to `beginReadMultiVarsOrdered` to leave variables that already have an active read request untouched, using their streamed values instead.
     
 - **NVM Storage Operations:**
 
@@ -1595,6 +1610,7 @@ Atams provides platform files that contain all the required user constants, func
 | EVENT DRIVEN COMMS                 | Required when incoming bytes are received into an interrupt or event context separate from the context running the Atams comms update function. |
 | BLOCKING BUS UPDATE                | Required when blocking Bus Update Cycles functions are used. |
 
+- **Platform Locks:** Lock implementations need not be recursive, as the library never acquires the same lock twice. Each `Platform::MemoryLock` instance must have its own underlying lock - for example, give each instance its own mutex rather than having every instance use one shared global mutex. Implementations that disable or mask interrupts must save the previous mask state on acquire and restore it on release, rather than unconditionally re-enabling. The saved state can be stored in the lock object.
 - **Platform Byte Pre-Processing:** No pre-processing of incoming bytes is required at the platform level. All incoming bytes can be passed directly to Atams using the provided receive callback functions. The incoming bytes must be passed to Atams in order, and the same bytes should not be passed to Atams more than once.
 - **Platform Reception Methods:** Atams packets are compatible with polling, character delimited, or idle line reception methods. If a user wants to use character delimited reception methods - the delimiter should be set to hex `0x00`. 
 

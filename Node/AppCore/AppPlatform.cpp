@@ -69,7 +69,11 @@ uint32_t getMillis(void)
  *          For multi-threaded platforms, the user should use a mutex or similar mechanism. For dual-core 
  *          platforms, the user should use a hardware semaphore or similar mechanism. A combination of both
  *          may be required for multi-threaded dual-core platforms.
- *         
+ *
+ *          The lock need not be recursive, as the library never acquires it twice. Implementations that
+ *          disable or mask interrupts must save the previous mask state on acquire and restore it on release,
+ *          rather than unconditionally re-enabling. The saved state can be stored in a static variable.
+ *
  * @return  None
  *
  * @note    ATAMS PLATFORM REQUIREMENT - MULTI-THREADED

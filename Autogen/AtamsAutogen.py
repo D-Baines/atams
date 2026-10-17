@@ -127,10 +127,10 @@ def generateButtonPressed(memoryMapName: str, memoryMapXlsxPath:str, nodeDir: st
   if (not memoryMapXlsxPath.endswith('.xlsx')):
     statusLabel.configure(text="Error: Invalid Memory Map File Type")
     return # Early Return
-  if (not nodeDir.endswith(os.path.join(FRAMEWORK_NAME, 'Node'))):
+  if (not nodeDir.endswith(os.path.join('Node'))):
     statusLabel.configure(text="Error: Invalid Node Directory")
     return # Early Return
-  if (not hubDir.endswith(os.path.join(FRAMEWORK_NAME, 'Hub'))):
+  if (not hubDir.endswith(os.path.join('Hub'))):
     statusLabel.configure(text="Error: Invalid Hub Directory")
     return # Early Return
   if (memoryMapName == ""):
