@@ -12,8 +12,10 @@
   *          correct operation. Node functions (such as @c Node::setVar, 
   *          @c Node::getVar, and @c Node::setRequestPattern) may be called from
   *          other threads or contexts, provided the user has correctly filled 
-  *          the appropriate multi-threading/concurrency function definitions in 
-  *          the Platform files.
+  *          the appropriate multi-threading/concurrency function definitions in
+  *          the Platform files. The exception is @c Node::init, which is not
+  *          concurrency safe and must complete before the Node is added to a Bus
+  *          or accessed from any other thread or context.
   *
   * @version v1.0
   ******************************************************************************
@@ -68,22 +70,30 @@ circularBuffer_(Atams::EOL_BYTE)
 /**
  * @brief Adds a Node to the Bus.
  *
- * Registers the specified @c Node instance with this Bus. The Node pointer is stored internally, and the Node will participate in 
- * subsequent Bus operations. If the Bus is already full or the Node is already present, the function returns an appropriate error code 
- * and does not add the Node again.
+ * Registers the specified @c Node instance with this Bus. The Node pointer is stored internally, and the Node will participate in
+ * subsequent Bus operations. The function will fail if the Bus is already full, the Node is already present, or if a Bus update cycle
+ * or related process is in progress. Adding a Node invalidates the current Bus initialisation; the Bus initialisation process must be
+ * completed again before further Bus operations can proceed.
  *
  * @param node Reference to the @c Node instance to add to the Bus.
  *
- * @retval @c ERROR_NONE                Node successfully added to the Bus.
- * @retval @c ERROR_BUS_FULL            The Bus has reached the maximum number of Nodes allowed.
- * @retval @c ERROR_NODE_ALREADY_ON_BUS The specified Node is already registered on this Bus.
+ * @retval @c ERROR_NONE                     Node successfully added to the Bus.
+ * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS A Bus update cycle or related process is currently in progress; try again when the Bus is idle.
+ * @retval @c ERROR_BUS_FULL                 The Bus has reached the maximum number of Nodes allowed.
+ * @retval @c ERROR_NODE_ALREADY_ON_BUS      The specified Node is already registered on this Bus.
  *
- * @note The @c Node object must exist for the entire period it is registered on the Bus. 
- *       Before destroying or removing a Node, call @c removeNodeFromBus and ensure it returns @c Atams::ERROR_NONE to confirm the Node 
+ * @note The @c Node object must exist for the entire period it is registered on the Bus.
+ *       Before destroying or removing a Node, call @c removeNodeFromBus and ensure it returns @c Atams::ERROR_NONE to confirm the Node
  *       has been safely removed.
+ *       After adding a Node, you must re-run the Bus initialisation procedure before starting any further Bus operations.
  */
 Atams::Error_t Bus::addNodeToBus(Atams::Node &node)
 {
+  if (isAnyProcessInProgress())
+  {
+    return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
+  }
+
   if (noOfNodesOnBus_ >= Platform::NUMBER_OF_NODES_PER_BUS)
   {
     return (Atams::ERROR_BUS_FULL); /* Early Return */
@@ -95,8 +105,10 @@ Atams::Error_t Bus::addNodeToBus(Atams::Node &node)
   }
 
   nodePtrs_[noOfNodesOnBus_] = &node;
-  
+
   noOfNodesOnBus_++;
+
+  invalidateBusInit();
 
   return (Atams::ERROR_NONE);
 }
@@ -138,7 +150,9 @@ Atams::Error_t Bus::removeNodeFromBus(Node &node)
       }
 
       noOfNodesOnBus_--;
+      nodePtrs_[noOfNodesOnBus_] = nullptr; /* Clear the vacated slot */
       nodeFound = true;
+      break;
     }
   }
 
@@ -148,11 +162,9 @@ Atams::Error_t Bus::removeNodeFromBus(Node &node)
   {
     error = Atams::ERROR_NODE_NOT_ON_BUS;
   }
-  else 
+  else
   {
-    initProcessHandler_.specificState = Bus::InitState::ERROR;
-    initProcessHandler_.processState  = Atams::PROCESS_ERROR;
-    initProcessHandler_.error         = Atams::ERROR_INIT_ORDER;
+    invalidateBusInit();
   }
 
   return (error);
@@ -180,6 +192,7 @@ Atams::Error_t Bus::removeNodeFromBus(Node &node)
  * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS A Bus process (initialisation, configuration or update cycle) is currently in progress; try again when the Bus is idle.
  * @retval @c ERROR_BUS_EMPTY                No Nodes are registered on the Bus.
  * @retval @c ERROR_NULLPTR                  A registered Node pointer is null.
+ * @retval @c ERROR_MEMORY_MAP               A registered Node has not been initialised with a valid Memory Map.
  * @retval @c ERROR_PLATFORM                 Failed to start data reception on the platform bus peripheral.
  */
 Atams::Error_t Bus::beginBusInitProcess(void)
@@ -203,11 +216,20 @@ Atams::Error_t Bus::beginBusInitProcess(void)
     return (Atams::ERROR_NULLPTR); /* Early Return */
   }
 
-  if (BusPeripheral::startReceive() == false) 
+  /* Each internal Memory Map must be valid before it can be compared against the physical Node device */
+  for (Atams::Node *&nodePtr : nodePtrs_)
+  {
+    if ((nodePtr != nullptr) && (nodePtr->getMemoryMapIsValid() == false))
+    {
+      return (Atams::ERROR_MEMORY_MAP); /* Early Return */
+    }
+  }
+
+  if (BusPeripheral::startReceive() == false)
   {
     return (Atams::ERROR_PLATFORM); /* Early Return */
   }
-  
+
   initProcessHandler_.activeNodePtr = firstNodePtr;
   busIDsToSet_.firstNodeID          = firstNodePtr->getNodeID();
   busIDsToSet_.lastNodeID           = lastNodePtr->getNodeID();
@@ -335,6 +357,24 @@ Atams::ProcessState_t Bus::updateBusInitProcess(Atams::Error_t &error)
 }
 
 /**
+ * @brief Gets the current state of the Bus initialisation process without progressing it.
+ *
+ * @param error Reference to an @c Atams::Error_t variable, set to the error stored for the initialisation process.
+ *
+ * @return The current @c Atams::ProcessState_t of the initialisation process:
+ *         - @c PROCESS_IN_PROGRESS: Initialisation is ongoing.
+ *         - @c PROCESS_COMPLETE:    Initialisation has finished successfully and Bus update cycles may be started.
+ *         - @c PROCESS_ERROR:       Initialisation failed, or is required. @p error is @c ERROR_INIT_ORDER if initialisation has
+ *                                   not been run since the Bus was constructed or a Node was added or removed.
+ */
+Atams::ProcessState_t Bus::getBusInitState(Atams::Error_t &error)
+{
+  error = initProcessHandler_.error;
+
+  return (initProcessHandler_.processState);
+}
+
+/**
  * @brief Begins an update cycle for all Nodes on the Bus.
  *
  * Starts the process of sending request packets to all registered Nodes and collecting their responses. This function is used to
@@ -389,6 +429,7 @@ Atams::Error_t Bus::beginUpdateCycle(void)
  *
  * @retval @c ERROR_NONE       Update cycle started successfully.
  * @retval @c ERROR_INIT_ORDER The Bus has not been initialised; call @ref Bus::beginBusInitProcess and complete the initialisation before starting an update cycle.
+ * @retval @c ERROR_NODE_NOT_ON_BUS The specified Node is not registered on this Bus.
  * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS A Bus process (initialisation, configuration or update cycle) is currently in progress; try again when the Bus is idle.
  * @retval @c ERROR_PLATFORM   Failed to start data reception on the platform bus peripheral.
  */
@@ -397,6 +438,11 @@ Atams::Error_t Bus::beginSingleNodeUpdateCycle(Atams::Node &node)
   if (initProcessHandler_.processState != Atams::PROCESS_COMPLETE)
   {
     return (Atams::ERROR_INIT_ORDER); /* Early Return */
+  }
+
+  if (findNodeOnBus(node) == false)
+  {
+    return (Atams::ERROR_NODE_NOT_ON_BUS); /* Early Return */
   }
 
   if (isAnyProcessInProgress())
@@ -791,6 +837,13 @@ Atams::ProcessState_t Bus::runUpdateCycleSyncCore(Atams::Error_t &error, bool bl
   Atams::Node                          *&activeNodePtr {process.activeNodePtr};
   Bus::PollResult                        rxPollResult  {Bus::PollResult::WAITING};
 
+  /* Nothing to progress - report the stored state without the null check below overwriting it */
+  if (processState != Atams::PROCESS_IN_PROGRESS)
+  {
+    if (processState == Atams::PROCESS_ERROR) error = process.error;
+    return (processState); /* Early Return */
+  }
+
   activeNodePtr = getUpdateNodePtr();
 
   if (activeNodePtr == nullptr) process.terminate(Atams::ERROR_NULLPTR);
@@ -848,6 +901,13 @@ Atams::ProcessState_t Bus::runUpdateCycleAsyncCore(Atams::Error_t &error, bool b
   Bus::UpdateState                      &updateState   {process.specificState};
   Atams::Node                          *&activeNodePtr {process.activeNodePtr};
   Bus::PollResult                        rxPollResult  {Bus::PollResult::WAITING};
+
+  /* Nothing to progress - report the stored state without the null check below overwriting it */
+  if (processState != Atams::PROCESS_IN_PROGRESS)
+  {
+    if (processState == Atams::PROCESS_ERROR) error = process.error;
+    return (processState); /* Early Return */
+  }
 
   activeNodePtr = getUpdateNodePtr();
 
@@ -979,6 +1039,23 @@ bool Bus::isAnyProcessInProgress(void)
 bool Bus::safeToRemoveNode(void)
 {
   return (!isAnyProcessInProgress());
+}
+
+/* Only called when no process is in progress. The update handlers are also reset so a run call made without a successful
+   begin reports ERROR_INIT_ORDER, rather than the result of the last update cycle. */
+void Bus::invalidateBusInit(void)
+{
+  initProcessHandler_.specificState = Bus::InitState::ERROR;
+  initProcessHandler_.processState  = Atams::PROCESS_ERROR;
+  initProcessHandler_.error         = Atams::ERROR_INIT_ORDER;
+
+  updateProcessHandler_.specificState = Bus::UpdateState::ERROR;
+  updateProcessHandler_.processState  = Atams::PROCESS_ERROR;
+  updateProcessHandler_.error         = Atams::ERROR_INIT_ORDER;
+
+  singleNodeUpdateProcessHandler_.specificState = Bus::UpdateState::ERROR;
+  singleNodeUpdateProcessHandler_.processState  = Atams::PROCESS_ERROR;
+  singleNodeUpdateProcessHandler_.error         = Atams::ERROR_INIT_ORDER;
 }
 
 bool Bus::findNodeOnBus(Node &node)

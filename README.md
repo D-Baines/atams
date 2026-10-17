@@ -940,7 +940,7 @@ static Atams::Node node1 (NODE_ONE_ID);
 
 ### Node Initialisation
 
-Each Node class instance needs to be initialised with a Memory Map from `Atams/Hub/Maps` that was generated with the Memory Map used to initialise the associated Node device. If a valid Memory Map is provided to the initialisation function, the function will return `Atams::ERROR_NONE`.
+Each Node class instance needs to be initialised with a Memory Map from `Atams/Hub/Maps` that was generated with the Memory Map used to initialise the associated Node device. If a valid Memory Map is provided to the initialisation function, the function will return `Atams::ERROR_NONE`. Initialisation is not concurrency safe, so it must complete before the Node is added to a Bus or accessed from any other thread.
 
 **Example:**
 

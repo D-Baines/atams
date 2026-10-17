@@ -208,6 +208,8 @@ public NodeCallbackHandler
 
   Atams::Error_t validateAtamsVersion(void);
 
+  bool getMemoryMapIsValid(void);
+
   #if (DEVELOPER_TOOLS == true)
   void injectBusError(const Atams::Error_t errorToInject, 
                       const uint16_t       readOnlyVarID,
@@ -287,9 +289,7 @@ public NodeCallbackHandler
                               
   void resetVars(void);
 
-  bool getMemoryMapIsValid(void);
-
-  void invalidateMemoryMap(void);  
+  void invalidateMemoryMap(void);
 
   Atams::Error_t initBlockDescriptors(const MemoryMap_t &memoryMap);
 

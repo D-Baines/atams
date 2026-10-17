@@ -109,6 +109,8 @@ private Platform::BusPeripheral
 
   Atams::ProcessState_t updateBusInitProcess(Atams::Error_t &error);
 
+  Atams::ProcessState_t getBusInitState(Atams::Error_t &error);
+
   Atams::Error_t beginUpdateCycle(void);
 
   Atams::Error_t beginSingleNodeUpdateCycle(Atams::Node &node);
@@ -276,6 +278,8 @@ private Platform::BusPeripheral
   bool isAnyProcessInProgress(void);
 
   bool safeToRemoveNode(void);
+
+  void invalidateBusInit(void);
 
   bool findNodeOnBus(Node &node);
 

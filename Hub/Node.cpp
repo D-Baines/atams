@@ -64,17 +64,17 @@ nodeID_(nodeID)
 /**
  * @brief Initialises the Node with an Atams Memory Map.
  *
- * Validates and stores a reference to the provided Memory Map for variable access control. Initialises concurrency locks and
- * prepares the Node instance for use. If validation or lock initialisation fails, the Memory Map is invalidated.
+ * Validates and stores a reference to the provided Memory Map for variable access control, preparing the Node instance for use.
+ * If validation fails, the Node's current Memory Map is left unchanged.
  *
  * @param memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
  *
  * @retval @c ERROR_NONE                   Initialisation successful.
  * @retval @c ERROR_MEMORY_MAP             Memory Map validation failed (invalid structure, length, universal block, or checksum).
  * @retval @c ERROR_ATAMS_VERSION_MISMATCH Memory Map validation failed (Atams version mismatch).
- * @retval @c ERROR_PLATFORM               Failed to initialise concurrency locks.
  *
- * @note This function must be called before accessing variables or changing request patterns on the Node.
+ * @note This function is not concurrency safe. It must be called, and must complete, before the Node is added to a Bus or
+ *       accessed from any other thread or context.
  */
 Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
 {
@@ -1154,6 +1154,21 @@ Atams::Error_t Node::validateAtamsVersion(void)
   return (error);
 }
 
+/**
+ * @brief Checks whether this Node instance has been initialised with a valid Memory Map.
+ *
+ * @retval @c true  A Memory Map has been successfully initialised using @ref Node::init.
+ * @retval @c false No Memory Map has been initialised, or initialisation failed.
+ *
+ * @note This only checks the internal Memory Map of this Node instance. It does not confirm that the physical Node device
+ *       uses an identical Memory Map; that is performed during the Bus initialisation process.
+ */
+bool Node::getMemoryMapIsValid(void)
+{
+  return ((memoryMap_    != nullptr) &&
+          (validVarCount_ > 0U     ) );
+}
+
 #if (DEVELOPER_TOOLS == true)
 
 void Node::injectBusError(const Atams::Error_t errorToInject, 
@@ -1305,12 +1320,6 @@ void Node::resetVars(void)
   for (Var_t &var : varStorage_) memset(var.storage, 0U, sizeof(var.storage));
 
   varStorageLock_.releaseLock();
-}
-
-bool Node::getMemoryMapIsValid(void)
-{
-  return ((memoryMap_    != nullptr) &&
-          (validVarCount_ > 0U     ) );
 }
 
 void Node::invalidateMemoryMap(void)

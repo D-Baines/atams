@@ -152,7 +152,10 @@ void NodeActions::beginValidateAtamsVersion(Node &node)
     return; /* Early Return */
   }
 
-  beginReadMultiVarsOrderedImpl(busReadMultiVars_, node, BlockUniversal::VAR_ATAMS_VERSION_MAJOR, BlockUniversal::VAR_ATAMS_VERSION_PATCH, false);
+  beginReadMultiVarsOrderedImpl(busReadMultiVars_, 
+                                node, 
+                                BlockUniversal::VAR_ATAMS_VERSION_MAJOR, 
+                                BlockUniversal::VAR_ATAMS_VERSION_PATCH, false);
 }
 
 void NodeActions::beginValidateBusIDs(Node &node, const Atams::BusIDs_t busIDs)
