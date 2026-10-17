@@ -289,18 +289,24 @@ class NodeActions
     ProcessHandler(ProcessHandler &&other)                  = delete;
     ProcessHandler & operator=(ProcessHandler &&other)      = delete;
 
-    Node                 *nodePtr         {nullptr};
-    Atams::ProcessState_t processState    {Atams::PROCESS_COMPLETE};
-    Atams::ProcessState_t subProcessState {Atams::PROCESS_COMPLETE};
-    T                     specificState   {T::START}; /* All specific state enums must include START, ERROR, COMPLETE */
-    Atams::Error_t        error           {Atams::ERROR_NONE};
-    Atams::Error_t        cancelError     {Atams::ERROR_NONE};
-    uint32_t              prevEventTime   {0U};
+    Node          *nodePtr       {nullptr};
+    T              specificState {T::START}; /* All specific state enums must include START, ERROR, COMPLETE */
+    Atams::Error_t cancelError   {Atams::ERROR_NONE};
+    uint32_t       prevEventTime {0U};
+
+    const Atams::ProcessState_t & getProcessState(void) const;
+    Atams::Error_t                getError(void) const;
 
     void resetAndAssignNode(Node &node);
     void terminate(Atams::Error_t error);
     void setProcessComplete(void);
     bool nullptrCheck(Atams::Error_t &errorReturn);
+
+    private:
+
+    /* Only written by the helpers above, so the error is only set while the process is in the ERROR state */
+    Atams::ProcessState_t processState_ {Atams::PROCESS_COMPLETE};
+    Atams::Error_t        error_        {Atams::ERROR_NONE};
   };
 
   struct ReadMultiVarsContext

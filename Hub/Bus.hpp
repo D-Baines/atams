@@ -162,10 +162,8 @@ private Platform::BusPeripheral
     VALIDATE_ATAMS_VERSION = 1U,
     WRITE_CONFIG           = 2U,
     STORE_CONFIG           = 3U,
-    SEND_REQUEST           = 4U,
-    GET_RESPONSE           = 5U,
-    COMPLETE               = 6U,
-    ERROR                  = 7U
+    COMPLETE               = 4U,
+    ERROR                  = 5U
   };
 
   enum class UpdateState: uint8_t
@@ -197,28 +195,34 @@ private Platform::BusPeripheral
 
   struct ProcessHandlerBase
   {
-    Atams::ProcessState_t processState     {Atams::PROCESS_ERROR};
-    Atams::ProcessState_t subProcessState  {Atams::PROCESS_ERROR};
-    Atams::Error_t        error            {Atams::ERROR_INIT_ORDER};
-    uint32_t              prevEventTime    {0U};
-    bool                  allNodesComplete {false};
-    Atams::Node          *activeNodePtr    {nullptr};
+    uint32_t     prevEventTime {0U};
+    Atams::Node *activeNodePtr {nullptr};
 
-    void terminate(Atams::Error_t exitError);
+    const Atams::ProcessState_t & getProcessState(void) const;
+    Atams::Error_t                getError(void) const;
+
+    /* Pure virtual so a terminate through a base reference also sets the specific state to ERROR */
+    virtual void terminate(Atams::Error_t exitError) = 0;
+
+    protected:
+
+    /* Only written by the ProcessHandler helpers, so the error is only set while the process is in the ERROR state */
+    Atams::ProcessState_t processState_ {Atams::PROCESS_ERROR};
+    Atams::Error_t        error_        {Atams::ERROR_INIT_ORDER};
   };
-  
+
   template <typename T>
   struct ProcessHandler :
   public ProcessHandlerBase
   {
     ProcessHandler(void) = default;
 
-    T specificState     {T::COMPLETE};
-    T nextSpecificState {T::COMPLETE};
+    T specificState {T::COMPLETE};
 
-    void terminate(Atams::Error_t error);
+    void terminate(Atams::Error_t exitError) override final;
     void setProcessComplete(void);
     void readyProcess(void);
+    void invalidate(Atams::Error_t invalidError);
   };
 
   /*-- Static Private Variables -----------------------------------------------------*/
@@ -236,7 +240,6 @@ private Platform::BusPeripheral
   Node                 *nodePtrs_[Platform::NUMBER_OF_NODES_PER_BUS];
   NodeActions           nodeProcessHandler_;
   Node                  dummyNode_ {0U};
-  NodeCallbackHandler  &dummyNodeCallbackHandler_ {dummyNode_};
 
   Bus::ProcessHandler<Bus::InitState>         initProcessHandler_;
   Bus::ProcessHandler<Bus::ConfigUpdateState> configUpdateProcessHandler_;
@@ -348,12 +351,6 @@ private Platform::BusPeripheral
   void beginSetConfigWrite(void);
 
   void beginSetConfigStore(void);
-
-  void updateSetConfigSendRequest(void);
-
-  void updateSetConfigGetResponse(void);
-
-  void startNextConfigCycle(const Bus::ConfigUpdateState nextState);
 };
 
 
