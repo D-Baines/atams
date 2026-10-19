@@ -1537,6 +1537,10 @@ Include the following header to use `NodeActions`:
 - **Sharing the Request Packet:**
 
     `NodeActions` processes only add and remove their own requests, so user requests on the same Node remain active while a process runs. Processes and user requests must not use the same variables at the same time. Calling `clearAllRequestPatterns()` also removes the requests of any running process, causing it to fail. Pass `skipActiveReads = true` to `beginReadMultiVarsOrdered` to leave variables that already have an active read request untouched, using their streamed values instead.
+
+- **Aborting a Process:**
+
+    `abort(error)` ends any running process with `Atams::PROCESS_ERROR` and the given error, and removes its requests. Nothing is sent to the Node, so use it only when the Bus can no longer be updated (e.g. the port has closed). A Node left mid-process may still be in the configuration state.
     
 - **NVM Storage Operations:**
 

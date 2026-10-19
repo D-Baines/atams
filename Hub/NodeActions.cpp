@@ -205,6 +205,19 @@ void NodeActions::beginSetBusIDs(Node &node, const Atams::BusIDs_t busIDs)
   setMultiConfigProcess_.resetAndAssignNode(node);
 }
 
+void NodeActions::abort(const Atams::Error_t error)
+{
+  abortProcess(configEntryProcess_,         error);
+  abortProcess(configExitProcess_,          error);
+  abortProcess(setConfigVarProcess_,        error);
+  abortProcess(storageProcess_,             error);
+  abortProcess(resetNodeProcess_,           error);
+  abortProcess(clearWatchdogFaultProcess_,  error);
+  abortProcess(setMultiConfigProcess_,      error);
+  abortProcess(busReadMultiVars_.process,   error);
+  abortProcess(userReadMultiVars_.process,  error);
+}
+
 Atams::ProcessState_t NodeActions::updateConfigStateEntry(Atams::Error_t &error)
 {
   NodeActions::ProcessHandler<ConfigEntryState> &process {configEntryProcess_};
@@ -494,6 +507,15 @@ Atams::ProcessState_t NodeActions::updateSetBusIDs(Atams::Error_t &error)
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
+
+template<typename T>
+void NodeActions::abortProcess(ProcessHandler<T> &process, const Atams::Error_t error)
+{
+  if (process.getProcessState() == Atams::PROCESS_IN_PROGRESS)
+  {
+    process.terminate(error);
+  }
+}
 
 /* Warning - no nullptr check before process.nodePtr is dereferenced. Check must be handled by calling function */
 template<typename T>

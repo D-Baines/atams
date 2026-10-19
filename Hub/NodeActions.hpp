@@ -103,6 +103,8 @@ class NodeActions
 
   void beginSetBusIDs(Node &node, const Atams::BusIDs_t busIDs);
 
+  void abort(const Atams::Error_t error);
+
   Atams::ProcessState_t updateConfigStateEntry(Atams::Error_t &error);
 
   Atams::ProcessState_t updateConfigStateExit(Atams::Error_t &error);
@@ -356,11 +358,13 @@ class NodeActions
 
   static bool hasActiveRead(Atams::Node &node, const uint16_t varID);
 
-  /* Processes must set requests via these helpers so that the requests are owned by the process */
   static Atams::Error_t clearDataReadySetReadStreamOwned(Atams::Node &node, const RequestOwner *owner, const uint16_t varID);
 
   template <typename T>
   static Atams::Error_t clearAckSetWriteStreamOwned(Atams::Node &node, const RequestOwner *owner, const uint16_t varID, const T writeData);
+
+  template<typename T>
+  static void abortProcess(ProcessHandler<T> &process, const Atams::Error_t error);
 
   template<typename T>
   void cancelConfigProcess(ProcessHandler<T> &process, Atams::Error_t error);
