@@ -178,20 +178,15 @@ def sanitisePascalName(rawName: str) -> str:
 def isUnset(value) -> bool:
   return pandas.isnull(value) or (value == "-")
 
-def generateEnum(iteratorStartValue: int,
-                 minStringLength:    int,
-                 prefixString:       str,
-                 stringList:         List[str],
-                 targetFile:         TextIO) -> None:
-  iterator = iteratorStartValue
+def generateVarIDList(iteratorStartValue: int,
+                      stringList:         List[str],
+                      targetFile:         TextIO) -> None:
+  iterator      = iteratorStartValue
   requiredSpace = getLongestString(stringList)
-  if (minStringLength > requiredSpace):
-    requiredSpace = minStringLength
   for string in stringList:
-    noOfSpaces = requiredSpace - len(string)
-    targetFile.write(prefixString + string)
-    writeSpaces(noOfSpaces, targetFile)
-    targetFile.write(" = " + str(iterator) + "U,\n")
+    targetFile.write("constexpr VarID_t VAR_" + string)
+    writeSpaces(requiredSpace - len(string), targetFile)
+    targetFile.write(" {" + str(iterator) + "U};\n")
     iterator += 1
   targetFile.seek(targetFile.tell()-1)
 
@@ -591,7 +586,7 @@ def autogenCallBlock(autogenHint:        str,
     case "BLOCK_NAME_PASCAL":
       targetFile.write(blockNamePascal)
     case "VAR_ID_LIST":
-      generateEnum(cumulativeVarIndex, 0, "  VAR_", varIDsUpper, targetFile)
+      generateVarIDList(cumulativeVarIndex, varIDsUpper, targetFile)
     case "NUMBER_OF_VARS":
       targetFile.write(str(len(dataBlock["Var Name"])) + "U")
     case "DEFAULTS":

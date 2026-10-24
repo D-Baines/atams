@@ -31,6 +31,8 @@
 
 #include <stdint.h>
 
+#include "../../../Shared/AtamsTypedefs.hpp"
+
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
@@ -38,32 +40,31 @@
 namespace Atams { namespace MapTest { namespace BlockTest2 {
 
 /*************************************************************************************/
-/* PUBLIC TYPEDEFS                                                                   */
-/*************************************************************************************/
-
-enum VarID_t: uint16_t
-{
-  VAR_READ_UINT8   = 44U,
-  VAR_READ_INT8    = 45U,
-  VAR_READ_UINT16  = 46U,
-  VAR_READ_INT16   = 47U,
-  VAR_READ_UINT32  = 48U,
-  VAR_READ_INT32   = 49U,
-  VAR_READ_FLOAT   = 50U,
-  VAR_WRITE_UINT8  = 51U,
-  VAR_WRITE_INT8   = 52U,
-  VAR_WRITE_UINT16 = 53U,
-  VAR_WRITE_INT16  = 54U,
-  VAR_WRITE_UINT32 = 55U,
-  VAR_WRITE_INT32  = 56U,
-  VAR_WRITE_FLOAT  = 57U,
-};
-
-/*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
+/*------------------------ Data Block Info -------------------------*/
+
 constexpr uint16_t NUMBER_OF_VARS {14U};
+
+/*-------------------------- Var ID List ---------------------------*/
+
+constexpr VarID_t VAR_READ_UINT8   {44U};
+constexpr VarID_t VAR_READ_INT8    {45U};
+constexpr VarID_t VAR_READ_UINT16  {46U};
+constexpr VarID_t VAR_READ_INT16   {47U};
+constexpr VarID_t VAR_READ_UINT32  {48U};
+constexpr VarID_t VAR_READ_INT32   {49U};
+constexpr VarID_t VAR_READ_FLOAT   {50U};
+constexpr VarID_t VAR_WRITE_UINT8  {51U};
+constexpr VarID_t VAR_WRITE_INT8   {52U};
+constexpr VarID_t VAR_WRITE_UINT16 {53U};
+constexpr VarID_t VAR_WRITE_INT16  {54U};
+constexpr VarID_t VAR_WRITE_UINT32 {55U};
+constexpr VarID_t VAR_WRITE_INT32  {56U};
+constexpr VarID_t VAR_WRITE_FLOAT  {57U};
+
+/*------------------------- Defaults List --------------------------*/
 
 constexpr uint8_t  DEFAULT_READ_UINT8   {0U};
 constexpr int8_t   DEFAULT_READ_INT8    {1};

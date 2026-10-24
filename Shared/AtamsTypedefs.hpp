@@ -61,7 +61,6 @@ constexpr uint8_t ATAMS_VERSION_PATCH {0U};
 constexpr uint8_t  NODE_ID_MAX                                 {254U};
 constexpr uint8_t  MAX_NUMBER_OF_NODES_PER_BUS                 {255U};
 constexpr uint16_t MAX_NUMBER_OF_VARS                          {8191U};
-constexpr uint16_t VAR_ID_NULL                                 {8191U};
 constexpr uint8_t  MAX_TYPE_SIZE                               {4U};
 constexpr uint8_t  EOL_BYTE                                    {0U};
 constexpr uint8_t  BITS_IN_A_BYTE                              {8U};
@@ -104,6 +103,11 @@ static_assert(std::atomic<uint32_t>::is_always_lock_free, "Atomic uint32_t acces
 /*************************************************************************************/
 
 using VarStorage_t = uint8_t[MAX_TYPE_SIZE];
+
+enum VarID_t: uint16_t {};
+static_assert(sizeof(Atams::VarID_t) == 2U, "Atams::VarID_t size invalid");
+
+constexpr VarID_t VAR_ID_NULL {8191U};
 
 enum ProcessState_t: uint8_t
 {
@@ -262,7 +266,7 @@ enum Access_t: uint8_t
   ACCESS_READ  = 1U,
   ACCESS_WRITE = 2U,
 };
-static_assert(sizeof(Atams::Error_t) == 1U, "Atams::Access_t size invalid");
+static_assert(sizeof(Atams::Access_t) == 1U, "Atams::Access_t size invalid");
 
 enum Bool_t: uint8_t
 {
@@ -365,8 +369,8 @@ struct VarInfo_t
 
 struct DatagramHeader_t
 {
-  uint8_t  command;
-  uint16_t varID;
+  uint8_t command {ACCESS_NONE};
+  VarID_t varID   {VAR_ID_NULL};
 };
 
 /* Used for Bus/Hub-Node compatibility checking (Hub/Node.cpp: Node::validateGenInfo()) - not
@@ -438,8 +442,8 @@ struct NodeConfig_t
 
 struct AbortedResponseDetails_t
 {
-  uint16_t       varID;
-  Atams::Error_t error;
+  VarID_t        varID {VAR_ID_NULL};
+  Atams::Error_t error {Atams::ERROR_NONE};
 
   bool operator!=(const AbortedResponseDetails_t &other)
   {
@@ -652,5 +656,4 @@ inline const char *getMessageTypeString(const Atams::MessageType_t messageType)
 /**
   * @}End of File
   */
-
 

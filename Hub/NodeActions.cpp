@@ -183,7 +183,7 @@ void NodeActions::beginReadUniversalBlock(Node &node)
                                 false);
 }
 
-void NodeActions::beginReadMultiVarsOrdered(Node &node, uint16_t firstVarID, uint16_t lastVarID, bool skipActiveReads)
+void NodeActions::beginReadMultiVarsOrdered(Node &node, Atams::VarID_t firstVarID, Atams::VarID_t lastVarID, bool skipActiveReads)
 {
   if (userReadMultiVars_.process.getProcessState() == Atams::PROCESS_IN_PROGRESS)
   {
@@ -538,7 +538,7 @@ void NodeActions::updateCancelConfigState(ProcessHandler<T> &process)
 }
 
 template<typename T>
-Atams::ProcessState_t NodeActions::updateSetConfigVar(Atams::Error_t &error, const uint16_t varID, const T value)
+Atams::ProcessState_t NodeActions::updateSetConfigVar(Atams::Error_t &error, const Atams::VarID_t varID, const T value)
 {
   NodeActions::ProcessHandler<SetConfigVarState> &process {setConfigVarProcess_};
 
@@ -611,7 +611,7 @@ Atams::ProcessState_t NodeActions::updateSetConfigVar(Atams::Error_t &error, con
   return (process.getProcessState());
 }
 
-Atams::ProcessState_t NodeActions::updateStorageProcess(Atams::Error_t &error, const uint16_t passcodeVarID, uint32_t passcode)
+Atams::ProcessState_t NodeActions::updateStorageProcess(Atams::Error_t &error, const Atams::VarID_t passcodeVarID, uint32_t passcode)
 {
   NodeActions::ProcessHandler<StorageProcessState> &process {storageProcess_};
 
@@ -898,7 +898,7 @@ Atams::Error_t NodeActions::setBusIDsCheck(NodeActions &actionsHandler, Atams::N
   return (error);
 }
 
-void NodeActions::beginReadMultiVarsOrderedImpl(ReadMultiVarsContext &context, Node &node, uint16_t firstVarID, uint16_t lastVarID, bool skipActiveReads)
+void NodeActions::beginReadMultiVarsOrderedImpl(ReadMultiVarsContext &context, Node &node, Atams::VarID_t firstVarID, Atams::VarID_t lastVarID, bool skipActiveReads)
 {
   context.groupStart      = firstVarID;
   context.lastID          = lastVarID;
@@ -958,14 +958,14 @@ void NodeActions::streamReadGroup(ReadMultiVarsContext &context)
   /* Add vars until the packet is full, the group limit is reached, or the last var is reached */
   for (; (varID <= context.lastID) && ((varID - context.groupStart) < MAX_READ_GROUP_VARS); varID++)
   {
-    if ((context.skipActiveReads == true) && (hasActiveRead(node, varID) == true))
+    if ((context.skipActiveReads == true) && (hasActiveRead(node, static_cast<Atams::VarID_t>(varID)) == true))
     {
       /* Existing read request supplies the value - leave its request and data ready flag untouched */
       context.skippedMask |= (1U << (varID - context.groupStart));
     }
     else
     {
-      streamError = clearDataReadySetReadStreamOwned(node, &process, varID);
+      streamError = clearDataReadySetReadStreamOwned(node, &process, static_cast<Atams::VarID_t>(varID));
 
       if (streamError != Atams::ERROR_NONE) break;
     }
@@ -998,8 +998,8 @@ void NodeActions::checkReadGroup(ReadMultiVarsContext &context)
   {
     if ((context.skippedMask & (1U << (varID - context.groupStart))) != 0U) continue; /* Skipped var - value already read */
 
-    if      (node.stopStreamIsDataReady(varID, varReady)) memoryMapError = true;
-    else if (!varReady)                                   allReady       = false;
+    if      (node.stopStreamIsDataReady(static_cast<Atams::VarID_t>(varID), varReady)) memoryMapError = true;
+    else if (!varReady)                                                            allReady       = false;
   }
 
   if      (memoryMapError)                     process.terminate(Atams::ERROR_MEMORY_MAP);
@@ -1012,7 +1012,7 @@ void NodeActions::checkReadGroup(ReadMultiVarsContext &context)
   }
 }
 
-bool NodeActions::hasActiveRead(Node &node, const uint16_t varID)
+bool NodeActions::hasActiveRead(Node &node, const Atams::VarID_t varID)
 {
   Atams::Access_t         currentAccess  {Atams::ACCESS_NONE};
   Atams::RequestPattern_t currentPattern {Atams::REQUEST_INACTIVE};
@@ -1022,7 +1022,7 @@ bool NodeActions::hasActiveRead(Node &node, const uint16_t varID)
           (currentPattern                                               != Atams::REQUEST_INACTIVE) );
 }
 
-Atams::Error_t NodeActions::clearDataReadySetReadStreamOwned(Node &node, const RequestOwner *owner, const uint16_t varID)
+Atams::Error_t NodeActions::clearDataReadySetReadStreamOwned(Node &node, const RequestOwner *owner, const Atams::VarID_t varID)
 {
   Atams::Error_t error {node.clearDataReady(varID)};
 
@@ -1032,7 +1032,7 @@ Atams::Error_t NodeActions::clearDataReadySetReadStreamOwned(Node &node, const R
 }
 
 template <typename T>
-Atams::Error_t NodeActions::clearAckSetWriteStreamOwned(Node &node, const RequestOwner *owner, const uint16_t varID, const T writeData)
+Atams::Error_t NodeActions::clearAckSetWriteStreamOwned(Node &node, const RequestOwner *owner, const Atams::VarID_t varID, const T writeData)
 {
   Atams::Error_t error {node.clearWriteAck(varID)};
 

@@ -31,6 +31,8 @@
 
 #include <stdint.h>
 
+#include "../../../Shared/AtamsTypedefs.hpp"
+
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
@@ -38,58 +40,57 @@
 namespace Atams { namespace MapTest { namespace BlockTest3 {
 
 /*************************************************************************************/
-/* PUBLIC TYPEDEFS                                                                   */
-/*************************************************************************************/
-
-enum VarID_t: uint16_t
-{
-  VAR_WRITE_UINT8_1   = 58U,
-  VAR_WRITE_UINT8_2   = 59U,
-  VAR_WRITE_UINT8_3   = 60U,
-  VAR_WRITE_UINT8_4   = 61U,
-  VAR_WRITE_UINT8_5   = 62U,
-  VAR_WRITE_UINT8_6   = 63U,
-  VAR_WRITE_UINT8_7   = 64U,
-  VAR_WRITE_UINT8_8   = 65U,
-  VAR_WRITE_UINT8_9   = 66U,
-  VAR_WRITE_UINT8_10  = 67U,
-  VAR_WRITE_UINT8_11  = 68U,
-  VAR_WRITE_UINT8_12  = 69U,
-  VAR_WRITE_UINT8_13  = 70U,
-  VAR_WRITE_UINT8_14  = 71U,
-  VAR_WRITE_UINT8_15  = 72U,
-  VAR_WRITE_UINT8_16  = 73U,
-  VAR_WRITE_UINT8_17  = 74U,
-  VAR_WRITE_UINT8_18  = 75U,
-  VAR_WRITE_UINT8_19  = 76U,
-  VAR_WRITE_UINT8_20  = 77U,
-  VAR_WRITE_UINT32_1  = 78U,
-  VAR_WRITE_UINT32_2  = 79U,
-  VAR_WRITE_UINT32_3  = 80U,
-  VAR_WRITE_UINT32_4  = 81U,
-  VAR_WRITE_UINT32_5  = 82U,
-  VAR_WRITE_UINT32_6  = 83U,
-  VAR_WRITE_UINT32_7  = 84U,
-  VAR_WRITE_UINT32_8  = 85U,
-  VAR_WRITE_UINT32_9  = 86U,
-  VAR_WRITE_UINT32_10 = 87U,
-  VAR_WRITE_UINT32_11 = 88U,
-  VAR_WRITE_UINT32_12 = 89U,
-  VAR_WRITE_UINT32_13 = 90U,
-  VAR_WRITE_UINT32_14 = 91U,
-  VAR_WRITE_UINT32_15 = 92U,
-  VAR_WRITE_UINT32_16 = 93U,
-  VAR_WRITE_UINT32_17 = 94U,
-  VAR_WRITE_UINT32_18 = 95U,
-  VAR_WRITE_UINT32_19 = 96U,
-  VAR_WRITE_UINT32_20 = 97U,
-};
-
-/*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
+/*------------------------ Data Block Info -------------------------*/
+
 constexpr uint16_t NUMBER_OF_VARS {40U};
+
+/*-------------------------- Var ID List ---------------------------*/
+
+constexpr VarID_t VAR_WRITE_UINT8_1   {58U};
+constexpr VarID_t VAR_WRITE_UINT8_2   {59U};
+constexpr VarID_t VAR_WRITE_UINT8_3   {60U};
+constexpr VarID_t VAR_WRITE_UINT8_4   {61U};
+constexpr VarID_t VAR_WRITE_UINT8_5   {62U};
+constexpr VarID_t VAR_WRITE_UINT8_6   {63U};
+constexpr VarID_t VAR_WRITE_UINT8_7   {64U};
+constexpr VarID_t VAR_WRITE_UINT8_8   {65U};
+constexpr VarID_t VAR_WRITE_UINT8_9   {66U};
+constexpr VarID_t VAR_WRITE_UINT8_10  {67U};
+constexpr VarID_t VAR_WRITE_UINT8_11  {68U};
+constexpr VarID_t VAR_WRITE_UINT8_12  {69U};
+constexpr VarID_t VAR_WRITE_UINT8_13  {70U};
+constexpr VarID_t VAR_WRITE_UINT8_14  {71U};
+constexpr VarID_t VAR_WRITE_UINT8_15  {72U};
+constexpr VarID_t VAR_WRITE_UINT8_16  {73U};
+constexpr VarID_t VAR_WRITE_UINT8_17  {74U};
+constexpr VarID_t VAR_WRITE_UINT8_18  {75U};
+constexpr VarID_t VAR_WRITE_UINT8_19  {76U};
+constexpr VarID_t VAR_WRITE_UINT8_20  {77U};
+constexpr VarID_t VAR_WRITE_UINT32_1  {78U};
+constexpr VarID_t VAR_WRITE_UINT32_2  {79U};
+constexpr VarID_t VAR_WRITE_UINT32_3  {80U};
+constexpr VarID_t VAR_WRITE_UINT32_4  {81U};
+constexpr VarID_t VAR_WRITE_UINT32_5  {82U};
+constexpr VarID_t VAR_WRITE_UINT32_6  {83U};
+constexpr VarID_t VAR_WRITE_UINT32_7  {84U};
+constexpr VarID_t VAR_WRITE_UINT32_8  {85U};
+constexpr VarID_t VAR_WRITE_UINT32_9  {86U};
+constexpr VarID_t VAR_WRITE_UINT32_10 {87U};
+constexpr VarID_t VAR_WRITE_UINT32_11 {88U};
+constexpr VarID_t VAR_WRITE_UINT32_12 {89U};
+constexpr VarID_t VAR_WRITE_UINT32_13 {90U};
+constexpr VarID_t VAR_WRITE_UINT32_14 {91U};
+constexpr VarID_t VAR_WRITE_UINT32_15 {92U};
+constexpr VarID_t VAR_WRITE_UINT32_16 {93U};
+constexpr VarID_t VAR_WRITE_UINT32_17 {94U};
+constexpr VarID_t VAR_WRITE_UINT32_18 {95U};
+constexpr VarID_t VAR_WRITE_UINT32_19 {96U};
+constexpr VarID_t VAR_WRITE_UINT32_20 {97U};
+
+/*------------------------- Defaults List --------------------------*/
 
 constexpr uint8_t  DEFAULT_WRITE_UINT8_1   {0U};
 constexpr uint8_t  DEFAULT_WRITE_UINT8_2   {1U};

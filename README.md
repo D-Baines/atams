@@ -1549,7 +1549,7 @@ Include the following header to use `NodeActions`:
     | Operation | Update Function | Description |
   | :-------- | :-------------- | :---------- |
   | Store All | `updateStoreAll(error)` | Saves all NVM-flagged variables to non-volatile memory on the Node. |
-  | Restore All | `updateRestoreAll(error)` | Restores all variables to their factory default values, including the Universal Block. |
+  | Restore All | `updateRestoreAll(error)` | Restores all variables to their factory default values, including the Universal Block. User variables take effect immediately; the restored Node ID and Bus settings take effect after the Node is reset. |
   | Restore User Blocks | `updateRestoreUserBlocks(error)` | Restores only user-defined Data Block variables to their factory default values, leaving the Universal Block unchanged. |
 
   ```cpp

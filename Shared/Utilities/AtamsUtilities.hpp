@@ -158,7 +158,7 @@ inline bool validateMapLength(const SharedMemoryMap_t<VarInfoT> &memoryMap, cons
       (numberOfVars > Atams::MAX_NUMBER_OF_VARS     ) ||
       (numberOfVars < BlockUniversal::NUMBER_OF_VARS) )
   {
-    lengthValid = false;
+    return (false); /* Early Return - var info beyond the storage length must not be read */
   }
 
   for (uint16_t varID {0U}; varID < numberOfVars; varID++)

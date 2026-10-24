@@ -51,7 +51,7 @@ void WriteList::reset(void)
   _configCount = 0U;
 }
 
-WriteList::SearchResult_t WriteList::findConfig(const uint16_t varID)
+WriteList::SearchResult_t WriteList::findConfig(const Atams::VarID_t varID)
 {
   SearchResult_t searchResult = 
   {
@@ -85,7 +85,7 @@ WriteList::Error_t WriteList::addConfig(const WriteConfig_t newWriteConfig)
   return (WriteList::ERROR_NONE);
 }
 
-void WriteList::removeConfigIfFound(const uint16_t varID)
+void WriteList::removeConfigIfFound(const Atams::VarID_t varID)
 {
   SearchResult_t searchResult {findConfig(varID)};
 

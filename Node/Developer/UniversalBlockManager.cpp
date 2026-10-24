@@ -168,14 +168,14 @@ void UniversalBlockManager::setUpdateRequired(void)
   updateRequired_ = true;
 }
 
-bool UniversalBlockManager::checkWriteAccess(const uint16_t varID)
+bool UniversalBlockManager::checkWriteAccess(const Atams::VarID_t varID)
 {
   return ((configurationState_ == CONFIGURATION_STATUS_ACTIVE              ) ||
           (varID               == BlockUniversal::VAR_CONFIGURATION_PASSKEY) ||
           (varID               == BlockUniversal::VAR_WATCHDOG_RESET       ) );
 }
 
-void UniversalBlockManager::processRead(const uint16_t varID)
+void UniversalBlockManager::processRead(const Atams::VarID_t varID)
 {
   switch (varID)
   {

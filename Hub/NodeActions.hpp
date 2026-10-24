@@ -99,7 +99,7 @@ class NodeActions
 
   void beginReadUniversalBlock(Node &node);
 
-  void beginReadMultiVarsOrdered(Node &node, uint16_t firstVarID, uint16_t lastVarID, bool skipActiveReads = false);
+  void beginReadMultiVarsOrdered(Node &node, Atams::VarID_t firstVarID, Atams::VarID_t lastVarID, bool skipActiveReads = false);
 
   void beginSetBusIDs(Node &node, const Atams::BusIDs_t busIDs);
 
@@ -348,7 +348,7 @@ class NodeActions
 
   /*-- Private Function Declarations ------------------------------------------------*/
 
-  void beginReadMultiVarsOrderedImpl(ReadMultiVarsContext &context, Node &node, uint16_t firstVarID, uint16_t lastVarID, bool skipActiveReads);
+  void beginReadMultiVarsOrderedImpl(ReadMultiVarsContext &context, Node &node, Atams::VarID_t firstVarID, Atams::VarID_t lastVarID, bool skipActiveReads);
 
   Atams::ProcessState_t updateReadMultiVarsOrderedImpl(ReadMultiVarsContext &context, Atams::Error_t &error);
 
@@ -356,12 +356,12 @@ class NodeActions
 
   static void checkReadGroup(ReadMultiVarsContext &context);
 
-  static bool hasActiveRead(Atams::Node &node, const uint16_t varID);
+  static bool hasActiveRead(Atams::Node &node, const Atams::VarID_t varID);
 
-  static Atams::Error_t clearDataReadySetReadStreamOwned(Atams::Node &node, const RequestOwner *owner, const uint16_t varID);
+  static Atams::Error_t clearDataReadySetReadStreamOwned(Atams::Node &node, const RequestOwner *owner, const Atams::VarID_t varID);
 
   template <typename T>
-  static Atams::Error_t clearAckSetWriteStreamOwned(Atams::Node &node, const RequestOwner *owner, const uint16_t varID, const T writeData);
+  static Atams::Error_t clearAckSetWriteStreamOwned(Atams::Node &node, const RequestOwner *owner, const Atams::VarID_t varID, const T writeData);
 
   template<typename T>
   static void abortProcess(ProcessHandler<T> &process, const Atams::Error_t error);
@@ -373,9 +373,9 @@ class NodeActions
   void updateCancelConfigState(ProcessHandler<T> &process);
 
   template<typename T>
-  Atams::ProcessState_t updateSetConfigVar(Atams::Error_t &error, const uint16_t varID, const T value);
+  Atams::ProcessState_t updateSetConfigVar(Atams::Error_t &error, const Atams::VarID_t varID, const T value);
 
-  Atams::ProcessState_t updateStorageProcess(Atams::Error_t &error, const uint16_t varID, uint32_t passcode);
+  Atams::ProcessState_t updateStorageProcess(Atams::Error_t &error, const Atams::VarID_t varID, uint32_t passcode);
 
   Atams::ProcessState_t updateSetMultipleConfig(Atams::Error_t &error, SetMultiConfigFtns_t &specificFunctions);
   

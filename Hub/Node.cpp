@@ -136,7 +136,7 @@ uint8_t Node::getNodeID(void)
  * @note The Memory Map must be initialised before calling this function.
  */
 template <typename T>
-Atams::Error_t Node::setVar(const uint16_t varID, const T writeValue)
+Atams::Error_t Node::setVar(const Atams::VarID_t varID, const T writeValue)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -156,13 +156,13 @@ Atams::Error_t Node::setVar(const uint16_t varID, const T writeValue)
   return (Atams::ERROR_NONE);
 }
 
-template Atams::Error_t Node::setVar<uint8_t >(const uint16_t varID, const uint8_t  writeValue);
-template Atams::Error_t Node::setVar<int8_t  >(const uint16_t varID, const int8_t   writeValue);
-template Atams::Error_t Node::setVar<uint16_t>(const uint16_t varID, const uint16_t writeValue);
-template Atams::Error_t Node::setVar<int16_t >(const uint16_t varID, const int16_t  writeValue);
-template Atams::Error_t Node::setVar<uint32_t>(const uint16_t varID, const uint32_t writeValue);
-template Atams::Error_t Node::setVar<int32_t >(const uint16_t varID, const int32_t  writeValue);
-template Atams::Error_t Node::setVar<float   >(const uint16_t varID, const float    writeValue);
+template Atams::Error_t Node::setVar<uint8_t >(const Atams::VarID_t varID, const uint8_t  writeValue);
+template Atams::Error_t Node::setVar<int8_t  >(const Atams::VarID_t varID, const int8_t   writeValue);
+template Atams::Error_t Node::setVar<uint16_t>(const Atams::VarID_t varID, const uint16_t writeValue);
+template Atams::Error_t Node::setVar<int16_t >(const Atams::VarID_t varID, const int16_t  writeValue);
+template Atams::Error_t Node::setVar<uint32_t>(const Atams::VarID_t varID, const uint32_t writeValue);
+template Atams::Error_t Node::setVar<int32_t >(const Atams::VarID_t varID, const int32_t  writeValue);
+template Atams::Error_t Node::setVar<float   >(const Atams::VarID_t varID, const float    writeValue);
 
 /**
  * @brief Retrieves the value of a variable from the Node's internal variable storage.
@@ -184,7 +184,7 @@ template Atams::Error_t Node::setVar<float   >(const uint16_t varID, const float
  * @note The Memory Map must be initialised before calling this function.
  */
 template <typename T>
-Atams::Error_t Node::getVar(const uint16_t varID, T &outputRef)
+Atams::Error_t Node::getVar(const Atams::VarID_t varID, T &outputRef)
 {
   if (varID >= validVarCount_) return (Atams:: ERROR_VAR_ID); /* Early Return */
 
@@ -204,13 +204,13 @@ Atams::Error_t Node::getVar(const uint16_t varID, T &outputRef)
   return (Atams::ERROR_NONE);
 }
 
-template Atams::Error_t Node::getVar<uint8_t >(const uint16_t varID, uint8_t  &outputRef);
-template Atams::Error_t Node::getVar<int8_t  >(const uint16_t varID, int8_t   &outputRef);
-template Atams::Error_t Node::getVar<uint16_t>(const uint16_t varID, uint16_t &outputRef);
-template Atams::Error_t Node::getVar<int16_t >(const uint16_t varID, int16_t  &outputRef);
-template Atams::Error_t Node::getVar<uint32_t>(const uint16_t varID, uint32_t &outputRef);
-template Atams::Error_t Node::getVar<int32_t >(const uint16_t varID, int32_t  &outputRef);
-template Atams::Error_t Node::getVar<float   >(const uint16_t varID, float    &outputRef);
+template Atams::Error_t Node::getVar<uint8_t >(const Atams::VarID_t varID, uint8_t  &outputRef);
+template Atams::Error_t Node::getVar<int8_t  >(const Atams::VarID_t varID, int8_t   &outputRef);
+template Atams::Error_t Node::getVar<uint16_t>(const Atams::VarID_t varID, uint16_t &outputRef);
+template Atams::Error_t Node::getVar<int16_t >(const Atams::VarID_t varID, int16_t  &outputRef);
+template Atams::Error_t Node::getVar<uint32_t>(const Atams::VarID_t varID, uint32_t &outputRef);
+template Atams::Error_t Node::getVar<int32_t >(const Atams::VarID_t varID, int32_t  &outputRef);
+template Atams::Error_t Node::getVar<float   >(const Atams::VarID_t varID, float    &outputRef);
 
 /**
  * @brief Sets the request pattern for a variable.
@@ -245,7 +245,7 @@ template Atams::Error_t Node::getVar<float   >(const uint16_t varID, float    &o
  *
  * @note The function checks access permissions before updating the request packet.
  */
-Atams::Error_t Node::setRequestPattern(const uint16_t                varID,
+Atams::Error_t Node::setRequestPattern(const Atams::VarID_t          varID,
                                        const Atams::Access_t         accessRequest,
                                        const Atams::RequestPattern_t requestPattern)
 {
@@ -270,7 +270,7 @@ Atams::Error_t Node::setRequestPattern(const uint16_t                varID,
  *       Different owners should not use the same variables at the same time.
  */
 Atams::Error_t Node::setRequestPatternOwned(const RequestOwner           *owner,
-                                            const uint16_t                varID,
+                                            const Atams::VarID_t          varID,
                                             const Atams::Access_t         accessRequest,
                                             const Atams::RequestPattern_t requestPattern)
 {
@@ -307,7 +307,7 @@ Atams::Error_t Node::setRequestPatternOwned(const RequestOwner           *owner,
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-Atams::Error_t Node::getRequestPattern(const uint16_t           varID,
+Atams::Error_t Node::getRequestPattern(const Atams::VarID_t     varID,
                                        Atams::Access_t         &accessRequest,
                                        Atams::RequestPattern_t &requestPattern)
 {
@@ -363,7 +363,7 @@ void Node::clearRequestPatternsOwned(const RequestOwner *owner)
     if ((var.requestPattern != Atams::REQUEST_INACTIVE) &&
         (var.requestOwner   == owner                  ) )
     {
-      if (applyRequestPatternNoLock(varID, Atams::ACCESS_NONE, Atams::REQUEST_INACTIVE, owner) == Atams::ERROR_REQUEST_PACKET_FATAL)
+      if (applyRequestPatternNoLock(static_cast<Atams::VarID_t>(varID), Atams::ACCESS_NONE, Atams::REQUEST_INACTIVE, owner) == Atams::ERROR_REQUEST_PACKET_FATAL)
       {
         break; /* Request packet has been reset - no requests remain */
       }
@@ -490,7 +490,7 @@ uint16_t Node::getEffectivePacketLimit(void)
  * @note The Memory Map must be initialised before calling this function.
  */
 template <typename T>
-Atams::Error_t Node::setWriteUntilAck(const uint16_t varID, const T writeValue)
+Atams::Error_t Node::setWriteUntilAck(const Atams::VarID_t varID, const T writeValue)
 {
   Atams::Error_t error {Node::setVar(varID, writeValue)};
 
@@ -502,13 +502,13 @@ Atams::Error_t Node::setWriteUntilAck(const uint16_t varID, const T writeValue)
   return (error);
 }
 
-template Atams::Error_t Node::setWriteUntilAck<uint8_t >(const uint16_t varID, const uint8_t  writeValue);
-template Atams::Error_t Node::setWriteUntilAck<int8_t  >(const uint16_t varID, const int8_t   writeValue);
-template Atams::Error_t Node::setWriteUntilAck<uint16_t>(const uint16_t varID, const uint16_t writeValue);
-template Atams::Error_t Node::setWriteUntilAck<int16_t >(const uint16_t varID, const int16_t  writeValue);
-template Atams::Error_t Node::setWriteUntilAck<uint32_t>(const uint16_t varID, const uint32_t writeValue);
-template Atams::Error_t Node::setWriteUntilAck<int32_t >(const uint16_t varID, const int32_t  writeValue);
-template Atams::Error_t Node::setWriteUntilAck<float   >(const uint16_t varID, const float    writeValue);
+template Atams::Error_t Node::setWriteUntilAck<uint8_t >(const Atams::VarID_t varID, const uint8_t  writeValue);
+template Atams::Error_t Node::setWriteUntilAck<int8_t  >(const Atams::VarID_t varID, const int8_t   writeValue);
+template Atams::Error_t Node::setWriteUntilAck<uint16_t>(const Atams::VarID_t varID, const uint16_t writeValue);
+template Atams::Error_t Node::setWriteUntilAck<int16_t >(const Atams::VarID_t varID, const int16_t  writeValue);
+template Atams::Error_t Node::setWriteUntilAck<uint32_t>(const Atams::VarID_t varID, const uint32_t writeValue);
+template Atams::Error_t Node::setWriteUntilAck<int32_t >(const Atams::VarID_t varID, const int32_t  writeValue);
+template Atams::Error_t Node::setWriteUntilAck<float   >(const Atams::VarID_t varID, const float    writeValue);
 
 /**
  * @brief Configures a read-until-acknowledged request pattern for a variable.
@@ -531,7 +531,7 @@ template Atams::Error_t Node::setWriteUntilAck<float   >(const uint16_t varID, c
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-Atams::Error_t Node::setReadUntilAck(const uint16_t varID)
+Atams::Error_t Node::setReadUntilAck(const Atams::VarID_t varID)
 {
   return (Node::setRequestPattern(varID, Atams::ACCESS_READ, Atams::REQUEST_UNTIL_ACK));
 }
@@ -557,7 +557,7 @@ Atams::Error_t Node::setReadUntilAck(const uint16_t varID)
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-Atams::Error_t Node::setWriteStream(const uint16_t varID)
+Atams::Error_t Node::setWriteStream(const Atams::VarID_t varID)
 {
   return (Node::setRequestPattern(varID, Atams::ACCESS_WRITE, Atams::REQUEST_STREAM));
 }
@@ -583,7 +583,7 @@ Atams::Error_t Node::setWriteStream(const uint16_t varID)
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-Atams::Error_t Node::setReadStream(const uint16_t varID)
+Atams::Error_t Node::setReadStream(const Atams::VarID_t varID)
 {
   return (Node::setRequestPattern(varID, Atams::ACCESS_READ, Atams::REQUEST_STREAM));
 }
@@ -609,7 +609,7 @@ Atams::Error_t Node::setReadStream(const uint16_t varID)
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-Atams::Error_t Node::stopStream(const uint16_t varID)
+Atams::Error_t Node::stopStream(const Atams::VarID_t varID)
 {
   return (Node::setRequestPattern(varID, Atams::ACCESS_NONE, Atams::REQUEST_INACTIVE));
 }
@@ -628,7 +628,7 @@ Atams::Error_t Node::stopStream(const uint16_t varID)
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-Atams::Error_t Node::isDataReady(const uint16_t varID, bool &newDataReady)
+Atams::Error_t Node::isDataReady(const Atams::VarID_t varID, bool &newDataReady)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -654,7 +654,7 @@ Atams::Error_t Node::isDataReady(const uint16_t varID, bool &newDataReady)
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-Atams::Error_t Node::clearDataReady(const uint16_t varID)
+Atams::Error_t Node::clearDataReady(const Atams::VarID_t varID)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -682,7 +682,7 @@ Atams::Error_t Node::clearDataReady(const uint16_t varID)
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-Atams::Error_t Node::isWriteAcked(const uint16_t varID, bool &ackReceived)
+Atams::Error_t Node::isWriteAcked(const Atams::VarID_t varID, bool &ackReceived)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -709,7 +709,7 @@ Atams::Error_t Node::isWriteAcked(const uint16_t varID, bool &ackReceived)
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-Atams::Error_t Node::clearWriteAck(const uint16_t varID)
+Atams::Error_t Node::clearWriteAck(const Atams::VarID_t varID)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -744,7 +744,7 @@ Atams::Error_t Node::clearWriteAck(const uint16_t varID)
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-Atams::Error_t Node::clearDataReadySetReadStream(const uint16_t varID)
+Atams::Error_t Node::clearDataReadySetReadStream(const Atams::VarID_t varID)
 {
   Atams::Error_t error {Node::clearDataReady(varID)};
 
@@ -776,7 +776,7 @@ Atams::Error_t Node::clearDataReadySetReadStream(const uint16_t varID)
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-Atams::Error_t Node::stopStreamIsDataReady(const uint16_t varID, bool &newDataReady)
+Atams::Error_t Node::stopStreamIsDataReady(const Atams::VarID_t varID, bool &newDataReady)
 {
   Atams::Error_t error {Node::stopStream(varID)};
 
@@ -805,7 +805,7 @@ Atams::Error_t Node::stopStreamIsDataReady(const uint16_t varID, bool &newDataRe
  * @note The Memory Map must be initialised before calling this function.
  */
 template <typename T>
-Atams::Error_t Node::getVarIfDataReady(const uint16_t varID, T &outputRef)
+Atams::Error_t Node::getVarIfDataReady(const Atams::VarID_t varID, T &outputRef)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -829,13 +829,13 @@ Atams::Error_t Node::getVarIfDataReady(const uint16_t varID, T &outputRef)
   return (error);
 }
 
-template Atams::Error_t Node::getVarIfDataReady<uint8_t >(const uint16_t varID, uint8_t  &outputRef);
-template Atams::Error_t Node::getVarIfDataReady<int8_t  >(const uint16_t varID, int8_t   &outputRef);
-template Atams::Error_t Node::getVarIfDataReady<uint16_t>(const uint16_t varID, uint16_t &outputRef);
-template Atams::Error_t Node::getVarIfDataReady<int16_t >(const uint16_t varID, int16_t  &outputRef);
-template Atams::Error_t Node::getVarIfDataReady<uint32_t>(const uint16_t varID, uint32_t &outputRef);
-template Atams::Error_t Node::getVarIfDataReady<int32_t >(const uint16_t varID, int32_t  &outputRef);
-template Atams::Error_t Node::getVarIfDataReady<float   >(const uint16_t varID, float    &outputRef);
+template Atams::Error_t Node::getVarIfDataReady<uint8_t >(const Atams::VarID_t varID, uint8_t  &outputRef);
+template Atams::Error_t Node::getVarIfDataReady<int8_t  >(const Atams::VarID_t varID, int8_t   &outputRef);
+template Atams::Error_t Node::getVarIfDataReady<uint16_t>(const Atams::VarID_t varID, uint16_t &outputRef);
+template Atams::Error_t Node::getVarIfDataReady<int16_t >(const Atams::VarID_t varID, int16_t  &outputRef);
+template Atams::Error_t Node::getVarIfDataReady<uint32_t>(const Atams::VarID_t varID, uint32_t &outputRef);
+template Atams::Error_t Node::getVarIfDataReady<int32_t >(const Atams::VarID_t varID, int32_t  &outputRef);
+template Atams::Error_t Node::getVarIfDataReady<float   >(const Atams::VarID_t varID, float    &outputRef);
 
 /**
  * @brief Stops any active request pattern for a variable and retrieves its value if new data is available.
@@ -864,7 +864,7 @@ template Atams::Error_t Node::getVarIfDataReady<float   >(const uint16_t varID, 
  * @note The Memory Map must be initialised before calling this function.
  */
 template<typename T>
-Atams::Error_t Node::stopStreamGetVarIfDataReady(const uint16_t varID, T &readData)
+Atams::Error_t Node::stopStreamGetVarIfDataReady(const Atams::VarID_t varID, T &readData)
 {
   Atams::Error_t error {Node::stopStream(varID)};
 
@@ -873,13 +873,13 @@ Atams::Error_t Node::stopStreamGetVarIfDataReady(const uint16_t varID, T &readDa
   return (error);
 }
 
-template Atams::Error_t Node::stopStreamGetVarIfDataReady<uint8_t >(const uint16_t varID, uint8_t  &readData);
-template Atams::Error_t Node::stopStreamGetVarIfDataReady<int8_t  >(const uint16_t varID, int8_t   &readData);
-template Atams::Error_t Node::stopStreamGetVarIfDataReady<uint16_t>(const uint16_t varID, uint16_t &readData);
-template Atams::Error_t Node::stopStreamGetVarIfDataReady<int16_t >(const uint16_t varID, int16_t  &readData);
-template Atams::Error_t Node::stopStreamGetVarIfDataReady<uint32_t>(const uint16_t varID, uint32_t &readData);
-template Atams::Error_t Node::stopStreamGetVarIfDataReady<int32_t >(const uint16_t varID, int32_t  &readData);
-template Atams::Error_t Node::stopStreamGetVarIfDataReady<float   >(const uint16_t varID, float    &readData);
+template Atams::Error_t Node::stopStreamGetVarIfDataReady<uint8_t >(const Atams::VarID_t varID, uint8_t  &readData);
+template Atams::Error_t Node::stopStreamGetVarIfDataReady<int8_t  >(const Atams::VarID_t varID, int8_t   &readData);
+template Atams::Error_t Node::stopStreamGetVarIfDataReady<uint16_t>(const Atams::VarID_t varID, uint16_t &readData);
+template Atams::Error_t Node::stopStreamGetVarIfDataReady<int16_t >(const Atams::VarID_t varID, int16_t  &readData);
+template Atams::Error_t Node::stopStreamGetVarIfDataReady<uint32_t>(const Atams::VarID_t varID, uint32_t &readData);
+template Atams::Error_t Node::stopStreamGetVarIfDataReady<int32_t >(const Atams::VarID_t varID, int32_t  &readData);
+template Atams::Error_t Node::stopStreamGetVarIfDataReady<float   >(const Atams::VarID_t varID, float    &readData);
 
 /**
  * @brief Clears the write acknowledgement flag, sets a new value, and configures a write-stream request pattern for a variable.
@@ -906,7 +906,7 @@ template Atams::Error_t Node::stopStreamGetVarIfDataReady<float   >(const uint16
  * @note The Memory Map must be initialised before calling this function.
  */
 template<typename T>
-Atams::Error_t Node::clearAckSetWriteStream(const uint16_t varID, const T writeData)
+Atams::Error_t Node::clearAckSetWriteStream(const Atams::VarID_t varID, const T writeData)
 {
   Atams::Error_t error {Node::clearWriteAck(varID)};
 
@@ -916,13 +916,13 @@ Atams::Error_t Node::clearAckSetWriteStream(const uint16_t varID, const T writeD
   return (error);
 }
 
-template Atams::Error_t Node::clearAckSetWriteStream<uint8_t >(const uint16_t varID, const uint8_t  writeData);
-template Atams::Error_t Node::clearAckSetWriteStream<int8_t  >(const uint16_t varID, const int8_t   writeData);
-template Atams::Error_t Node::clearAckSetWriteStream<uint16_t>(const uint16_t varID, const uint16_t writeData);
-template Atams::Error_t Node::clearAckSetWriteStream<int16_t >(const uint16_t varID, const int16_t  writeData);
-template Atams::Error_t Node::clearAckSetWriteStream<uint32_t>(const uint16_t varID, const uint32_t writeData);
-template Atams::Error_t Node::clearAckSetWriteStream<int32_t >(const uint16_t varID, const int32_t  writeData);
-template Atams::Error_t Node::clearAckSetWriteStream<float   >(const uint16_t varID, const float    writeData);
+template Atams::Error_t Node::clearAckSetWriteStream<uint8_t >(const Atams::VarID_t varID, const uint8_t  writeData);
+template Atams::Error_t Node::clearAckSetWriteStream<int8_t  >(const Atams::VarID_t varID, const int8_t   writeData);
+template Atams::Error_t Node::clearAckSetWriteStream<uint16_t>(const Atams::VarID_t varID, const uint16_t writeData);
+template Atams::Error_t Node::clearAckSetWriteStream<int16_t >(const Atams::VarID_t varID, const int16_t  writeData);
+template Atams::Error_t Node::clearAckSetWriteStream<uint32_t>(const Atams::VarID_t varID, const uint32_t writeData);
+template Atams::Error_t Node::clearAckSetWriteStream<int32_t >(const Atams::VarID_t varID, const int32_t  writeData);
+template Atams::Error_t Node::clearAckSetWriteStream<float   >(const Atams::VarID_t varID, const float    writeData);
 
 /**
  * @brief Stops any active request pattern for a variable and checks if a write acknowledgement has been received.
@@ -946,7 +946,7 @@ template Atams::Error_t Node::clearAckSetWriteStream<float   >(const uint16_t va
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-Atams::Error_t Node::stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived)
+Atams::Error_t Node::stopStreamGetWriteAck(const Atams::VarID_t varID, bool &ackReceived)
 {
   Atams::Error_t error {Node::stopStream(varID)};
 
@@ -969,7 +969,7 @@ Atams::Error_t Node::stopStreamGetWriteAck(const uint16_t varID, bool &ackReceiv
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-Atams::Error_t Node::getVarLength(const uint16_t varID, uint8_t &length)
+Atams::Error_t Node::getVarLength(const Atams::VarID_t varID, uint8_t &length)
 {
   if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -1172,8 +1172,8 @@ bool Node::getMemoryMapIsValid(void)
 #if (DEVELOPER_TOOLS == true)
 
 void Node::injectBusError(const Atams::Error_t errorToInject, 
-                          const uint16_t       readOnlyVarID,
-                          uint16_t            &varIDUsed)
+                          const Atams::VarID_t readOnlyVarID,
+                          Atams::VarID_t      &varIDUsed)
 {
   DatagramHeader_t datagramHeader;
 
@@ -1237,7 +1237,7 @@ void Node::injectBusError(const Atams::Error_t errorToInject,
   }
 }
 
-void Node::clearInjectedBusError(const Atams::Error_t errorToClear, const uint16_t readOnlyVarID)
+void Node::clearInjectedBusError(const Atams::Error_t errorToClear, const Atams::VarID_t readOnlyVarID)
 {
   switch (errorToClear)
   {
@@ -1276,7 +1276,7 @@ void Node::clearInjectedBusError(const Atams::Error_t errorToClear, const uint16
 /*************************************************************************************/
 
 Atams::Error_t Node::externalTransfer(const Atams::Access_t accessRequest,
-                                      const uint16_t        varID,
+                                      const Atams::VarID_t  varID,
                                       uint8_t * const       bytesPtr,
                                       const uint8_t         length)
 {
@@ -1335,8 +1335,8 @@ void Node::processAbortedResponse(void)
   uint8_t  bufferVarIDLo {responseBuffer_[Atams::ABORT_INDEX_VAR_ID_LO]};
   uint8_t  errorByte     {responseBuffer_[Atams::ABORT_INDEX_ERROR]};
 
-  uint16_t varID = ((static_cast<uint16_t>(bufferVarIDHi & Atams::ABORT_MASK_VAR_ID_HI) << Atams::ABORT_SHIFT_VAR_ID_HI) |
-                    (static_cast<uint16_t>(bufferVarIDLo & Atams::ABORT_MASK_VAR_ID_LO) << Atams::ABORT_SHIFT_VAR_ID_LO) );
+  Atams::VarID_t varID {static_cast<Atams::VarID_t>((static_cast<uint16_t>(bufferVarIDHi & Atams::ABORT_MASK_VAR_ID_HI) << Atams::ABORT_SHIFT_VAR_ID_HI) |
+                                                    (static_cast<uint16_t>(bufferVarIDLo & Atams::ABORT_MASK_VAR_ID_LO) << Atams::ABORT_SHIFT_VAR_ID_LO) )};
 
   if ((responseLength_ != Atams::ABORT_PACKET_SIZE) ||
       (errorByte       >= NUMBER_OF_ATAMS_ERRORS  ) )
@@ -1349,7 +1349,7 @@ void Node::processAbortedResponse(void)
   }
 }
 
-void Node::reportAbortedResponse(const uint16_t varID, const Atams::Error_t error)
+void Node::reportAbortedResponse(const Atams::VarID_t varID, const Atams::Error_t error)
 {
   busErrorLock_.acquireLock();
   abortedResponseDetails_ = {varID, error};
@@ -1715,7 +1715,7 @@ void Node::resetRequestPacketNoLock(void)
   }
 }
 
-Atams::Error_t Node::processRequestPacketChange(const uint16_t                varID,
+Atams::Error_t Node::processRequestPacketChange(const Atams::VarID_t          varID,
                                                 const Atams::Access_t         accessRequest,
                                                 const Atams::RequestPattern_t requestPattern)
 {
@@ -1780,7 +1780,7 @@ Atams::Error_t Node::processRequestPacketChange(const uint16_t                va
 }
 
 /* Warning - varID must be pre-validated; all callers reach this via validateResponseBuffer */
-Atams::Error_t Node::updateRequestPatternOnReceive(const uint16_t varID)
+Atams::Error_t Node::updateRequestPatternOnReceive(const Atams::VarID_t varID)
 {
   requestPacketLock_.acquireLock();
 
@@ -1800,7 +1800,7 @@ Atams::Error_t Node::updateRequestPatternOnReceive(const uint16_t varID)
 }
 
 /* Warning - varID must be pre-validated and requestPacketLock_ must be held by the caller */
-Atams::Error_t Node::applyRequestPatternNoLock(const uint16_t                varID,
+Atams::Error_t Node::applyRequestPatternNoLock(const Atams::VarID_t          varID,
                                                const Atams::Access_t         accessRequest,
                                                const Atams::RequestPattern_t requestPattern,
                                                const RequestOwner           *owner)

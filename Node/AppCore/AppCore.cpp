@@ -139,7 +139,7 @@ static void syncWithCommsCoreInit(void)
  * @note The Memory Map must be initialised before calling this function.
  */
 template <typename T>
-static Atams::Error_t setVarImpl(const uint16_t varID, const T writeValue)
+static Atams::Error_t setVarImpl(const Atams::VarID_t varID, const T writeValue)
 {
   if (varID >= s_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -178,7 +178,7 @@ static Atams::Error_t setVarImpl(const uint16_t varID, const T writeValue)
  * @note The Memory Map must be initialised before calling this function.
  */
 template <typename T>
-Atams::Error_t getVarImpl(const uint16_t varID, T &outputRef)
+Atams::Error_t getVarImpl(const Atams::VarID_t varID, T &outputRef)
 {
   if (varID >= s_validVarCount) return (Atams:: ERROR_VAR_ID); /* Early Return */
 
@@ -256,13 +256,13 @@ Atams::Error_t initAppCore(const MemoryMap_t &memoryMap)
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-template <> Atams::Error_t setVar<uint8_t >(const uint16_t varID, const uint8_t  writeValue) { return (setVarImpl(varID, writeValue)); }
-template <> Atams::Error_t setVar<int8_t  >(const uint16_t varID, const int8_t   writeValue) { return (setVarImpl(varID, writeValue)); }
-template <> Atams::Error_t setVar<uint16_t>(const uint16_t varID, const uint16_t writeValue) { return (setVarImpl(varID, writeValue)); }
-template <> Atams::Error_t setVar<int16_t >(const uint16_t varID, const int16_t  writeValue) { return (setVarImpl(varID, writeValue)); }
-template <> Atams::Error_t setVar<uint32_t>(const uint16_t varID, const uint32_t writeValue) { return (setVarImpl(varID, writeValue)); }
-template <> Atams::Error_t setVar<int32_t >(const uint16_t varID, const int32_t  writeValue) { return (setVarImpl(varID, writeValue)); }
-template <> Atams::Error_t setVar<float   >(const uint16_t varID, const float    writeValue) { return (setVarImpl(varID, writeValue)); }
+template <> Atams::Error_t setVar<uint8_t >(const Atams::VarID_t varID, const uint8_t  writeValue) { return (setVarImpl(varID, writeValue)); }
+template <> Atams::Error_t setVar<int8_t  >(const Atams::VarID_t varID, const int8_t   writeValue) { return (setVarImpl(varID, writeValue)); }
+template <> Atams::Error_t setVar<uint16_t>(const Atams::VarID_t varID, const uint16_t writeValue) { return (setVarImpl(varID, writeValue)); }
+template <> Atams::Error_t setVar<int16_t >(const Atams::VarID_t varID, const int16_t  writeValue) { return (setVarImpl(varID, writeValue)); }
+template <> Atams::Error_t setVar<uint32_t>(const Atams::VarID_t varID, const uint32_t writeValue) { return (setVarImpl(varID, writeValue)); }
+template <> Atams::Error_t setVar<int32_t >(const Atams::VarID_t varID, const int32_t  writeValue) { return (setVarImpl(varID, writeValue)); }
+template <> Atams::Error_t setVar<float   >(const Atams::VarID_t varID, const float    writeValue) { return (setVarImpl(varID, writeValue)); }
 
 /**
  * @brief Retrieves the value of a variable from the Node's variable storage.
@@ -283,13 +283,13 @@ template <> Atams::Error_t setVar<float   >(const uint16_t varID, const float   
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-template <> Atams::Error_t getVar<uint8_t >(const uint16_t varID, uint8_t  &outputRef) { return (getVarImpl(varID, outputRef)); };
-template <> Atams::Error_t getVar<int8_t  >(const uint16_t varID, int8_t   &outputRef) { return (getVarImpl(varID, outputRef)); };
-template <> Atams::Error_t getVar<uint16_t>(const uint16_t varID, uint16_t &outputRef) { return (getVarImpl(varID, outputRef)); };
-template <> Atams::Error_t getVar<int16_t >(const uint16_t varID, int16_t  &outputRef) { return (getVarImpl(varID, outputRef)); };
-template <> Atams::Error_t getVar<uint32_t>(const uint16_t varID, uint32_t &outputRef) { return (getVarImpl(varID, outputRef)); };
-template <> Atams::Error_t getVar<int32_t >(const uint16_t varID, int32_t  &outputRef) { return (getVarImpl(varID, outputRef)); };
-template <> Atams::Error_t getVar<float   >(const uint16_t varID, float    &outputRef) { return (getVarImpl(varID, outputRef)); };
+template <> Atams::Error_t getVar<uint8_t >(const Atams::VarID_t varID, uint8_t  &outputRef) { return (getVarImpl(varID, outputRef)); };
+template <> Atams::Error_t getVar<int8_t  >(const Atams::VarID_t varID, int8_t   &outputRef) { return (getVarImpl(varID, outputRef)); };
+template <> Atams::Error_t getVar<uint16_t>(const Atams::VarID_t varID, uint16_t &outputRef) { return (getVarImpl(varID, outputRef)); };
+template <> Atams::Error_t getVar<int16_t >(const Atams::VarID_t varID, int16_t  &outputRef) { return (getVarImpl(varID, outputRef)); };
+template <> Atams::Error_t getVar<uint32_t>(const Atams::VarID_t varID, uint32_t &outputRef) { return (getVarImpl(varID, outputRef)); };
+template <> Atams::Error_t getVar<int32_t >(const Atams::VarID_t varID, int32_t  &outputRef) { return (getVarImpl(varID, outputRef)); };
+template <> Atams::Error_t getVar<float   >(const Atams::VarID_t varID, float    &outputRef) { return (getVarImpl(varID, outputRef)); };
 
 /**
  * @brief Get the watchdog fault status from the Comms Core.

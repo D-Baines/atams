@@ -131,10 +131,10 @@ static void invalidateMemoryMap(void)
   resetVars();
 }
 
-static Atams::Error_t externalTransfer(const Access_t  accessRequest,
-                                       const uint16_t  varID,
-                                       uint8_t * const bytesPtr,
-                                       const uint8_t   length)
+static Atams::Error_t externalTransfer(const Access_t       accessRequest,
+                                       const Atams::VarID_t varID,
+                                       uint8_t * const      bytesPtr,
+                                       const uint8_t        length)
 {
   if (varID >= s_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -169,7 +169,7 @@ static Atams::Error_t externalTransfer(const Access_t  accessRequest,
   return (accessError);
 }
 
-static DataStatusReturn_t<uint8_t> getVarLength(const uint16_t varID)
+static DataStatusReturn_t<uint8_t> getVarLength(const Atams::VarID_t varID)
 {
   DataStatusReturn_t<uint8_t> lengthReturn;
 
@@ -210,7 +210,7 @@ static void resetResponse(ChannelResponse_t &response, const uint8_t syncCount)
   response.index                         = HEADER_INDEX_FIRST_DATAGRAM;
 }
 
-static void abortResponse(ChannelResponse_t &response, const Atams::Error_t error, const uint16_t varID)
+static void abortResponse(ChannelResponse_t &response, const Atams::Error_t error, const Atams::VarID_t varID)
 {
   response.buffer[HEADER_INDEX_NODE_ID]  = s_uniBlockManager.getLocalNodeID();
   response.buffer[HEADER_INDEX_MSG_TYPE] = response.abortMessageType;
@@ -729,7 +729,7 @@ static Atams::NVMVarEntryHeader_t decodeNVMVarEntryHeader(const uint8_t * const 
   return (entryHeader);
 }
 
-static bool findVarIDByNvmHash(const uint32_t nvmHash, uint16_t &varID)
+static bool findVarIDByNvmHash(const uint32_t nvmHash, Atams::VarID_t &varID)
 {
   for (uint16_t candidateID {0U}; candidateID < s_memoryMapPtr->sharedMap.genInfo.noOfVars; candidateID++)
   {
@@ -737,7 +737,7 @@ static bool findVarIDByNvmHash(const uint32_t nvmHash, uint16_t &varID)
 
     if ((varInfo.NVMStorage) && (varInfo.nvmHash == nvmHash))
     {
-      varID = candidateID;
+      varID = static_cast<Atams::VarID_t>(candidateID);
 
       return (true); /* Early Return */
     }
@@ -793,7 +793,7 @@ static Atams::Error_t loadNVMVarsFromStream(const uint32_t maxIndex, bool &migra
       return (Atams::ERROR_NVM_PLATFORM_SIZE); /* Early Return - truncated entry stream */
     }
 
-    uint16_t varID {0U};
+    Atams::VarID_t varID {Atams::VAR_ID_NULL};
 
     if (findVarIDByNvmHash(entryHeader.nvmHash, varID))
     {
@@ -977,7 +977,7 @@ static bool allCommsTransmissionsComplete(void)
  * @note The Memory Map must be initialised before calling this function.
  */
 template <typename T>
-static Atams::Error_t setVarImpl(const uint16_t varID, const T writeValue)
+static Atams::Error_t setVarImpl(const Atams::VarID_t varID, const T writeValue)
 {
   if (varID >= s_validVarCount) return (Atams::ERROR_VAR_ID); /* Early Return */
 
@@ -1016,7 +1016,7 @@ static Atams::Error_t setVarImpl(const uint16_t varID, const T writeValue)
  * @note The Memory Map must be initialised before calling this function.
  */
 template <typename T>
-Atams::Error_t getVarImpl(const uint16_t varID, T &outputRef)
+Atams::Error_t getVarImpl(const Atams::VarID_t varID, T &outputRef)
 {
   if (varID >= s_validVarCount) return (Atams:: ERROR_VAR_ID); /* Early Return */
 
@@ -1168,13 +1168,13 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmEr
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-template <> Atams::Error_t setVar<uint8_t >(const uint16_t varID, const uint8_t  writeValue) { return (setVarImpl(varID, writeValue)); }
-template <> Atams::Error_t setVar<int8_t  >(const uint16_t varID, const int8_t   writeValue) { return (setVarImpl(varID, writeValue)); }
-template <> Atams::Error_t setVar<uint16_t>(const uint16_t varID, const uint16_t writeValue) { return (setVarImpl(varID, writeValue)); }
-template <> Atams::Error_t setVar<int16_t >(const uint16_t varID, const int16_t  writeValue) { return (setVarImpl(varID, writeValue)); }
-template <> Atams::Error_t setVar<uint32_t>(const uint16_t varID, const uint32_t writeValue) { return (setVarImpl(varID, writeValue)); }
-template <> Atams::Error_t setVar<int32_t >(const uint16_t varID, const int32_t  writeValue) { return (setVarImpl(varID, writeValue)); }
-template <> Atams::Error_t setVar<float   >(const uint16_t varID, const float    writeValue) { return (setVarImpl(varID, writeValue)); }
+template <> Atams::Error_t setVar<uint8_t >(const Atams::VarID_t varID, const uint8_t  writeValue) { return (setVarImpl(varID, writeValue)); }
+template <> Atams::Error_t setVar<int8_t  >(const Atams::VarID_t varID, const int8_t   writeValue) { return (setVarImpl(varID, writeValue)); }
+template <> Atams::Error_t setVar<uint16_t>(const Atams::VarID_t varID, const uint16_t writeValue) { return (setVarImpl(varID, writeValue)); }
+template <> Atams::Error_t setVar<int16_t >(const Atams::VarID_t varID, const int16_t  writeValue) { return (setVarImpl(varID, writeValue)); }
+template <> Atams::Error_t setVar<uint32_t>(const Atams::VarID_t varID, const uint32_t writeValue) { return (setVarImpl(varID, writeValue)); }
+template <> Atams::Error_t setVar<int32_t >(const Atams::VarID_t varID, const int32_t  writeValue) { return (setVarImpl(varID, writeValue)); }
+template <> Atams::Error_t setVar<float   >(const Atams::VarID_t varID, const float    writeValue) { return (setVarImpl(varID, writeValue)); }
 
 /**
  * @brief Retrieves the value of a variable from the Node's variable storage.
@@ -1195,13 +1195,13 @@ template <> Atams::Error_t setVar<float   >(const uint16_t varID, const float   
  *
  * @note The Memory Map must be initialised before calling this function.
  */
-template <> Atams::Error_t getVar<uint8_t >(const uint16_t varID, uint8_t  &outputRef) { return (getVarImpl(varID, outputRef)); };
-template <> Atams::Error_t getVar<int8_t  >(const uint16_t varID, int8_t   &outputRef) { return (getVarImpl(varID, outputRef)); };
-template <> Atams::Error_t getVar<uint16_t>(const uint16_t varID, uint16_t &outputRef) { return (getVarImpl(varID, outputRef)); };
-template <> Atams::Error_t getVar<int16_t >(const uint16_t varID, int16_t  &outputRef) { return (getVarImpl(varID, outputRef)); };
-template <> Atams::Error_t getVar<uint32_t>(const uint16_t varID, uint32_t &outputRef) { return (getVarImpl(varID, outputRef)); };
-template <> Atams::Error_t getVar<int32_t >(const uint16_t varID, int32_t  &outputRef) { return (getVarImpl(varID, outputRef)); };
-template <> Atams::Error_t getVar<float   >(const uint16_t varID, float    &outputRef) { return (getVarImpl(varID, outputRef)); };
+template <> Atams::Error_t getVar<uint8_t >(const Atams::VarID_t varID, uint8_t  &outputRef) { return (getVarImpl(varID, outputRef)); };
+template <> Atams::Error_t getVar<int8_t  >(const Atams::VarID_t varID, int8_t   &outputRef) { return (getVarImpl(varID, outputRef)); };
+template <> Atams::Error_t getVar<uint16_t>(const Atams::VarID_t varID, uint16_t &outputRef) { return (getVarImpl(varID, outputRef)); };
+template <> Atams::Error_t getVar<int16_t >(const Atams::VarID_t varID, int16_t  &outputRef) { return (getVarImpl(varID, outputRef)); };
+template <> Atams::Error_t getVar<uint32_t>(const Atams::VarID_t varID, uint32_t &outputRef) { return (getVarImpl(varID, outputRef)); };
+template <> Atams::Error_t getVar<int32_t >(const Atams::VarID_t varID, int32_t  &outputRef) { return (getVarImpl(varID, outputRef)); };
+template <> Atams::Error_t getVar<float   >(const Atams::VarID_t varID, float    &outputRef) { return (getVarImpl(varID, outputRef)); };
 
 /**
  * @brief   Performs non-blocking polling and update operations for the Node Communications Core.

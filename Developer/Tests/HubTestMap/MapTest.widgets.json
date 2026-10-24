@@ -1,0 +1,696 @@
+{
+  "genInfo": {
+    "atamsVersionMajor": 0,
+    "atamsVersionMinor": 1,
+    "genDay": 24,
+    "genMonth": 10,
+    "genYear": 2026,
+    "genHour": 10,
+    "genMinute": 42,
+    "genSecond": 19,
+    "genChecksum": 3815048630,
+    "noOfVars": 98
+  },
+  "variables": [
+    {
+      "varID": 30,
+      "name": "VAR_READ_UINT8",
+      "displayName": "READ UINT8",
+      "block": "BlockTest1",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_READ",
+      "NVMStorage": true,
+      "widget": "Value"
+    },
+    {
+      "varID": 31,
+      "name": "VAR_READ_INT8",
+      "displayName": "READ INT8",
+      "block": "BlockTest1",
+      "type": "TYPE_INT8",
+      "access": "ACCESS_READ",
+      "NVMStorage": false,
+      "widget": "Value"
+    },
+    {
+      "varID": 32,
+      "name": "VAR_READ_UINT16",
+      "displayName": "READ UINT16",
+      "block": "BlockTest1",
+      "type": "TYPE_UINT16",
+      "access": "ACCESS_READ",
+      "NVMStorage": true,
+      "widget": "Value"
+    },
+    {
+      "varID": 33,
+      "name": "VAR_READ_INT16",
+      "displayName": "READ INT16",
+      "block": "BlockTest1",
+      "type": "TYPE_INT16",
+      "access": "ACCESS_READ",
+      "NVMStorage": false,
+      "widget": "Value"
+    },
+    {
+      "varID": 34,
+      "name": "VAR_READ_UINT32",
+      "displayName": "READ UINT32",
+      "block": "BlockTest1",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_READ",
+      "NVMStorage": true,
+      "widget": "Value"
+    },
+    {
+      "varID": 35,
+      "name": "VAR_READ_INT32",
+      "displayName": "READ INT32",
+      "block": "BlockTest1",
+      "type": "TYPE_INT32",
+      "access": "ACCESS_READ",
+      "NVMStorage": false,
+      "widget": "Value"
+    },
+    {
+      "varID": 36,
+      "name": "VAR_READ_FLOAT",
+      "displayName": "READ FLOAT",
+      "block": "BlockTest1",
+      "type": "TYPE_FLOAT",
+      "access": "ACCESS_READ",
+      "NVMStorage": true,
+      "widget": "Value"
+    },
+    {
+      "varID": 37,
+      "name": "VAR_WRITE_UINT8",
+      "displayName": "WRITE UINT8",
+      "block": "BlockTest1",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 38,
+      "name": "VAR_WRITE_INT8",
+      "displayName": "WRITE INT8",
+      "block": "BlockTest1",
+      "type": "TYPE_INT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": true,
+      "widget": "Input"
+    },
+    {
+      "varID": 39,
+      "name": "VAR_WRITE_UINT16",
+      "displayName": "WRITE UINT16",
+      "block": "BlockTest1",
+      "type": "TYPE_UINT16",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 40,
+      "name": "VAR_WRITE_INT16",
+      "displayName": "WRITE INT16",
+      "block": "BlockTest1",
+      "type": "TYPE_INT16",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": true,
+      "widget": "Input"
+    },
+    {
+      "varID": 41,
+      "name": "VAR_WRITE_UINT32",
+      "displayName": "WRITE UINT32",
+      "block": "BlockTest1",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 42,
+      "name": "VAR_WRITE_INT32",
+      "displayName": "WRITE INT32",
+      "block": "BlockTest1",
+      "type": "TYPE_INT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": true,
+      "widget": "Input"
+    },
+    {
+      "varID": 43,
+      "name": "VAR_WRITE_FLOAT",
+      "displayName": "WRITE FLOAT",
+      "block": "BlockTest1",
+      "type": "TYPE_FLOAT",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 44,
+      "name": "VAR_READ_UINT8",
+      "displayName": "READ UINT8",
+      "block": "BlockTest2",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_READ",
+      "NVMStorage": false,
+      "widget": "Value"
+    },
+    {
+      "varID": 45,
+      "name": "VAR_READ_INT8",
+      "displayName": "READ INT8",
+      "block": "BlockTest2",
+      "type": "TYPE_INT8",
+      "access": "ACCESS_READ",
+      "NVMStorage": true,
+      "widget": "Value"
+    },
+    {
+      "varID": 46,
+      "name": "VAR_READ_UINT16",
+      "displayName": "READ UINT16",
+      "block": "BlockTest2",
+      "type": "TYPE_UINT16",
+      "access": "ACCESS_READ",
+      "NVMStorage": false,
+      "widget": "Value"
+    },
+    {
+      "varID": 47,
+      "name": "VAR_READ_INT16",
+      "displayName": "READ INT16",
+      "block": "BlockTest2",
+      "type": "TYPE_INT16",
+      "access": "ACCESS_READ",
+      "NVMStorage": true,
+      "widget": "Value"
+    },
+    {
+      "varID": 48,
+      "name": "VAR_READ_UINT32",
+      "displayName": "READ UINT32",
+      "block": "BlockTest2",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_READ",
+      "NVMStorage": false,
+      "widget": "Value"
+    },
+    {
+      "varID": 49,
+      "name": "VAR_READ_INT32",
+      "displayName": "READ INT32",
+      "block": "BlockTest2",
+      "type": "TYPE_INT32",
+      "access": "ACCESS_READ",
+      "NVMStorage": true,
+      "widget": "Value"
+    },
+    {
+      "varID": 50,
+      "name": "VAR_READ_FLOAT",
+      "displayName": "READ FLOAT",
+      "block": "BlockTest2",
+      "type": "TYPE_FLOAT",
+      "access": "ACCESS_READ",
+      "NVMStorage": false,
+      "widget": "Value"
+    },
+    {
+      "varID": 51,
+      "name": "VAR_WRITE_UINT8",
+      "displayName": "WRITE UINT8",
+      "block": "BlockTest2",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": true,
+      "widget": "Input"
+    },
+    {
+      "varID": 52,
+      "name": "VAR_WRITE_INT8",
+      "displayName": "WRITE INT8",
+      "block": "BlockTest2",
+      "type": "TYPE_INT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 53,
+      "name": "VAR_WRITE_UINT16",
+      "displayName": "WRITE UINT16",
+      "block": "BlockTest2",
+      "type": "TYPE_UINT16",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": true,
+      "widget": "Input"
+    },
+    {
+      "varID": 54,
+      "name": "VAR_WRITE_INT16",
+      "displayName": "WRITE INT16",
+      "block": "BlockTest2",
+      "type": "TYPE_INT16",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 55,
+      "name": "VAR_WRITE_UINT32",
+      "displayName": "WRITE UINT32",
+      "block": "BlockTest2",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": true,
+      "widget": "Input"
+    },
+    {
+      "varID": 56,
+      "name": "VAR_WRITE_INT32",
+      "displayName": "WRITE INT32",
+      "block": "BlockTest2",
+      "type": "TYPE_INT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 57,
+      "name": "VAR_WRITE_FLOAT",
+      "displayName": "WRITE FLOAT",
+      "block": "BlockTest2",
+      "type": "TYPE_FLOAT",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": true,
+      "widget": "Input"
+    },
+    {
+      "varID": 58,
+      "name": "VAR_WRITE_UINT8_1",
+      "displayName": "WRITE UINT8 1",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 59,
+      "name": "VAR_WRITE_UINT8_2",
+      "displayName": "WRITE UINT8 2",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 60,
+      "name": "VAR_WRITE_UINT8_3",
+      "displayName": "WRITE UINT8 3",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 61,
+      "name": "VAR_WRITE_UINT8_4",
+      "displayName": "WRITE UINT8 4",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 62,
+      "name": "VAR_WRITE_UINT8_5",
+      "displayName": "WRITE UINT8 5",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 63,
+      "name": "VAR_WRITE_UINT8_6",
+      "displayName": "WRITE UINT8 6",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 64,
+      "name": "VAR_WRITE_UINT8_7",
+      "displayName": "WRITE UINT8 7",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 65,
+      "name": "VAR_WRITE_UINT8_8",
+      "displayName": "WRITE UINT8 8",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 66,
+      "name": "VAR_WRITE_UINT8_9",
+      "displayName": "WRITE UINT8 9",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 67,
+      "name": "VAR_WRITE_UINT8_10",
+      "displayName": "WRITE UINT8 10",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 68,
+      "name": "VAR_WRITE_UINT8_11",
+      "displayName": "WRITE UINT8 11",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 69,
+      "name": "VAR_WRITE_UINT8_12",
+      "displayName": "WRITE UINT8 12",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 70,
+      "name": "VAR_WRITE_UINT8_13",
+      "displayName": "WRITE UINT8 13",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 71,
+      "name": "VAR_WRITE_UINT8_14",
+      "displayName": "WRITE UINT8 14",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 72,
+      "name": "VAR_WRITE_UINT8_15",
+      "displayName": "WRITE UINT8 15",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 73,
+      "name": "VAR_WRITE_UINT8_16",
+      "displayName": "WRITE UINT8 16",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 74,
+      "name": "VAR_WRITE_UINT8_17",
+      "displayName": "WRITE UINT8 17",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 75,
+      "name": "VAR_WRITE_UINT8_18",
+      "displayName": "WRITE UINT8 18",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 76,
+      "name": "VAR_WRITE_UINT8_19",
+      "displayName": "WRITE UINT8 19",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 77,
+      "name": "VAR_WRITE_UINT8_20",
+      "displayName": "WRITE UINT8 20",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT8",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 78,
+      "name": "VAR_WRITE_UINT32_1",
+      "displayName": "WRITE UINT32 1",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 79,
+      "name": "VAR_WRITE_UINT32_2",
+      "displayName": "WRITE UINT32 2",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 80,
+      "name": "VAR_WRITE_UINT32_3",
+      "displayName": "WRITE UINT32 3",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 81,
+      "name": "VAR_WRITE_UINT32_4",
+      "displayName": "WRITE UINT32 4",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 82,
+      "name": "VAR_WRITE_UINT32_5",
+      "displayName": "WRITE UINT32 5",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 83,
+      "name": "VAR_WRITE_UINT32_6",
+      "displayName": "WRITE UINT32 6",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 84,
+      "name": "VAR_WRITE_UINT32_7",
+      "displayName": "WRITE UINT32 7",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 85,
+      "name": "VAR_WRITE_UINT32_8",
+      "displayName": "WRITE UINT32 8",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 86,
+      "name": "VAR_WRITE_UINT32_9",
+      "displayName": "WRITE UINT32 9",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 87,
+      "name": "VAR_WRITE_UINT32_10",
+      "displayName": "WRITE UINT32 10",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 88,
+      "name": "VAR_WRITE_UINT32_11",
+      "displayName": "WRITE UINT32 11",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 89,
+      "name": "VAR_WRITE_UINT32_12",
+      "displayName": "WRITE UINT32 12",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 90,
+      "name": "VAR_WRITE_UINT32_13",
+      "displayName": "WRITE UINT32 13",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 91,
+      "name": "VAR_WRITE_UINT32_14",
+      "displayName": "WRITE UINT32 14",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 92,
+      "name": "VAR_WRITE_UINT32_15",
+      "displayName": "WRITE UINT32 15",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 93,
+      "name": "VAR_WRITE_UINT32_16",
+      "displayName": "WRITE UINT32 16",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 94,
+      "name": "VAR_WRITE_UINT32_17",
+      "displayName": "WRITE UINT32 17",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 95,
+      "name": "VAR_WRITE_UINT32_18",
+      "displayName": "WRITE UINT32 18",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 96,
+      "name": "VAR_WRITE_UINT32_19",
+      "displayName": "WRITE UINT32 19",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    },
+    {
+      "varID": 97,
+      "name": "VAR_WRITE_UINT32_20",
+      "displayName": "WRITE UINT32 20",
+      "block": "BlockTest3",
+      "type": "TYPE_UINT32",
+      "access": "ACCESS_WRITE",
+      "NVMStorage": false,
+      "widget": "Input"
+    }
+  ]
+}

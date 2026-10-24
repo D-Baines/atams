@@ -65,12 +65,14 @@ void TestNode::runFunctionArgTests(void)
 
   /* Node::setVar Var ID Error Checks - Invalid Var ID */
   expectedError = Atams::ERROR_VAR_ID;
-  error         = Node::setVar((BlockTest3::VAR_WRITE_UINT32_20 + 1U),  testUint8_); 
+  error         = Node::setVar(static_cast<Atams::VarID_t>(BlockTest3::VAR_WRITE_UINT32_20 + 1U),  testUint8_); 
   if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
   /* Node::setVar Var Type Error Checks - Valid and Invalid Var Types */
-  for (uint16_t varID = BlockTest1::VAR_WRITE_UINT8; varID <= BlockTest1::VAR_WRITE_FLOAT; varID++)
+  for (uint16_t varIndex {BlockTest1::VAR_WRITE_UINT8}; varIndex <= BlockTest1::VAR_WRITE_FLOAT; varIndex++)
   {
+    const Atams::VarID_t varID {static_cast<Atams::VarID_t>(varIndex)};
+
     expectedError = (varID == BlockTest1::VAR_WRITE_UINT8) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
     error         = Node::setVar(varID, testUint8_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
@@ -112,12 +114,14 @@ void TestNode::runFunctionArgTests(void)
 
   /* Node::getVar Var ID Error Checks - Invalid Var ID */
   expectedError = Atams::ERROR_VAR_ID;
-  error         = Node::getVar((BlockTest3::VAR_WRITE_UINT32_20+1U),  testUint8_); 
+  error         = Node::getVar(static_cast<Atams::VarID_t>(BlockTest3::VAR_WRITE_UINT32_20 + 1U),  testUint8_); 
   if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
   /* Node::getVar Var Type Error Checks - Valid and Invalid Var Types */
-  for (uint16_t varID = BlockTest1::VAR_WRITE_UINT8; varID <= BlockTest1::VAR_WRITE_FLOAT; varID++)
+  for (uint16_t varIndex {BlockTest1::VAR_WRITE_UINT8}; varIndex <= BlockTest1::VAR_WRITE_FLOAT; varIndex++)
   {
+    const Atams::VarID_t varID {static_cast<Atams::VarID_t>(varIndex)};
+
     expectedError = (varID == BlockTest1::VAR_WRITE_UINT8) ? Atams::ERROR_NONE : Atams::ERROR_VAR_TYPE;
     error         = Node::getVar(varID, testUint8_);
     if (error != expectedError) errorHandler(error, argTestErrorMessage_);
@@ -169,7 +173,7 @@ void TestNode::runFunctionArgTests(void)
 
   /* Set Request Pattern w/ Invalid Var ID */
   expectedError = Atams::ERROR_VAR_ID;
-  error         = Node::setRequestPattern((BlockTest3::VAR_WRITE_UINT32_20+1U), Atams::ACCESS_READ, Atams::REQUEST_STREAM);
+  error         = Node::setRequestPattern(static_cast<Atams::VarID_t>(BlockTest3::VAR_WRITE_UINT32_20 + 1U), Atams::ACCESS_READ, Atams::REQUEST_STREAM);
   if (error != expectedError) errorHandler(error, argTestErrorMessage_);
 
   /* Set Request Pattern w/ Invalid Access */
@@ -217,8 +221,10 @@ void TestNode::runFunctionArgTests(void)
   uint16_t      expectedRequestPacketLength {Atams::PACKET_HEADER_SIZE};
   const uint8_t setVarDatagramLength        {Atams::DATAGRAM_SIZE_HEADER + sizeof(uint8_t)};
   
-  for (uint16_t varID {BlockTest3::VAR_WRITE_UINT8_1}; varID <= BlockTest3::VAR_WRITE_UINT8_20; varID++)
+  for (uint16_t varIndex {BlockTest3::VAR_WRITE_UINT8_1}; varIndex <= BlockTest3::VAR_WRITE_UINT8_20; varIndex++)
   {
+    const Atams::VarID_t varID {static_cast<Atams::VarID_t>(varIndex)};
+
     if ((expectedRequestPacketLength + setVarDatagramLength) > effectivePacketSize)
     {
       expectedError = Atams::ERROR_REQUEST_BUFFER_LENGTH;
@@ -247,8 +253,10 @@ void TestNode::runFunctionArgTests(void)
   uint16_t       expectedReadPacketLength   {Atams::PACKET_HEADER_SIZE};
   const uint8_t  readResponseDatagramLength {Atams::DATAGRAM_SIZE_HEADER + sizeof(uint32_t)};
 
-  for (uint16_t varID {BlockTest3::VAR_WRITE_UINT32_1}; varID <= BlockTest3::VAR_WRITE_UINT32_20; varID++)
+  for (uint16_t varIndex {BlockTest3::VAR_WRITE_UINT32_1}; varIndex <= BlockTest3::VAR_WRITE_UINT32_20; varIndex++)
   {
+    const Atams::VarID_t varID {static_cast<Atams::VarID_t>(varIndex)};
+
     if ((expectedResponseLength + readResponseDatagramLength) > effectivePacketSize)
     {
       expectedError = Atams::ERROR_RESPONSE_BUFFER_LENGTH;
@@ -275,9 +283,9 @@ void TestNode::runFunctionArgTests(void)
   /* Request Owner Tests */
   const Atams::RequestOwner ownerA;
   const Atams::RequestOwner ownerB;
-  const uint16_t            varOwnedA  {BlockTest3::VAR_WRITE_UINT32_1};
-  const uint16_t            varOwnedB  {BlockTest3::VAR_WRITE_UINT32_2};
-  const uint16_t            varNoOwner {BlockTest3::VAR_WRITE_UINT32_3};
+  const Atams::VarID_t      varOwnedA  {BlockTest3::VAR_WRITE_UINT32_1};
+  const Atams::VarID_t      varOwnedB  {BlockTest3::VAR_WRITE_UINT32_2};
+  const Atams::VarID_t      varNoOwner {BlockTest3::VAR_WRITE_UINT32_3};
 
   error = Node::setRequestPatternOwned(&ownerA, varOwnedA, Atams::ACCESS_READ, Atams::REQUEST_STREAM);
   if (!error) error = Node::setRequestPatternOwned(&ownerB, varOwnedB, Atams::ACCESS_READ, Atams::REQUEST_STREAM);
@@ -345,8 +353,10 @@ void TestNode::runUpdateCycleTests(void)
     return; /* Early Return - Error has been injected */
   }
 
-  for (uint16_t varID {BlockTest1::VAR_WRITE_UINT8}; varID <= BlockTest1::VAR_WRITE_FLOAT; varID++)
+  for (uint16_t varIndex {BlockTest1::VAR_WRITE_UINT8}; varIndex <= BlockTest1::VAR_WRITE_FLOAT; varIndex++)
   {
+    const Atams::VarID_t varID {static_cast<Atams::VarID_t>(varIndex)};
+
     if (prevRequestPatterns_[varID] == Atams::REQUEST_UNTIL_ACK)
     {
       error = Node::getVarLength(varID, varLength);
@@ -375,8 +385,10 @@ void TestNode::runUpdateCycleTests(void)
     }
   }
 
-  for (uint16_t varID {BlockTest1::VAR_WRITE_UINT8}; varID <= BlockTest1::VAR_WRITE_FLOAT; varID++)
+  for (uint16_t varIndex {BlockTest1::VAR_WRITE_UINT8}; varIndex <= BlockTest1::VAR_WRITE_FLOAT; varIndex++)
   {
+    const Atams::VarID_t varID {static_cast<Atams::VarID_t>(varIndex)};
+
     Atams::RequestPattern_t writeRequestPattern {static_cast<Atams::RequestPattern_t>(std::rand() % Atams::NUMBER_OF_REQUEST_PATTERNS)};
 
     error = Node::getVarLength(varID, varLength);
@@ -501,8 +513,10 @@ void TestNode::runUpdateCycleTests(void)
     }
   }
 
-  for (uint16_t varID = BlockTest1::VAR_WRITE_UINT8; varID <= BlockTest1::VAR_WRITE_FLOAT; varID++)
+  for (uint16_t varIndex {BlockTest1::VAR_WRITE_UINT8}; varIndex <= BlockTest1::VAR_WRITE_FLOAT; varIndex++)
   {
+    const Atams::VarID_t varID {static_cast<Atams::VarID_t>(varIndex)};
+
     error = Node::getRequestPattern(varID, prevAccess_[varID], prevRequestPatterns_[varID]);
 
     if (error) errorHandler(error, defaultUpdateErrorMessage_);
@@ -521,7 +535,7 @@ Atams::Error_t TestNode::getExpectedBusError(void)
 
 void TestNode::updateErrorInjection(void)
 {
-  uint16_t varIDUsed {VAR_ID_NULL};
+  Atams::VarID_t varIDUsed {VAR_ID_NULL};
 
   if ((Node::getBusError()               != expectedBusError_    ) ||
       (Node::getAbortedResponseDetails() != expectedAbortDetails_) )
@@ -540,8 +554,10 @@ void TestNode::updateErrorInjection(void)
 
     if (Node::getRequestPacketLength() == Atams::PACKET_HEADER_SIZE)
     {
-      for (uint16_t varID {BlockTest1::VAR_WRITE_UINT8}; varID <= BlockTest1::VAR_WRITE_FLOAT; varID++)
+      for (uint16_t varIndex {BlockTest1::VAR_WRITE_UINT8}; varIndex <= BlockTest1::VAR_WRITE_FLOAT; varIndex++)
       {
+        const Atams::VarID_t varID {static_cast<Atams::VarID_t>(varIndex)};
+
         bool ackReceived {false};
         bool dataReady   {false};
 
@@ -617,7 +633,7 @@ void TestNode::errorHandler(const Atams::Error_t error, const char * errorMessag
   hubErrorHandler_(error, errorBuffer_);
 }
 
-bool TestNode::requestIsActive(const uint16_t varID)
+bool TestNode::requestIsActive(const Atams::VarID_t varID)
 {
   Atams::Access_t         access  {Atams::ACCESS_NONE};
   Atams::RequestPattern_t pattern {Atams::REQUEST_INACTIVE};
@@ -628,7 +644,7 @@ bool TestNode::requestIsActive(const uint16_t varID)
 }
 
 template<typename T>
-void TestNode::updateWriteValue(const uint16_t varID, T &feedbackVar, T &writeVar)
+void TestNode::updateWriteValue(const Atams::VarID_t varID, T &feedbackVar, T &writeVar)
 {
   Atams::Error_t error {Atams::ERROR_NONE};
 
@@ -642,7 +658,7 @@ void TestNode::updateWriteValue(const uint16_t varID, T &feedbackVar, T &writeVa
 }
 
 template<typename T>
-void TestNode::checkReadValue(const uint16_t varID, T &feedbackVar, T &writtenVar)
+void TestNode::checkReadValue(const Atams::VarID_t varID, T &feedbackVar, T &writtenVar)
 {
   Atams::Error_t error {Atams::ERROR_NONE};
 

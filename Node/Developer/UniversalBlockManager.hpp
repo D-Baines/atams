@@ -98,9 +98,9 @@ class UniversalBlockManager
 
   void setUpdateRequired(void);
 
-  bool checkWriteAccess(const uint16_t varID);
+  bool checkWriteAccess(const Atams::VarID_t varID);
 
-  void processRead(const uint16_t varID);
+  void processRead(const Atams::VarID_t varID);
 
   uint8_t getLocalNodeID(void);
 
@@ -120,7 +120,7 @@ class UniversalBlockManager
 
   struct PasscodeChecker_t
   {
-    const uint8_t               passcodeVarID;
+    const Atams::VarID_t        passcodeVarID;
     const uint32_t              requiredPasscode;
     uint32_t                    passcode;
     uint32_t                    prevPasscode;

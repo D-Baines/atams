@@ -63,9 +63,9 @@ class WriteList
 
   struct WriteConfig_t
   {
-    uint16_t varID;
-    uint16_t requestPacketIndex;
-    uint8_t  dataLength;
+    Atams::VarID_t varID              {Atams::VAR_ID_NULL};
+    uint16_t       requestPacketIndex {0U};
+    uint8_t        dataLength         {0U};
   };
 
   enum Error_t: uint8_t
@@ -77,14 +77,14 @@ class WriteList
   
   struct ConfigReturn_t
   {
-    Error_t       status;
-    WriteConfig_t writeConfig;
+    WriteList::Error_t status {WriteList::ERROR_NONE};
+    WriteConfig_t      writeConfig;
   };
 
   struct SearchResult_t
   {
-    bool     configFound;
-    uint16_t configIndex;
+    bool     configFound {false};
+    uint16_t configIndex {0U};
   };
 
   /*-- PUBLIC FUNCTION DEFINITIONS ----*/
@@ -93,11 +93,11 @@ class WriteList
 
   void reset(void);
 
-  SearchResult_t findConfig(const uint16_t varID);
+  SearchResult_t findConfig(const Atams::VarID_t varID);
 
-  Error_t addConfig(const WriteConfig_t newWriteConfig);
+  WriteList::Error_t addConfig(const WriteConfig_t newWriteConfig);
 
-  void removeConfigIfFound(const uint16_t varID);
+  void removeConfigIfFound(const Atams::VarID_t varID);
 
   void updateIndexes(const uint16_t referenceIndex, const int16_t shiftLength);
 
