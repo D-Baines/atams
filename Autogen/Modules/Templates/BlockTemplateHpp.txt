@@ -45,7 +45,7 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 
 /*------------------------ Data Block Info -------------------------*/
 
-constexpr uint16_t NUMBER_OF_VARS {$$$AUTOGEN$$$NUMBER_OF_VARS$$$AUTOGEN$$$};
+inline constexpr uint16_t NUMBER_OF_VARS {$$$AUTOGEN$$$NUMBER_OF_VARS$$$AUTOGEN$$$};
 
 /*-------------------------- Var ID List ---------------------------*/
 

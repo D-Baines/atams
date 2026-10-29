@@ -59,13 +59,13 @@ struct HubVarInfo_t
   VarType_t type           {Atams::TYPE_NULL};
   Access_t  externalAccess {Atams::ACCESS_NONE};
 
-  HubVarInfo_t(void) = default;
+  constexpr HubVarInfo_t(void) = default;
 
-  HubVarInfo_t(const VarType_t typeIn, const Access_t externalAccessIn) :
+  constexpr HubVarInfo_t(const VarType_t typeIn, const Access_t externalAccessIn) :
   type(typeIn),
   externalAccess(externalAccessIn){};
 
-  HubVarInfo_t(const VarInfo_t &full) :
+  constexpr HubVarInfo_t(const VarInfo_t &full) :
   type(full.type),
   externalAccess(full.externalAccess){};
 };
@@ -90,8 +90,31 @@ public NodeCallbackHandler
 
   /*-- Public Typedefs --------------------------------------------------------------*/
 
-  struct MemoryMap_t :
-  public HubSharedMemoryMap_t {};
+  struct MemoryMap_t
+  {
+    const HubSharedMemoryMap_t sharedMap;
+
+    explicit constexpr MemoryMap_t(const HubSharedMemoryMap_t &sharedMemoryMapInput) :
+    sharedMap(sharedMemoryMapInput){};
+
+    /* Default Constructor */
+    MemoryMap_t(void) = delete;
+
+    /* Default Destructor */
+    ~MemoryMap_t(void) = default;
+
+    /* Copy Constructor */
+    MemoryMap_t(const MemoryMap_t &other) = delete;
+
+    /* Copy Assignment Operator */
+    MemoryMap_t & operator=(const MemoryMap_t &other) = delete;
+
+    /* Move Constructor */
+    MemoryMap_t(MemoryMap_t &&other) = delete;
+
+    /* Move Assignment Operator */
+    MemoryMap_t & operator=(MemoryMap_t &&other) = delete;
+  };
 
   /*-- Public Function Declarations -------------------------------------------------*/
 
@@ -282,6 +305,8 @@ public NodeCallbackHandler
   void resetVars(void);
 
   void invalidateMemoryMap(void);
+
+  static Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap);
 
   Atams::Error_t initBlockDescriptors(const MemoryMap_t &memoryMap);
 

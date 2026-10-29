@@ -47,6 +47,79 @@
 namespace Atams {
 
 /*************************************************************************************/
+/* PRIVATE STATIC CONSTANTS                                                          */
+/*************************************************************************************/
+
+static constexpr Atams::GenInfo_t s_dummyGenInfo
+{
+  /* .atamsVersionMajor  = */ ATAMS_VERSION_MAJOR,
+  /* .atamsVersionMinor  = */ ATAMS_VERSION_MINOR,
+  /* .genDay             = */ 0U,
+  /* .genMonth           = */ 0U,
+  /* .genYear            = */ 0U,
+  /* .genHour            = */ 0U,
+  /* .genMinute          = */ 0U,
+  /* .genSecond          = */ 0U,
+  /* .genChecksum        = */ 0U,
+  /* .noOfVars           = */ BlockUniversal::NUMBER_OF_VARS,
+};
+
+/* Element-wise, not a bare pointer to BlockUniversal::varInfoList - HubVarInfo_t's converting
+ * constructor only applies per-element in a braced-init-list context like this one, not to a
+ * whole-array pointer assignment (BlockUniversal::varInfoList decays to const VarInfo_t*, which
+ * cannot implicitly convert to const HubVarInfo_t*). Unsized ([]) so the static_assert below can
+ * catch a missing/extra entry - HubVarInfo_t has a default constructor (see Hub/Node.hpp), so a
+ * sized array would otherwise let a missing entry silently default-construct to
+ * {TYPE_NULL, ACCESS_NONE} instead of failing to compile. */
+static constexpr Atams::HubVarInfo_t s_dummyVarInfoList[]
+{
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ATAMS_VERSION_MAJOR],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ATAMS_VERSION_MINOR],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_ATAMS_VERSION_PATCH],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_DAY],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_MONTH],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_YEAR],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_HOUR],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_MINUTE],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_SECOND],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_CHECKSUM],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_NUMBER_OF_VARS],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_MAX_BUS_PACKET_SIZE],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_CONFIGURATION_PASSKEY],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_CONFIGURATION_STATUS],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_NODE_ID],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_FIRST_NODE_ID],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_LAST_NODE_ID],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_PREVIOUS_NODE_ID],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_BITRATE],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_WATCHDOG_PERIOD],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_STORE_ALL],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_RESTORE_USER_BLOCKS],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_RESTORE_ALL],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_RESET_NODE],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_STORAGE_STATUS],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_WATCHDOG_FAULT_ACTIVE],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_WATCHDOG_RESET],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_CRC_ERROR_COUNT],
+  BlockUniversal::varInfoList[BlockUniversal::VAR_COBS_ERROR_COUNT],
+};
+
+static constexpr Node::MemoryMap_t s_dummyMemoryMap
+{
+  /* .sharedMap */
+  {
+    /* .genInfo     = */ s_dummyGenInfo,
+    /* .varInfoList = */ s_dummyVarInfoList
+  }
+};
+
+static_assert(s_dummyMemoryMap.sharedMap.varInfoListLength == s_dummyMemoryMap.sharedMap.genInfo.noOfVars,
+              "Dummy var info list length does not match genInfo.noOfVars");
+static_assert(s_dummyMemoryMap.sharedMap.varInfoListLength <= Platform::NODE_NUMBER_OF_VARS,
+              "Dummy Memory Map exceeds Platform::NODE_NUMBER_OF_VARS var storage");
+
+/*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
@@ -1454,77 +1527,6 @@ void Bus::beginSetConfigStore(void)
   configUpdateProcessHandler_.specificState = Bus::ConfigUpdateState::STORE_CONFIG;
   nodeProcessHandler_.beginStorageProcess(dummyNode_);
 }
-
-/*************************************************************************************/
-/* PRIVATE STATIC CONSTANTS                                                          */
-/*************************************************************************************/
-
-static const Atams::GenInfo_t s_dummyGenInfo
-{
-  /* .atamsVersionMajor  = */ ATAMS_VERSION_MAJOR,
-  /* .atamsVersionMinor  = */ ATAMS_VERSION_MINOR,
-  /* .genDay             = */ 0U,
-  /* .genMonth           = */ 0U,
-  /* .genYear            = */ 0U,
-  /* .genHour            = */ 0U,
-  /* .genMinute          = */ 0U,
-  /* .genSecond          = */ 0U,
-  /* .genChecksum        = */ 0U,
-  /* .noOfVars           = */ BlockUniversal::NUMBER_OF_VARS,
-};
-
-/* Element-wise, not a bare pointer to BlockUniversal::varInfoList - HubVarInfo_t's converting
- * constructor only applies per-element in a braced-init-list context like this one, not to a
- * whole-array pointer assignment (BlockUniversal::varInfoList decays to const VarInfo_t*, which
- * cannot implicitly convert to const HubVarInfo_t*). Unsized ([]) so the static_assert below can
- * catch a missing/extra entry - HubVarInfo_t has a default constructor (see Hub/Node.hpp), so a
- * sized array would otherwise let a missing entry silently default-construct to
- * {TYPE_NULL, ACCESS_NONE} instead of failing to compile. */
-static const Atams::HubVarInfo_t s_dummyVarInfoList[]
-{
-  BlockUniversal::varInfoList[BlockUniversal::VAR_ATAMS_VERSION_MAJOR],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_ATAMS_VERSION_MINOR],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_ATAMS_VERSION_PATCH],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_DAY],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_MONTH],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_YEAR],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_HOUR],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_MINUTE],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_GEN_SECOND],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_CHECKSUM],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_MAP_NUMBER_OF_VARS],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_MAX_BUS_PACKET_SIZE],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_CONFIGURATION_PASSKEY],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_CONFIGURATION_STATUS],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_NODE_ID],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_FIRST_NODE_ID],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_LAST_NODE_ID],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_PREVIOUS_NODE_ID],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_BITRATE],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_WATCHDOG_PERIOD],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_STORE_ALL],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_RESTORE_USER_BLOCKS],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_RESTORE_ALL],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_RESET_NODE],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_STORAGE_STATUS],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_WATCHDOG_FAULT_ACTIVE],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_WATCHDOG_RESET],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_CRC_ERROR_COUNT],
-  BlockUniversal::varInfoList[BlockUniversal::VAR_COBS_ERROR_COUNT],
-};
-
-static_assert(sizeof(s_dummyVarInfoList) / sizeof(s_dummyVarInfoList[0]) == BlockUniversal::NUMBER_OF_VARS,
-              "s_dummyVarInfoList out of sync with BlockUniversal::NUMBER_OF_VARS");
-
-const Node::MemoryMap_t Bus::s_dummyMemoryMap
-{
-  /* .sharedMemoryMap = */
-  {
-    /* .genInfo     = */ s_dummyGenInfo,
-    /* .varInfoList = */ s_dummyVarInfoList
-  }
-};
 
 /*************************************************************************************/
 /* PRIVATE HELPER STRUCT FUNCTION DEFINITIONS                                        */

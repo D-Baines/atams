@@ -78,12 +78,12 @@ nodeID_(nodeID)
  */
 Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
 {
-  Atams::Error_t error {Atams::validateMemoryMap(memoryMap, Platform::NODE_NUMBER_OF_VARS)};
+  Atams::Error_t error {validateMemoryMap(memoryMap)};
 
   if (error == Atams::ERROR_NONE)
   {
-    memoryMap_     = &memoryMap;
-    validVarCount_ = memoryMap.genInfo.noOfVars;
+    memoryMap_     = &memoryMap.sharedMap;
+    validVarCount_ = memoryMap.sharedMap.genInfo.noOfVars;
   }
 
   return (error);
@@ -1327,6 +1327,13 @@ void Node::invalidateMemoryMap(void)
   validVarCount_ = 0U;
   memoryMap_     = nullptr;
   resetVars();
+}
+
+/* Hub Memory Maps carry no fields beyond the shared ones, so only the shared checks apply,
+ * against this Hub's var storage length. */
+Atams::Error_t Node::validateMemoryMap(const MemoryMap_t &memoryMap)
+{
+  return (Atams::validateSharedMemoryMap(memoryMap.sharedMap, Platform::NODE_NUMBER_OF_VARS));
 }
 
 void Node::processAbortedResponse(void)

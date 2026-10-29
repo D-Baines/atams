@@ -137,10 +137,12 @@ constexpr Atams::VarType_t getAtamsType(void)
     }
 }
 
-/* Internal helpers for validateMemoryMap() below - parameterised on VarInfoT so they work for
- * both Node's full VarInfo_t and Hub's slimmer HubVarInfo_t (see Hub/Node.hpp). Not intended to
- * be called directly - not marked static so identical instantiations can be merged by the
- * linker across translation units, same as any other function template. */
+/* Internal helpers for validateSharedMemoryMap() below - parameterised on VarInfoT so they work
+ * for both Node's full VarInfo_t and Hub's slimmer HubVarInfo_t (see Hub/Node.hpp). Not intended
+ * to be called directly - not marked static so identical instantiations can be merged by the
+ * linker across translation units, same as any other function template.
+ * Warning - none of these check varInfoList for nullptr, and any helper indexing varInfoList
+ * relies on validateMapLength() passing first. validateSharedMemoryMap() enforces both. */
 template<typename VarInfoT>
 inline bool validateAtamsVersion(const SharedMemoryMap_t<VarInfoT> &memoryMap)
 {
@@ -148,45 +150,45 @@ inline bool validateAtamsVersion(const SharedMemoryMap_t<VarInfoT> &memoryMap)
           (memoryMap.genInfo.atamsVersionMinor == Atams::ATAMS_VERSION_MINOR) );
 }
 
+/* Checks noOfVars fits both the caller's var storage and the var info list, and covers the
+ * Universal Block. Must pass before varInfoList is indexed. */
 template<typename VarInfoT>
 inline bool validateMapLength(const SharedMemoryMap_t<VarInfoT> &memoryMap, const uint32_t varStorageLength)
 {
   const uint16_t numberOfVars {memoryMap.genInfo.noOfVars};
-  bool           lengthValid  {true};
 
-  if ((numberOfVars > varStorageLength              ) ||
-      (numberOfVars > Atams::MAX_NUMBER_OF_VARS     ) ||
-      (numberOfVars < BlockUniversal::NUMBER_OF_VARS) )
-  {
-    return (false); /* Early Return - var info beyond the storage length must not be read */
-  }
+  return ((numberOfVars <= varStorageLength              ) &&
+          (numberOfVars <= memoryMap.varInfoListLength   ) &&
+          (numberOfVars <= Atams::MAX_NUMBER_OF_VARS     ) &&
+          (numberOfVars >= BlockUniversal::NUMBER_OF_VARS) );
+}
 
-  for (uint16_t varID {0U}; varID < numberOfVars; varID++)
+template<typename VarInfoT>
+inline bool validateVarInfoList(const SharedMemoryMap_t<VarInfoT> &memoryMap)
+{
+  bool varInfoListValid {true};
+
+  for (uint16_t varID {0U}; varID < memoryMap.genInfo.noOfVars; varID++)
   {
     const VarInfoT varInfo {memoryMap.varInfoList[varID]};
 
-    if ((varInfo.type           > Atams::NUMBER_OF_VAR_TYPES) ||
-        (varInfo.externalAccess > Atams::ACCESS_WRITE       ) ||
-        (varInfo.type           == Atams::TYPE_NULL         ) ||
-        (varInfo.externalAccess == Atams::ACCESS_NONE       ) )
+    if ((varInfo.type           >= Atams::NUMBER_OF_VAR_TYPES) ||
+        (varInfo.externalAccess >  Atams::ACCESS_WRITE       ) ||
+        (varInfo.type           == Atams::TYPE_NULL          ) ||
+        (varInfo.externalAccess == Atams::ACCESS_NONE        ) )
     {
-      lengthValid = false;
+      varInfoListValid = false;
       break;
     }
   }
 
-  return (lengthValid);
+  return (varInfoListValid);
 }
 
 template<typename VarInfoT>
 inline bool validateUniversalBlock(const SharedMemoryMap_t<VarInfoT> &memoryMap)
 {
   bool universalBlockValid {true};
-
-  if (memoryMap.genInfo.noOfVars < BlockUniversal::NUMBER_OF_VARS)
-  {
-    return (false); /* Early Return */
-  }
 
   for (uint16_t varIndex {0U}; varIndex < BlockUniversal::NUMBER_OF_VARS; varIndex++)
   {
@@ -223,8 +225,10 @@ inline bool validateMapChecksum(const SharedMemoryMap_t<VarInfoT> &memoryMap)
   return (memoryMap.genInfo.genChecksum == calculatedChecksum);
 }
 
+/* Checks common to Hub and Node Memory Maps, in the order they must run. Called only by the
+ * Hub and Node Memory Map validators, each passing its own Platform var storage length. */
 template<typename VarInfoT>
-inline Atams::Error_t validateMemoryMap(const SharedMemoryMap_t<VarInfoT> &memoryMap, const uint32_t varStorageLength)
+inline Atams::Error_t validateSharedMemoryMap(const SharedMemoryMap_t<VarInfoT> &memoryMap, const uint32_t varStorageLength)
 {
   Atams::Error_t error {Atams::ERROR_NONE};
 
@@ -237,6 +241,7 @@ inline Atams::Error_t validateMemoryMap(const SharedMemoryMap_t<VarInfoT> &memor
     error = Atams::ERROR_ATAMS_VERSION_MISMATCH;
   }
   else if ((validateMapLength(memoryMap, varStorageLength) == false) ||
+           (validateVarInfoList(memoryMap)                 == false) ||
            (validateUniversalBlock(memoryMap)              == false) ||
            (validateMapChecksum(memoryMap)                 == false) )
   {

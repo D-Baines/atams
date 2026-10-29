@@ -21,7 +21,6 @@ set(ATAMS_HUB_LIB_SOURCES
     Developer/WriteList.cpp
     ../Shared/AtamsTypedefs.hpp
     ../Shared/Maps/BlockUniversal.hpp
-    ../Shared/Maps/BlockUniversal.cpp
     ../Shared/Utilities/CircularBuffer.hpp
     ../Shared/Utilities/AtamsUtilities.hpp
     ../Shared/Utilities/AtamsUtilities.cpp

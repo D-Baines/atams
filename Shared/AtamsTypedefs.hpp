@@ -511,23 +511,30 @@ typedef void (*CommsTransmitCallback_t)(TXMessage_t message);
 /* Parameterised on the per-variable metadata type so Hub and Node can each carry only the
  * fields they actually need (see HubVarInfo_t in Hub/Node.hpp) - Node uses
  * SharedMemoryMap_t<VarInfo_t> (see NodeSharedMemoryMap_t), Hub uses
- * SharedMemoryMap_t<HubVarInfo_t> (see HubSharedMemoryMap_t). */
+ * SharedMemoryMap_t<HubVarInfo_t> (see HubSharedMemoryMap_t).
+ *
+ * varInfoListLength is deduced by the compiler from the array passed to the constructor, never
+ * supplied by the caller, so validation can check genInfo.noOfVars never indexes past the list.
+ * The constructor is constexpr so generated maps can be constant-initialised. */
 template<typename VarInfoT>
 struct SharedMemoryMap_t
 {
-  GenInfo_t      genInfo;
+  GenInfo_t       genInfo;
   const VarInfoT *varInfoList;
+  uint16_t        varInfoListLength;
 
-  SharedMemoryMap_t(const GenInfo_t initGenInfo,
-                    const VarInfoT (*initVarInfoList)) :
+  template<uint16_t VAR_INFO_LIST_LENGTH>
+  constexpr SharedMemoryMap_t(const GenInfo_t initGenInfo,
+                              const VarInfoT (&initVarInfoList)[VAR_INFO_LIST_LENGTH]) :
   genInfo(initGenInfo),
-  varInfoList(initVarInfoList){};
+  varInfoList(initVarInfoList),
+  varInfoListLength(VAR_INFO_LIST_LENGTH){};
 
   /* Default Constructor */
   SharedMemoryMap_t(void) = delete;
 
   /* Default Destructor */
-  ~SharedMemoryMap_t(void){};
+  ~SharedMemoryMap_t(void) = default;
 
   /* Copy Constructor */
   SharedMemoryMap_t(const SharedMemoryMap_t &other) = default;

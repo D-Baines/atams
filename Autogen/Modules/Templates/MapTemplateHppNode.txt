@@ -45,7 +45,7 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 /*************************************************************************************/
 
 /* Minimum Platform::NVM_STORAGE_SIZE required to store this map's NVMStorage variables. */
-constexpr uint32_t REQUIRED_NVM_SIZE {$$$AUTOGEN$$$REQUIRED_NVM_SIZE$$$AUTOGEN$$$};
+inline constexpr uint32_t REQUIRED_NVM_SIZE {$$$AUTOGEN$$$REQUIRED_NVM_SIZE$$$AUTOGEN$$$};
 
 /* Autogen's own mirrored size constants (used to compute REQUIRED_NVM_SIZE above) must match
  * the Atams library this map is being compiled against - if these fail, regenerate this map

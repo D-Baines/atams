@@ -172,9 +172,9 @@ struct MemoryMap_t
   InitUniversalDataFn_t       genInfoInitFn;
   InitDefaultsFn_t            userDefaultsInitFn;
 
-  MemoryMap_t(const NodeSharedMemoryMap_t &sharedMemoryMapInput,
-              InitUniversalDataFn_t        genInfoInitFnInput,
-              InitDefaultsFn_t             initUserDefaultsFnInput) :
+  constexpr MemoryMap_t(const NodeSharedMemoryMap_t &sharedMemoryMapInput,
+                        InitUniversalDataFn_t        genInfoInitFnInput,
+                        InitDefaultsFn_t             initUserDefaultsFnInput) :
   sharedMap(sharedMemoryMapInput),
   genInfoInitFn(genInfoInitFnInput),
   userDefaultsInitFn(initUserDefaultsFnInput){};
@@ -183,7 +183,7 @@ struct MemoryMap_t
   MemoryMap_t(void) = delete;
 
   /* Default Destructor */
-  ~MemoryMap_t(void){};
+  ~MemoryMap_t(void) = default;
 
   /* Copy Constructor */
   MemoryMap_t(const MemoryMap_t &other) = delete;
@@ -204,39 +204,6 @@ struct SharedData_t
   Atams::VarStorage_t   varStorage[Platform::NODE_NUMBER_OF_VARS];
   std::atomic<uint32_t> watchdogFault;
 };
-
-/* Node-only counterpart to validateMemoryMap() - checks NVMStorage and nvmHash, fields that
- * only matter to a Node's own NVM storage path and are never present on a Hub's slimmer
- * VarInfo variant, so they can't live in the generic Memory Map validation function. */
-inline Atams::Error_t validateNodeMemoryMap(const SharedMemoryMap_t<NodeVarInfo_t> &memoryMap)
-{
-  if (memoryMap.genInfo.noOfVars < BlockUniversal::NUMBER_OF_VARS)
-  {
-    return (Atams::ERROR_MEMORY_MAP); /* Early Return */
-  }
-
-  for (uint16_t varID {0U}; varID < memoryMap.genInfo.noOfVars; varID++)
-  {
-    if (memoryMap.varInfoList[varID].NVMStorage > Atams::ATAMS_TRUE)
-    {
-      return (Atams::ERROR_MEMORY_MAP); /* Early Return */
-    }
-  }
-
-  for (uint16_t varIndex {0U}; varIndex < BlockUniversal::NUMBER_OF_VARS; varIndex++)
-  {
-    const NodeVarInfo_t &mapVarInfo       {memoryMap.varInfoList[varIndex]};
-    const NodeVarInfo_t &universalVarInfo {BlockUniversal::varInfoList[varIndex]};
-
-    if ((mapVarInfo.NVMStorage != universalVarInfo.NVMStorage) ||
-        (mapVarInfo.nvmHash    != universalVarInfo.nvmHash   ) )
-    {
-      return (Atams::ERROR_MEMORY_MAP); /* Early Return */
-    }
-  }
-
-  return (Atams::ERROR_NONE);
-}
 
 } /* End Namespace - Atams */
 

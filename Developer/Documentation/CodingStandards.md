@@ -186,8 +186,8 @@ MyClass obj{1, 2};   // Not preferred for class objects
 ```
 
 ### Namespace Constants
-- **Rule:** Use `constexpr` for all namespace values that are known at compile time.
-- **Rationale:** `constexpr` ensures compile-time evaluation and, at namespace scope, is implicitly `inline` in C++17 and later.
+- **Rule:** Declare namespace-scope constants that are known at compile time as `inline constexpr` in header files, and `static constexpr` in source files.
+- **Rationale:** `constexpr` ensures compile-time evaluation. `inline` gives a header constant a single definition shared by every translation unit. `static` keeps a source file constant local to that file.
 
 ### Class Shared Constants
 - **Rule:** Use `static constexpr` for class-wide constants that are the same for all instances.

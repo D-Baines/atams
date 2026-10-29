@@ -184,7 +184,7 @@ def generateVarIDList(iteratorStartValue: int,
   iterator      = iteratorStartValue
   requiredSpace = getLongestString(stringList)
   for string in stringList:
-    targetFile.write("constexpr VarID_t VAR_" + string)
+    targetFile.write("inline constexpr VarID_t VAR_" + string)
     writeSpaces(requiredSpace - len(string), targetFile)
     targetFile.write(" {" + str(iterator) + "U};\n")
     iterator += 1
@@ -213,7 +213,7 @@ def generateConstList(block:        pandas.DataFrame,
     postNameSpaces = postStringRequiredSpace - len(varName)
     if ((not pandas.isnull(value)) and (value != "-")):
       valueAsString = str(value)
-      targetFile.write("constexpr " + type + " ")
+      targetFile.write("inline constexpr " + type + " ")
       writeSpaces(preNameSpaces, targetFile)
       targetFile.write((columnHeader.replace(' ', '_').upper()) + "_" + varName)
       writeSpaces(postNameSpaces, targetFile)

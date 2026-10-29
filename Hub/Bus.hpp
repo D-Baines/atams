@@ -225,10 +225,6 @@ private Platform::BusPeripheral
     void invalidate(Atams::Error_t invalidError);
   };
 
-  /*-- Static Private Variables -----------------------------------------------------*/
-
-  static const Node::MemoryMap_t s_dummyMemoryMap;
-
   /*-- Private Class Objects --------------------------------------------------------*/
 
   Platform::BinarySemaphore rxSemaphore_;

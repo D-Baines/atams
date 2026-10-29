@@ -39,6 +39,7 @@
 #include "AppPlatform.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"
 #include "../../Shared/Utilities/AtamsUtilities.hpp"
+#include "../Developer/NodeUtilities.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -220,9 +221,7 @@ Atams::Error_t getVarImpl(const Atams::VarID_t varID, T &outputRef)
  */
 Atams::Error_t initAppCore(const MemoryMap_t &memoryMap)
 {
-  Atams::Error_t error {Atams::validateMemoryMap(memoryMap.sharedMap, Platform::NODE_NUMBER_OF_VARS)};
-
-  if (error == Atams::ERROR_NONE) error = Atams::validateNodeMemoryMap(memoryMap.sharedMap);
+  Atams::Error_t error {NodeUtilities::validateMemoryMap(memoryMap)};
 
   if (error == Atams::ERROR_NONE)
   {

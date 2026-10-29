@@ -43,6 +43,7 @@
 #include "../Developer/UniversalBlockManager.hpp"
 #include "../Developer/FramingConstants.hpp"
 #include "../Developer/NodeTypedefs.hpp"
+#include "../Developer/NodeUtilities.hpp"
 #include "../Developer/CircularBuffer.hpp"
 #include "../Developer/WatchdogHandler.hpp"
 #include "../Developer/NVMUnitHandler.hpp"
@@ -1104,9 +1105,7 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmEr
 {
   if (s_appCoreInitRequired) waitForAppCoreInit();
 
-  Atams::Error_t error {Atams::validateMemoryMap(memoryMap.sharedMap, Platform::NODE_NUMBER_OF_VARS)};
-
-  if (!error) error = Atams::validateNodeMemoryMap(memoryMap.sharedMap);
+  Atams::Error_t error {NodeUtilities::validateMemoryMap(memoryMap)};
 
   if (!error)
   {
