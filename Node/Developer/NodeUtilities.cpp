@@ -59,23 +59,6 @@ namespace Atams { namespace NodeUtilities {
 /*************************************************************************************/
 
 /* Warning - relies on validateSharedMemoryMap() passing first (non-null list, noOfVars in range) */
-static bool validateNVMStorage(const NodeSharedMemoryMap_t &memoryMap)
-{
-  bool nvmStorageValid {true};
-
-  for (uint16_t varID {0U}; varID < memoryMap.genInfo.noOfVars; varID++)
-  {
-    if (memoryMap.varInfoList[varID].NVMStorage > Atams::ATAMS_TRUE)
-    {
-      nvmStorageValid = false;
-      break;
-    }
-  }
-
-  return (nvmStorageValid);
-}
-
-/* Warning - relies on validateSharedMemoryMap() passing first (non-null list, noOfVars in range) */
 static bool validateUniversalBlockNVM(const NodeSharedMemoryMap_t &memoryMap)
 {
   bool universalBlockNVMValid {true};
@@ -96,6 +79,32 @@ static bool validateUniversalBlockNVM(const NodeSharedMemoryMap_t &memoryMap)
   return (universalBlockNVMValid);
 }
 
+/* Warning - relies on validateSharedMemoryMap() passing first (non-null list, noOfVars in range) */
+static bool validateGenNvmChecksum(const MemoryMap_t &memoryMap)
+{
+  const NodeSharedMemoryMap_t &sharedMap {memoryMap.sharedMap};
+  Atams::CRC32                &crc       {Atams::getAtamsCRC32()};
+
+  crc.beginRollingCRC();
+
+  for (uint16_t varID {BlockUniversal::NUMBER_OF_VARS}; varID < sharedMap.genInfo.noOfVars; varID++)
+  {
+    const NodeVarInfo_t &varInfo {sharedMap.varInfoList[varID]};
+    uint8_t              nvmHashBytes[sizeof(varInfo.nvmHash)];
+
+    Atams::uint32ToBuffer(varInfo.nvmHash, nvmHashBytes);
+
+    crc.updateRollingCRC(varInfo.NVMStorage);
+
+    for (const uint8_t nvmHashByte : nvmHashBytes)
+    {
+      crc.updateRollingCRC(nvmHashByte);
+    }
+  }
+
+  return (memoryMap.genNvmChecksum == crc.getRollingCRC());
+}
+
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
@@ -104,7 +113,7 @@ static bool validateUniversalBlockNVM(const NodeSharedMemoryMap_t &memoryMap)
  * @brief Validates a Node Memory Map before it is used to initialise a Node core.
  *
  * Runs the checks shared with the Hub against this Node's var storage length, then the
- * Node-only checks: NVMStorage flags and the Universal Block's NVM fields.
+ * Node-only checks: the Universal Block's NVM fields and the generated NVM field checksum.
  *
  * @param memoryMap Reference to the Node Memory Map to validate.
  *
@@ -121,8 +130,8 @@ Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap)
     return (error); /* Early Return - Node-only checks index varInfoList, so need the shared checks to pass */
   }
 
-  if ((validateNVMStorage(memoryMap.sharedMap)        == false) ||
-      (validateUniversalBlockNVM(memoryMap.sharedMap) == false) )
+  if ((validateUniversalBlockNVM(memoryMap.sharedMap) == false) ||
+      (validateGenNvmChecksum(memoryMap)              == false) )
   {
     error = Atams::ERROR_MEMORY_MAP;
   }

@@ -61,6 +61,8 @@ static constexpr GenInfo_t s_genInfo
   /* .noOfVars          = */ $$$AUTOGEN$$$NUMBER_OF_VARS$$$AUTOGEN$$$
 };
 
+static constexpr uint32_t GEN_NVM_CHECKSUM {$$$AUTOGEN$$$GENERATION_NVM_CHECKSUM$$$AUTOGEN$$$};
+
 static_assert($$$AUTOGEN$$$VERSION_MAJOR$$$AUTOGEN$$$ == Atams::ATAMS_VERSION_MAJOR, "Autogen VERSION_MAJOR out of sync with Atams::ATAMS_VERSION_MAJOR");
 static_assert($$$AUTOGEN$$$VERSION_MINOR$$$AUTOGEN$$$ == Atams::ATAMS_VERSION_MINOR, "Autogen VERSION_MINOR out of sync with Atams::ATAMS_VERSION_MINOR");
 
@@ -141,6 +143,7 @@ constexpr MemoryMap_t memoryMap
     /* .genInfo     = */ Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$::s_genInfo,
     /* .varInfoList = */ Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$::s_varInfoList
   },
+  /* genNvmChecksum   = */ Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$::GEN_NVM_CHECKSUM,
   /* initGenInfo      = */ Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$::initGenInfo,
   /* initUserDefaults = */ Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$::initUserDefaults,
 };

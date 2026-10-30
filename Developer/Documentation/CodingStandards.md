@@ -875,7 +875,8 @@ uint8_t cnt(void);          // Non-compliant: Excessive abbreviation
 | Artifact Type | Convention | Example | Rationale |
 |---------------|------------|---------|-----------|
 | **Local Variables <br> (Incl. Const Member Variables)** | camelCase  | `itemCount`       | Improves readability and distinguishes from constants and types. |
-| **Constexpr Variables**             | SCREAMING_SNAKE_CASE      | `MAX_BUFFER_SIZE` | Makes constants easily identifiable and visually distinct. |
+| **Constexpr Scalars and Arrays of Scalars** | SCREAMING_SNAKE_CASE | `MAX_BUFFER_SIZE` | Makes constant values easily identifiable and visually distinct. |
+| **Constexpr Structs, Classes, and Arrays of Them** | camelCase, with `s_` prefix if static | `s_genInfo` | These are objects rather than named values, so they follow the object naming rules. |
 | **Private Class Member Variables**  | camelCase + trailing `_`  | `value_`          | Trailing underscore signals instance-wide effect, clarifying scope within class methods. |
 | **Static Variables (All scopes)**   | `s_` prefix               | `s_counter`       | `s_` prefix highlights static storage duration and wider scope effect beyond function/class instance. |
 | **POD Struct Types**                | PascalCase + `_t` suffix  | `DataPacket_t`    | `_t` suffix distinguishes POD types, improving clarity and consistency. |

@@ -225,6 +225,8 @@ public NodeCallbackHandler
 
   bool getMemoryMapIsValid(void);
 
+  void deinit(void);
+
   #if (DEVELOPER_TOOLS == true)
   void injectBusError(const Atams::Error_t errorToInject, 
                       const Atams::VarID_t readOnlyVarID,
@@ -288,6 +290,7 @@ public NodeCallbackHandler
   uint16_t                 nodeMaxPacketSize_      {0U};
   uint16_t                 expectedResponseLength_ {Atams::PACKET_HEADER_SIZE};
   uint32_t                 fatalErrorCount_        {0U};
+  bool                     memoryMapChanged_       {false};
   bool                     newResponseReady_       {false};
   AbortedResponseDetails_t abortedResponseDetails_ {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
 
@@ -303,8 +306,6 @@ public NodeCallbackHandler
                                   const uint8_t        length);
                               
   void resetVars(void);
-
-  void invalidateMemoryMap(void);
 
   static Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap);
 
@@ -367,6 +368,10 @@ public NodeCallbackHandler
   virtual void clearBusError(void) final;
 
   virtual void clearAbortDetails(void) final;
+
+  virtual bool getMemoryMapChanged(void) final;
+
+  virtual void clearMemoryMapChanged(void) final;
 
   virtual void responseReceived(uint8_t *inputBuffer, uint16_t inputLength) final;
 

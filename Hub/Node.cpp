@@ -73,8 +73,9 @@ nodeID_(nodeID)
  * @retval @c ERROR_MEMORY_MAP             Memory Map validation failed (invalid structure, length, universal block, or checksum).
  * @retval @c ERROR_ATAMS_VERSION_MISMATCH Memory Map validation failed (Atams version mismatch).
  *
- * @note This function is not concurrency safe. It must be called, and must complete, before the Node is added to a Bus or
- *       accessed from any other thread or context.
+ * @note This function is not concurrency safe. It must not be called while a Bus process is running. Ideally call it before
+ *       adding the Node to a Bus. If called after the Bus initialisation process, that process must be run again before any
+ *       further Bus process runs.
  */
 Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
 {
@@ -82,8 +83,9 @@ Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
 
   if (error == Atams::ERROR_NONE)
   {
-    memoryMap_     = &memoryMap.sharedMap;
-    validVarCount_ = memoryMap.sharedMap.genInfo.noOfVars;
+    memoryMap_        = &memoryMap.sharedMap;
+    validVarCount_    = memoryMap.sharedMap.genInfo.noOfVars;
+    memoryMapChanged_ = true;
   }
 
   return (error);
@@ -1169,6 +1171,23 @@ bool Node::getMemoryMapIsValid(void)
           (validVarCount_ > 0U     ) );
 }
 
+/**
+ * @brief Clears this Node's reference to its Memory Map and resets its stored variables.
+ *
+ * Returns the Node to its pre-init state, until @ref Node::init is next called. Use before destroying a Memory Map that
+ * this Node was initialised with.
+ *
+ * @note This function is not concurrency safe. It must not be called while a Bus process is running, and the Node must be
+ *       initialised again, and the Bus initialisation process run again, before any further Bus process runs.
+ */
+void Node::deinit(void)
+{
+  validVarCount_    = 0U;
+  memoryMap_        = nullptr;
+  memoryMapChanged_ = true;
+  resetVars();
+}
+
 #if (DEVELOPER_TOOLS == true)
 
 void Node::injectBusError(const Atams::Error_t errorToInject, 
@@ -1320,13 +1339,6 @@ void Node::resetVars(void)
   for (Var_t &var : varStorage_) memset(var.storage, 0U, sizeof(var.storage));
 
   varStorageLock_.releaseLock();
-}
-
-void Node::invalidateMemoryMap(void)
-{
-  validVarCount_ = 0U;
-  memoryMap_     = nullptr;
-  resetVars();
 }
 
 /* Hub Memory Maps carry no fields beyond the shared ones, so only the shared checks apply,
@@ -1935,6 +1947,16 @@ void Node::clearAbortDetails(void)
   busErrorLock_.acquireLock();
   abortedResponseDetails_ = {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
   busErrorLock_.releaseLock();
+}
+
+bool Node::getMemoryMapChanged(void)
+{
+  return (memoryMapChanged_);
+}
+
+void Node::clearMemoryMapChanged(void)
+{
+  memoryMapChanged_ = false;
 }
 
 void Node::responseReceived(uint8_t *inputBuffer, uint16_t inputLength)

@@ -11,8 +11,13 @@
   *          be called from the same thread or context to ensure correct operation.
   *          Node functions (such as @c Node::setVar, @c Node::getVar, and 
   *          @c Node::setRequestPattern) may be called from other threads or
-  *          contexts, provided the user has correctly filled the 
+  *          contexts, provided the user has correctly filled the
   *          multi-threading/concurrency function definitions in the Platform files.
+  *          The exceptions are @c Node::init and @c Node::deinit, which are not
+  *          concurrency safe. They must only be called while no other thread or
+  *          context is accessing the Node and no Bus process is running. The Bus
+  *          initialisation process must be run again after either is used on a
+  *          Node already on an initialised Bus.
   *
   * @version v1.0
   ******************************************************************************
@@ -64,7 +69,10 @@ namespace Atams {
  * All Bus member functions must be called from the same thread or context to ensure correct operation.
  * Node functions (such as @c Node::setVar, @c Node::getVar, and @c Node::setRequestPattern) may be called
  * from other threads or contexts, provided the user has correctly filled the multi-threading/concurrency
- * function definitions in the Platform files.
+ * function definitions in the Platform files. The exceptions are @c Node::init and @c Node::deinit, which are
+ * not concurrency safe. They must only be called while no other thread or context is accessing the Node and no
+ * Bus process is running. The Bus initialisation process must be run again after either is used on a Node
+ * already on an initialised Bus.
  *
  */
 class   Bus :
@@ -279,6 +287,8 @@ private Platform::BusPeripheral
   bool safeToRemoveNode(void);
 
   void invalidateBusInit(void);
+
+  bool anyMemoryMapChanged(void);
 
   bool findNodeOnBus(Node &node);
 

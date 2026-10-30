@@ -13,9 +13,11 @@
   *          @c Node::getVar, and @c Node::setRequestPattern) may be called from
   *          other threads or contexts, provided the user has correctly filled 
   *          the appropriate multi-threading/concurrency function definitions in
-  *          the Platform files. The exception is @c Node::init, which is not
-  *          concurrency safe and must complete before the Node is added to a Bus
-  *          or accessed from any other thread or context.
+  *          the Platform files. The exceptions are @c Node::init and
+  *          @c Node::deinit, which are not concurrency safe. They must only be
+  *          called while no other thread or context is accessing the Node and no
+  *          Bus process is running. The Bus initialisation process must be run
+  *          again after either is used on a Node already on an initialised Bus.
   *
   * @version v1.0
   ******************************************************************************
@@ -314,7 +316,11 @@ Atams::Error_t Bus::beginBusInitProcess(void)
   
   for (Atams::Node *&nodePtr : nodePtrs_)
   {
-    if (nodePtr != nullptr) nodePtr->clearAllRequestPatterns();
+    if (nodePtr != nullptr)
+    {
+      nodePtr->clearAllRequestPatterns();
+      static_cast<NodeCallbackHandler&>(*nodePtr).clearMemoryMapChanged();
+    }
   }
 
   return (Atams::ERROR_NONE);
@@ -433,10 +439,18 @@ Atams::ProcessState_t Bus::updateBusInitProcess(Atams::Error_t &error)
  *         - @c PROCESS_IN_PROGRESS: Initialisation is ongoing.
  *         - @c PROCESS_COMPLETE:    Initialisation has finished successfully and Bus update cycles may be started.
  *         - @c PROCESS_ERROR:       Initialisation failed, or is required. @p error is @c ERROR_INIT_ORDER if initialisation has
- *                                   not been run since the Bus was constructed or a Node was added or removed.
+ *                                   not been run since the Bus was constructed, a Node was added or removed, or a Node's Memory
+ *                                   Map changed.
  */
 Atams::ProcessState_t Bus::getBusInitState(Atams::Error_t &error)
 {
+  if ((initProcessHandler_.getProcessState() == Atams::PROCESS_COMPLETE) && anyMemoryMapChanged())
+  {
+    error = Atams::ERROR_INIT_ORDER;
+
+    return (Atams::PROCESS_ERROR); /* Early Return */
+  }
+
   error = initProcessHandler_.getError();
 
   return (initProcessHandler_.getProcessState());
@@ -453,8 +467,8 @@ Atams::ProcessState_t Bus::getBusInitState(Atams::Error_t &error)
  * @ref Bus::runUpdateCycleAsync, depending on the desired update mode.
  *
  * @retval @c ERROR_NONE                     Update cycle started successfully.
- * @retval @c ERROR_INIT_ORDER               The Bus has not been initialised; call @ref Bus::beginBusInitProcess and complete the 
- *                                           initialisation before starting an update cycle.
+ * @retval @c ERROR_INIT_ORDER               The Bus has not been initialised, or a Node's Memory Map changed since it was; call
+ *                                           @ref Bus::beginBusInitProcess and complete the initialisation before starting an update cycle.
  * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS A Bus process (initialisation, configuration or update cycle) is currently in progress; try again when the Bus is idle.
  * @retval @c ERROR_PLATFORM                 Failed to start data reception on the platform bus peripheral.
  */
@@ -468,6 +482,13 @@ Atams::Error_t Bus::beginUpdateCycle(void)
   if (isAnyProcessInProgress())
   {
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
+  }
+
+  if (anyMemoryMapChanged())
+  {
+    invalidateBusInit();
+
+    return (Atams::ERROR_INIT_ORDER); /* Early Return */
   }
 
   if (BusPeripheral::startReceive() == false)
@@ -496,7 +517,7 @@ Atams::Error_t Bus::beginUpdateCycle(void)
  * @param node Reference to the @c Node instance to update.
  *
  * @retval @c ERROR_NONE       Update cycle started successfully.
- * @retval @c ERROR_INIT_ORDER The Bus has not been initialised; call @ref Bus::beginBusInitProcess and complete the initialisation before starting an update cycle.
+ * @retval @c ERROR_INIT_ORDER The Bus has not been initialised, or a Node's Memory Map changed since it was; call @ref Bus::beginBusInitProcess and complete the initialisation before starting an update cycle.
  * @retval @c ERROR_NODE_NOT_ON_BUS The specified Node is not registered on this Bus.
  * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS A Bus process (initialisation, configuration or update cycle) is currently in progress; try again when the Bus is idle.
  * @retval @c ERROR_PLATFORM   Failed to start data reception on the platform bus peripheral.
@@ -516,6 +537,13 @@ Atams::Error_t Bus::beginSingleNodeUpdateCycle(Atams::Node &node)
   if (isAnyProcessInProgress())
   {
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
+  }
+
+  if (anyMemoryMapChanged())
+  {
+    invalidateBusInit();
+
+    return (Atams::ERROR_INIT_ORDER); /* Early Return */
   }
 
   if (BusPeripheral::startReceive() == false)
@@ -1105,6 +1133,22 @@ void Bus::invalidateBusInit(void)
   singleNodeUpdateProcessHandler_.invalidate(Atams::ERROR_INIT_ORDER);
 }
 
+bool Bus::anyMemoryMapChanged(void)
+{
+  bool memoryMapChanged {false};
+
+  for (Atams::Node *&nodePtr : nodePtrs_)
+  {
+    if ((nodePtr != nullptr) && static_cast<NodeCallbackHandler&>(*nodePtr).getMemoryMapChanged())
+    {
+      memoryMapChanged = true;
+      break;
+    }
+  }
+
+  return (memoryMapChanged);
+}
+
 bool Bus::findNodeOnBus(Node &node)
 {
   bool nodeFound {false};
@@ -1240,7 +1284,7 @@ bool Bus::pollForRequestTransmit(Atams::Node                &node,
 bool Bus::pollForJogTransmit(Atams::Node &node, Bus::ProcessHandlerBase &process, const bool blocking)
 {
   if (!awaitTxReady(process, blocking)) return (false); /* Early Return */
-  if (process.getError())                    return (true);  /* Early Return */
+  if (process.getError())               return (true);  /* Early Return */
 
   jogBuffer_[HEADER_INDEX_NODE_ID]  = node.getNodeID();
   jogBuffer_[HEADER_INDEX_MSG_TYPE] = Atams::MESSAGE_SYNC_JOG;

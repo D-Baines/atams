@@ -94,6 +94,10 @@ class NodeCallbackHandler
 
   virtual void clearAbortDetails(void) = 0;
 
+  virtual bool getMemoryMapChanged(void) = 0;
+
+  virtual void clearMemoryMapChanged(void) = 0;
+
   virtual void responseReceived(uint8_t *inputBuffer, uint16_t inputLength) = 0;
 
   virtual void processResponseBuffer(void) = 0;

@@ -78,8 +78,9 @@ UNIVERSAL_VAR_NAMES = ["ATAMS_VERSION_MAJOR",
 NVM_HEADER_SIZE           = 9
 NVM_FOOTER_SIZE           = 8
 NVM_VAR_ENTRY_HEADER_SIZE = 5
+NVM_HASH_SIZE             = 4
 
-# Mirror the NVMStorage variables in Shared/Maps/BlockUniversal.cpp - VAR_NODE_ID,
+# Mirror the NVMStorage variables in Shared/Maps/BlockUniversal.hpp - VAR_NODE_ID,
 # VAR_FIRST_NODE_ID, VAR_LAST_NODE_ID, VAR_PREVIOUS_NODE_ID, VAR_BITRATE (uint8_t) and
 # VAR_WATCHDOG_PERIOD (uint32_t): (5 * (NVM_VAR_ENTRY_HEADER_SIZE + 1)) + (NVM_VAR_ENTRY_HEADER_SIZE + 4).
 UNIVERSAL_BLOCK_NVM_VAR_SPACE = 39
@@ -372,6 +373,23 @@ def generateMapChecksum(dataBlocks: List[DataBlock]) -> int:
       varID += 1
   return (crcCalculator.getRollingCrc())
 
+# Must match validateGenNvmChecksum (Node/Developer/NodeUtilities.cpp) - Node-only, as the Hub's
+# HubVarInfo_t doesn't carry these fields.
+def generateMapNvmChecksum(dataBlocks: List[DataBlock]) -> int:
+  crcCalculator = CRC32()
+  crcCalculator.beginRollingCrc()
+  for block in dataBlocks:
+    blockNameUpper = block.namePascal.upper()
+    nvmStorages    = block.data["NVM Storage"]
+    varIndex       = 0
+    for varID in block.data["Var Name"]:
+      nvmHash = computeQualifiedVarNvmHash(blockNameUpper, sanitiseVarName(varID))
+      crcCalculator.updateRollingCrc(1 if (nvmStorages[varIndex] == "YES") else 0)
+      for nvmHashByte in nvmHash.to_bytes(NVM_HASH_SIZE, "little"):
+        crcCalculator.updateRollingCrc(nvmHashByte)
+      varIndex += 1
+  return (crcCalculator.getRollingCrc())
+
 # Parses a "Widget Options" cell (semicolon-separated "value:label" pairs, e.g.
 # "0:Off;1:Slow;2:Fast") for a Dropdown-widget variable of the given Atams type.
 #
@@ -528,6 +546,8 @@ def autogenCallMap(autogenHint:      str,
       targetFile.write(str(timeStamp.second) + "U")
     case "GENERATION_CHECKSUM":
       targetFile.write(str(generateMapChecksum(dataBlocks)) + "U")
+    case "GENERATION_NVM_CHECKSUM":
+      targetFile.write(str(generateMapNvmChecksum(dataBlocks)) + "U")
     case "NUMBER_OF_VARS":
       targetFile.write(str(mapNumberOfVars) + "U")
     case "REQUIRED_NVM_SIZE":

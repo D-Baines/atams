@@ -36,7 +36,6 @@
 #include <stdint.h>
 
 #include "../../Shared/AtamsTypedefs.hpp"
-#include "../../Shared/Maps/BlockUniversal.hpp"
 #include "../SharedPlatform.hpp"
 
 /*************************************************************************************/
@@ -169,13 +168,16 @@ using NodeSharedMemoryMap_t = SharedMemoryMap_t<NodeVarInfo_t>;
 struct MemoryMap_t
 {
   const NodeSharedMemoryMap_t sharedMap;
+  const uint32_t              genNvmChecksum; /* Generated CRC32 of the user variables' NVMStorage and nvmHash fields */
   InitUniversalDataFn_t       genInfoInitFn;
   InitDefaultsFn_t            userDefaultsInitFn;
 
   constexpr MemoryMap_t(const NodeSharedMemoryMap_t &sharedMemoryMapInput,
+                        const uint32_t               genNvmChecksumInput,
                         InitUniversalDataFn_t        genInfoInitFnInput,
                         InitDefaultsFn_t             initUserDefaultsFnInput) :
   sharedMap(sharedMemoryMapInput),
+  genNvmChecksum(genNvmChecksumInput),
   genInfoInitFn(genInfoInitFnInput),
   userDefaultsInitFn(initUserDefaultsFnInput){};
 
