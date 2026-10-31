@@ -76,7 +76,7 @@ namespace Atams {
  *
  */
 class   Bus :
-private Platform::BusPeripheral
+private HubPlatform::BusPeripheral
 {
   /*-- Public -----------------------------------------------------------------------*/
 
@@ -89,7 +89,7 @@ private Platform::BusPeripheral
   /*-- Public Function Declarations -------------------------------------------------*/
 
   /* Constructor */
-  Bus(Platform::BusPeripheral::UserData_t userData);
+  Bus(HubPlatform::BusPeripheral::UserData_t userData);
 
   /* Default Constructor */
   Bus(void) = delete;
@@ -235,13 +235,13 @@ private Platform::BusPeripheral
 
   /*-- Private Class Objects --------------------------------------------------------*/
 
-  Platform::BinarySemaphore rxSemaphore_;
-  Platform::BinarySemaphore txSemaphore_;
+  HubPlatform::BinarySemaphore rxSemaphore_;
+  HubPlatform::BinarySemaphore txSemaphore_;
 
   std::atomic<bool> txReady_ {true};
 
   Atams::CircularBuffer circularBuffer_;
-  Node                 *nodePtrs_[Platform::NUMBER_OF_NODES_PER_BUS];
+  Node                 *nodePtrs_[HubPlatform::NUMBER_OF_NODES_PER_BUS];
   NodeActions           nodeProcessHandler_;
   Node                  dummyNode_ {0U};
 
@@ -253,10 +253,10 @@ private Platform::BusPeripheral
 
   /*-- Private Variables ------------------------------------------------------------*/
 
-  uint8_t  rxBuffer_     [Platform::MAX_BUS_PACKET_SIZE];
-  uint8_t  decodedBuffer_[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
-  uint8_t  rawTxBuffer_  [Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
-  uint8_t  encodedBuffer_[Platform::MAX_BUS_PACKET_SIZE];
+  uint8_t  rxBuffer_     [HubPlatform::MAX_BUS_PACKET_SIZE];
+  uint8_t  decodedBuffer_[HubPlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
+  uint8_t  rawTxBuffer_  [HubPlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
+  uint8_t  encodedBuffer_[HubPlatform::MAX_BUS_PACKET_SIZE];
   uint8_t  jogBuffer_    [PACKET_HEADER_SIZE];
 
   uint16_t initNodeIndex_   {0U};

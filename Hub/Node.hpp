@@ -241,8 +241,8 @@ public NodeCallbackHandler
 
   struct RequestPacket_t 
   {
-    uint8_t   buffer[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING] {0U};
-    uint16_t  length                                            {PACKET_HEADER_SIZE};
+    uint8_t   buffer[HubPlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING] {0U};
+    uint16_t  length                                               {PACKET_HEADER_SIZE};
     WriteList writeList;
   };
 
@@ -275,9 +275,9 @@ public NodeCallbackHandler
 
   /*-- Private Objects --------------------------------------------------------------*/
 
-  Platform::MemoryLock requestPacketLock_;
-  Platform::MemoryLock varStorageLock_;
-  Platform::MemoryLock busErrorLock_;
+  HubPlatform::MemoryLock requestPacketLock_;
+  HubPlatform::MemoryLock varStorageLock_;
+  HubPlatform::MemoryLock busErrorLock_;
 
   /*-- Private Variables ------------------------------------------------------------*/
 
@@ -295,8 +295,8 @@ public NodeCallbackHandler
   AbortedResponseDetails_t abortedResponseDetails_ {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
 
   RequestPacket_t          requestPacket_;
-  uint8_t                  responseBuffer_[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
-  Var_t                    varStorage_[Platform::NODE_NUMBER_OF_VARS];
+  uint8_t                  responseBuffer_[HubPlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
+  Var_t                    varStorage_[HubPlatform::NODE_NUMBER_OF_VARS];
 
   /*-- Private Function Declarations ------------------------------------------------*/
 

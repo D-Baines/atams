@@ -53,7 +53,7 @@ Atams::Error_t NVMUnitHandler::eraseNVM(void)
 
   nvmCRC_.beginRollingCRC();
 
-  return (Platform::eraseNVM() ? Atams::ERROR_NONE : Atams::ERROR_PLATFORM);
+  return (NodePlatform::eraseNVM() ? Atams::ERROR_NONE : Atams::ERROR_PLATFORM);
 }
 
 Atams::Error_t NVMUnitHandler::writeToNVM(const uint32_t writeIndex, const uint8_t * const inputPtr, const uint32_t length)
@@ -71,15 +71,15 @@ Atams::Error_t NVMUnitHandler::writeToNVM(const uint32_t writeIndex, const uint8
 
     unitIndex_++;
 
-    if (unitIndex_ >= Platform::NVM_UNIT_SIZE)
+    if (unitIndex_ >= NodePlatform::NVM_UNIT_SIZE)
     {
 
-      if (Platform::writeToNVM(unitStartIndex_, unitBuffer_) == false)
+      if (NodePlatform::writeToNVM(unitStartIndex_, unitBuffer_) == false)
       {
         return (Atams::ERROR_PLATFORM); /* Early Return */
       }
 
-      unitStartIndex_ += Platform::NVM_UNIT_SIZE;
+      unitStartIndex_ += NodePlatform::NVM_UNIT_SIZE;
       unitIndex_ = 0U;
     }
   }
@@ -89,7 +89,7 @@ Atams::Error_t NVMUnitHandler::writeToNVM(const uint32_t writeIndex, const uint8
 
 Atams::Error_t NVMUnitHandler::readFromNVM(const uint32_t readIndex, uint8_t * const outputPtr, const uint32_t length)
 {
-  return (Platform::readFromNVM(readIndex, outputPtr, length) ? Atams::ERROR_NONE : Atams::ERROR_PLATFORM);
+  return (NodePlatform::readFromNVM(readIndex, outputPtr, length) ? Atams::ERROR_NONE : Atams::ERROR_PLATFORM);
 }
 
 Atams::Error_t NVMUnitHandler::flushPendingUnit(void)
@@ -99,18 +99,18 @@ Atams::Error_t NVMUnitHandler::flushPendingUnit(void)
     return (Atams::ERROR_NONE); /* Early Return */
   }
 
-  while (unitIndex_ < Platform::NVM_UNIT_SIZE)
+  while (unitIndex_ < NodePlatform::NVM_UNIT_SIZE)
   {
     unitBuffer_[unitIndex_] = 0U;
     unitIndex_++;
   }
 
-  if (Platform::writeToNVM(unitStartIndex_, unitBuffer_) == false)
+  if (NodePlatform::writeToNVM(unitStartIndex_, unitBuffer_) == false)
   {
     return (Atams::ERROR_PLATFORM); /* Early Return */
   }
 
-  unitStartIndex_ += Platform::NVM_UNIT_SIZE;
+  unitStartIndex_ += NodePlatform::NVM_UNIT_SIZE;
   unitIndex_ = 0U;
 
   return (Atams::ERROR_NONE);

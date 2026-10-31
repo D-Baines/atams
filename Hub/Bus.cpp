@@ -118,8 +118,8 @@ static constexpr Node::MemoryMap_t s_dummyMemoryMap
 
 static_assert(s_dummyMemoryMap.sharedMap.varInfoListLength == s_dummyMemoryMap.sharedMap.genInfo.noOfVars,
               "Dummy var info list length does not match genInfo.noOfVars");
-static_assert(s_dummyMemoryMap.sharedMap.varInfoListLength <= Platform::NODE_NUMBER_OF_VARS,
-              "Dummy Memory Map exceeds Platform::NODE_NUMBER_OF_VARS var storage");
+static_assert(s_dummyMemoryMap.sharedMap.varInfoListLength <= HubPlatform::NODE_NUMBER_OF_VARS,
+              "Dummy Memory Map exceeds HubPlatform::NODE_NUMBER_OF_VARS var storage");
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
@@ -128,15 +128,15 @@ static_assert(s_dummyMemoryMap.sharedMap.varInfoListLength <= Platform::NODE_NUM
 /**
  * @brief Constructs a Bus instance with user-defined platform data.
  *
- * Initialises the Bus and its base @c Platform::BusPeripheral with the provided @ref Platform::BusPeripheral::UserData_t
- * structure. The @ref Platform::BusPeripheral::UserData_t struct is defined by the user in @c Platform.hpp inside the
+ * Initialises the Bus and its base @c HubPlatform::BusPeripheral with the provided @ref HubPlatform::BusPeripheral::UserData_t
+ * structure. The @ref HubPlatform::BusPeripheral::UserData_t struct is defined by the user in @c Platform.hpp inside the
  * @c BusPeripheral class definition, and must be passed to the Bus constructor to provide access to any data required
- * for the user's implementation of @c Platform::BusPeripheral. All Node pointers are initialised to @c nullptr.
+ * for the user's implementation of @c HubPlatform::BusPeripheral. All Node pointers are initialised to @c nullptr.
  *
  * @param userData User-defined data required for initialising the underlying bus peripheral.
  */
-Bus::Bus(Platform::BusPeripheral::UserData_t userData) : 
-Platform::BusPeripheral(userData),
+Bus::Bus(HubPlatform::BusPeripheral::UserData_t userData) : 
+HubPlatform::BusPeripheral(userData),
 circularBuffer_(Atams::EOL_BYTE)
 {
   for (Atams::Node *&nodePtr : nodePtrs_) nodePtr = nullptr; 
@@ -169,7 +169,7 @@ Atams::Error_t Bus::addNodeToBus(Atams::Node &node)
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
   }
 
-  if (noOfNodesOnBus_ >= Platform::NUMBER_OF_NODES_PER_BUS)
+  if (noOfNodesOnBus_ >= HubPlatform::NUMBER_OF_NODES_PER_BUS)
   {
     return (Atams::ERROR_BUS_FULL); /* Early Return */
   }
@@ -600,10 +600,10 @@ Atams::ProcessState_t Bus::runUpdateCycleSync(Atams::Error_t &error)
  * @brief Progresses the Synchronous Update Cycle for all Nodes on the Bus (blocking).
  *
  * Blocking variant of @ref Bus::runUpdateCycleSync. During transmit phases the calling thread is blocked
- * inside @c pollForRequestTransmit via @c Platform::BinarySemaphore::waitWithTimeout on a transmit semaphore
+ * inside @c pollForRequestTransmit via @c HubPlatform::BinarySemaphore::waitWithTimeout on a transmit semaphore
  * released by @c txCallback when each packet transmission completes. Any transmit failure — whether
- * @c Platform::BusPeripheral::transmit returns @c false or @c txCallback is not called within
- * @c Platform::BUS_TRANSMIT_TIMEOUT milliseconds — terminates the cycle with @c Atams::ERROR_PLATFORM,
+ * @c HubPlatform::BusPeripheral::transmit returns @c false or @c txCallback is not called within
+ * @c HubPlatform::BUS_TRANSMIT_TIMEOUT milliseconds — terminates the cycle with @c Atams::ERROR_PLATFORM,
  * as both indicate the platform peripheral is in a broken state. During receive phases the thread is blocked
  * inside @c pollForResponse, which waits on a receive semaphore released by @c rxCallback whenever bytes
  * arrive. The semaphore is re-waited with the remaining timeout budget after each partial delivery, so the
@@ -935,7 +935,7 @@ Atams::ProcessState_t Bus::runUpdateCycleSyncCore(Atams::Error_t &error, bool bl
 
   if (activeNodePtr == nullptr) process.terminate(Atams::ERROR_NULLPTR);
 
-  Platform::BusPeripheral::update();
+  HubPlatform::BusPeripheral::update();
 
   switch (updateState)
   {
@@ -997,7 +997,7 @@ Atams::ProcessState_t Bus::runUpdateCycleAsyncCore(Atams::Error_t &error, bool b
 
   if (activeNodePtr == nullptr) process.terminate(Atams::ERROR_NULLPTR);
 
-  Platform::BusPeripheral::update();
+  HubPlatform::BusPeripheral::update();
 
   switch (updateState)
   {
@@ -1034,7 +1034,7 @@ Atams::ProcessState_t Bus::runSingleNodeUpdateCycleCore(Atams::Error_t &error, A
   NodeCallbackHandler                   &nodeCallbackHandler {node};
   Bus::PollResult                        rxPollResult        {Bus::PollResult::WAITING};
 
-  Platform::BusPeripheral::update();
+  HubPlatform::BusPeripheral::update();
 
   switch (updateState)
   {
@@ -1307,15 +1307,15 @@ bool Bus::awaitTxReady(Bus::ProcessHandlerBase &process, const bool blocking)
 {
   if (txReady_) return (true); /* Early Return */
 
-  uint32_t elapsedTime {Platform::getMillis() - process.prevEventTime};
+  uint32_t elapsedTime {HubPlatform::getMillis() - process.prevEventTime};
 
-  if (elapsedTime >= Platform::BUS_TRANSMIT_TIMEOUT) 
+  if (elapsedTime >= HubPlatform::BUS_TRANSMIT_TIMEOUT) 
   { 
     process.terminate(Atams::ERROR_PLATFORM);   
   }
   else if (blocking)
   {
-    txSemaphore_.waitWithTimeout(Platform::BUS_TRANSMIT_TIMEOUT - elapsedTime);
+    txSemaphore_.waitWithTimeout(HubPlatform::BUS_TRANSMIT_TIMEOUT - elapsedTime);
     
     if (!txReady_)
     {
@@ -1334,7 +1334,7 @@ void Bus::doTransmit(Bus::ProcessHandlerBase &process, const Atams::MessageType_
 {
   txReady_ = false;
 
-  if (Platform::BusPeripheral::transmit(encodedBuffer_, encodedLength_) == false)
+  if (HubPlatform::BusPeripheral::transmit(encodedBuffer_, encodedLength_) == false)
   {
     process.terminate(Atams::ERROR_PLATFORM);
   }
@@ -1343,7 +1343,7 @@ void Bus::doTransmit(Bus::ProcessHandlerBase &process, const Atams::MessageType_
     lastSentMessageType_ = messageType;
   }
 
-  process.prevEventTime = Platform::getMillis();
+  process.prevEventTime = HubPlatform::getMillis();
 }
 
 Bus::PollResult Bus::pollForResponse(Atams::Node               &node,
@@ -1356,7 +1356,7 @@ Bus::PollResult Bus::pollForResponse(Atams::Node               &node,
 
   do
   {
-    uint32_t currentTime {Platform::getMillis()};
+    uint32_t currentTime {HubPlatform::getMillis()};
     uint32_t elapsedTime {currentTime - process.prevEventTime};
 
     if ((circularBuffer_.getPacket(rxBuffer_, sizeof(rxBuffer_), rxLength_) == CircularBuffer::ERROR_NONE) &&
@@ -1367,7 +1367,7 @@ Bus::PollResult Bus::pollForResponse(Atams::Node               &node,
       break;
     }
 
-    if (elapsedTime >= Platform::BUS_RESPONSE_TIMEOUT)
+    if (elapsedTime >= HubPlatform::BUS_RESPONSE_TIMEOUT)
     {
       nodeCallbacks.reportBusError(Atams::ERROR_RESPONSE_TIMEOUT);
       result = Bus::PollResult::TIMEOUT;
@@ -1377,7 +1377,7 @@ Bus::PollResult Bus::pollForResponse(Atams::Node               &node,
 
     if (blocking)
     {
-      uint32_t remainingTime {Platform::BUS_RESPONSE_TIMEOUT - elapsedTime};
+      uint32_t remainingTime {HubPlatform::BUS_RESPONSE_TIMEOUT - elapsedTime};
       rxSemaphore_.waitWithTimeout(remainingTime);
     }
 
@@ -1443,8 +1443,8 @@ Atams::Node * Bus::getUpdateNodePtr(void)
 {
   Atams::Node *nodePtr {nullptr};
 
-  if ((updateNodeIndex_ < Platform::NUMBER_OF_NODES_PER_BUS) &&
-      (updateNodeIndex_ < noOfNodesOnBus_                  ) ) 
+  if ((updateNodeIndex_ < HubPlatform::NUMBER_OF_NODES_PER_BUS) &&
+      (updateNodeIndex_ < noOfNodesOnBus_                     ) ) 
   {
     nodePtr = nodePtrs_[updateNodeIndex_];
   }

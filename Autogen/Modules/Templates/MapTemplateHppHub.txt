@@ -43,7 +43,7 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-extern const Node::MemoryMap_t memoryMap;
+extern const Node::MemoryMap_t hubMemoryMap;
 
 
 } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$ */

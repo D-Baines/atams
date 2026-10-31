@@ -43,7 +43,7 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace Platform {
+namespace Atams { namespace NodePlatform {
 
 /*************************************************************************************/
 /* PUBLIC MACROS                                                                     */
@@ -55,7 +55,7 @@ namespace Atams { namespace Platform {
 *          should be defined in the application linker script.
 *
 *   @details The size of the shared memory section must be at least:
-*            12 + (4 * Platform::NODE_NUMBER_OF_VARS) bytes.
+*            12 + (4 * NodePlatform::NODE_NUMBER_OF_VARS) bytes.
 *
 *   @warning The targeted memory region must be configured as non-cacheable in
 *            the MPU (or equivalent) on both cores. If the region is cacheable,
@@ -91,7 +91,7 @@ namespace Atams { namespace Platform {
 constexpr uint16_t NODE_NUMBER_OF_VARS {100U};
 
 
-} } /* End Namespace - Atams::Platform */
+} } /* End Namespace - Atams::NodePlatform */
 
 
 /**

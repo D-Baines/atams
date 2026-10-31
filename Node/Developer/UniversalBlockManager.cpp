@@ -83,7 +83,7 @@ configPasscodeCheckers_
     /* .requiredPasscode = */ Atams::RESET_NODE_PASSCODE,
     /* .passcode         = */ 0U,
     /* .prevPasscode     = */ 0U,
-    /* .processFunction  = */ Platform::resetNode,
+    /* .processFunction  = */ NodePlatform::resetNode,
     /* .isStorageProcess = */ false
   },
 }
@@ -137,7 +137,7 @@ Atams::Error_t UniversalBlockManager::applyUniversalConfiguration(void)
   error |= static_cast<uint16_t>(Atams::getVar(BlockUniversal::VAR_BITRATE,          bitrateOption_));
   error |= static_cast<uint16_t>(Atams::getVar(BlockUniversal::VAR_WATCHDOG_PERIOD,  watchdogPeriod));
 
-  Platform::setBitrate(static_cast<Atams::BitrateOption_t>(bitrateOption_));
+  NodePlatform::setBitrate(static_cast<Atams::BitrateOption_t>(bitrateOption_));
 
   watchdogHandler_.setWatchdogPeriod(watchdogPeriod);
 
@@ -228,7 +228,7 @@ void UniversalBlockManager::checkConfigurationStateEntry(void)
   if ((configStatePasskey       == Atams::CONFIGURATION_PASSKEY_ACCESS) &&
       (s_prevConfigStatePasskey != Atams::CONFIGURATION_PASSKEY_ACCESS) )
   {
-    if (Platform::enterConfigurationState() == true)
+    if (NodePlatform::enterConfigurationState() == true)
     {
       configurationState_ = Atams::CONFIGURATION_STATUS_ACTIVE;
     }
@@ -253,13 +253,13 @@ void UniversalBlockManager::checkConfigurationStateExit(void)
   if (configStatePasskey == Atams::CONFIGURATION_PASSKEY_APPLY)
   {
     static_cast<void>(applyUniversalConfiguration());
-    Platform::exitConfigurationState();
+    NodePlatform::exitConfigurationState();
     configurationState_ = Atams::CONFIGURATION_STATUS_APPLIED;
   }
   else if (configStatePasskey != Atams::CONFIGURATION_PASSKEY_ACCESS)
   {
     cancelConfigurationValueChange();
-    Platform::exitConfigurationState();
+    NodePlatform::exitConfigurationState();
     configurationState_ = Atams::CONFIGURATION_STATUS_INACTIVE;
   }
 }

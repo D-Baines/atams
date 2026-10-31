@@ -123,7 +123,7 @@ static bool validateGenNvmChecksum(const MemoryMap_t &memoryMap)
  */
 Atams::Error_t validateMemoryMap(const MemoryMap_t &memoryMap)
 {
-  Atams::Error_t error {Atams::validateSharedMemoryMap(memoryMap.sharedMap, Platform::NODE_NUMBER_OF_VARS)};
+  Atams::Error_t error {Atams::validateSharedMemoryMap(memoryMap.sharedMap, NodePlatform::NODE_NUMBER_OF_VARS)};
 
   if (error != Atams::ERROR_NONE)
   {

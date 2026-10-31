@@ -102,7 +102,7 @@ class NVMUnitHandler
   /*-- Private Variables ------------------------------------------------------------*/
 
   uint8_t  unitIndex_ = 0U;
-  uint8_t  unitBuffer_[Platform::NVM_UNIT_SIZE];
+  uint8_t  unitBuffer_[NodePlatform::NVM_UNIT_SIZE];
   uint32_t unitStartIndex_ = 0U;
 
   /*-- Private Function Declarations -------------------------------------------------*/

@@ -6,7 +6,7 @@
   *
   * @brief   Hub-specific CircularBuffer instantiation.
   *
-  * @details Defines HubCommsLockPolicy, which wraps Platform::CommsLock, and
+  * @details Defines HubCommsLockPolicy, which wraps HubPlatform::CommsLock, and
   *          aliases CircularBufferBase<HubCommsLockPolicy> as CircularBuffer for
   *          use within the Hub library.
   *
@@ -50,7 +50,7 @@ class HubCommsLockPolicy
 
   using ArgumentType_t = uint8_t; /* unused - Hub lock requires no discriminator */
 
-  static constexpr uint16_t BUFFER_SIZE {Platform::CIRCULAR_BUFFER_SIZE};
+  static constexpr uint16_t BUFFER_SIZE {HubPlatform::CIRCULAR_BUFFER_SIZE};
 
   void setArgument(ArgumentType_t) {}
 
@@ -59,7 +59,7 @@ class HubCommsLockPolicy
 
   private:
   
-  Platform::CommsLock commsLock_;
+  HubPlatform::CommsLock commsLock_;
 };
 
 /*************************************************************************************/

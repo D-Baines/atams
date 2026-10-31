@@ -136,7 +136,7 @@ $$$AUTOGEN$$$INIT_USER_DEFAULTS_DEFINITION$$$AUTOGEN$$$
 /* EXTERN CONSTANTS                                                                  */
 /*************************************************************************************/
 
-constexpr MemoryMap_t memoryMap
+constexpr MemoryMap_t nodeMemoryMap
 {
   /* .sharedMap */
   {
@@ -148,10 +148,10 @@ constexpr MemoryMap_t memoryMap
   /* initUserDefaults = */ Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$::initUserDefaults,
 };
 
-static_assert(memoryMap.sharedMap.varInfoListLength == memoryMap.sharedMap.genInfo.noOfVars,
+static_assert(nodeMemoryMap.sharedMap.varInfoListLength == nodeMemoryMap.sharedMap.genInfo.noOfVars,
               "Var info list length does not match genInfo.noOfVars - regenerate this map");
-static_assert(memoryMap.sharedMap.varInfoListLength <= Platform::NODE_NUMBER_OF_VARS,
-              "Memory Map exceeds Platform::NODE_NUMBER_OF_VARS var storage");
+static_assert(nodeMemoryMap.sharedMap.varInfoListLength <= NodePlatform::NODE_NUMBER_OF_VARS,
+              "Memory Map exceeds NodePlatform::NODE_NUMBER_OF_VARS var storage");
 
 } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$ */
 

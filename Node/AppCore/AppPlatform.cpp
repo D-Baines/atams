@@ -41,7 +41,7 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace Platform {
+namespace Atams { namespace NodePlatform {
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
@@ -64,7 +64,7 @@ uint32_t getMillis(void)
  *
  * @details This function will be called before Node variable storage access. The variable storage
  *          may be accessed from multiple threads or cores depending on the user's platform. The user 
- *          must ensure that the lock is held until Platform::releaseVarStorageLock() is called.
+ *          must ensure that the lock is held until NodePlatform::releaseVarStorageLock() is called.
  *
  *          For multi-threaded platforms, the user should use a mutex or similar mechanism. For dual-core 
  *          platforms, the user should use a hardware semaphore or similar mechanism. A combination of both
@@ -91,7 +91,7 @@ void acquireVarStorageLock(void)
  * @brief   Release the lock protecting the Node variable storage from concurrent access.
  *
  * @details This function will be called after Node variable storage access. The user must 
- *          release or unlock the mechanism locked in Platform::acquireVarStorageLock().
+ *          release or unlock the mechanism locked in NodePlatform::acquireVarStorageLock().
  *
  * @return  None
  *
@@ -103,7 +103,7 @@ void releaseVarStorageLock(void)
   HAL_HSEM_Release(0U, 0);
 }
 
-} } /* End Namespace - Atams::Platform */
+} } /* End Namespace - Atams::NodePlatform */
 
 
 /**

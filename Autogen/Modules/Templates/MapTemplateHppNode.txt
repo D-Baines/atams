@@ -44,7 +44,7 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-/* Minimum Platform::NVM_STORAGE_SIZE required to store this map's NVMStorage variables. */
+/* Minimum NodePlatform::NVM_STORAGE_SIZE required to store this map's NVMStorage variables. */
 inline constexpr uint32_t REQUIRED_NVM_SIZE {$$$AUTOGEN$$$REQUIRED_NVM_SIZE$$$AUTOGEN$$$};
 
 /* Autogen's own mirrored size constants (used to compute REQUIRED_NVM_SIZE above) must match
@@ -58,7 +58,7 @@ static_assert($$$AUTOGEN$$$NVM_VAR_ENTRY_HEADER_SIZE_MIRROR$$$AUTOGEN$$$ == Atam
 /* CONST EXTERNS                                                                     */
 /*************************************************************************************/
 
-extern const MemoryMap_t memoryMap;
+extern const MemoryMap_t nodeMemoryMap;
 
 
 } } /* End Namespace - $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$::Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$ */

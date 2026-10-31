@@ -8,7 +8,7 @@
   *
   * @details Exposes compile-time constants defining the COBS overhead and the maximum
   *          unframed payload size for Hub bus packets. Values are derived from
-  *          Platform::MAX_BUS_PACKET_SIZE defined in Hub/Platform.hpp. 
+  *          HubPlatform::MAX_BUS_PACKET_SIZE defined in Hub/Platform.hpp. 
   *
   * @version v1.0
   ******************************************************************************
@@ -40,20 +40,20 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace Platform {
+namespace Atams { namespace HubPlatform {
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-constexpr uint16_t COBS_MAX_CODE_BYTES             {static_cast<uint16_t>((Platform::MAX_BUS_PACKET_SIZE + (Atams::COBS_MAX_DATA_PER_CODE - 1U)) / Atams::COBS_MAX_DATA_PER_CODE)};
+constexpr uint16_t COBS_MAX_CODE_BYTES             {static_cast<uint16_t>((HubPlatform::MAX_BUS_PACKET_SIZE + (Atams::COBS_MAX_DATA_PER_CODE - 1U)) / Atams::COBS_MAX_DATA_PER_CODE)};
 constexpr uint16_t COBS_MAX_OVERHEAD               {static_cast<uint16_t>(COBS_MAX_CODE_BYTES + Atams::COBS_TERMINATOR_SIZE)};
-constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING {static_cast<uint16_t>(Platform::MAX_BUS_PACKET_SIZE - COBS_MAX_OVERHEAD)};
+constexpr uint16_t MAX_BUS_PACKET_SIZE_PRE_FRAMING {static_cast<uint16_t>(HubPlatform::MAX_BUS_PACKET_SIZE - COBS_MAX_OVERHEAD)};
 
 static_assert(MAX_BUS_PACKET_SIZE_PRE_FRAMING >= Atams::MINIMUM_MAXIMUM_BUS_PACKET_SIZE_PRE_FRAMING,
-              "Platform::MAX_BUS_PACKET_SIZE must be at least Atams::MINIMUM_MAXIMUM_BUS_PACKET_SIZE");
+              "HubPlatform::MAX_BUS_PACKET_SIZE must be at least Atams::MINIMUM_MAXIMUM_BUS_PACKET_SIZE");
 
-} } /* End Namespace - Atams::Platform */
+} } /* End Namespace - Atams::HubPlatform */
 
 
 /**

@@ -43,7 +43,7 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace Platform {
+namespace Atams { namespace NodePlatform {
 
 /*************************************************************************************/
 /* PRIVATE CONSTANTS                                                                 */
@@ -87,7 +87,7 @@ uint32_t getMillis(void)
  *
  * @details This function will be called before Node variable storage access. The variable storage
  *          may be accessed from multiple threads or cores depending on the user's platform. The user 
- *          must ensure that the lock is held until Platform::releaseVarStorageLock() is called.
+ *          must ensure that the lock is held until NodePlatform::releaseVarStorageLock() is called.
  *
  *          For multi-threaded platforms, the user should use a mutex or similar mechanism. For dual-core 
  *          platforms, the user should use a hardware semaphore or similar mechanism. A combination of both
@@ -114,7 +114,7 @@ void acquireVarStorageLock(void)
  * @brief   Release the lock protecting the Node variable storage from invalid concurrent access.
  *
  * @details This function will be called after Node variable storage access. The user must 
- *          release or unlock the mechanism locked in Platform::acquireVarStorageLock().
+ *          release or unlock the mechanism locked in NodePlatform::acquireVarStorageLock().
  *
  * @return  None
  *
@@ -240,8 +240,8 @@ bool transmitBuffer(const CommsPeripheralID_t peripheralID, uint8_t * buffer, co
  *
  * @details This function will be called before Atams circular buffer access. The circular buffers
  *          are accessed from the Atams comms update functions and from the CommsReceiveCallback_t function
- *          passed to Platform::beginReceive. The user must ensure that the lock is held until
- *          Platform::releaseCommsBufferLock() is called. If the CommsReceiveCallback_t function is called
+ *          passed to NodePlatform::beginReceive. The user must ensure that the lock is held until
+ *          NodePlatform::releaseCommsBufferLock() is called. If the CommsReceiveCallback_t function is called
  *          from an interrupt, the user should disable the interrupt associated with the provided
  *          comms peripheral ID in this function.
  *
@@ -268,8 +268,8 @@ void acquireCommsBufferLock(const CommsPeripheralID_t peripheralToLock)
  *
  * @details This function will be called after Atams circular buffer access. The circular buffers
  *          are accessed from the Atams comms update functions and from the CommsReceiveCallback_t function
- *          passed to Platform::beginReceive. If an interrupt was disabled in
- *          Platform::acquireCommsBufferLock(), the user should re-enable the same interrupt here.
+ *          passed to NodePlatform::beginReceive. If an interrupt was disabled in
+ *          NodePlatform::acquireCommsBufferLock(), the user should re-enable the same interrupt here.
  *
  * @param   peripheralToUnlock The ID of the communications peripheral to unlock.
  *
@@ -304,7 +304,7 @@ void acquireWaitOnReceiveSempahore(const uint32_t timeoutMilliseconds)
 }
 
 /**
- * @brief   Wake up the thread blocked in Platform::waitOnCommsBufferSemaphore().
+ * @brief   Wake up the thread blocked in NodePlatform::waitOnCommsBufferSemaphore().
  *
  * @details If Atams::updateCommsBlocking() is used, this function will be called to
  *          wake up the thread on reception of new bytes.
@@ -321,7 +321,7 @@ void releaseWaitOnReceiveSemaphore(void)
 /**
  * @brief   Erase the full non-volatile memory space dedicated to Atams.
  *
- * @details Must erase at least the number of bytes equal to Platform::NVM_STORAGE_SIZE.
+ * @details Must erase at least the number of bytes equal to NodePlatform::NVM_STORAGE_SIZE.
  *
  * @see     CommsPlatform.hpp -> PUBLIC CONSTANTS -> NVM_STORAGE_SIZE
  *
@@ -384,12 +384,12 @@ bool readFromNVM(const uint32_t readIndex, uint8_t * outputPtr, const uint32_t r
  *  @brief   Write a unit of data to non-volatile memory.
  *
  *  @details Some platforms can only write to non-volatile memory in fixed size units.
- *           The size of a unit is defined by Platform::NVM_UNIT_SIZE. The user should set
+ *           The size of a unit is defined by NodePlatform::NVM_UNIT_SIZE. The user should set
  *           this to an appropriate value for their platform. The provided data buffer will
- *           always be of size Platform::NVM_UNIT_SIZE.
+ *           always be of size NodePlatform::NVM_UNIT_SIZE.
  *
  *  @param  writeIndex Index into non-volatile memory at which to write the provided data.
- *  @param  nvmUnit    Reference to an array of size Platform::NVM_UNIT_SIZE holding the data to write.
+ *  @param  nvmUnit    Reference to an array of size NodePlatform::NVM_UNIT_SIZE holding the data to write.
  *
  *  @return Write status.
  *          true:  Write completed successfully.
@@ -399,7 +399,7 @@ bool readFromNVM(const uint32_t readIndex, uint8_t * outputPtr, const uint32_t r
  *
  *  @note   ATAMS PLATFORM REQUIREMENT - ALL
  */
-bool writeToNVM(const uint32_t writeIndex, const uint8_t (&nvmUnit)[Platform::NVM_UNIT_SIZE])
+bool writeToNVM(const uint32_t writeIndex, const uint8_t (&nvmUnit)[NodePlatform::NVM_UNIT_SIZE])
 {
   if (HAL_FLASH_Unlock() != HAL_OK) return (false);
 
@@ -488,7 +488,7 @@ Atams::Error_t resetNode(void)
   return (Atams::ERROR_PLATFORM);
 }
 
-} } /* End Namespace - Atams::Platform */
+} } /* End Namespace - Atams::NodePlatform */
 
 
 /**

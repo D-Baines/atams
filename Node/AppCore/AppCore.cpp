@@ -78,14 +78,14 @@ static SharedData_t s_sharedData;
 
 static void resetVars(void)
 {
-  Platform::acquireVarStorageLock();
+  NodePlatform::acquireVarStorageLock();
 
   for (VarStorage_t &varStroage : s_sharedData.varStorage)
   {
     memset(varStroage, 0U, sizeof(varStroage));
   }
 
-  Platform::releaseVarStorageLock();
+  NodePlatform::releaseVarStorageLock();
 }
 
 static void invalidateMemoryMap(void)
@@ -100,22 +100,22 @@ static void syncWithCommsCoreInit(void)
   uint32_t                  previousCoreCheckTime {0U};
   volatile CoreInitStatus_t commsInitStatus       {CORE_INIT_IN_PROGRESS};
 
-  Platform::acquireVarStorageLock();
+  NodePlatform::acquireVarStorageLock();
   s_sharedData.coreInitComplete[CORE_COMMS] = CORE_INIT_IN_PROGRESS;
-  Platform::releaseVarStorageLock();
+  NodePlatform::releaseVarStorageLock();
 
   while (commsInitStatus == CORE_INIT_IN_PROGRESS)
   {
-    uint32_t currentTime {Platform::getMillis()};
+    uint32_t currentTime {NodePlatform::getMillis()};
 
     if ((currentTime - previousCoreCheckTime) >= CORE_STATUS_CHECK_PERIOD)
     {
-      Platform::acquireVarStorageLock();
+      NodePlatform::acquireVarStorageLock();
 
       s_sharedData.coreInitComplete[CORE_APP] = CORE_INIT_COMPLETE;
       commsInitStatus = s_sharedData.coreInitComplete[CORE_COMMS];
 
-      Platform::releaseVarStorageLock();
+      NodePlatform::releaseVarStorageLock();
 
       previousCoreCheckTime = currentTime;
     }
@@ -150,11 +150,11 @@ static Atams::Error_t setVarImpl(const Atams::VarID_t varID, const T writeValue)
 
   Atams::VarStorage_t &varStorage {s_sharedData.varStorage[varID]};
 
-  Platform::acquireVarStorageLock();
+  NodePlatform::acquireVarStorageLock();
 
   writeToVarStorage(writeValue, varStorage);
 
-  Platform::releaseVarStorageLock();
+  NodePlatform::releaseVarStorageLock();
 
   return (Atams::ERROR_NONE);
 }
@@ -189,11 +189,11 @@ Atams::Error_t getVarImpl(const Atams::VarID_t varID, T &outputRef)
 
   Atams::VarStorage_t &var {s_sharedData.varStorage[varID]};
 
-  Platform::acquireVarStorageLock();
+  NodePlatform::acquireVarStorageLock();
 
   readFromVarStorage(outputRef, var);
 
-  Platform::releaseVarStorageLock();
+  NodePlatform::releaseVarStorageLock();
 
   return (Atams::ERROR_NONE);
 }

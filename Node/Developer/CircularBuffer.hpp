@@ -52,18 +52,18 @@ class NodeCommsLockPolicy
 {
   public:
   
-  using ArgumentType_t = Platform::CommsPeripheralID_t;
+  using ArgumentType_t = NodePlatform::CommsPeripheralID_t;
 
-  static constexpr uint16_t BUFFER_SIZE {Platform::CIRCULAR_BUFFER_SIZE};
+  static constexpr uint16_t BUFFER_SIZE {NodePlatform::CIRCULAR_BUFFER_SIZE};
 
   void setArgument(ArgumentType_t id) { id_ = id; }
 
-  void acquireLock(void) { Platform::acquireCommsBufferLock(id_); }
-  void releaseLock(void) { Platform::releaseCommsBufferLock(id_); }
+  void acquireLock(void) { NodePlatform::acquireCommsBufferLock(id_); }
+  void releaseLock(void) { NodePlatform::releaseCommsBufferLock(id_); }
 
   private:
 
-  Platform::CommsPeripheralID_t id_ {static_cast<Platform::CommsPeripheralID_t>(0U)};
+  NodePlatform::CommsPeripheralID_t id_ {static_cast<NodePlatform::CommsPeripheralID_t>(0U)};
 };
 
 /*************************************************************************************/

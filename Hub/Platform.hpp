@@ -50,7 +50,7 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace Platform {
+namespace Atams { namespace HubPlatform {
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
@@ -300,7 +300,7 @@ inline uint32_t getMillis(void)
   return (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
 }
 
-} } /* End Namespace - Atams::Platform */
+} } /* End Namespace - Atams::HubPlatform */
 
 /**
   * @}End of File

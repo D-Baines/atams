@@ -203,7 +203,7 @@ struct MemoryMap_t
 struct SharedData_t
 {
   CoreInitStatus_t      coreInitComplete[Atams::NUMBER_OF_CORES];
-  Atams::VarStorage_t   varStorage[Platform::NODE_NUMBER_OF_VARS];
+  Atams::VarStorage_t   varStorage[NodePlatform::NODE_NUMBER_OF_VARS];
   std::atomic<uint32_t> watchdogFault;
 };
 

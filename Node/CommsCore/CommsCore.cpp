@@ -71,18 +71,18 @@ enum NodeCommsState_t: uint8_t
 
 struct ChannelResponse_t
 {
-  uint8_t              buffer[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
+  uint8_t              buffer[NodePlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   uint16_t             index            {0U};
   bool                 aborted          {false};
   Atams::MessageType_t abortMessageType {Atams::MESSAGE_ABORT_RESPONSE};
   uint8_t              activeSyncCount  {0U};
-  uint8_t              encodedBuffer[Platform::MAX_BUS_PACKET_SIZE];
+  uint8_t              encodedBuffer[NodePlatform::MAX_BUS_PACKET_SIZE];
   uint16_t             encodedLength    {0U};
 };
 
 struct ChannelSyncPacket_t
 {
-  uint8_t  buffer[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
+  uint8_t  buffer[NodePlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   uint16_t length {0U};
 };
 
@@ -92,7 +92,7 @@ struct ChannelSyncPacket_t
 
 static const MemoryMap_t    *s_memoryMapPtr;
 static CRC32                 s_nodeCRC(Atams::CRC32_POLYNOMIAL);
-static CircularBuffer        s_circularBuffers[Platform::NUMBER_OF_COMMS_PERIPHERALS];
+static CircularBuffer        s_circularBuffers[NodePlatform::NUMBER_OF_COMMS_PERIPHERALS];
 
 static WatchdogHandler       s_watchdogHandler;
 static UniversalBlockManager s_uniBlockManager(s_watchdogHandler);
@@ -115,14 +115,14 @@ static SharedData_t s_sharedData;
 
 static void resetVars(void)
 {
-  Platform::acquireVarStorageLock();
+  NodePlatform::acquireVarStorageLock();
 
   for (VarStorage_t &varStorage : s_sharedData.varStorage)
   {
     memset(varStorage, 0U, sizeof(varStorage));
   }
 
-  Platform::releaseVarStorageLock();
+  NodePlatform::releaseVarStorageLock();
 }
 
 static void invalidateMemoryMap(void)
@@ -148,7 +148,7 @@ static Atams::Error_t externalTransfer(const Access_t       accessRequest,
   Atams::VarStorage_t &varStorage {s_sharedData.varStorage[varID]};
   Atams::Error_t      accessError {Atams::ERROR_NONE};
 
-  Platform::acquireVarStorageLock();
+  NodePlatform::acquireVarStorageLock();
 
   switch (accessRequest)
   {
@@ -165,7 +165,7 @@ static Atams::Error_t externalTransfer(const Access_t       accessRequest,
       break;
   }
 
-  Platform::releaseVarStorageLock();
+  NodePlatform::releaseVarStorageLock();
 
   return (accessError);
 }
@@ -188,18 +188,18 @@ static DataStatusReturn_t<uint8_t> getVarLength(const Atams::VarID_t varID)
   return (lengthReturn);
 }
 
-static void receiveCallback(const Platform::CommsPeripheralID_t commsChannel,
-                            const uint8_t * const               rxBufferPtr,
-                            const uint16_t                      rxBufferLength)
+static void receiveCallback(const NodePlatform::CommsPeripheralID_t commsChannel,
+                            const uint8_t * const                   rxBufferPtr,
+                            const uint16_t                          rxBufferLength)
 {
-  if ((commsChannel   < Platform::NUMBER_OF_COMMS_PERIPHERALS) &&
-      (rxBufferLength > 0U                                   ) )
+  if ((commsChannel   < NodePlatform::NUMBER_OF_COMMS_PERIPHERALS) &&
+      (rxBufferLength > 0U                                       ) )
   {
     if (s_circularBuffers[commsChannel].pushHead(rxBufferPtr, rxBufferLength) == CircularBuffer::ERROR_FULL)
     {
       s_circularBuffers[commsChannel].reset();
     }
-    Platform::releaseWaitOnReceiveSemaphore();
+    NodePlatform::releaseWaitOnReceiveSemaphore();
   }
 }
 
@@ -228,9 +228,9 @@ static void abortResponseSyncMismatch(ChannelResponse_t &response, const uint8_t
   abortResponse(response, Atams::ERROR_SYNC_COUNT, Atams::VAR_ID_NULL);
 }
 
-static void sendResponsePacket(const Platform::CommsPeripheralID_t commsChannel,
-                               ChannelResponse_t                  &response,
-                               const Atams::MessageType_t          messageType)
+static void sendResponsePacket(const NodePlatform::CommsPeripheralID_t commsChannel,
+                               ChannelResponse_t                      &response,
+                               const Atams::MessageType_t              messageType)
 {
   if (response.aborted == false)
   {
@@ -246,7 +246,7 @@ static void sendResponsePacket(const Platform::CommsPeripheralID_t commsChannel,
                       sizeof(response.encodedBuffer),
                       response.encodedLength        ) == Atams::ERROR_NONE)
   {
-    Platform::transmitBuffer(commsChannel, response.encodedBuffer, response.encodedLength);
+    NodePlatform::transmitBuffer(commsChannel, response.encodedBuffer, response.encodedLength);
   }
 }
 
@@ -431,14 +431,14 @@ static inline void setAbortMessageType(ChannelResponse_t &response, const Messag
   }
 }
 
-static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsChannel,
-                                     const uint8_t * const               packetBuffer,
-                                     const uint16_t                      packetLength)
+static void processEncodedMeshPacket(const NodePlatform::CommsPeripheralID_t commsChannel,
+                                     const uint8_t * const                   packetBuffer,
+                                     const uint16_t                          packetLength)
 {
-  static uint8_t             s_decodedPacket[Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
+  static uint8_t             s_decodedPacket[NodePlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   static uint16_t            s_decodedLength {0U};
-  static ChannelSyncPacket_t s_commsChannelSyncPackets[Platform::NUMBER_OF_COMMS_PERIPHERALS];
-  static ChannelResponse_t   s_commsChannelResponses[Platform::NUMBER_OF_COMMS_PERIPHERALS];
+  static ChannelSyncPacket_t s_commsChannelSyncPackets[NodePlatform::NUMBER_OF_COMMS_PERIPHERALS];
+  static ChannelResponse_t   s_commsChannelResponses[NodePlatform::NUMBER_OF_COMMS_PERIPHERALS];
 
   if (decodeBusPacket(packetBuffer,
                       packetLength,
@@ -519,10 +519,10 @@ static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsCh
 
 static void processRawMeshData(void)
 {
-  static uint8_t  s_requestPacketBuffer[Platform::MAX_BUS_PACKET_SIZE];
+  static uint8_t  s_requestPacketBuffer[NodePlatform::MAX_BUS_PACKET_SIZE];
   static uint16_t s_requestPacketLength {0U};
 
-  for (uint8_t commsChannel {0U}; commsChannel < Platform::NUMBER_OF_COMMS_PERIPHERALS; commsChannel++)
+  for (uint8_t commsChannel {0U}; commsChannel < NodePlatform::NUMBER_OF_COMMS_PERIPHERALS; commsChannel++)
   {
     const CircularBuffer::Error_t bufferStatus {s_circularBuffers[commsChannel].getPacket(s_requestPacketBuffer,
                                                                                           sizeof(s_requestPacketBuffer),
@@ -531,7 +531,7 @@ static void processRawMeshData(void)
     if (bufferStatus == CircularBuffer::ERROR_NONE)
     {
       /* Process the packet that has been copied into the request packet buffer */
-      processEncodedMeshPacket(static_cast<Platform::CommsPeripheralID_t>(commsChannel),
+      processEncodedMeshPacket(static_cast<NodePlatform::CommsPeripheralID_t>(commsChannel),
                                s_requestPacketBuffer,
                                s_requestPacketLength);
     }
@@ -558,21 +558,21 @@ static void waitForAppCoreInit(void)
   uint32_t                  previousCoreCheckTime {0U};
   volatile CoreInitStatus_t coreInitStatus        {CORE_INIT_IN_PROGRESS};
 
-  Platform::acquireVarStorageLock();
+  NodePlatform::acquireVarStorageLock();
   s_sharedData.coreInitComplete[CORE_APP] = CORE_INIT_IN_PROGRESS;
-  Platform::releaseVarStorageLock();
+  NodePlatform::releaseVarStorageLock();
 
   while (coreInitStatus == CORE_INIT_IN_PROGRESS)
   {
-    uint32_t currentTime {Platform::getMillis()};
+    uint32_t currentTime {NodePlatform::getMillis()};
 
     if ((currentTime - previousCoreCheckTime) >= CORE_STATUS_CHECK_PERIOD)
     {
-      Platform::acquireVarStorageLock();
+      NodePlatform::acquireVarStorageLock();
 
       coreInitStatus = s_sharedData.coreInitComplete[CORE_APP];
 
-      Platform::releaseVarStorageLock();
+      NodePlatform::releaseVarStorageLock();
 
       previousCoreCheckTime = currentTime;
     }
@@ -581,9 +581,9 @@ static void waitForAppCoreInit(void)
 
 static void signalCommsCoreInitComplete(void)
 {
-  Platform::acquireVarStorageLock();
+  NodePlatform::acquireVarStorageLock();
   s_sharedData.coreInitComplete[CORE_COMMS] = CORE_INIT_COMPLETE;
-  Platform::releaseVarStorageLock();
+  NodePlatform::releaseVarStorageLock();
 }
 
 static void encodeNVMHeader(uint8_t * const bytesPtr, const NVMHeader_t &header)
@@ -711,9 +711,9 @@ static Atams::Error_t writeVarsToNVM(const uint32_t maxIndex)
 
       encodeNVMVarEntryHeader(entryBuffer, varInfo.nvmHash, varInfo.type);
 
-      Platform::acquireVarStorageLock();
+      NodePlatform::acquireVarStorageLock();
       memcpy(&entryBuffer[Atams::NVM_VAR_ENTRY_HEADER_SIZE], s_sharedData.varStorage[varID], varLength);
-      Platform::releaseVarStorageLock();
+      NodePlatform::releaseVarStorageLock();
 
       if (s_nvmUnitHandler.writeToNVM(nvmIndex, entryBuffer, entrySize) != Atams::ERROR_NONE)
       {
@@ -818,9 +818,9 @@ static Atams::Error_t loadNVMVarsFromStream(const uint32_t maxIndex, bool &migra
           return (Atams::ERROR_PLATFORM);      /* Early Return */
         }
 
-        Platform::acquireVarStorageLock();
+        NodePlatform::acquireVarStorageLock();
         memcpy(s_sharedData.varStorage[varID], valueBuffer, valueLength);
-        Platform::releaseVarStorageLock();
+        NodePlatform::releaseVarStorageLock();
       }
       else
       {
@@ -845,10 +845,10 @@ static Atams::Error_t loadNVMVarsFromStream(const uint32_t maxIndex, bool &migra
 
 static void initCommsBuffers(void)
 {
-  for (uint8_t commsChannel {0U}; commsChannel < Platform::NUMBER_OF_COMMS_PERIPHERALS; commsChannel++)
+  for (uint8_t commsChannel {0U}; commsChannel < NodePlatform::NUMBER_OF_COMMS_PERIPHERALS; commsChannel++)
   {
     s_circularBuffers[commsChannel].setEOLChar(Atams::EOL_BYTE);
-    s_circularBuffers[commsChannel].setLockArgument(static_cast<Platform::CommsPeripheralID_t>(commsChannel));
+    s_circularBuffers[commsChannel].setLockArgument(static_cast<NodePlatform::CommsPeripheralID_t>(commsChannel));
   }
 }
 
@@ -857,7 +857,7 @@ static Atams::Error_t initUniversalDefaults(void)
   Atams::Error_t error {Atams::ERROR_NONE};
 
   if (!error) error = Atams::setVar(BlockUniversal::VAR_ATAMS_VERSION_PATCH, Atams::ATAMS_VERSION_PATCH);
-  if (!error) error = Atams::setVar(BlockUniversal::VAR_MAX_BUS_PACKET_SIZE, static_cast<uint16_t>(Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING));
+  if (!error) error = Atams::setVar(BlockUniversal::VAR_MAX_BUS_PACKET_SIZE, static_cast<uint16_t>(NodePlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING));
   if (!error) error = Atams::setVar(BlockUniversal::VAR_NODE_ID,             BlockUniversal::DEFAULT_NODE_ID);
   if (!error) error = Atams::setVar(BlockUniversal::VAR_FIRST_NODE_ID,       BlockUniversal::DEFAULT_FIRST_NODE_ID);
   if (!error) error = Atams::setVar(BlockUniversal::VAR_LAST_NODE_ID,        BlockUniversal::DEFAULT_LAST_NODE_ID);
@@ -916,7 +916,7 @@ static Atams::Error_t extractNVMFooter(const NVMHeader_t &nvmHeader, NVMFooter_t
 
 static Atams::Error_t validateNVMHeaderFooter(NVMHeader_t &nvmHeader, NVMFooter_t &nvmFooter)
 {
-  if (Platform::NVM_STORAGE_SIZE < Atams::NVM_HEADER_SIZE)            return (Atams::ERROR_NVM_PLATFORM_SIZE);          /* Early Return */
+  if (NodePlatform::NVM_STORAGE_SIZE < Atams::NVM_HEADER_SIZE)            return (Atams::ERROR_NVM_PLATFORM_SIZE);          /* Early Return */
 
   if (extractNVMHeader(nvmHeader) != Atams::ERROR_NONE)              return (Atams::ERROR_PLATFORM);                   /* Early Return */
 
@@ -924,7 +924,7 @@ static Atams::Error_t validateNVMHeaderFooter(NVMHeader_t &nvmHeader, NVMFooter_
 
   if (nvmHeader.nvmFormatVersion != Atams::NVM_FORMAT_VERSION)       return (Atams::ERROR_NVM_FORMAT_VERSION_MISMATCH);/* Early Return */
 
-  if (Platform::NVM_STORAGE_SIZE < nvmHeader.length)                 return (Atams::ERROR_NVM_HEADER_LENGTH);          /* Early Return */
+  if (NodePlatform::NVM_STORAGE_SIZE < nvmHeader.length)                 return (Atams::ERROR_NVM_HEADER_LENGTH);          /* Early Return */
 
   if (extractNVMFooter(nvmHeader, nvmFooter) != Atams::ERROR_NONE)   return (Atams::ERROR_PLATFORM);                   /* Early Return */
 
@@ -956,9 +956,9 @@ static bool allCommsTransmissionsComplete(void)
 {
   bool allComplete {true};
 
-  for (uint8_t peripheralID {0U}; peripheralID < Platform::NUMBER_OF_COMMS_PERIPHERALS; peripheralID++)
+  for (uint8_t peripheralID {0U}; peripheralID < NodePlatform::NUMBER_OF_COMMS_PERIPHERALS; peripheralID++)
   {
-    if (Platform::transmitReady(static_cast<Platform::CommsPeripheralID_t>(peripheralID)) == false)
+    if (NodePlatform::transmitReady(static_cast<NodePlatform::CommsPeripheralID_t>(peripheralID)) == false)
     {
       allComplete = false;
     }
@@ -995,11 +995,11 @@ static Atams::Error_t setVarImpl(const Atams::VarID_t varID, const T writeValue)
 
   Atams::VarStorage_t &varStorage = s_sharedData.varStorage[varID];
 
-  Platform::acquireVarStorageLock();
+  NodePlatform::acquireVarStorageLock();
 
   writeToVarStorage(writeValue, varStorage);
 
-  Platform::releaseVarStorageLock();
+  NodePlatform::releaseVarStorageLock();
 
   return (Atams::ERROR_NONE);
 }
@@ -1034,11 +1034,11 @@ Atams::Error_t getVarImpl(const Atams::VarID_t varID, T &outputRef)
 
   Atams::VarStorage_t &var {s_sharedData.varStorage[varID]};
 
-  Platform::acquireVarStorageLock();
+  NodePlatform::acquireVarStorageLock();
 
   readFromVarStorage(outputRef, var);
 
-  Platform::releaseVarStorageLock();
+  NodePlatform::releaseVarStorageLock();
 
   return (Atams::ERROR_NONE);
 }
@@ -1139,7 +1139,7 @@ Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmEr
   {
     initCommsBuffers();
 
-    error = (Platform::beginReceive(receiveCallback) == false) ?
+    error = (NodePlatform::beginReceive(receiveCallback) == false) ?
             Atams::ERROR_PLATFORM                              :
             Atams::ERROR_NONE                                  ;
   }
@@ -1225,12 +1225,12 @@ template <> Atams::Error_t getVar<float   >(const Atams::VarID_t varID, float   
  *
  * @warning If a storage process is initiated via Bus communications, this function will block while
  *          the storage process completes. Before this occurs, the application is queried whether it is 
- *          safe to enter configuration state using @ref Platform::enterConfigurationState. Blocking 
+ *          safe to enter configuration state using @ref NodePlatform::enterConfigurationState. Blocking 
  *          processes will only occur if the Node is in the configuration state.
  */
 void updateCommsPolling(void)
 {
-  uint32_t currentTime {Platform::getMillis()};
+  uint32_t currentTime {NodePlatform::getMillis()};
 
   switch (s_nodeCommsState)
   {
@@ -1239,12 +1239,12 @@ void updateCommsPolling(void)
       break;
 
     case Atams::NODE_STATE_INITIALISED:
-      Platform::update();
+      NodePlatform::update();
       processRawMeshData();
       break;
 
     case Atams::NODE_STATE_ACTIVE:
-      Platform::update();
+      NodePlatform::update();
       processRawMeshData();
       s_watchdogHandler.update(currentTime);
       s_sharedData.watchdogFault.store(s_watchdogHandler.getWatchdogFault(), std::memory_order_relaxed);
@@ -1253,14 +1253,14 @@ void updateCommsPolling(void)
     case Atams::NODE_STATE_PROCESS_PENDING:
       if (allCommsTransmissionsComplete() == true)
       {
-        Platform::stopReceive();
+        NodePlatform::stopReceive();
         s_uniBlockManager.runPendingProcess();
         s_nodeCommsState = Atams::NODE_STATE_RESTART_COMMS;
       }
       break;
 
     case Atams::NODE_STATE_RESTART_COMMS:
-      if (Platform::beginReceive(receiveCallback)) s_nodeCommsState = Atams::NODE_STATE_ACTIVE;
+      if (NodePlatform::beginReceive(receiveCallback)) s_nodeCommsState = Atams::NODE_STATE_ACTIVE;
       break;
 
     default:
@@ -1287,11 +1287,11 @@ void updateCommsPolling(void)
  *
  * @warning If a storage process is initiated via Bus communications, this function will block while
  *          the storage process completes. Before this occurs, the application is queried whether it is
- *          safe to enter configuration state using @ref Platform::enterConfigurationState.
+ *          safe to enter configuration state using @ref NodePlatform::enterConfigurationState.
  */
 void updateCommsBlocking(void)
 {
-  uint32_t currentTime {Platform::getMillis()};
+  uint32_t currentTime {NodePlatform::getMillis()};
 
   switch (s_nodeCommsState)
   {
@@ -1300,12 +1300,12 @@ void updateCommsBlocking(void)
       break;
 
     case Atams::NODE_STATE_INITIALISED:
-      Platform::acquireWaitOnReceiveSempahore(WatchdogHandler::WATCHDOG_UPDATE_PERIOD);
+      NodePlatform::acquireWaitOnReceiveSempahore(WatchdogHandler::WATCHDOG_UPDATE_PERIOD);
       processRawMeshData();
       break;
 
     case Atams::NODE_STATE_ACTIVE:
-      Platform::acquireWaitOnReceiveSempahore(WatchdogHandler::WATCHDOG_UPDATE_PERIOD);
+      NodePlatform::acquireWaitOnReceiveSempahore(WatchdogHandler::WATCHDOG_UPDATE_PERIOD);
       processRawMeshData();
       s_watchdogHandler.update(currentTime);
       s_sharedData.watchdogFault.store(s_watchdogHandler.getWatchdogFault(), std::memory_order_relaxed);
@@ -1314,14 +1314,14 @@ void updateCommsBlocking(void)
     case Atams::NODE_STATE_PROCESS_PENDING:
       if (allCommsTransmissionsComplete() == true)
       {
-        Platform::stopReceive();
+        NodePlatform::stopReceive();
         s_uniBlockManager.runPendingProcess();
         s_nodeCommsState = Atams::NODE_STATE_RESTART_COMMS;
       }
       break;
 
     case Atams::NODE_STATE_RESTART_COMMS:
-      if (Platform::beginReceive(receiveCallback)) s_nodeCommsState = Atams::NODE_STATE_ACTIVE;
+      if (NodePlatform::beginReceive(receiveCallback)) s_nodeCommsState = Atams::NODE_STATE_ACTIVE;
       break;
 
 
@@ -1418,7 +1418,7 @@ Atams::Error_t storeAll(void)
   const uint32_t requiredNVMSpace    {Atams::NVM_HEADER_SIZE + requiredNVMVarSpace + Atams::NVM_FOOTER_SIZE};
   const uint32_t nvmFooterIndex      {Atams::NVM_HEADER_SIZE + requiredNVMVarSpace};
 
-  if (requiredNVMSpace > Platform::NVM_STORAGE_SIZE) return (Atams::ERROR_NVM_PLATFORM_SIZE); /* Early Return */
+  if (requiredNVMSpace > NodePlatform::NVM_STORAGE_SIZE) return (Atams::ERROR_NVM_PLATFORM_SIZE); /* Early Return */
 
   nvmHeader.identifier = Atams::NVM_HEADER_IDENTIFIER_VALID;
   nvmHeader.length     = requiredNVMSpace;

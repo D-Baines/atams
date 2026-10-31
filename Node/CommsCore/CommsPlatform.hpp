@@ -43,7 +43,7 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace Platform {
+namespace Atams { namespace NodePlatform {
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
@@ -69,8 +69,8 @@ constexpr uint16_t CIRCULAR_BUFFER_SIZE {1024U};
  * @details This value defines the size of each write operation to non-volatile memory.
  *          Some platforms can only write to non-volatile memory in fixed size units.
  *          The user should set this to an appropriate value for their platform.
- *          The provided data buffer in @ref Platform::writeToNVM will always be of
- *          size Platform::NVM_UNIT_SIZE.
+ *          The provided data buffer in @ref NodePlatform::writeToNVM will always be of
+ *          size NodePlatform::NVM_UNIT_SIZE.
  */
 constexpr uint32_t NVM_UNIT_SIZE {32U};
 
@@ -79,7 +79,7 @@ constexpr uint32_t NVM_UNIT_SIZE {32U};
  *
  * @details Two ways to set this, depending on the platform:
  *
- *          - Exact size: Atams::Map<YourMapName>::REQUIRED_NVM_SIZE + Platform::NVM_UNIT_SIZE,
+ *          - Exact size: Atams::Map<YourMapName>::REQUIRED_NVM_SIZE + NodePlatform::NVM_UNIT_SIZE,
  *            once a Memory Map has been generated. REQUIRED_NVM_SIZE is the exact minimum for
  *            the Memory Map's NVM-stored variable. NVM_UNIT_SIZE must be added to allow for 
  *            write-unit headroom.
@@ -116,7 +116,7 @@ enum CommsPeripheralID_t : uint8_t
  * @brief   Callback function pointer typedef for received bytes.
  *
  * @param   peripheralID   The ID of the communications peripheral on which data was received.
- *                         Corresponds to the @ref Platform::CommsPeripheralID_t enum.
+ *                         Corresponds to the @ref NodePlatform::CommsPeripheralID_t enum.
  *
  * @param   rxBufferPtr    Pointer to the received data buffer.
  *
@@ -162,7 +162,7 @@ bool eraseNVM(void);
 
 bool readFromNVM(const uint32_t readIndex, uint8_t * outputPtr, const uint32_t readLength);
 
-bool writeToNVM(const uint32_t writeIndex, const uint8_t (&nvmUnit)[Platform::NVM_UNIT_SIZE]);
+bool writeToNVM(const uint32_t writeIndex, const uint8_t (&nvmUnit)[NodePlatform::NVM_UNIT_SIZE]);
 
 bool enterConfigurationState(void);
 
@@ -173,7 +173,7 @@ void setBitrate(const Atams::BitrateOption_t bitrateOption);
 Atams::Error_t resetNode(void);
 
 
-} } /* End Namespace - Atams::Platform */
+} } /* End Namespace - Atams::NodePlatform */
 
 
 /**

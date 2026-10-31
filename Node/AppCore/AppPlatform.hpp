@@ -39,7 +39,7 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace Platform {
+namespace Atams { namespace NodePlatform {
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DECLARATIONS                                                      */
@@ -52,7 +52,7 @@ void acquireVarStorageLock(void);
 void releaseVarStorageLock(void);
 
 
-} } /* End Namespace - Atams::Platform */
+} } /* End Namespace - Atams::NodePlatform */
 
 
 /**

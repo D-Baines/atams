@@ -621,7 +621,7 @@ Atams::ProcessState_t NodeActions::updateStorageProcess(Atams::Error_t &error, c
   Atams::ProcessState_t  subProcessState {Atams::PROCESS_IN_PROGRESS};
   uint8_t                storeComplete   {Atams::ATAMS_FALSE};
   uint8_t                storageStatus   {Atams::ERROR_STORAGE_PROCESS_FAILED};
-  uint32_t               currentTime     {Platform::getMillis()};
+  uint32_t               currentTime     {HubPlatform::getMillis()};
   Atams::Error_t         stepError       {Atams::ERROR_NONE};
 
   switch (process.specificState)
@@ -685,7 +685,7 @@ Atams::ProcessState_t NodeActions::updateStorageProcess(Atams::Error_t &error, c
         if (storageStatus == Atams::ERROR_NONE) process.specificState = StorageProcessState::BEGIN_EXIT_CONFIG;
         else                                    cancelConfigProcess(process, Atams::ERROR_STORAGE_PROCESS_FAILED);
       }
-      else if ((currentTime - process.prevEventTime) > Platform::NVM_STORAGE_TIMEOUT)
+      else if ((currentTime - process.prevEventTime) > HubPlatform::NVM_STORAGE_TIMEOUT)
       {
         static_cast<void>(node.stopStream(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE));
         static_cast<void>(node.stopStream(BlockUniversal::VAR_STORAGE_STATUS));

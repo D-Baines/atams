@@ -42,7 +42,7 @@
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
 
-namespace Atams { namespace Platform {
+namespace Atams { namespace HubPlatform {
 
 /*************************************************************************************/
 /* BusPeripheral - REQUIRED PUBLIC FUNCTION DEFINITIONS                              */
@@ -277,7 +277,7 @@ void BinarySemaphore::release(void)
   cv_.notify_one();
 }
 
-} } /* End Namespace - Atams::Platform */
+} } /* End Namespace - Atams::HubPlatform */
 
 /**
   * @}End of File

@@ -445,7 +445,7 @@ uint16_t Node::getNodeMaxPacketSize(void)
 /**
  * @brief Returns the effective maximum packet size used to limit this Node's request and response packets.
  *
- * The effective limit is the smaller of the Node's maximum packet size and the Hub's @c Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING.
+ * The effective limit is the smaller of the Node's maximum packet size and the Hub's @c HubPlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING.
  * Until the Node's maximum packet size is collected during the Bus initialisation cycle, the protocol minimum
  * @c Atams::MINIMUM_MAXIMUM_BUS_PACKET_SIZE_PRE_FRAMING is used in its place. The remaining space in each packet can be tracked by
  * comparing this limit against @c getRequestPacketLength() and @c getExpectedResponseLength().
@@ -1345,7 +1345,7 @@ void Node::resetVars(void)
  * against this Hub's var storage length. */
 Atams::Error_t Node::validateMemoryMap(const MemoryMap_t &memoryMap)
 {
-  return (Atams::validateSharedMemoryMap(memoryMap.sharedMap, Platform::NODE_NUMBER_OF_VARS));
+  return (Atams::validateSharedMemoryMap(memoryMap.sharedMap, HubPlatform::NODE_NUMBER_OF_VARS));
 }
 
 void Node::processAbortedResponse(void)
@@ -1850,7 +1850,7 @@ uint16_t Node::getEffectivePacketLimitNoLock(void) const
   const uint16_t nodeLimit {(nodeMaxPacketSize_ == 0U) ? static_cast<uint16_t>(Atams::MINIMUM_MAXIMUM_BUS_PACKET_SIZE_PRE_FRAMING) :
                                                          nodeMaxPacketSize_                                                       };
 
-  return ((nodeLimit < Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING) ? nodeLimit : Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING);
+  return ((nodeLimit < HubPlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING) ? nodeLimit : HubPlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING);
 }
 
 Atams::Error_t Node::checkPacketLimits(const RequestChangeConfig_t &changeConfig, const bool datagramFound) const
@@ -2038,7 +2038,7 @@ void Node::processResponseBuffer(void)
   }
 }
 
-/** @note @p outputBuffer must be at least @c Platform::MAX_BUS_PACKET_SIZE_PRE_FRAMING bytes — the same
+/** @note @p outputBuffer must be at least @c HubPlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING bytes — the same
  *        size as the internal @c requestPacket_.buffer. No bounds check is performed at runtime. */
 void Node::getRequestPacket(const Atams::MessageType_t requestType,
                              const uint8_t             syncCount,
