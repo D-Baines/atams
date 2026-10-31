@@ -222,6 +222,12 @@ static void abortResponse(ChannelResponse_t &response, const Atams::Error_t erro
   response.aborted                       = true;
 }
 
+static void abortResponseSyncMismatch(ChannelResponse_t &response, const uint8_t syncCount)
+{
+  response.activeSyncCount = syncCount;
+  abortResponse(response, Atams::ERROR_SYNC_COUNT, Atams::VAR_ID_NULL);
+}
+
 static void sendResponsePacket(const Platform::CommsPeripheralID_t commsChannel,
                                ChannelResponse_t                  &response,
                                const Atams::MessageType_t          messageType)
@@ -477,7 +483,8 @@ static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsCh
         }
         else if (packetNodeID == finalSyncNodeID)
         {
-          processRequestPacket(response, syncPacket.buffer, syncPacket.length);
+          if (syncPacket.buffer[HEADER_INDEX_SYNC] == packetSyncCount) processRequestPacket(response, syncPacket.buffer, syncPacket.length);
+          else                                                         abortResponseSyncMismatch(response, packetSyncCount);
           if (localNodeID == firstSyncNodeID) sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
         }
         break;
@@ -486,14 +493,14 @@ static void processEncodedMeshPacket(const Platform::CommsPeripheralID_t commsCh
         if ((packetNodeID == prevSyncNodeID) &&
             (packetNodeID != localNodeID   ) )
         {
-          if (packetSyncCount != response.activeSyncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT, Atams::VAR_ID_NULL);
+          if (packetSyncCount != response.activeSyncCount) abortResponseSyncMismatch(response, packetSyncCount);
           sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
         }
         break;
       case MESSAGE_SYNC_JOG:
         if (packetNodeID == localNodeID)
         {
-          if (packetSyncCount != response.activeSyncCount) abortResponse(response, Atams::ERROR_SYNC_COUNT, Atams::VAR_ID_NULL);
+          if (packetSyncCount != response.activeSyncCount) abortResponseSyncMismatch(response, packetSyncCount);
           sendResponsePacket(commsChannel, response, Atams::MESSAGE_RESPONSE_SYNCED);
         }
         break;
