@@ -65,7 +65,7 @@ nodeID_(nodeID)
  * @brief Initialises the Node with an Atams Memory Map.
  *
  * Validates and stores a reference to the provided Memory Map for variable access control, preparing the Node instance for use.
- * If validation fails, the Node's current Memory Map is left unchanged.
+ * If validation fails, the Node's current Memory Map is left unchanged. On success, all request patterns and stored variables are reset.
  *
  * @param memoryMap Reference to a @c MemoryMap_t structure defining the Node's variable layout and properties.
  *
@@ -83,6 +83,9 @@ Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
 
   if (error == Atams::ERROR_NONE)
   {
+    clearAllRequestPatterns(); /* Must run before validVarCount_ changes, as it only clears that many variables */
+    resetVars();
+
     memoryMap_        = &memoryMap.sharedMap;
     validVarCount_    = memoryMap.sharedMap.genInfo.noOfVars;
     memoryMapChanged_ = true;
@@ -1172,7 +1175,7 @@ bool Node::getMemoryMapIsValid(void)
 }
 
 /**
- * @brief Clears this Node's reference to its Memory Map and resets its stored variables.
+ * @brief Clears this Node's reference to its Memory Map and resets its request patterns and stored variables.
  *
  * Returns the Node to its pre-init state, until @ref Node::init is next called. Use before destroying a Memory Map that
  * this Node was initialised with.
@@ -1182,6 +1185,8 @@ bool Node::getMemoryMapIsValid(void)
  */
 void Node::deinit(void)
 {
+  clearAllRequestPatterns(); /* Must run before validVarCount_ changes, as it only clears that many variables */
+
   validVarCount_    = 0U;
   memoryMap_        = nullptr;
   memoryMapChanged_ = true;
@@ -1336,7 +1341,13 @@ void Node::resetVars(void)
 {
   varStorageLock_.acquireLock();
 
-  for (Var_t &var : varStorage_) memset(var.storage, 0U, sizeof(var.storage));
+  for (Var_t &var : varStorage_)
+  {
+    memset(var.storage, 0U, sizeof(var.storage));
+
+    var.newDataReady = false;
+    var.ackReceived  = false;
+  }
 
   varStorageLock_.releaseLock();
 }

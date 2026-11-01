@@ -164,20 +164,21 @@ Before using the autogen tool, fill out an Atams Memory Map table in the provide
 - **Data Blocks:** Define each Data Block in a separate sheet of the `.xlsx` file. Copy the original template sheet to maintain correct formatting. Sheet names are used as the Data Block name and converted to `PascalCase` namespaces with a `Block` prefix in the generated C++ files.
 - **Columns:**
 
-Only `Required` columns must be completed for successful generation. `Optional` columns are used for documentation purposes or to configure factory default and NVM behaviour:
+Only `Required` columns must be completed for successful generation. `Optional` columns are used for documentation purposes, to configure factory default and NVM behaviour, or to configure the Atams GUI:
 
 | Column Name     | Requirement  | Description                                                                                          |
 | :-------------: | :----------: | :--------------------------------------------------------------------------------------------------: |
 | Var Name        | Required     | Name of the device variable. Any format accepted — converted to `SCREAMING_SNAKE_CASE` with a `VAR_` prefix in the `VarID_t` enum. Used as an input argument to Atams functions; keep names concise where possible. Also hashed, together with its Data Block name, to drive [Automatic NVM Migration](#automatic-nvm-migration) — renaming a variable is treated as removing the old one and adding a new one, so its previously stored NVM value is not carried over. |
 | Data Type       | Required     | Select from the dropdown list. Atams will return errors if this variable is accessed with a mismatched type. Only the listed types are supported. |
 | External Access | Required     | `RO` (Read Only) — Hub can only read this variable. `RW` (Read/Write) — Hub can read and write this variable. |
-| Units           | Optional     | Documentation only.                                                                                  |
-| Min Limit       | Optional     | Documentation only.                                                                                  |
-| Max Limit       | Optional     | Documentation only.                                                                                  |
+| Units           | Optional     | Shown beside the value in the Atams GUI.                                                             |
+| Min Limit       | Optional     | Lowest value the Atams GUI will accept or send. Not enforced by the Hub or Node libraries. Must be within the Data Type's range. |
+| Max Limit       | Optional     | Highest value the Atams GUI will accept or send. Not enforced by the Hub or Node libraries. Must be within the Data Type's range. |
 | Default         | Optional     | Value assigned on startup and during a factory restore. Any value previously stored in non-volatile memory will overwrite this on startup. Zero-initialised if left blank. |
 | NVM Storage     | Optional     | Marks the variable for inclusion in a STORE ALL operation. Not stored in non-volatile memory if left blank. |
 | Description     | Optional     | Documentation only.                                                                                  |
-| Widget          | Future Scope | Reserved for future Atams application compatibility.                                                 |
+| Widget          | Optional     | The widget used by the Atams GUI's config window, which only shows NVM variables: `Input`, `Checkbox`, `Dropdown`, `Value`, `BoolState` or `ReadOption`. |
+| Widget Options  | Optional     | One `value = label` pair per line (Alt+Enter in Excel), used by option widgets in the Atams GUI. Values must be within the Data Type's range and any limits. |
 
 ### Autogen GUI Application
 

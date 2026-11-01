@@ -88,7 +88,7 @@ namespace Atams { namespace NodePlatform {
 *   @brief The number of vars in the Atams Memory Map that will be used to initialise the Node.
 *          This value must be less than or equal to @ref Atams::MAX_NUMBER_OF_VARS.
 */
-constexpr uint16_t NODE_NUMBER_OF_VARS {100U};
+constexpr uint16_t NODE_NUMBER_OF_VARS {144U};
 
 
 } } /* End Namespace - Atams::NodePlatform */

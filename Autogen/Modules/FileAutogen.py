@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import json
+import math
 import pathlib
 import pandas
 from   dataclasses        import dataclass
@@ -213,6 +214,9 @@ def generateConstList(block:        pandas.DataFrame,
     preNameSpaces  = preStringRequiredSpace  - len(type)
     postNameSpaces = postStringRequiredSpace - len(varName)
     if ((not pandas.isnull(value)) and (value != "-")):
+      # pandas reads a whole column as floats if any cell in it is fractional or blank
+      if (isinstance(value, float) and value.is_integer() and (type != "float")):
+        value = int(value)
       valueAsString = str(value)
       targetFile.write("inline constexpr " + type + " ")
       writeSpaces(preNameSpaces, targetFile)
@@ -358,8 +362,7 @@ def generateMapChecksum(dataBlocks: List[DataBlock]) -> int:
     IDs            = block.data["Var Name"]
     types          = block.data["Data Type"]
     accessLevels   = block.data["External Access"]
-    varID = 0
-    for ID in IDs:
+    for varID in range(len(IDs)):
       match (types[varID]):
         case "uint8_t":  crcCalculator.updateRollingCrc(VarType.TYPE_UINT8.value)
         case "int8_t":   crcCalculator.updateRollingCrc(VarType.TYPE_INT8.value)
@@ -370,7 +373,6 @@ def generateMapChecksum(dataBlocks: List[DataBlock]) -> int:
         case "float":    crcCalculator.updateRollingCrc(VarType.TYPE_FLOAT.value)
       if (accessLevels[varID] == "RW"): crcCalculator.updateRollingCrc(Access.ACCESS_WRITE.value)
       else:                             crcCalculator.updateRollingCrc(Access.ACCESS_READ.value)
-      varID += 1
   return (crcCalculator.getRollingCrc())
 
 # Must match validateGenNvmChecksum (Node/Developer/NodeUtilities.cpp) - Node-only, as the Hub's
@@ -390,13 +392,13 @@ def generateMapNvmChecksum(dataBlocks: List[DataBlock]) -> int:
       varIndex += 1
   return (crcCalculator.getRollingCrc())
 
-# Parses a "Widget Options" cell (semicolon-separated "value:label" pairs, e.g.
-# "0:Off;1:Slow;2:Fast") for a Dropdown-widget variable of the given Atams type.
+# Parses a "Widget Options" cell (one "value = label" pair per line) for a variable of the given
+# Atams type.
 #
 # Returns (options, error):
 #   - (list-of-dicts, None) on success.
-#   - (None, None)          if the cell is unset or malformed - lenient fallback to Input,
-#                            same philosophy as every other optional column.
+#   - (None, None)          if the cell is unset or malformed - lenient, same philosophy as
+#                            every other optional column.
 #   - (None, error string)  if a value parses fine but falls outside the variable's type
 #                            range - a hard generation error, since silently letting this
 #                            through could write an out-of-range value to a real device.
@@ -426,7 +428,7 @@ def parseWidgetOptions(rawOptions, typeUpper: str, qualifiedVarName: str) -> Tup
       return (None, None)
 
     if (valueRange is not None) and not (valueRange[0] <= value <= valueRange[1]):
-      return (None, f"Generation Error: Dropdown option value {value} for '{qualifiedVarName}' "
+      return (None, f"Generation Error: Widget Options value {value} for '{qualifiedVarName}' "
                      f"is outside the {typeUpper} range {valueRange[0]}-{valueRange[1]}")
 
     parsedOptions.append({"value": value, "label": label})
@@ -436,12 +438,44 @@ def parseWidgetOptions(rawOptions, typeUpper: str, qualifiedVarName: str) -> Tup
 
   return (parsedOptions, None)
 
+# Parses a "Min Limit"/"Max Limit" cell for a variable of the given Atams type.
+#
+# Returns (limit, error):
+#   - (number, None)       on success.
+#   - (None, None)         if the cell is unset or malformed - lenient, same as parseWidgetOptions.
+#   - (None, error string) if the value falls outside the variable's type range.
+def parseWidgetLimit(rawLimit, columnName: str, typeUpper: str, qualifiedVarName: str) -> Tuple[Optional[float], Optional[str]]:
+  if isUnset(rawLimit):
+    return (None, None)
+
+  # Always parsed as a float first - pandas reads a whole number as "100.0" if the column has any blank cells
+  try:
+    value = float(str(rawLimit).strip())
+  except ValueError:
+    return (None, None)
+
+  if not math.isfinite(value):
+    return (None, None)
+
+  if typeUpper != "FLOAT":
+    if not value.is_integer():
+      return (None, None)
+    value = int(value)
+
+  valueRange = TYPE_RANGES_BY_NAME[typeUpper]
+
+  if (valueRange is not None) and not (valueRange[0] <= value <= valueRange[1]):
+    return (None, f"Generation Error: {columnName} {value} for '{qualifiedVarName}' "
+                   f"is outside the {typeUpper} range {valueRange[0]}-{valueRange[1]}")
+
+  return (value, None)
+
 # Builds the Hub-only "Map<Name>.widgets.json" payload - the complete, standalone description
 # of a device's memory map for atams-gui: enough to both dynamically reconstruct a
 # HubVarInfo_t[]/MemoryMap_t at runtime (type/access/genInfo) and render/filter the Config
 # window (displayName/block/widget/NVMStorage). Returns the payload dict on success, or an
 # error string (same "Generation Error: ..." convention as the rest of this file) on a hard
-# validation failure (out-of-range Dropdown option value).
+# validation failure (out-of-range Widget Options value).
 def generateWidgetJson(dataBlocks: List[DataBlock], genInfoFields: Dict) -> Dict | str:
   variables: List[Dict] = []
   varID = NUMBER_OF_UNIVERSAL_VARS
@@ -453,6 +487,10 @@ def generateWidgetJson(dataBlocks: List[DataBlock], genInfoFields: Dict) -> Dict
     nvmStorages      = block.data["NVM Storage"]
     widgets          = block.data["Widget"]
     widgetOptionsRaw = block.data["Widget Options"]
+    unitsRaw         = block.data["Units"]
+    minLimitsRaw     = block.data["Min Limit"]
+    maxLimitsRaw     = block.data["Max Limit"]
+    descriptionsRaw  = block.data["Description"]
 
     for varIndex in range(len(varNames)):
       varNameUpper     = sanitiseVarName(varNames[varIndex])
@@ -489,14 +527,44 @@ def generateWidgetJson(dataBlocks: List[DataBlock], genInfoFields: Dict) -> Dict
         "widget":      widget,
       }
 
-      if widget in (WIDGET_DROPDOWN, WIDGET_READ_OPTION):
-        options, error = parseWidgetOptions(widgetOptionsRaw[varIndex], typeUpper, qualifiedVarName)
-        if error is not None:
-          return error
-        if options is None:
-          entry["widget"] = WIDGET_INPUT if (widget == WIDGET_DROPDOWN) else WIDGET_VALUE
-        else:
-          entry["options"] = options
+      # Options belong to the variable, as the controls window can use them whatever the Widget
+      # column says. That column only picks the config window's widget, which needs a fallback
+      # if it asked for options that aren't there.
+      options, error = parseWidgetOptions(widgetOptionsRaw[varIndex], typeUpper, qualifiedVarName)
+      if error is not None:
+        return error
+      if options is not None:
+        entry["options"] = options
+      elif widget in (WIDGET_DROPDOWN, WIDGET_READ_OPTION):
+        entry["widget"] = WIDGET_INPUT if (widget == WIDGET_DROPDOWN) else WIDGET_VALUE
+
+      minLimit, error = parseWidgetLimit(minLimitsRaw[varIndex], "Min Limit", typeUpper, qualifiedVarName)
+      if error is not None:
+        return error
+
+      maxLimit, error = parseWidgetLimit(maxLimitsRaw[varIndex], "Max Limit", typeUpper, qualifiedVarName)
+      if error is not None:
+        return error
+
+      if (minLimit is not None) and (maxLimit is not None) and (minLimit > maxLimit):
+        return (f"Generation Error: Min Limit {minLimit} for '{qualifiedVarName}' "
+                f"is greater than its Max Limit {maxLimit}")
+
+      # An option outside the limits could never be sent, so it can only be an authoring mistake
+      for option in (options or []):
+        if ((minLimit is not None) and (option["value"] < minLimit)) or ((maxLimit is not None) and (option["value"] > maxLimit)):
+          return (f"Generation Error: Widget Options value {option['value']} for '{qualifiedVarName}' "
+                  f"is outside its Min Limit/Max Limit")
+
+      # Unset columns are left out of the entry, same as "options"
+      if minLimit is not None:
+        entry["minLimit"] = minLimit
+      if maxLimit is not None:
+        entry["maxLimit"] = maxLimit
+      if not isUnset(unitsRaw[varIndex]):
+        entry["units"] = str(unitsRaw[varIndex])
+      if not isUnset(descriptionsRaw[varIndex]):
+        entry["description"] = str(descriptionsRaw[varIndex])
 
       variables.append(entry)
       varID += 1
