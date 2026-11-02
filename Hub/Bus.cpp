@@ -305,6 +305,9 @@ Atams::Error_t Bus::beginBusInitProcess(void)
     return (Atams::ERROR_PLATFORM); /* Early Return */
   }
 
+  /* The single Node cycles below only clear the Node they run on, so a Node not yet reached would keep its old error */
+  clearAllBusErrors();
+
   initProcessHandler_.activeNodePtr = firstNodePtr;
   busIDsToSet_.firstNodeID          = firstNodePtr->getNodeID();
   busIDsToSet_.lastNodeID           = lastNodePtr->getNodeID();
@@ -319,7 +322,7 @@ Atams::Error_t Bus::beginBusInitProcess(void)
     if (nodePtr != nullptr)
     {
       nodePtr->clearAllRequestPatterns();
-      static_cast<NodeCallbackHandler&>(*nodePtr).clearMemoryMapChanged();
+      static_cast<NodeCallbackHandler&>(*nodePtr).clearBusInitInvalid();
     }
   }
 
@@ -440,11 +443,11 @@ Atams::ProcessState_t Bus::updateBusInitProcess(Atams::Error_t &error)
  *         - @c PROCESS_COMPLETE:    Initialisation has finished successfully and Bus update cycles may be started.
  *         - @c PROCESS_ERROR:       Initialisation failed, or is required. @p error is @c ERROR_INIT_ORDER if initialisation has
  *                                   not been run since the Bus was constructed, a Node was added or removed, or a Node's Memory
- *                                   Map changed.
+ *                                   Map or Node ID changed.
  */
 Atams::ProcessState_t Bus::getBusInitState(Atams::Error_t &error)
 {
-  if ((initProcessHandler_.getProcessState() == Atams::PROCESS_COMPLETE) && anyMemoryMapChanged())
+  if ((initProcessHandler_.getProcessState() == Atams::PROCESS_COMPLETE) && anyBusInitInvalid())
   {
     error = Atams::ERROR_INIT_ORDER;
 
@@ -467,7 +470,7 @@ Atams::ProcessState_t Bus::getBusInitState(Atams::Error_t &error)
  * @ref Bus::runUpdateCycleAsync, depending on the desired update mode.
  *
  * @retval @c ERROR_NONE                     Update cycle started successfully.
- * @retval @c ERROR_INIT_ORDER               The Bus has not been initialised, or a Node's Memory Map changed since it was; call
+ * @retval @c ERROR_INIT_ORDER               The Bus has not been initialised, or a Node's Memory Map or Node ID changed since it was; call
  *                                           @ref Bus::beginBusInitProcess and complete the initialisation before starting an update cycle.
  * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS A Bus process (initialisation, configuration or update cycle) is currently in progress; try again when the Bus is idle.
  * @retval @c ERROR_PLATFORM                 Failed to start data reception on the platform bus peripheral.
@@ -484,7 +487,7 @@ Atams::Error_t Bus::beginUpdateCycle(void)
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
   }
 
-  if (anyMemoryMapChanged())
+  if (anyBusInitInvalid())
   {
     invalidateBusInit();
 
@@ -517,7 +520,7 @@ Atams::Error_t Bus::beginUpdateCycle(void)
  * @param node Reference to the @c Node instance to update.
  *
  * @retval @c ERROR_NONE       Update cycle started successfully.
- * @retval @c ERROR_INIT_ORDER The Bus has not been initialised, or a Node's Memory Map changed since it was; call @ref Bus::beginBusInitProcess and complete the initialisation before starting an update cycle.
+ * @retval @c ERROR_INIT_ORDER The Bus has not been initialised, or a Node's Memory Map or Node ID changed since it was; call @ref Bus::beginBusInitProcess and complete the initialisation before starting an update cycle.
  * @retval @c ERROR_NODE_NOT_ON_BUS The specified Node is not registered on this Bus.
  * @retval @c ERROR_UPDATE_CYCLE_IN_PROGRESS A Bus process (initialisation, configuration or update cycle) is currently in progress; try again when the Bus is idle.
  * @retval @c ERROR_PLATFORM   Failed to start data reception on the platform bus peripheral.
@@ -539,7 +542,7 @@ Atams::Error_t Bus::beginSingleNodeUpdateCycle(Atams::Node &node)
     return (Atams::ERROR_UPDATE_CYCLE_IN_PROGRESS); /* Early Return */
   }
 
-  if (anyMemoryMapChanged())
+  if (anyBusInitInvalid())
   {
     invalidateBusInit();
 
@@ -1133,20 +1136,20 @@ void Bus::invalidateBusInit(void)
   singleNodeUpdateProcessHandler_.invalidate(Atams::ERROR_INIT_ORDER);
 }
 
-bool Bus::anyMemoryMapChanged(void)
+bool Bus::anyBusInitInvalid(void)
 {
-  bool memoryMapChanged {false};
+  bool busInitInvalid {false};
 
   for (Atams::Node *&nodePtr : nodePtrs_)
   {
-    if ((nodePtr != nullptr) && static_cast<NodeCallbackHandler&>(*nodePtr).getMemoryMapChanged())
+    if ((nodePtr != nullptr) && static_cast<NodeCallbackHandler&>(*nodePtr).getBusInitInvalid())
     {
-      memoryMapChanged = true;
+      busInitInvalid = true;
       break;
     }
   }
 
-  return (memoryMapChanged);
+  return (busInitInvalid);
 }
 
 bool Bus::findNodeOnBus(Node &node)

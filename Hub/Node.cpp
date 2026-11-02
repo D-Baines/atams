@@ -86,9 +86,9 @@ Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
     clearAllRequestPatterns(); /* Must run before validVarCount_ changes, as it only clears that many variables */
     resetVars();
 
-    memoryMap_        = &memoryMap.sharedMap;
-    validVarCount_    = memoryMap.sharedMap.genInfo.noOfVars;
-    memoryMapChanged_ = true;
+    memoryMap_      = &memoryMap.sharedMap;
+    validVarCount_  = memoryMap.sharedMap.genInfo.noOfVars;
+    busInitInvalid_ = true;
   }
 
   return (error);
@@ -101,10 +101,19 @@ Atams::Error_t Node::init(const MemoryMap_t &memoryMap)
  * This does not configure the Node ID on the physical device; use the Atams::Bus
  * set Node configuration process for that.
  *
+ * A new ID invalidates the Bus initialisation, so the Bus initialisation process must be run again before the next update cycle.
+ *
  * @param nodeID The new Node ID to assign.
+ *
+ * @note Do not call this function while a Bus process is in progress, as replies are checked against this ID.
  */
 void Node::setNodeID(const uint8_t nodeID)
 {
+  if (nodeID != nodeID_)
+  {
+    busInitInvalid_ = true;
+  }
+
   nodeID_ = nodeID;
 }
 
@@ -1187,9 +1196,9 @@ void Node::deinit(void)
 {
   clearAllRequestPatterns(); /* Must run before validVarCount_ changes, as it only clears that many variables */
 
-  validVarCount_    = 0U;
-  memoryMap_        = nullptr;
-  memoryMapChanged_ = true;
+  validVarCount_  = 0U;
+  memoryMap_      = nullptr;
+  busInitInvalid_ = true;
   resetVars();
 }
 
@@ -1960,14 +1969,19 @@ void Node::clearAbortDetails(void)
   busErrorLock_.releaseLock();
 }
 
-bool Node::getMemoryMapChanged(void)
+bool Node::getBusInitInvalid(void)
 {
-  return (memoryMapChanged_);
+  return (busInitInvalid_);
 }
 
-void Node::clearMemoryMapChanged(void)
+void Node::clearBusInitInvalid(void)
 {
-  memoryMapChanged_ = false;
+  busInitInvalid_ = false;
+}
+
+void Node::setNodeIDKeepingBusInit(const uint8_t nodeID)
+{
+  nodeID_ = nodeID;
 }
 
 void Node::responseReceived(uint8_t *inputBuffer, uint16_t inputLength)

@@ -59,6 +59,7 @@ class NodeCallbackHandler
   /*-- Friend Class Declarations ----------------------------------------------------*/
 
   friend class Atams::Bus;
+  friend class Atams::NodeActions;
 
   public:
 
@@ -94,9 +95,12 @@ class NodeCallbackHandler
 
   virtual void clearAbortDetails(void) = 0;
 
-  virtual bool getMemoryMapChanged(void) = 0;
+  virtual bool getBusInitInvalid(void) = 0;
 
-  virtual void clearMemoryMapChanged(void) = 0;
+  virtual void clearBusInitInvalid(void) = 0;
+
+  /* For the config exit process, which needs the update cycle to keep running at the new Node ID until it has finished */
+  virtual void setNodeIDKeepingBusInit(const uint8_t nodeID) = 0;
 
   virtual void responseReceived(uint8_t *inputBuffer, uint16_t inputLength) = 0;
 

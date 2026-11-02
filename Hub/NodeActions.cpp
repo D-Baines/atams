@@ -307,7 +307,7 @@ Atams::ProcessState_t NodeActions::updateConfigStateExit(Atams::Error_t &error)
       break;
     case ConfigExitState::COLLECT_STATUS_POST:
       static_cast<void>(node.stopStream(BlockUniversal::VAR_CONFIGURATION_PASSKEY));
-      if (configExitNodeID_.has_value()) node.setNodeID(configExitNodeID_.value());
+      if (configExitNodeID_.has_value()) static_cast<NodeCallbackHandler&>(node).setNodeIDKeepingBusInit(configExitNodeID_.value());
       stepError = clearDataReadySetReadStreamOwned(node, &process, BlockUniversal::VAR_CONFIGURATION_STATUS);
       if (stepError) process.terminate(stepError);
       else           process.specificState = ConfigExitState::CHECK_STATUS_POST;

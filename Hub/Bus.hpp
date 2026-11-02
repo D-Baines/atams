@@ -288,7 +288,7 @@ private HubPlatform::BusPeripheral
 
   void invalidateBusInit(void);
 
-  bool anyMemoryMapChanged(void);
+  bool anyBusInitInvalid(void);
 
   bool findNodeOnBus(Node &node);
 

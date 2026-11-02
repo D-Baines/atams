@@ -290,7 +290,7 @@ public NodeCallbackHandler
   uint16_t                 nodeMaxPacketSize_      {0U};
   uint16_t                 expectedResponseLength_ {Atams::PACKET_HEADER_SIZE};
   uint32_t                 fatalErrorCount_        {0U};
-  bool                     memoryMapChanged_       {false};
+  bool                     busInitInvalid_         {false};
   bool                     newResponseReady_       {false};
   AbortedResponseDetails_t abortedResponseDetails_ {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
 
@@ -369,9 +369,11 @@ public NodeCallbackHandler
 
   virtual void clearAbortDetails(void) final;
 
-  virtual bool getMemoryMapChanged(void) final;
+  virtual bool getBusInitInvalid(void) final;
 
-  virtual void clearMemoryMapChanged(void) final;
+  virtual void clearBusInitInvalid(void) final;
+
+  virtual void setNodeIDKeepingBusInit(const uint8_t nodeID) final;
 
   virtual void responseReceived(uint8_t *inputBuffer, uint16_t inputLength) final;
 
