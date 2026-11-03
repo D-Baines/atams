@@ -921,11 +921,7 @@ Atams::ProcessState_t NodeActions::updateReadMultiVarsOrderedImpl(ReadMultiVarsC
       else                                     streamReadGroup(context);
       break;
 
-    case ReadMultiVarsState::STREAM_GROUP:
-      streamReadGroup(context);
-      break;
-
-    case ReadMultiVarsState::CHECK_GROUP:
+    case ReadMultiVarsState::CHECK_AND_STREAM_GROUP:
       checkReadGroup(context);
       break;
 
@@ -980,7 +976,7 @@ void NodeActions::streamReadGroup(ReadMultiVarsContext &context)
   else
   {
     context.groupEnd      = varID - 1U;
-    process.specificState = ReadMultiVarsState::CHECK_GROUP;
+    process.specificState = ReadMultiVarsState::CHECK_AND_STREAM_GROUP;
   }
 }
 
@@ -1007,8 +1003,9 @@ void NodeActions::checkReadGroup(ReadMultiVarsContext &context)
   else if (context.groupEnd >= context.lastID) process.setProcessComplete();
   else
   {
-    context.groupStart    = context.groupEnd + 1U;
-    process.specificState = ReadMultiVarsState::STREAM_GROUP;
+    /* Streamed in the same update, so no cycle is spent sending a request without this group's reads */
+    context.groupStart = context.groupEnd + 1U;
+    streamReadGroup(context);
   }
 }
 

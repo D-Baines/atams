@@ -163,6 +163,11 @@ public NodeCallbackHandler
                                    Atams::Access_t         &accessRequest,
                                    Atams::RequestPattern_t &requestPattern);
 
+  Atams::Error_t getRequestPatternAndOwner(const Atams::VarID_t     varID,
+                                           Atams::Access_t         &accessRequest,
+                                           Atams::RequestPattern_t &requestPattern,
+                                           const RequestOwner     *&owner);
+
   void clearAllRequestPatterns(void);
 
   void clearRequestPatternsOwned(const RequestOwner *owner);

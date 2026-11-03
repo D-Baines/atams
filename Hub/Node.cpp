@@ -340,6 +340,43 @@ Atams::Error_t Node::getRequestPattern(const Atams::VarID_t     varID,
 }
 
 /**
+ * @brief Retrieves the active request pattern, access type and owner for a variable.
+ *
+ * Returns the current request pattern, access type and request owner configured for the specified variable in this Node
+ * instance. All three are read together, so they always describe the same request.
+ *
+ * @param varID          The ID of the variable to query.
+ * @param accessRequest  Reference to store the current access type for the variable.
+ * @param requestPattern Reference to store the current request pattern for the variable.
+ * @param owner          Reference to store the owner of the current request. Set to @c nullptr if the request was set
+ *                       without an owner, such as by @c setReadStream, or if the variable has no active request.
+ *
+ * @retval @c ERROR_NONE   Request pattern, access type and owner successfully retrieved.
+ * @retval @c ERROR_VAR_ID The specified variable ID is out of range for the initialised Memory Map.
+ *
+ * @note The Memory Map must be initialised before calling this function.
+ */
+Atams::Error_t Node::getRequestPatternAndOwner(const Atams::VarID_t     varID,
+                                               Atams::Access_t         &accessRequest,
+                                               Atams::RequestPattern_t &requestPattern,
+                                               const RequestOwner     *&owner)
+{
+  if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
+
+  Node::Var_t &var {varStorage_[varID]};
+
+  requestPacketLock_.acquireLock();
+
+  accessRequest  = var.requestAccess;
+  requestPattern = var.requestPattern;
+  owner          = var.requestOwner;
+
+  requestPacketLock_.releaseLock();
+
+  return (Atams::ERROR_NONE);
+}
+
+/**
  * @brief Clears all active request patterns for variables in this Node instance.
  *
  * Resets the request pattern and access type for every variable in the Node's internal storage,

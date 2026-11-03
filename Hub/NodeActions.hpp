@@ -225,11 +225,10 @@ class NodeActions
 
   enum class ReadMultiVarsState : uint8_t
   {
-    START        = 0U,
-    STREAM_GROUP = 1U,
-    CHECK_GROUP  = 2U,
-    COMPLETE     = 3U,
-    ERROR        = 4U
+    START                  = 0U,
+    CHECK_AND_STREAM_GROUP = 1U,
+    COMPLETE               = 2U,
+    ERROR                  = 3U
   };
 
   enum class ValidateMultiConfigState : uint8_t
