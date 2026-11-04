@@ -263,31 +263,6 @@ Atams::Error_t Node::setRequestPattern(const Atams::VarID_t          varID,
                                        const Atams::Access_t         accessRequest,
                                        const Atams::RequestPattern_t requestPattern)
 {
-  return (Node::setRequestPatternOwned(nullptr, varID, accessRequest, requestPattern));
-}
-
-/**
- * @brief Sets the request pattern for a variable, recording an owner against the request.
- *
- * Operates identically to @c setRequestPattern(), and additionally records @p owner against the variable's active request, allowing
- * all requests held by an owner to be removed together with @c clearRequestPatternsOwned(). Requests set through all other request
- * functions are recorded with a @c nullptr owner. Removing a request also removes its owner.
- *
- * @param owner          Owner to record against the request.
- * @param varID          Variable ID to configure.
- * @param accessRequest  Access type to request for the variable. See @c setRequestPattern().
- * @param requestPattern Request pattern to set. See @c setRequestPattern().
- *
- * @return See @c setRequestPattern().
- *
- * @note Ownership is not enforced. Any caller may change or remove any request, and the most recent change records the owner.
- *       Different owners should not use the same variables at the same time.
- */
-Atams::Error_t Node::setRequestPatternOwned(const RequestOwner           *owner,
-                                            const Atams::VarID_t          varID,
-                                            const Atams::Access_t         accessRequest,
-                                            const Atams::RequestPattern_t requestPattern)
-{
   if (varID          >= validVarCount_)                    return (Atams::ERROR_VAR_ID);                  /* Early Return */
   if (requestPattern >= Atams::NUMBER_OF_REQUEST_PATTERNS) return (Atams::ERROR_REQUEST_PATTERN_INVALID); /* Early Return */
 
@@ -300,7 +275,7 @@ Atams::Error_t Node::setRequestPatternOwned(const RequestOwner           *owner,
 
   requestPacketLock_.acquireLock();
 
-  Atams::Error_t statusReturn {applyRequestPatternNoLock(varID, accessRequest, requestPattern, owner)};
+  Atams::Error_t statusReturn {applyRequestPatternNoLock(varID, accessRequest, requestPattern)};
 
   requestPacketLock_.releaseLock();
 
@@ -340,48 +315,11 @@ Atams::Error_t Node::getRequestPattern(const Atams::VarID_t     varID,
 }
 
 /**
- * @brief Retrieves the active request pattern, access type and owner for a variable.
- *
- * Returns the current request pattern, access type and request owner configured for the specified variable in this Node
- * instance. All three are read together, so they always describe the same request.
- *
- * @param varID          The ID of the variable to query.
- * @param accessRequest  Reference to store the current access type for the variable.
- * @param requestPattern Reference to store the current request pattern for the variable.
- * @param owner          Reference to store the owner of the current request. Set to @c nullptr if the request was set
- *                       without an owner, such as by @c setReadStream, or if the variable has no active request.
- *
- * @retval @c ERROR_NONE   Request pattern, access type and owner successfully retrieved.
- * @retval @c ERROR_VAR_ID The specified variable ID is out of range for the initialised Memory Map.
- *
- * @note The Memory Map must be initialised before calling this function.
- */
-Atams::Error_t Node::getRequestPatternAndOwner(const Atams::VarID_t     varID,
-                                               Atams::Access_t         &accessRequest,
-                                               Atams::RequestPattern_t &requestPattern,
-                                               const RequestOwner     *&owner)
-{
-  if (varID >= validVarCount_) return (Atams::ERROR_VAR_ID); /* Early Return */
-
-  Node::Var_t &var {varStorage_[varID]};
-
-  requestPacketLock_.acquireLock();
-
-  accessRequest  = var.requestAccess;
-  requestPattern = var.requestPattern;
-  owner          = var.requestOwner;
-
-  requestPacketLock_.releaseLock();
-
-  return (Atams::ERROR_NONE);
-}
-
-/**
  * @brief Clears all active request patterns for variables in this Node instance.
  *
  * Resets the request pattern and access type for every variable in the Node's internal storage,
  * and resets the internal request packet. This removes all read and write requests from the packet,
- * regardless of owner, including those set by Node Actions processes.
+ * including those set by Node Actions processes.
  */
 void Node::clearAllRequestPatterns(void)
 {
@@ -393,35 +331,40 @@ void Node::clearAllRequestPatterns(void)
 }
 
 /**
- * @brief Clears all active request patterns held by an owner.
+ * @brief Clears all active request patterns for a range of variables.
  *
- * Removes every active read and write request recorded against @p owner by @c setRequestPatternOwned(). Requests held by other
- * owners are not affected. Passing @c nullptr removes all requests set without an owner.
+ * Removes every active read and write request for the variables from @p firstVarID to @p lastVarID inclusive. Requests for
+ * variables outside the range are not affected.
  *
- * @param owner Owner whose requests should be removed.
+ * @param firstVarID First variable ID in the range.
+ * @param lastVarID  Last variable ID in the range.
  *
- * @note If an internal request packet error occurs, the request packet is reset and all request patterns are cleared. See
- *       @c getFatalErrorCount().
+ * @retval @c ERROR_NONE                 All requests in the range removed.
+ * @retval @c ERROR_VAR_ID               @p firstVarID is greater than @p lastVarID, or @p lastVarID is out of range for the
+ *                                       initialised Memory Map. Nothing is changed.
+ * @retval @c ERROR_REQUEST_PACKET_FATAL Internal packet error - the request packet is corrupt and all request patterns have been reset.
+ *
+ * @note The Memory Map must be initialised before calling this function.
  */
-void Node::clearRequestPatternsOwned(const RequestOwner *owner)
+Atams::Error_t Node::clearRequestPatterns(const Atams::VarID_t firstVarID, const Atams::VarID_t lastVarID)
 {
+  if ((firstVarID > lastVarID) || (lastVarID >= validVarCount_)) return (Atams::ERROR_VAR_ID); /* Early Return */
+
+  Atams::Error_t error {Atams::ERROR_NONE};
+
   requestPacketLock_.acquireLock();
 
-  for (uint16_t varID {0U}; varID < validVarCount_; varID++)
+  for (uint16_t varID {firstVarID}; (varID <= lastVarID) && (error == Atams::ERROR_NONE); varID++)
   {
-    const Node::Var_t &var {varStorage_[varID]};
-
-    if ((var.requestPattern != Atams::REQUEST_INACTIVE) &&
-        (var.requestOwner   == owner                  ) )
+    if (varStorage_[varID].requestPattern != Atams::REQUEST_INACTIVE)
     {
-      if (applyRequestPatternNoLock(static_cast<Atams::VarID_t>(varID), Atams::ACCESS_NONE, Atams::REQUEST_INACTIVE, owner) == Atams::ERROR_REQUEST_PACKET_FATAL)
-      {
-        break; /* Request packet has been reset - no requests remain */
-      }
+      error = applyRequestPatternNoLock(static_cast<Atams::VarID_t>(varID), Atams::ACCESS_NONE, Atams::REQUEST_INACTIVE);
     }
   }
 
   requestPacketLock_.releaseLock();
+
+  return (error);
 }
 
 /**
@@ -1787,7 +1730,6 @@ void Node::resetRequestPacketNoLock(void)
 
     var.requestAccess  = Atams::ACCESS_NONE;
     var.requestPattern = Atams::REQUEST_INACTIVE;
-    var.requestOwner   = nullptr;
   }
 }
 
@@ -1867,7 +1809,7 @@ Atams::Error_t Node::updateRequestPatternOnReceive(const Atams::VarID_t varID)
   
   if (currentRequestPattern == Atams::REQUEST_UNTIL_ACK)
   {
-    statusReturn = applyRequestPatternNoLock(varID, ACCESS_NONE, REQUEST_INACTIVE, nullptr);
+    statusReturn = applyRequestPatternNoLock(varID, ACCESS_NONE, REQUEST_INACTIVE);
   }
 
   requestPacketLock_.releaseLock();
@@ -1878,13 +1820,10 @@ Atams::Error_t Node::updateRequestPatternOnReceive(const Atams::VarID_t varID)
 /* Warning - varID must be pre-validated and requestPacketLock_ must be held by the caller */
 Atams::Error_t Node::applyRequestPatternNoLock(const Atams::VarID_t          varID,
                                                const Atams::Access_t         accessRequest,
-                                               const Atams::RequestPattern_t requestPattern,
-                                               const RequestOwner           *owner)
+                                               const Atams::RequestPattern_t requestPattern)
 {
   Node::Var_t   &var   {varStorage_[varID]};
   Atams::Error_t error {Atams::ERROR_NONE};
-
-  const bool requestRemoved {(requestPattern == Atams::REQUEST_INACTIVE) || (accessRequest == Atams::ACCESS_NONE)};
 
   if ((accessRequest  != var.requestAccess ) ||
       (requestPattern != var.requestPattern) )
@@ -1896,7 +1835,6 @@ Atams::Error_t Node::applyRequestPatternNoLock(const Atams::VarID_t          var
   {
     var.requestAccess  = accessRequest;
     var.requestPattern = requestPattern;
-    var.requestOwner   = requestRemoved ? nullptr : owner;
   }
 
   return (error);

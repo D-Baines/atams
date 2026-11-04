@@ -72,11 +72,6 @@ struct HubVarInfo_t
 
 using HubSharedMemoryMap_t = SharedMemoryMap_t<HubVarInfo_t>;
 
-/* Tag type identifying the owner of a group of requests - an owner's address is its identity.
- * An owner must outlive its requests; clear them with Node::clearRequestPatternsOwned() before
- * the owner is destroyed. */
-struct RequestOwner {};
-
 /*************************************************************************************/
 /* CLASS DEFINITIONS                                                                 */
 /*************************************************************************************/
@@ -154,23 +149,13 @@ public NodeCallbackHandler
                                    const Atams::Access_t         accessRequest,
                                    const Atams::RequestPattern_t requestPattern);
 
-  Atams::Error_t setRequestPatternOwned(const RequestOwner           *owner,
-                                        const Atams::VarID_t          varID,
-                                        const Atams::Access_t         accessRequest,
-                                        const Atams::RequestPattern_t requestPattern);
-
   Atams::Error_t getRequestPattern(const Atams::VarID_t     varID,
                                    Atams::Access_t         &accessRequest,
                                    Atams::RequestPattern_t &requestPattern);
 
-  Atams::Error_t getRequestPatternAndOwner(const Atams::VarID_t     varID,
-                                           Atams::Access_t         &accessRequest,
-                                           Atams::RequestPattern_t &requestPattern,
-                                           const RequestOwner     *&owner);
-
   void clearAllRequestPatterns(void);
 
-  void clearRequestPatternsOwned(const RequestOwner *owner);
+  Atams::Error_t clearRequestPatterns(const Atams::VarID_t firstVarID, const Atams::VarID_t lastVarID);
 
   Atams::Error_t getBusError(void);
 
@@ -269,7 +254,6 @@ public NodeCallbackHandler
     Atams::VarStorage_t     storage                {0U, 0U, 0U, 0U};
     Atams::Access_t         requestAccess          {Atams::ACCESS_NONE};
     Atams::RequestPattern_t requestPattern         {Atams::REQUEST_INACTIVE};
-    const RequestOwner     *requestOwner           {nullptr};
     bool                    newDataReady           {false};
     bool                    ackReceived            {false};
   };
@@ -357,8 +341,7 @@ public NodeCallbackHandler
 
   Atams::Error_t applyRequestPatternNoLock(const Atams::VarID_t          varID,
                                            const Atams::Access_t         accessRequest,
-                                           const Atams::RequestPattern_t requestPattern,
-                                           const RequestOwner           *owner);
+                                           const Atams::RequestPattern_t requestPattern);
 
   uint16_t getEffectivePacketLimitNoLock(void) const;
 

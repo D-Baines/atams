@@ -280,62 +280,50 @@ void TestNode::runFunctionArgTests(void)
 
   Node::clearAllRequestPatterns();
 
-  /* Request Owner Tests */
-  const Atams::RequestOwner ownerA;
-  const Atams::RequestOwner ownerB;
-  const Atams::VarID_t      varOwnedA  {BlockTest3::VAR_WRITE_UINT32_1};
-  const Atams::VarID_t      varOwnedB  {BlockTest3::VAR_WRITE_UINT32_2};
-  const Atams::VarID_t      varNoOwner {BlockTest3::VAR_WRITE_UINT32_3};
+  /* Clear Request Patterns Range Tests */
+  const Atams::VarID_t varBefore {BlockTest3::VAR_WRITE_UINT32_1};
+  const Atams::VarID_t varFirst  {BlockTest3::VAR_WRITE_UINT32_2};
+  const Atams::VarID_t varLast   {BlockTest3::VAR_WRITE_UINT32_3};
+  const Atams::VarID_t varAfter  {BlockTest3::VAR_WRITE_UINT32_4};
 
-  error = Node::setRequestPatternOwned(&ownerA, varOwnedA, Atams::ACCESS_READ, Atams::REQUEST_STREAM);
-  if (!error) error = Node::setRequestPatternOwned(&ownerB, varOwnedB, Atams::ACCESS_READ, Atams::REQUEST_STREAM);
-  if (!error) error = Node::setReadStream(varNoOwner);
-  if (error) errorHandler(error, "Request Owner Setup Failure on Node ");
+  error = Node::setReadStream(varBefore);
+  if (!error) error = Node::setReadStream(varFirst);
+  if (!error) error = Node::setReadStream(varLast);
+  if (!error) error = Node::setReadStream(varAfter);
+  if (error) errorHandler(error, "Clear Request Patterns Setup Failure on Node ");
 
-  /* Clearing an owner only removes that owner's requests */
-  Node::clearRequestPatternsOwned(&ownerA);
+  /* Only requests inside the range are removed */
+  error = Node::clearRequestPatterns(varFirst, varLast);
 
-  if ( requestIsActive(varOwnedA)  ||
-      !requestIsActive(varOwnedB)  ||
-      !requestIsActive(varNoOwner) )
+  if ((error != Atams::ERROR_NONE) ||
+      !requestIsActive(varBefore)  ||
+       requestIsActive(varFirst)   ||
+       requestIsActive(varLast)    ||
+      !requestIsActive(varAfter)   )
   {
-    errorHandler(Atams::ERROR_NONE, "Request Owner Clear Failure on Node ");
+    errorHandler(error, "Clear Request Patterns Range Failure on Node ");
   }
 
-  /* Clearing nullptr only removes requests set without an owner */
-  Node::clearRequestPatternsOwned(nullptr);
+  /* An invalid range is refused and changes nothing */
+  error = Node::clearRequestPatterns(varAfter, varBefore);
 
-  if (!requestIsActive(varOwnedB) ||
-       requestIsActive(varNoOwner))
+  if ((error != Atams::ERROR_VAR_ID) || !requestIsActive(varBefore) || !requestIsActive(varAfter))
   {
-    errorHandler(Atams::ERROR_NONE, "Request No Owner Clear Failure on Node ");
+    errorHandler(error, "Clear Request Patterns Reversed Range Failure on Node ");
   }
 
-  /* The most recent change to a request transfers ownership, even if the request pattern is unchanged */
-  error = Node::setRequestPatternOwned(&ownerA, varOwnedA, Atams::ACCESS_READ, Atams::REQUEST_STREAM);
-  if (!error) error = Node::setRequestPatternOwned(&ownerB, varOwnedA, Atams::ACCESS_READ, Atams::REQUEST_STREAM);
-  if (error) errorHandler(error, "Request Owner Setup Failure on Node ");
+  error = Node::clearRequestPatterns(varBefore, static_cast<Atams::VarID_t>(BlockTest3::VAR_WRITE_UINT32_20 + 1U));
 
-  Node::clearRequestPatternsOwned(&ownerA);
-
-  if (!requestIsActive(varOwnedA))
+  if ((error != Atams::ERROR_VAR_ID) || !requestIsActive(varBefore) || !requestIsActive(varAfter))
   {
-    errorHandler(Atams::ERROR_NONE, "Request Owner Transfer Failure on Node ");
-  }
-
-  Node::clearRequestPatternsOwned(&ownerB);
-
-  if (requestIsActive(varOwnedA) ||
-      requestIsActive(varOwnedB) )
-  {
-    errorHandler(Atams::ERROR_NONE, "Request Owner Transfer Failure on Node ");
+    errorHandler(error, "Clear Request Patterns Out Of Range Failure on Node ");
   }
 
   Node::clearAllRequestPatterns();
 
   if (Node::getRequestPacketLength() != Atams::PACKET_HEADER_SIZE)
   {
-    errorHandler(Atams::ERROR_NONE, "Request Owner Packet Cleanup Failure on Node ");
+    errorHandler(Atams::ERROR_NONE, "Clear Request Patterns Packet Cleanup Failure on Node ");
   }
 }
 

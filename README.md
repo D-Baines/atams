@@ -1540,11 +1540,11 @@ Include the following header to use `NodeActions`:
   ```
 - **How it interleaves with the Bus Update Cycle:**
 
-    `NodeActions` processes are polled incrementally — call a `NodeActions` update function (e.g. `updateStoreAll`) each Bus Update Cycle until it returns `Atams::PROCESS_COMPLETE` or `Atams::PROCESS_ERROR`. At least one Bus Update Cycle must complete between calls, but multiple cycles can safely pass since response flags persist until cleared, so `NodeActions` can equally be driven from a slower loop or a separate context. Only one `NodeActions` process can be active at a time per `NodeActions` instance; to run processes on two Nodes concurrently, two separate `NodeActions` instances are required.
+    `NodeActions` processes are polled incrementally — call a `NodeActions` update function (e.g. `updateStoreAll`) each Bus Update Cycle until it returns `Atams::PROCESS_COMPLETE` or `Atams::PROCESS_ERROR`. At least one Bus Update Cycle must complete between calls, but multiple cycles can safely pass since response flags persist until cleared, so `NodeActions` can equally be driven from a slower loop or a separate context. Only one `NodeActions` process can be active at a time per `NodeActions` instance; to run processes on two Nodes concurrently, two separate `NodeActions` instances are required. Only one process may run on a given Node at a time, across all instances.
 
 - **Sharing the Request Packet:**
 
-    `NodeActions` processes only add and remove their own requests, so user requests on the same Node remain active while a process runs. Processes and user requests must not use the same variables at the same time. Calling `clearAllRequestPatterns()` also removes the requests of any running process, causing it to fail. Pass `skipActiveReads = true` to `beginReadMultiVarsOrdered` to leave variables that already have an active read request untouched, using their streamed values instead.
+    Apart from `beginReadMultiVarsOrdered`, `NodeActions` processes only use the Universal Block, and clear every Universal Block request on their Node when they complete, fail or are aborted. Do not make your own Universal Block requests on a Node while a process runs on it. `beginReadMultiVarsOrdered` stops only the reads it set, so avoid its variable range until it finishes. User requests on other variables remain active while a process runs. Calling `clearAllRequestPatterns()` also removes the requests of any running process, causing it to fail; use `clearRequestPatterns(firstVarID, lastVarID)` to clear only a range of variables.
 
 - **Aborting a Process:**
 

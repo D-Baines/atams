@@ -152,10 +152,10 @@ void NodeActions::beginValidateAtamsVersion(Node &node)
     return; /* Early Return */
   }
 
-  beginReadMultiVarsOrderedImpl(busReadMultiVars_, 
-                                node, 
-                                BlockUniversal::VAR_ATAMS_VERSION_MAJOR, 
-                                BlockUniversal::VAR_ATAMS_VERSION_PATCH, false);
+  beginReadMultiVarsOrderedImpl(busReadMultiVars_,
+                                node,
+                                BlockUniversal::VAR_ATAMS_VERSION_MAJOR,
+                                BlockUniversal::VAR_ATAMS_VERSION_PATCH);
 }
 
 void NodeActions::beginValidateBusIDs(Node &node, const Atams::BusIDs_t busIDs)
@@ -166,7 +166,7 @@ void NodeActions::beginValidateBusIDs(Node &node, const Atams::BusIDs_t busIDs)
   }
 
   busIDsToSet_ = busIDs;
-  beginReadMultiVarsOrderedImpl(busReadMultiVars_, node, BlockUniversal::VAR_FIRST_NODE_ID, BlockUniversal::VAR_PREVIOUS_NODE_ID, false);
+  beginReadMultiVarsOrderedImpl(busReadMultiVars_, node, BlockUniversal::VAR_FIRST_NODE_ID, BlockUniversal::VAR_PREVIOUS_NODE_ID);
 }
 
 void NodeActions::beginReadUniversalBlock(Node &node)
@@ -179,18 +179,17 @@ void NodeActions::beginReadUniversalBlock(Node &node)
   beginReadMultiVarsOrderedImpl(busReadMultiVars_,
                                 node,
                                 BlockUniversal::VAR_ATAMS_VERSION_MAJOR,
-                                BlockUniversal::VAR_COBS_ERROR_COUNT,
-                                false);
+                                BlockUniversal::VAR_COBS_ERROR_COUNT);
 }
 
-void NodeActions::beginReadMultiVarsOrdered(Node &node, Atams::VarID_t firstVarID, Atams::VarID_t lastVarID, bool skipActiveReads)
+void NodeActions::beginReadMultiVarsOrdered(Node &node, Atams::VarID_t firstVarID, Atams::VarID_t lastVarID)
 {
   if (userReadMultiVars_.process.getProcessState() == Atams::PROCESS_IN_PROGRESS)
   {
     return; /* Early Return */
   }
 
-  beginReadMultiVarsOrderedImpl(userReadMultiVars_, node, firstVarID, lastVarID, skipActiveReads);
+  beginReadMultiVarsOrderedImpl(userReadMultiVars_, node, firstVarID, lastVarID);
 }
 
 void NodeActions::beginSetBusIDs(Node &node, const Atams::BusIDs_t busIDs)
@@ -214,8 +213,8 @@ void NodeActions::abort(const Atams::Error_t error)
   abortProcess(resetNodeProcess_,           error);
   abortProcess(clearWatchdogFaultProcess_,  error);
   abortProcess(setMultiConfigProcess_,      error);
-  abortProcess(busReadMultiVars_.process,   error);
-  abortProcess(userReadMultiVars_.process,  error);
+  abortReadMultiVars(busReadMultiVars_,     error);
+  abortReadMultiVars(userReadMultiVars_,    error);
 }
 
 Atams::ProcessState_t NodeActions::updateConfigStateEntry(Atams::Error_t &error)
@@ -232,7 +231,7 @@ Atams::ProcessState_t NodeActions::updateConfigStateEntry(Atams::Error_t &error)
   {
     case ConfigEntryState::START:
     case ConfigEntryState::COLLECT_STATUS_PRE:
-      stepError = clearDataReadySetReadStreamOwned(node, &process, BlockUniversal::VAR_CONFIGURATION_STATUS);
+      stepError = node.clearDataReadySetReadStream(BlockUniversal::VAR_CONFIGURATION_STATUS);
       if (stepError) process.terminate(stepError);
       else           process.specificState = ConfigEntryState::CHECK_STATUS_PRE;
       break;
@@ -243,14 +242,13 @@ Atams::ProcessState_t NodeActions::updateConfigStateEntry(Atams::Error_t &error)
       else                                                        process.specificState = ConfigEntryState::WRITE_PASSCODE;
       break;
     case ConfigEntryState::WRITE_PASSCODE:
-      stepError = clearAckSetWriteStreamOwned(node, &process, BlockUniversal::VAR_CONFIGURATION_PASSKEY,
-                                              Atams::CONFIGURATION_PASSKEY_ACCESS);
+      stepError = node.clearAckSetWriteStream(BlockUniversal::VAR_CONFIGURATION_PASSKEY, Atams::CONFIGURATION_PASSKEY_ACCESS);
       if (stepError) process.terminate(stepError);
       else           process.specificState = ConfigEntryState::COLLECT_STATUS_POST;
       break;
     case ConfigEntryState::COLLECT_STATUS_POST:
       static_cast<void>(node.stopStream(BlockUniversal::VAR_CONFIGURATION_PASSKEY));
-      stepError = clearDataReadySetReadStreamOwned(node, &process, BlockUniversal::VAR_CONFIGURATION_STATUS);
+      stepError = node.clearDataReadySetReadStream(BlockUniversal::VAR_CONFIGURATION_STATUS);
       if (stepError) process.terminate(stepError);
       else           process.specificState = ConfigEntryState::CHECK_STATUS_POST;
       break;
@@ -290,7 +288,7 @@ Atams::ProcessState_t NodeActions::updateConfigStateExit(Atams::Error_t &error)
   {
     case ConfigExitState::START:
     case ConfigExitState::COLLECT_STATUS_PRE:
-      stepError = clearDataReadySetReadStreamOwned(node, &process, BlockUniversal::VAR_CONFIGURATION_STATUS);
+      stepError = node.clearDataReadySetReadStream(BlockUniversal::VAR_CONFIGURATION_STATUS);
       if (stepError) process.terminate(stepError);
       else           process.specificState = ConfigExitState::CHECK_STATUS_PRE;
       break;
@@ -301,14 +299,14 @@ Atams::ProcessState_t NodeActions::updateConfigStateExit(Atams::Error_t &error)
       else                                                        process.specificState = ConfigExitState::WRITE_PASSCODE;
       break;
     case ConfigExitState::WRITE_PASSCODE:
-      stepError = clearAckSetWriteStreamOwned(node, &process, BlockUniversal::VAR_CONFIGURATION_PASSKEY, configPasskey);
+      stepError = node.clearAckSetWriteStream(BlockUniversal::VAR_CONFIGURATION_PASSKEY, configPasskey);
       if (stepError) process.terminate(stepError);
       else           process.specificState = ConfigExitState::COLLECT_STATUS_POST;
       break;
     case ConfigExitState::COLLECT_STATUS_POST:
       static_cast<void>(node.stopStream(BlockUniversal::VAR_CONFIGURATION_PASSKEY));
       if (configExitNodeID_.has_value()) static_cast<NodeCallbackHandler&>(node).setNodeIDKeepingBusInit(configExitNodeID_.value());
-      stepError = clearDataReadySetReadStreamOwned(node, &process, BlockUniversal::VAR_CONFIGURATION_STATUS);
+      stepError = node.clearDataReadySetReadStream(BlockUniversal::VAR_CONFIGURATION_STATUS);
       if (stepError) process.terminate(stepError);
       else           process.specificState = ConfigExitState::CHECK_STATUS_POST;
       break;
@@ -393,7 +391,7 @@ Atams::ProcessState_t NodeActions::updateResetNode(Atams::Error_t &error)
       else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(stepError);
       break;
     case ResetNodeState::WRITE_PASSCODE:
-      stepError = clearAckSetWriteStreamOwned(node, &process, BlockUniversal::VAR_RESET_NODE, Atams::RESET_NODE_PASSCODE);
+      stepError = node.clearAckSetWriteStream(BlockUniversal::VAR_RESET_NODE, Atams::RESET_NODE_PASSCODE);
       if (stepError) cancelConfigProcess(process, stepError);
       else           process.specificState = ResetNodeState::CHECK_ACK;
       break;
@@ -433,7 +431,7 @@ Atams::ProcessState_t NodeActions::updateClearWatchdogFault(Atams::Error_t &erro
   switch (process.specificState)
   {
     case ClearWatchdogFaultState::START:
-      stepError = clearAckSetWriteStreamOwned(node, &process, BlockUniversal::VAR_WATCHDOG_RESET, Atams::WATCHDOG_RESET_PASSCODE);
+      stepError = node.clearAckSetWriteStream(BlockUniversal::VAR_WATCHDOG_RESET, Atams::WATCHDOG_RESET_PASSCODE);
       if (stepError) process.terminate(stepError);
       else           process.specificState = ClearWatchdogFaultState::CHECK_ACK;
       break;
@@ -523,7 +521,7 @@ void NodeActions::cancelConfigProcess(ProcessHandler<T> &process, Atams::Error_t
 {
   process.specificState = T::CANCEL_CONFIG;
   process.cancelError   = error;
-  process.nodePtr->clearRequestPatternsOwned(&process); /* Stop any parent requests before exiting config */
+  process.clearUniversalRequests(); /* Stop any parent requests before exiting config */
   beginConfigStateExit(*process.nodePtr, false, std::nullopt);
 }
 
@@ -563,7 +561,7 @@ Atams::ProcessState_t NodeActions::updateSetConfigVar(Atams::Error_t &error, con
       else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(stepError);
       break;
     case SetConfigVarState::WRITE:
-      stepError = clearAckSetWriteStreamOwned(node, &process, varID, value);
+      stepError = node.clearAckSetWriteStream(varID, value);
       if (stepError) cancelConfigProcess(process, stepError);
       else           process.specificState = SetConfigVarState::CHECK_ACK;
       break;
@@ -587,7 +585,7 @@ Atams::ProcessState_t NodeActions::updateSetConfigVar(Atams::Error_t &error, con
       else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(stepError);
       break;
     case SetConfigVarState::READ:
-      stepError = clearDataReadySetReadStreamOwned(node, &process, varID);
+      stepError = node.clearDataReadySetReadStream(varID);
       if (stepError) process.terminate(stepError);
       else           process.specificState = SetConfigVarState::CHECK_VALUE;
       break;
@@ -636,7 +634,7 @@ Atams::ProcessState_t NodeActions::updateStorageProcess(Atams::Error_t &error, c
       else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(stepError);
       break;
     case StorageProcessState::PROGRESS_CLEAR:
-      stepError = clearDataReadySetReadStreamOwned(node, &process, BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE);
+      stepError = node.clearDataReadySetReadStream(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE);
       if (stepError) cancelConfigProcess(process, stepError);
       else           process.specificState = StorageProcessState::PROGRESS_READ_PRE;
       break;
@@ -651,7 +649,7 @@ Atams::ProcessState_t NodeActions::updateStorageProcess(Atams::Error_t &error, c
       else                                          cancelConfigProcess(process, Atams::ERROR_STORAGE_PROCESS_FAILED);
       break;
     case StorageProcessState::CLEAR_PASSCODE:
-      stepError = clearAckSetWriteStreamOwned(node, &process, passcodeVarID, static_cast<uint32_t>(0U));
+      stepError = node.clearAckSetWriteStream(passcodeVarID, static_cast<uint32_t>(0U));
       if (stepError) cancelConfigProcess(process, stepError);
       else           process.specificState = StorageProcessState::WRITE_PASSCODE;
       break;
@@ -662,8 +660,8 @@ Atams::ProcessState_t NodeActions::updateStorageProcess(Atams::Error_t &error, c
       break;
     case StorageProcessState::STATUS_STREAM:
       static_cast<void>(node.stopStream(passcodeVarID));
-      stepError = clearDataReadySetReadStreamOwned(node, &process, BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE);
-      if (!stepError) stepError = clearDataReadySetReadStreamOwned(node, &process, BlockUniversal::VAR_STORAGE_STATUS);
+      stepError = node.clearDataReadySetReadStream(BlockUniversal::VAR_STORAGE_PROCESS_COMPLETE);
+      if (!stepError) stepError = node.clearDataReadySetReadStream(BlockUniversal::VAR_STORAGE_STATUS);
       if (stepError)
       {
         cancelConfigProcess(process, stepError);
@@ -741,7 +739,7 @@ Atams::ProcessState_t NodeActions::updateSetMultipleConfig(Atams::Error_t &error
       else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(stepError);
       break;
     case SetMultiConfigState::WRITE:
-      stepError = specificFunctions.writeFunction(*this, node, &process);
+      stepError = specificFunctions.writeFunction(*this, node);
       if (stepError) cancelConfigProcess(process, stepError);
       else           process.specificState = SetMultiConfigState::CHECK_ACK;
       break;
@@ -763,7 +761,7 @@ Atams::ProcessState_t NodeActions::updateSetMultipleConfig(Atams::Error_t &error
       else if (subProcessState == Atams::PROCESS_ERROR)    process.terminate(stepError);
       break;
     case SetMultiConfigState::READ:
-      stepError = specificFunctions.readFunction(node, &process);
+      stepError = specificFunctions.readFunction(node);
       if (stepError) process.terminate(stepError);
       else           process.specificState = SetMultiConfigState::CHECK_VALUE;
       break;
@@ -787,14 +785,14 @@ Atams::ProcessState_t NodeActions::updateSetMultipleConfig(Atams::Error_t &error
   return (process.getProcessState());
 }
 
-Atams::Error_t NodeActions::setUserConfigWrite(NodeActions &actionsHandler, Node &node, const RequestOwner *owner)
+Atams::Error_t NodeActions::setUserConfigWrite(NodeActions &actionsHandler, Node &node)
 {
   NodeConfig_t  &userConfig {actionsHandler.nodeConfigToSet_};
   Atams::Error_t error      {Atams::ERROR_NONE};
 
-  if (!error) error = clearAckSetWriteStreamOwned(node, owner, BlockUniversal::VAR_NODE_ID,         userConfig.newNodeID);
-  if (!error) error = clearAckSetWriteStreamOwned(node, owner, BlockUniversal::VAR_BITRATE,         static_cast<uint8_t>(userConfig.bitrateOption));
-  if (!error) error = clearAckSetWriteStreamOwned(node, owner, BlockUniversal::VAR_WATCHDOG_PERIOD, userConfig.watchdogPeriod);
+  if (!error) error = node.clearAckSetWriteStream(BlockUniversal::VAR_NODE_ID,         userConfig.newNodeID);
+  if (!error) error = node.clearAckSetWriteStream(BlockUniversal::VAR_BITRATE,         static_cast<uint8_t>(userConfig.bitrateOption));
+  if (!error) error = node.clearAckSetWriteStream(BlockUniversal::VAR_WATCHDOG_PERIOD, userConfig.watchdogPeriod);
 
   return (error);
 }
@@ -811,13 +809,13 @@ bool NodeActions::setUserConfigGetAck(Node &node)
   return (ackReceived);
 }
 
-Atams::Error_t NodeActions::setUserConfigRead(Atams::Node &node, const RequestOwner *owner)
+Atams::Error_t NodeActions::setUserConfigRead(Atams::Node &node)
 {
   Atams::Error_t error {Atams::ERROR_NONE};
 
-  if (!error) error = clearDataReadySetReadStreamOwned(node, owner, BlockUniversal::VAR_NODE_ID);
-  if (!error) error = clearDataReadySetReadStreamOwned(node, owner, BlockUniversal::VAR_BITRATE);
-  if (!error) error = clearDataReadySetReadStreamOwned(node, owner, BlockUniversal::VAR_WATCHDOG_PERIOD);
+  if (!error) error = node.clearDataReadySetReadStream(BlockUniversal::VAR_NODE_ID);
+  if (!error) error = node.clearDataReadySetReadStream(BlockUniversal::VAR_BITRATE);
+  if (!error) error = node.clearDataReadySetReadStream(BlockUniversal::VAR_WATCHDOG_PERIOD);
 
   return (error);
 }
@@ -847,14 +845,14 @@ Atams::Error_t NodeActions::setUserConfigCheck(NodeActions &actionsHandler, Atam
   return (error);
 }
 
-Atams::Error_t NodeActions::setBusIDsWrite(NodeActions &actionsHandler, Atams::Node &node, const RequestOwner *owner)
+Atams::Error_t NodeActions::setBusIDsWrite(NodeActions &actionsHandler, Atams::Node &node)
 {
   BusIDs_t      &busIDs {actionsHandler.busIDsToSet_};
   Atams::Error_t error  {Atams::ERROR_NONE};
 
-  if (!error) error = clearAckSetWriteStreamOwned(node, owner, BlockUniversal::VAR_FIRST_NODE_ID,    busIDs.firstNodeID);
-  if (!error) error = clearAckSetWriteStreamOwned(node, owner, BlockUniversal::VAR_LAST_NODE_ID,     busIDs.lastNodeID);
-  if (!error) error = clearAckSetWriteStreamOwned(node, owner, BlockUniversal::VAR_PREVIOUS_NODE_ID, busIDs.previousNodeID);
+  if (!error) error = node.clearAckSetWriteStream(BlockUniversal::VAR_FIRST_NODE_ID,    busIDs.firstNodeID);
+  if (!error) error = node.clearAckSetWriteStream(BlockUniversal::VAR_LAST_NODE_ID,     busIDs.lastNodeID);
+  if (!error) error = node.clearAckSetWriteStream(BlockUniversal::VAR_PREVIOUS_NODE_ID, busIDs.previousNodeID);
 
   return (error);
 }
@@ -871,13 +869,13 @@ bool NodeActions::setBusIDsGetAck(Node &node)
   return (ackReceived);
 }
 
-Atams::Error_t NodeActions::setBusIDsRead(Atams::Node &node, const RequestOwner *owner)
+Atams::Error_t NodeActions::setBusIDsRead(Atams::Node &node)
 {
   Atams::Error_t error {Atams::ERROR_NONE};
 
-  if (!error) error = clearDataReadySetReadStreamOwned(node, owner, BlockUniversal::VAR_FIRST_NODE_ID);
-  if (!error) error = clearDataReadySetReadStreamOwned(node, owner, BlockUniversal::VAR_LAST_NODE_ID);
-  if (!error) error = clearDataReadySetReadStreamOwned(node, owner, BlockUniversal::VAR_PREVIOUS_NODE_ID);
+  if (!error) error = node.clearDataReadySetReadStream(BlockUniversal::VAR_FIRST_NODE_ID);
+  if (!error) error = node.clearDataReadySetReadStream(BlockUniversal::VAR_LAST_NODE_ID);
+  if (!error) error = node.clearDataReadySetReadStream(BlockUniversal::VAR_PREVIOUS_NODE_ID);
 
   return (error);
 }
@@ -898,13 +896,11 @@ Atams::Error_t NodeActions::setBusIDsCheck(NodeActions &actionsHandler, Atams::N
   return (error);
 }
 
-void NodeActions::beginReadMultiVarsOrderedImpl(ReadMultiVarsContext &context, Node &node, Atams::VarID_t firstVarID, Atams::VarID_t lastVarID, bool skipActiveReads)
+void NodeActions::beginReadMultiVarsOrderedImpl(ReadMultiVarsContext &context, Node &node, Atams::VarID_t firstVarID, Atams::VarID_t lastVarID)
 {
-  context.groupStart      = firstVarID;
-  context.lastID          = lastVarID;
-  context.groupEnd        = firstVarID; /* Set when the group is streamed */
-  context.skipActiveReads = skipActiveReads;
-  context.skippedMask     = 0U;
+  context.groupStart = firstVarID;
+  context.lastID     = lastVarID;
+  context.groupEnd   = firstVarID; /* Set when the group is streamed */
   context.process.resetAndAssignNode(node);
 }
 
@@ -949,30 +945,30 @@ void NodeActions::streamReadGroup(ReadMultiVarsContext &context)
   uint16_t       varID       {context.groupStart};
   Atams::Error_t streamError {Atams::ERROR_NONE};
 
-  context.skippedMask = 0U;
-
   /* Add vars until the packet is full, the group limit is reached, or the last var is reached */
   for (; (varID <= context.lastID) && ((varID - context.groupStart) < MAX_READ_GROUP_VARS); varID++)
   {
-    if ((context.skipActiveReads == true) && (hasActiveRead(node, static_cast<Atams::VarID_t>(varID)) == true))
-    {
-      /* Existing read request supplies the value - leave its request and data ready flag untouched */
-      context.skippedMask |= (1U << (varID - context.groupStart));
-    }
-    else
-    {
-      streamError = clearDataReadySetReadStreamOwned(node, &process, static_cast<Atams::VarID_t>(varID));
+    streamError = node.clearDataReadySetReadStream(static_cast<Atams::VarID_t>(varID));
 
-      if (streamError != Atams::ERROR_NONE) break;
-    }
+    if (streamError != Atams::ERROR_NONE) break;
   }
 
   /* varID is now the first var not in the group */
   const bool packetFull {(streamError == Atams::ERROR_RESPONSE_BUFFER_LENGTH) ||
                          (streamError == Atams::ERROR_REQUEST_BUFFER_LENGTH )  };
 
-  if      ((streamError != Atams::ERROR_NONE) && (packetFull == false)) process.terminate(streamError);
-  else if (varID == context.groupStart)                                 process.terminate(streamError);
+  if ((streamError != Atams::ERROR_NONE) && (packetFull == false))
+  {
+    /* Stop the vars already streamed in this group */
+    if (varID > context.groupStart)
+    {
+      context.groupEnd = varID - 1U;
+      stopReadGroup(context);
+    }
+
+    process.terminate(streamError);
+  }
+  else if (varID == context.groupStart) process.terminate(streamError);
   else
   {
     context.groupEnd      = varID - 1U;
@@ -992,8 +988,6 @@ void NodeActions::checkReadGroup(ReadMultiVarsContext &context)
 
   for (uint16_t varID {context.groupStart}; varID <= context.groupEnd; varID++)
   {
-    if ((context.skippedMask & (1U << (varID - context.groupStart))) != 0U) continue; /* Skipped var - value already read */
-
     if      (node.stopStreamIsDataReady(static_cast<Atams::VarID_t>(varID), varReady)) memoryMapError = true;
     else if (!varReady)                                                            allReady       = false;
   }
@@ -1009,34 +1003,26 @@ void NodeActions::checkReadGroup(ReadMultiVarsContext &context)
   }
 }
 
-bool NodeActions::hasActiveRead(Node &node, const Atams::VarID_t varID)
+/* Warning - no nullptr check before context.process.nodePtr is dereferenced. Check must be handled by calling function */
+void NodeActions::stopReadGroup(ReadMultiVarsContext &context)
 {
-  Atams::Access_t         currentAccess  {Atams::ACCESS_NONE};
-  Atams::RequestPattern_t currentPattern {Atams::REQUEST_INACTIVE};
+  Node &node {*context.process.nodePtr};
 
-  return ((node.getRequestPattern(varID, currentAccess, currentPattern) == Atams::ERROR_NONE      ) &&
-          (currentAccess                                                == Atams::ACCESS_READ     ) &&
-          (currentPattern                                               != Atams::REQUEST_INACTIVE) );
+  for (uint16_t varID {context.groupStart}; varID <= context.groupEnd; varID++)
+  {
+    static_cast<void>(node.stopStream(static_cast<Atams::VarID_t>(varID)));
+  }
 }
 
-Atams::Error_t NodeActions::clearDataReadySetReadStreamOwned(Node &node, const RequestOwner *owner, const Atams::VarID_t varID)
+void NodeActions::abortReadMultiVars(ReadMultiVarsContext &context, const Atams::Error_t error)
 {
-  Atams::Error_t error {node.clearDataReady(varID)};
+  if ((context.process.getProcessState() == Atams::PROCESS_IN_PROGRESS) &&
+      (context.process.nodePtr           != nullptr                   ) )
+  {
+    stopReadGroup(context);
+  }
 
-  if (!error) error = node.setRequestPatternOwned(owner, varID, Atams::ACCESS_READ, Atams::REQUEST_STREAM);
-
-  return (error);
-}
-
-template <typename T>
-Atams::Error_t NodeActions::clearAckSetWriteStreamOwned(Node &node, const RequestOwner *owner, const Atams::VarID_t varID, const T writeData)
-{
-  Atams::Error_t error {node.clearWriteAck(varID)};
-
-  if (!error) error = node.setVar(varID, writeData);
-  if (!error) error = node.setRequestPatternOwned(owner, varID, Atams::ACCESS_WRITE, Atams::REQUEST_STREAM);
-
-  return (error);
+  abortProcess(context.process, error);
 }
 
 /*************************************************************************************/
@@ -1055,12 +1041,10 @@ Atams::Error_t NodeActions::ProcessHandler<T>::getError(void) const
   return (this->error_);
 }
 
+/* Only reached when the process is not in progress, so any previous run has already cleared its requests */
 template <typename T>
 void NodeActions::ProcessHandler<T>::resetAndAssignNode(Node &node)
 {
-  /* Clear any requests left on the previous Node by an abandoned process */
-  if (this->nodePtr != nullptr) this->nodePtr->clearRequestPatternsOwned(this);
-
   this->nodePtr       = &node;
   this->cancelError   = Atams::ERROR_NONE;
   this->error_        = Atams::ERROR_NONE;
@@ -1074,7 +1058,7 @@ void NodeActions::ProcessHandler<T>::terminate(Atams::Error_t exitError)
   this->error_        = exitError;
   this->specificState = T::ERROR;
   this->processState_ = Atams::PROCESS_ERROR;
-  if (this->nodePtr != nullptr) this->nodePtr->clearRequestPatternsOwned(this);
+  this->clearUniversalRequests();
 }
 
 template <typename T>
@@ -1083,7 +1067,7 @@ void NodeActions::ProcessHandler<T>::setProcessComplete(void)
   this->error_        = Atams::ERROR_NONE;
   this->specificState = T::COMPLETE;
   this->processState_ = Atams::PROCESS_COMPLETE;
-  if (this->nodePtr != nullptr) this->nodePtr->clearRequestPatternsOwned(this);
+  this->clearUniversalRequests();
 }
 
 template <typename T>
@@ -1099,6 +1083,18 @@ bool NodeActions::ProcessHandler<T>::nullptrCheck(Atams::Error_t &errorReturn)
   }
 
   return (ptrIsNull);
+}
+
+/* Result discarded - the range is the whole Universal Block, so it only fails on an uninitialised Node, which has no requests,
+ * or on a fatal request packet error, which has already reset every request */
+template <typename T>
+void NodeActions::ProcessHandler<T>::clearUniversalRequests(void)
+{
+  if ((this->clearUniversalOnExit == true) && (this->nodePtr != nullptr))
+  {
+    static_cast<void>(this->nodePtr->clearRequestPatterns(BlockUniversal::VAR_ATAMS_VERSION_MAJOR,
+                                                          static_cast<Atams::VarID_t>(BlockUniversal::NUMBER_OF_VARS - 1U)));
+  }
 }
 
 
