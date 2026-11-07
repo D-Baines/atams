@@ -111,7 +111,8 @@ class NodeCallbackHandler
                                 uint8_t * const            outputBuffer,
                                 uint16_t                  &outputLength) = 0;
 
-  virtual Atams::Error_t updateRequestPacketWriteData(void) = 0;
+  /* Called at the start of each update cycle; getRequestPacket sends this snapshot until the next one is taken */
+  virtual Atams::Error_t snapshotRequestPacket(void) = 0;
 };
 
 } /* End Namespace - Atams */

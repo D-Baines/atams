@@ -232,9 +232,14 @@ template Atams::Error_t Node::getVar<float   >(const Atams::VarID_t varID, float
  * Adds, removes, or replaces a read or write datagram for the specified variable in the Node's internal request packet, 
  * according to the requested access type and pattern. A datagram is only present in the request packet if required by the 
  * current configuration; it is not possible to have both a read and write datagram for the same variable at the same time.
- * The request packet is sent to the physical Node device during a Bus update cycle, allowing data to be written to or retrieved 
- * from multiple device variables at once. This function only updates the internal request packet; no communication with the 
+ * The request packet is sent to the physical Node device during a Bus update cycle, allowing data to be written to or retrieved
+ * from multiple device variables at once. This function only updates the internal request packet; no communication with the
  * physical device occurs until the next Bus update cycle.
+ *
+ * Each update cycle sends a copy of the request packet taken when the cycle begins, so changes made during a cycle are sent in
+ * the next cycle. A @c REQUEST_UNTIL_ACK write copies the value from variable storage when this function is called, so set the
+ * value with @c setVar first. Calling this function again for a pending @c REQUEST_UNTIL_ACK write copies the current value,
+ * replacing the one waiting to be sent.
  *
  * @param varID          Variable ID to configure.
  * @param accessRequest  Access type to request for the variable:
@@ -463,10 +468,10 @@ uint16_t Node::getEffectivePacketLimit(void)
 /**
  * @brief Sets a variable's value and configures a write-until-acknowledged request pattern.
  *
- * Writes the specified value to the variable in the Node's internal storage, then updates the request packet to repeatedly request a 
+ * Writes the specified value to the variable in the Node's internal storage, then updates the request packet to repeatedly request a
  * write operation for this variable until an acknowledgement is received from the physical Node device during a Bus update cycle.
- * This function only updates the internal state and request packet; communication with the physical device occurs during the next 
- * Bus update cycle.
+ * This function only updates the internal state and request packet; communication with the physical device occurs during the next
+ * Bus update cycle. Calling it again before the acknowledgement replaces the pending value, and only the latest value is acknowledged.
  *
  * @tparam T         The data type of the variable to set. Must match the type stored for the specified variable ID.
  * @param varID      The ID of the variable to set.
@@ -1382,9 +1387,11 @@ bool Node::processDatagramRead(const DatagramHeader_t datagramHeader,
                                uint16_t              &datagramStartIndex,
                                const uint8_t          payloadLength)
 {
-  Atams::Error_t error {updateRequestPatternOnReceive(datagramHeader.varID)};
+  bool           responseCurrent {true};
+  Atams::Error_t error           {updateRequestPatternOnReceive(datagramHeader.varID, responseCurrent)};
 
-  if (error == Atams::ERROR_NONE) error = externalTransfer(Atams::ACCESS_WRITE,
+  /* A stale read is dropped - storing it could overwrite the value of a pending write */
+  if ((error == Atams::ERROR_NONE) && responseCurrent) error = externalTransfer(Atams::ACCESS_WRITE,
                                                            datagramHeader.varID,
                                                            &responseBuffer_[datagramStartIndex + DATAGRAM_INDEX_PAYLOAD],
                                                            payloadLength); 
@@ -1397,9 +1404,10 @@ bool Node::processDatagramRead(const DatagramHeader_t datagramHeader,
 
 bool Node::processDatagramWrite(const DatagramHeader_t datagramHeader, uint16_t &datagramStartIndex)
 {
-  Atams::Error_t error {updateRequestPatternOnReceive(datagramHeader.varID)};
-  
-  if (error == Atams::ERROR_NONE)
+  bool           responseCurrent {true};
+  Atams::Error_t error           {updateRequestPatternOnReceive(datagramHeader.varID, responseCurrent)};
+
+  if ((error == Atams::ERROR_NONE) && responseCurrent)
   {
     /* VarID validity guaranteed by validateResponseBuffer */
     varStorageLock_.acquireLock();
@@ -1420,7 +1428,11 @@ bool Node::processDatagramNack(const DatagramHeader_t datagramHeader, uint16_t &
 
   if (datagramHeader.varID < BlockUniversal::NUMBER_OF_VARS)
   {
-    error = updateRequestPatternOnReceive(datagramHeader.varID);
+    /* A NACK means the Node was not in the configuration state while it handled the packet that was sent. That holds *
+     * whether or not the request has changed since, so the error is reported even when the response is stale.        */
+    bool responseCurrent {true};
+
+    error = updateRequestPatternOnReceive(datagramHeader.varID, responseCurrent);
 
     if (error == Atams::ERROR_NONE)
     {
@@ -1781,6 +1793,12 @@ Atams::Error_t Node::processRequestPacketChange(const Atams::VarID_t          va
 
     if (error == Atams::ERROR_NONE)
     {
+      const bool datagramUnchanged {(datagramFoundInPacket.data                                                   ) &&
+                                    (packetChangeConfig.currentDatagramLength == packetChangeConfig.newDatagramLength) &&
+                                    (memcmp(&requestPacket_.buffer[packetChangeConfig.datagramStartIndex],
+                                            packetChangeConfig.newDatagramBuffer,
+                                            packetChangeConfig.newDatagramLength) == 0                            ) };
+
       if (datagramFoundInPacket.data == true)
       {
         error = requestPacketAdjustCurrentDatagram(packetChangeConfig);
@@ -1788,6 +1806,12 @@ Atams::Error_t Node::processRequestPacketChange(const Atams::VarID_t          va
       else
       {
         error = requestPacketAppendDatagram(packetChangeConfig);
+      }
+
+      /* Marks a datagram that differs from the snapshot being sent, so its response this cycle is not credited to it */
+      if ((error == Atams::ERROR_NONE) && !datagramUnchanged)
+      {
+        varStorage_[varID].requestCycle = cycleCount_;
       }
     }
   }
@@ -1797,17 +1821,21 @@ Atams::Error_t Node::processRequestPacketChange(const Atams::VarID_t          va
   return (error);
 }
 
-/* Warning - varID must be pre-validated; all callers reach this via validateResponseBuffer */
-Atams::Error_t Node::updateRequestPatternOnReceive(const Atams::VarID_t varID)
+/* Warning - varID must be pre-validated; all callers reach this via validateResponseBuffer.                        *
+ * An until-ack datagram changed during this cycle was not in the snapshot that was sent, so the response belongs to *
+ * an earlier request. responseCurrent is set false and the request is kept so it is sent next cycle.                */
+Atams::Error_t Node::updateRequestPatternOnReceive(const Atams::VarID_t varID, bool &responseCurrent)
 {
   requestPacketLock_.acquireLock();
 
   Node::Var_t &var {varStorage_[varID]};
 
-  Atams::Error_t          statusReturn          {Atams::ERROR_NONE};
-  Atams::RequestPattern_t currentRequestPattern {var.requestPattern};
-  
-  if (currentRequestPattern == Atams::REQUEST_UNTIL_ACK)
+  Atams::Error_t statusReturn {Atams::ERROR_NONE};
+  const bool     untilAck     {var.requestPattern == Atams::REQUEST_UNTIL_ACK};
+
+  responseCurrent = !(untilAck && (var.requestCycle == cycleCount_));
+
+  if (untilAck && responseCurrent)
   {
     statusReturn = applyRequestPatternNoLock(varID, ACCESS_NONE, REQUEST_INACTIVE);
   }
@@ -1825,7 +1853,12 @@ Atams::Error_t Node::applyRequestPatternNoLock(const Atams::VarID_t          var
   Node::Var_t   &var   {varStorage_[varID]};
   Atams::Error_t error {Atams::ERROR_NONE};
 
-  if ((accessRequest  != var.requestAccess ) ||
+  /* Until-ack write values are not in the write list, so a repeat request rebuilds the datagram to send the current value */
+  const bool reLatch {(accessRequest  == Atams::ACCESS_WRITE     ) &&
+                      (requestPattern == Atams::REQUEST_UNTIL_ACK) };
+
+  if ((reLatch                             ) ||
+      (accessRequest  != var.requestAccess ) ||
       (requestPattern != var.requestPattern) )
   {
     error = processRequestPacketChange(varID, accessRequest, requestPattern);
@@ -1882,7 +1915,9 @@ Atams::Error_t Node::checkPacketLimits(const RequestChangeConfig_t &changeConfig
   return (Atams::ERROR_NONE);
 }
 
-Atams::Error_t Node::updateRequestPacketWriteData(void)
+/* Refreshes stream write values in the live request packet, then copies it to the snapshot that getRequestPacket sends.
+ * Both happen under one lock hold so the snapshot matches the live packet exactly at the start of the cycle. */
+Atams::Error_t Node::snapshotRequestPacket(void)
 {
   requestPacketLock_.acquireLock();
 
@@ -1910,6 +1945,10 @@ Atams::Error_t Node::updateRequestPacketWriteData(void)
       return (Atams::ERROR_REQUEST_PACKET_FATAL); /* Early Return */
     }
   }
+
+  memcpy(requestSnapshot_, requestPacket_.buffer, requestPacket_.length);
+  requestSnapshotLength_ = requestPacket_.length;
+  cycleCount_            = static_cast<uint8_t>(cycleCount_ + 1U);
 
   requestPacketLock_.releaseLock();
 
@@ -2039,25 +2078,21 @@ void Node::processResponseBuffer(void)
 }
 
 /** @note @p outputBuffer must be at least @c HubPlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING bytes — the same
- *        size as the internal @c requestPacket_.buffer. No bounds check is performed at runtime. */
+ *        size as the internal @c requestSnapshot_. No bounds check is performed at runtime.
+ *  @note Sends the snapshot taken by snapshotRequestPacket. The snapshot is only accessed by the Bus, which takes it and
+ *        sends it in sequence, so no lock is held. */
 void Node::getRequestPacket(const Atams::MessageType_t requestType,
                              const uint8_t             syncCount,
                              uint8_t * const           outputBuffer,
                              uint16_t                 &outputLength)
 {
-  requestPacketLock_.acquireLock();
+  memcpy(outputBuffer, requestSnapshot_, requestSnapshotLength_);
 
-  requestPacket_.buffer[HEADER_INDEX_MSG_TYPE] = requestType;
-  requestPacket_.buffer[HEADER_INDEX_NODE_ID ] = nodeID_;
-  requestPacket_.buffer[HEADER_INDEX_SYNC]     = syncCount;
+  outputBuffer[HEADER_INDEX_MSG_TYPE] = requestType;
+  outputBuffer[HEADER_INDEX_NODE_ID ] = nodeID_;
+  outputBuffer[HEADER_INDEX_SYNC]     = syncCount;
 
-  const uint16_t length {requestPacket_.length};
-
-  memcpy(outputBuffer, requestPacket_.buffer, length);
-
-  outputLength = length;
-
-  requestPacketLock_.releaseLock();
+  outputLength = requestSnapshotLength_;
 }
 
 

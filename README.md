@@ -1105,6 +1105,12 @@ void userFunc(void)
 
   // Note: If either ACCESS_NONE or REQUEST_INACTIVE are used, the Request Packet datagram will be removed regardless of other inputs.
   ```
+- **When Changes Take Effect:**
+
+  Each update cycle sends the requests that were set when it began. Changes made during a cycle are sent in the next one.
+  - Write Stream values are taken from variable storage when the cycle begins.
+  - Write Until Ack values are taken when the request is set, so call `setVar` first, or use `setWriteUntilAck`. Calling it again before the acknowledgement replaces the value, and the acknowledgement is always for the latest value.
+  - If you rely on New Data Ready or Write Acknowledgement flags, clear them and change Request Patterns between cycles, or during a cycle only if the variable had no request when that cycle began.
 
 <p align="center">
 <img height="500" src="https://atams.io/HubRequestPatterns.gif">
@@ -1234,7 +1240,7 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
   The Bus Update Cycles do not process incoming response data during the update. This is triggered by the user once the update cycle is complete with the `Bus::processResponseBuffers` function.
 - **Starting the Synchronous Update Cycle:**
 
-  The `Bus::beginUpdateCycle(void)` function is used to start an update cycle. On calling the function, write values for each Node instance on the Bus are transferred from variable storage into the Request Packets. If a variable's Request Pattern has been set to Write Stream, the user only needs to ensure that the most recent data was written to the Node instance variable storage using the Node `setVar` function. The function will return errors if the Bus has not been initialised or if a Bus Update Cycle is already in progress.
+  The `Bus::beginUpdateCycle(void)` function is used to start an update cycle. On calling the function, Write Stream values for each Node instance on the Bus are transferred from variable storage into the Request Packets, and a copy of each Request Packet is taken to be sent during the cycle (see [When Changes Take Effect](#node-request-pattern-control)). If a variable's Request Pattern has been set to Write Stream, the user only needs to ensure that the most recent data was written to the Node instance variable storage using the Node `setVar` function. The function will return errors if the Bus has not been initialised or if a Bus Update Cycle is already in progress.
 
   The begin function also clears any previously asserted Bus errors stored in the Node instances from previous Update Cycles.
 
@@ -1465,7 +1471,7 @@ Atams::Error_t stopStreamGetWriteAck(const uint16_t varID, bool &ackReceived);
   The synchronous and asynchronous update cycles simplify the process of updating a Bus full of Nodes without having to worry about individual Node interactions, but there may be occassions where users strictly want to communicate with only one Node on the Bus. This can be done using the Single Node Update Cycle. The Single Node Update Cycle is used by internally by the Hub library during the Node Configuration Process.
 - **Starting the Single Node Update Cycle:**
 
-  The `Atams::Error_t beginSingleNodeUpdateCycle(Atams::Node &node);` function is used to start an update cycle for a single Node. On calling the function, write values are transferred from the Node instances' variable storage into it's Request Packet. If a variable's Request Pattern has been set to Write Stream, the user only needs to ensure that the most recent data was written to the Node instance variable storage using the Node `setVar` function. The function will return errors if the Bus has not been initialised or if a Bus Update Cycle is already in progress.
+  The `Atams::Error_t beginSingleNodeUpdateCycle(Atams::Node &node);` function is used to start an update cycle for a single Node. On calling the function, Write Stream values are transferred from the Node instance's variable storage into its Request Packet, and a copy of the Request Packet is taken to be sent during the cycle. If a variable's Request Pattern has been set to Write Stream, the user only needs to ensure that the most recent data was written to the Node instance variable storage using the Node `setVar` function. The function will return errors if the Bus has not been initialised or if a Bus Update Cycle is already in progress.
 
   The begin function also clears any previously asserted Bus errors stored in the Node instance from previous Update Cycles.
 
@@ -1540,7 +1546,7 @@ Include the following header to use `NodeActions`:
   ```
 - **How it interleaves with the Bus Update Cycle:**
 
-    `NodeActions` processes are polled incrementally — call a `NodeActions` update function (e.g. `updateStoreAll`) each Bus Update Cycle until it returns `Atams::PROCESS_COMPLETE` or `Atams::PROCESS_ERROR`. At least one Bus Update Cycle must complete between calls, but multiple cycles can safely pass since response flags persist until cleared, so `NodeActions` can equally be driven from a slower loop or a separate context. Only one `NodeActions` process can be active at a time per `NodeActions` instance; to run processes on two Nodes concurrently, two separate `NodeActions` instances are required. Only one process may run on a given Node at a time, across all instances.
+    `NodeActions` processes are polled incrementally — call a `NodeActions` update function (e.g. `updateStoreAll`) each Bus Update Cycle until it returns `Atams::PROCESS_COMPLETE` or `Atams::PROCESS_ERROR`. At least one Bus Update Cycle that began after the previous call must complete before the next call, but multiple cycles can safely pass since response flags persist until cleared, so `NodeActions` can equally be driven from a slower loop or a separate context. Only one `NodeActions` process can be active at a time per `NodeActions` instance; to run processes on two Nodes concurrently, two separate `NodeActions` instances are required. Only one process may run on a given Node at a time, across all instances.
 
 - **Sharing the Request Packet:**
 

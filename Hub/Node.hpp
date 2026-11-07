@@ -254,6 +254,7 @@ public NodeCallbackHandler
     Atams::VarStorage_t     storage                {0U, 0U, 0U, 0U};
     Atams::Access_t         requestAccess          {Atams::ACCESS_NONE};
     Atams::RequestPattern_t requestPattern         {Atams::REQUEST_INACTIVE};
+    uint8_t                 requestCycle           {0U};    /* Value of cycleCount_ when this var's datagram last changed */
     bool                    newDataReady           {false};
     bool                    ackReceived            {false};
   };
@@ -278,12 +279,15 @@ public NodeCallbackHandler
   uint16_t                 responseLength_         {0U};
   uint16_t                 nodeMaxPacketSize_      {0U};
   uint16_t                 expectedResponseLength_ {Atams::PACKET_HEADER_SIZE};
+  uint8_t                  cycleCount_             {0U}; /* Incremented each time a request snapshot is taken, wraps */
   uint32_t                 fatalErrorCount_        {0U};
   bool                     busInitInvalid_         {false};
   bool                     newResponseReady_       {false};
   AbortedResponseDetails_t abortedResponseDetails_ {Atams::VAR_ID_NULL, Atams::ERROR_NONE};
 
   RequestPacket_t          requestPacket_;
+  uint8_t                  requestSnapshot_[HubPlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING] {0U};
+  uint16_t                 requestSnapshotLength_  {Atams::PACKET_HEADER_SIZE};
   uint8_t                  responseBuffer_[HubPlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   Var_t                    varStorage_[HubPlatform::NODE_NUMBER_OF_VARS];
 
@@ -337,7 +341,7 @@ public NodeCallbackHandler
                                             const Atams::Access_t         accessRequest,
                                             const Atams::RequestPattern_t requestPattern);
 
-  Atams::Error_t updateRequestPatternOnReceive(const Atams::VarID_t varID);
+  Atams::Error_t updateRequestPatternOnReceive(const Atams::VarID_t varID, bool &responseCurrent);
 
   Atams::Error_t applyRequestPatternNoLock(const Atams::VarID_t          varID,
                                            const Atams::Access_t         accessRequest,
@@ -347,7 +351,7 @@ public NodeCallbackHandler
 
   Atams::Error_t checkPacketLimits(const RequestChangeConfig_t &changeConfig, const bool datagramFound) const;
 
-  virtual Atams::Error_t updateRequestPacketWriteData(void);
+  virtual Atams::Error_t snapshotRequestPacket(void);
 
   virtual void setNodeMaxPacketSize(const uint16_t maxPacketSize) final;
 

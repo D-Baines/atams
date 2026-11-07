@@ -1179,7 +1179,7 @@ Atams::Error_t Bus::beginUpdateCyclePrivate(void)
     if ((nodePtr != nullptr          ) &&
         (error   == Atams::ERROR_NONE) )
     {
-      error = static_cast<NodeCallbackHandler&>(*nodePtr).updateRequestPacketWriteData();
+      error = static_cast<NodeCallbackHandler&>(*nodePtr).snapshotRequestPacket();
     }
   }
 
@@ -1208,7 +1208,7 @@ Atams::Error_t Bus::beginSingleNodeUpdateCyclePrivate(Atams::Node &node)
 
   Atams::Error_t error {Atams::ERROR_NONE};
   
-  error = static_cast<NodeCallbackHandler&>(node).updateRequestPacketWriteData();
+  error = static_cast<NodeCallbackHandler&>(node).snapshotRequestPacket();
 
   if (error == Atams::ERROR_NONE)
   {
@@ -1425,8 +1425,10 @@ bool Bus::validateAndStoreResponsePacket(Atams::Node &node, const MessageType_t 
     bool messageIsAbort {((messageType == Atams::MESSAGE_ABORT_RESPONSE       ) ||
                           (messageType == Atams::MESSAGE_ABORT_RESPONSE_SYNCED) )};
 
+    /* A wrong sync count is a late response from an earlier cycle. It is dropped without an error so the wait continues
+     * for this cycle's response, as ending the wait would leave that response to arrive late in the next cycle. */
     if      (messageType     == lastSentMessageType_) packetValid = false;
-    else if (packetSyncCount != activeSyncCount_)     error = Atams::ERROR_SYNC_COUNT;
+    else if (packetSyncCount != activeSyncCount_)     packetValid = false;
     else if (packetNodeID    != node.getNodeID())     error = Atams::ERROR_SYNC_NODE;
     else if ((messageType    != expectedResponse) &&
              (messageIsAbort == false           ) )   error = Atams::ERROR_MESSAGE_TYPE;
