@@ -66,17 +66,17 @@ public Node
   /* Constructor */
   TestNode(const uint8_t nodeID, ErrorHandlerCallback_t errorHandler);
 
-  /* Default Constructor */
+  /* Default Destructor */
   ~TestNode(void) = default;
 
   /* Copy Constructor */
   TestNode(const TestNode &other) = delete;
 
   /* Copy Assignment Operator */
-  TestNode & operator=(TestNode &other) = delete;
+  TestNode & operator=(const TestNode &other) = delete;
 
   /* Move Constructor */
-  TestNode(TestNode &&TestNode) = delete;
+  TestNode(TestNode &&other) = delete;
 
   /* Move Assignment Operator */
   TestNode & operator=(TestNode &&other) = delete;

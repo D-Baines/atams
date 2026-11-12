@@ -39,7 +39,6 @@
 #include "CommsPlatform.hpp"
 #include "../../Shared/Utilities/AtamsUtilities.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"
-#include "../../Shared/Utilities/CRC32.hpp"
 #include "../Developer/UniversalBlockManager.hpp"
 #include "../Developer/FramingConstants.hpp"
 #include "../Developer/NodeTypedefs.hpp"
@@ -91,12 +90,11 @@ struct ChannelSyncPacket_t
 /*************************************************************************************/
 
 static const MemoryMap_t    *s_memoryMapPtr;
-static CRC32                 s_nodeCRC(Atams::CRC32_POLYNOMIAL);
 static CircularBuffer        s_circularBuffers[NodePlatform::NUMBER_OF_COMMS_PERIPHERALS];
 
 static WatchdogHandler       s_watchdogHandler;
 static UniversalBlockManager s_uniBlockManager(s_watchdogHandler);
-static NVMUnitHandler        s_nvmUnitHandler(s_nodeCRC);
+static NVMUnitHandler        s_nvmUnitHandler;
 
 /*************************************************************************************/
 /* PRIVATE VARIABLES                                                                 */
@@ -625,8 +623,9 @@ static Atams::Error_t validateNVMChecksum(const NVMHeader_t &nvmHeader, const NV
   const uint32_t endOfVarStorage {nvmHeader.length - Atams::NVM_FOOTER_SIZE};
 
   Atams::Error_t error {Atams::ERROR_NONE};
+  uint32_t       rollingCRC;
 
-  s_nodeCRC.beginRollingCRC();
+  Atams::beginRollingCRC(rollingCRC);
 
   for (uint32_t nvmIndex {0U}; nvmIndex < endOfVarStorage; nvmIndex++)
   {
@@ -637,10 +636,10 @@ static Atams::Error_t validateNVMChecksum(const NVMHeader_t &nvmHeader, const NV
       return (Atams::ERROR_PLATFORM); /* Early Return */
     }
 
-    s_nodeCRC.updateRollingCRC(nvmByte);
+    Atams::updateRollingCRC(rollingCRC, nvmByte);
   }
 
-  const uint32_t nvmChecksum {s_nodeCRC.getRollingCRC()};
+  const uint32_t nvmChecksum {Atams::getRollingCRC(rollingCRC)};
 
   if (nvmFooter.checksum != nvmChecksum)
   {
@@ -669,7 +668,7 @@ static Atams::Error_t constructAndStoreFooter(const uint32_t nvmSpaceUsed)
   NVMFooter_t nvmFooter;
 
   nvmFooter.identifier = Atams::NVM_HEADER_IDENTIFIER_VALID;
-  nvmFooter.checksum   = s_nodeCRC.getRollingCRC();
+  nvmFooter.checksum   = s_nvmUnitHandler.getNVMChecksum();
 
   uint8_t footerBuffer[Atams::NVM_FOOTER_SIZE];
 

@@ -90,7 +90,7 @@ class CircularBufferBase
   /* Parameterised Constructor */
   CircularBufferBase(const uint8_t endOfLineChar);
 
-  /* Destructor */
+  /* Default Destructor */
   virtual ~CircularBufferBase(void) = default;
 
   /* Copy Constructor */

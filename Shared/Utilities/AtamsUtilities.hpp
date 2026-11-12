@@ -39,7 +39,6 @@
 
 #include "../AtamsTypedefs.hpp"
 #include "../Maps/BlockUniversal.hpp"
-#include "CRC32.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -82,7 +81,14 @@ void datagramHeaderToBuffer(const DatagramHeader_t &datagramHeader, uint8_t * co
 
 void bufferToDatagramHeader(const uint8_t * const buffer, DatagramHeader_t &datagramHeader);
 
-Atams::CRC32 &getAtamsCRC32(void);
+/* The Atams CRC32. The caller holds the rolling value, so any number of rolling checksums can run at once. */
+uint32_t calculateCRC(const uint8_t * const byteBuffer, const uint32_t length);
+
+void beginRollingCRC(uint32_t &rollingCRC);
+
+void updateRollingCRC(uint32_t &rollingCRC, const uint8_t byte);
+
+uint32_t getRollingCRC(const uint32_t rollingCRC);
 
 /*************************************************************************************/
 /* PUBLIC TEMPLATE FUNCTION DEFINITIONS                                              */
@@ -208,19 +214,19 @@ inline bool validateUniversalBlock(const SharedMemoryMap_t<VarInfoT> &memoryMap)
 template<typename VarInfoT>
 inline bool validateMapChecksum(const SharedMemoryMap_t<VarInfoT> &memoryMap)
 {
-  Atams::CRC32 &crc {getAtamsCRC32()};
+  uint32_t rollingCRC;
 
-  crc.beginRollingCRC();
+  beginRollingCRC(rollingCRC);
 
   for (uint16_t varID {BlockUniversal::NUMBER_OF_VARS}; varID < memoryMap.genInfo.noOfVars; varID++)
   {
     const VarInfoT varInfo {memoryMap.varInfoList[varID]};
 
-    crc.updateRollingCRC(static_cast<uint8_t>(varInfo.type));
-    crc.updateRollingCRC(static_cast<uint8_t>(varInfo.externalAccess));
+    updateRollingCRC(rollingCRC, static_cast<uint8_t>(varInfo.type));
+    updateRollingCRC(rollingCRC, static_cast<uint8_t>(varInfo.externalAccess));
   }
 
-  uint32_t calculatedChecksum {crc.getRollingCRC()};
+  uint32_t calculatedChecksum {getRollingCRC(rollingCRC)};
 
   return (memoryMap.genInfo.genChecksum == calculatedChecksum);
 }

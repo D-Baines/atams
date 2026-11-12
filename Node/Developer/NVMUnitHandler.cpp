@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    WatchdogHandler.cpp
+  * @file    NVMUnitHandler.cpp
   *
   * @author  D. Baines
   *
@@ -31,6 +31,8 @@
 
 #include "NVMUnitHandler.hpp"
 
+#include "../../Shared/Utilities/AtamsUtilities.hpp"
+
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
@@ -41,17 +43,11 @@ namespace Atams {
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-NVMUnitHandler::NVMUnitHandler(Atams::CRC32 &nvmCRC) :
-nvmCRC_(nvmCRC)
-{
-  /* Do Nothing */
-}
-
 Atams::Error_t NVMUnitHandler::eraseNVM(void)
 {
   unitStartIndex_ = 0U;
 
-  nvmCRC_.beginRollingCRC();
+  Atams::beginRollingCRC(nvmChecksum_);
 
   return (NodePlatform::eraseNVM() ? Atams::ERROR_NONE : Atams::ERROR_PLATFORM);
 }
@@ -67,7 +63,7 @@ Atams::Error_t NVMUnitHandler::writeToNVM(const uint32_t writeIndex, const uint8
   {
     unitBuffer_[unitIndex_] = inputPtr[byteIndex];
 
-    nvmCRC_.updateRollingCRC(inputPtr[byteIndex]);
+    Atams::updateRollingCRC(nvmChecksum_, inputPtr[byteIndex]);
 
     unitIndex_++;
 
@@ -114,6 +110,11 @@ Atams::Error_t NVMUnitHandler::flushPendingUnit(void)
   unitIndex_ = 0U;
 
   return (Atams::ERROR_NONE);
+}
+
+uint32_t NVMUnitHandler::getNVMChecksum(void) const
+{
+  return (Atams::getRollingCRC(nvmChecksum_));
 }
 
 

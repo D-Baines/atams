@@ -64,7 +64,7 @@ class WatchdogHandler
   /* Constructor */
   WatchdogHandler(void) = default;
 
-  /* Destructor */
+  /* Default Destructor */
   ~WatchdogHandler(void) = default;
 
   /* Copy Constructor */

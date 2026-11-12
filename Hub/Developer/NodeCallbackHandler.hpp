@@ -78,7 +78,7 @@ class NodeCallbackHandler
   NodeCallbackHandler & operator=(const NodeCallbackHandler &other) = delete;
 
   /* Move Constructor */
-  NodeCallbackHandler(NodeCallbackHandler &&NodeCallbackHandler) = delete;
+  NodeCallbackHandler(NodeCallbackHandler &&other) = delete;
 
   /* Move Assignment Operator */
   NodeCallbackHandler & operator=(NodeCallbackHandler &&other) = delete;

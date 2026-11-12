@@ -57,17 +57,17 @@ class ClassTemplate
   /* Default Constructor */
   ClassTemplate(void) = default;
 
-  /* Default Constructor */
+  /* Default Destructor */
   ~ClassTemplate(void) = default;
 
   /* Copy Constructor */
   ClassTemplate(const ClassTemplate &other) = delete;
 
   /* Copy Assignment Operator */
-  ClassTemplate & operator=(ClassTemplate &other) = delete;
+  ClassTemplate & operator=(const ClassTemplate &other) = delete;
 
   /* Move Constructor */
-  ClassTemplate(ClassTemplate &&ClassTemplate) = delete;
+  ClassTemplate(ClassTemplate &&other) = delete;
 
   /* Move Assignment Operator */
   ClassTemplate & operator=(ClassTemplate &&other) = delete;

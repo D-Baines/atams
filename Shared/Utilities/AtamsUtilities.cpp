@@ -9,8 +9,9 @@
   * @details Implements the utility functions declared in AtamsUtilities.hpp. Bus packets
   *          are COBS-encoded with a CRC32 in the packet header; decoding reverses this
   *          and validates the checksum. Memory Map validation checks the Atams version,
-  *          variable count, universal block layout, and user block checksum. A
-  *          module-level CRC32 instance is shared across encode, decode, and validation.
+  *          variable count, universal block layout, and user block checksum. One
+  *          constexpr CRC32 instance, with its table built at compile time, serves
+  *          encode, decode and the CRC functions declared in AtamsUtilities.hpp.
   *
   * @version v1.0
   ******************************************************************************
@@ -49,18 +50,30 @@ namespace Atams
 /* PRIVATE VARIABLES                                                                 */
 /*************************************************************************************/
 
-static CRC32 atamsCRC_(Atams::CRC32_POLYNOMIAL);
+static constexpr CRC32 s_atamsCRC(Atams::CRC32_POLYNOMIAL);
 
 /*************************************************************************************/
 /* PUBLIC FUNCTION DEFINITIONS                                                       */
 /*************************************************************************************/
 
-/* Gives the templated validate*() functions in AtamsUtilities.hpp access to the one shared
- * CRC32 instance (and its precomputed lookup table) also used by decodeBusPacket/
- * encodeBusPacket below, instead of each template instantiation building its own table. */
-Atams::CRC32 &getAtamsCRC32(void)
+uint32_t calculateCRC(const uint8_t * const byteBuffer, const uint32_t length)
 {
-  return (atamsCRC_);
+  return (s_atamsCRC.calculateCRC(byteBuffer, length));
+}
+
+void beginRollingCRC(uint32_t &rollingCRC)
+{
+  s_atamsCRC.beginRollingCRC(rollingCRC);
+}
+
+void updateRollingCRC(uint32_t &rollingCRC, const uint8_t byte)
+{
+  s_atamsCRC.updateRollingCRC(rollingCRC, byte);
+}
+
+uint32_t getRollingCRC(const uint32_t rollingCRC)
+{
+  return (s_atamsCRC.getRollingCRC(rollingCRC));
 }
 
 uint32_t bufferToUint32(const uint8_t * const buffer)
@@ -103,7 +116,7 @@ Atams::Error_t decodeBusPacket(const uint8_t  * const inputBuffer,
 
   memset(&decodedBuffer[Atams::HEADER_INDEX_CRC], 0U, Atams::HEADER_SIZE_CRC);
 
-  if (packetCRC != atamsCRC_.calculateCRC(decodedBuffer, COBSDecodeResult.outputLength))
+  if (packetCRC != s_atamsCRC.calculateCRC(decodedBuffer, COBSDecodeResult.outputLength))
   {
     decodedLength = COBSDecodeResult.outputLength;
 
@@ -128,7 +141,7 @@ Atams::Error_t encodeBusPacket(      uint8_t  * const inputBuffer,
 
   memset(&inputBuffer[HEADER_INDEX_CRC], 0U, HEADER_SIZE_CRC);
 
-  uint32_t CRCResult {atamsCRC_.calculateCRC(inputBuffer, inputLength)};
+  uint32_t CRCResult {s_atamsCRC.calculateCRC(inputBuffer, inputLength)};
 
   uint32ToBuffer(CRCResult, &inputBuffer[HEADER_INDEX_CRC]);
 

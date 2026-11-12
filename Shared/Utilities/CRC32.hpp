@@ -25,7 +25,7 @@
   ******************************************************************************
   */
 
-/* Define to prevent recursive inclusion --------------------------------------------*/
+/* Pragma to prevent recursive inclusion --------------------------------------------*/
 #pragma once
 
 /*************************************************************************************/
@@ -34,6 +34,8 @@
 
 #include <stdint.h>
 
+#include "../AtamsTypedefs.hpp"
+
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
 /*************************************************************************************/
@@ -41,34 +43,66 @@
 namespace Atams {
 
 /*************************************************************************************/
-/* PROTOTYPES/CLASS DEFINITIONS                                                      */
+/* TYPEDEFS                                                                          */
+/*************************************************************************************/
+
+/*************************************************************************************/
+/* CLASS DEFINITIONS                                                                 */
 /*************************************************************************************/
 
 class CRC32
 {
-  /*-- Public -----------------------------------------------------------------------*/
-
   public:
 
-  /*-- PUBLIC FUNCTION DECLARATIONS ---*/
+  /*-- Public Constants -------------------------------------------------------------*/
 
-  CRC32(void);
+  /*-- Public Typedefs --------------------------------------------------------------*/
 
-  CRC32(uint32_t generatorPolynomial);
+  /*-- Public Function Declarations -------------------------------------------------*/
 
-  uint32_t calculateCRC(const uint8_t *byteBuffer, uint32_t length);
+  /* Constructors are constexpr so a constexpr instance has its table built at compile time and placed in read-only memory */
 
-  void beginRollingCRC(void);
+  /* Constructor */
+  constexpr CRC32(const uint32_t generatorPolynomial) :
+  crcTable_{}
+  {
+    generateLookupTable(generatorPolynomial);
+  }
 
-  void updateRollingCRC(const uint8_t byte);
+  /* Default Constructor */
+  constexpr CRC32(void) :
+  CRC32(Atams::CRC32_POLYNOMIAL)
+  {
+    /* Do Nothing */
+  }
 
-  uint32_t getRollingCRC(void);
+  /* Default Destructor */
+  ~CRC32(void) = default;
 
-  /*-- Private -----------------------------------------------------------------------*/
+  /* Copy Constructor */
+  CRC32(const CRC32 &other) = delete;
+
+  /* Copy Assignment Operator */
+  CRC32 & operator=(const CRC32 &other) = delete;
+
+  /* Move Constructor */
+  CRC32(CRC32 &&other) = delete;
+
+  /* Move Assignment Operator */
+  CRC32 & operator=(CRC32 &&other) = delete;
+
+  uint32_t calculateCRC(const uint8_t *byteBuffer, uint32_t length) const;
+
+  /* The caller holds the rolling value, so one instance can serve any number of rolling checksums at once */
+  void beginRollingCRC(uint32_t &rollingCRC) const;
+
+  void updateRollingCRC(uint32_t &rollingCRC, const uint8_t byte) const;
+
+  uint32_t getRollingCRC(const uint32_t rollingCRC) const;
 
   private:
 
-  /*-- PRIVATE CONSTANTS --------------*/
+  /*-- Private Constants ------------------------------------------------------------*/
 
   static constexpr uint32_t CRC_RESET_VALUE     = 0xFFFFFFFFU;
   static constexpr uint16_t DECIMAL_WIDTH_8_BIT = 256U;
@@ -76,20 +110,42 @@ class CRC32
   static constexpr uint32_t FINAL_XOR_VALUE     = 0xFFFFFFFFU;
   static constexpr uint8_t  BITS_IN_A_BYTE      = 8U;
 
-  /*-- PRIVATE VARIABLES --------------*/
+  /*-- Private Typedefs -------------------------------------------------------------*/
 
-  uint32_t _crcTable[DECIMAL_WIDTH_8_BIT];
-  uint32_t _rollingCRC = CRC_RESET_VALUE;
+  /*-- Private Variables ------------------------------------------------------------*/
 
-  /*-- PRIVATE FUNCTION DECLARATIONS --*/
+  uint32_t crcTable_[DECIMAL_WIDTH_8_BIT];
 
-  void generateLookupTable(const uint32_t generatorPolynomial);
+  /*-- Private Function Declarations ------------------------------------------------*/
+
+  constexpr void generateLookupTable(const uint32_t generatorPolynomial)
+  {
+    for (uint32_t byteValue = 0U; byteValue < DECIMAL_WIDTH_8_BIT; byteValue++)
+    {
+      uint32_t crc = byteValue;
+
+      for (uint8_t bitIndex = 0U; bitIndex < BITS_IN_A_BYTE; ++bitIndex)
+      {
+        if (crc & 1U)
+        {
+          crc = (crc >> 1U) ^ generatorPolynomial;
+        }
+        else
+        {
+          crc >>= 1U;
+        }
+      }
+
+      crcTable_[byteValue] = crc;
+    }
+  }
+
 };
+
 
 } /* End Namespace - Atams */
 
 /**
   * @}End of File
   */
-
 

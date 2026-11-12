@@ -36,7 +36,6 @@
 #include <stdint.h>
 
 #include "../../Shared/AtamsTypedefs.hpp"
-#include "../../Shared/Utilities/CRC32.hpp"
 #include "../CommsCore/CommsPlatform.hpp"
 
 /*************************************************************************************/
@@ -60,11 +59,8 @@ class NVMUnitHandler
 
   /*-- Public Function Declarations -------------------------------------------------*/
 
-  /* Constructor */
-  NVMUnitHandler(Atams::CRC32 &nvmCRC);
-
   /* Default Constructor */
-  NVMUnitHandler(void) = delete;
+  NVMUnitHandler(void) = default;
 
   /* Default Destructor */
   ~NVMUnitHandler(void) = default;
@@ -89,21 +85,21 @@ class NVMUnitHandler
 
   Atams::Error_t flushPendingUnit(void);
 
+  /* CRC32 of every byte written since the last eraseNVM */
+  uint32_t getNVMChecksum(void) const;
+
   private:
 
   /*-- Private Constants ------------------------------------------------------------*/
 
   /*-- Private Typedefs -------------------------------------------------------------*/
 
-  /*-- Private Objects --------------------------------------------------------------*/
-
-  Atams::CRC32 &nvmCRC_;
-
   /*-- Private Variables ------------------------------------------------------------*/
 
   uint8_t  unitIndex_ = 0U;
   uint8_t  unitBuffer_[NodePlatform::NVM_UNIT_SIZE];
   uint32_t unitStartIndex_ = 0U;
+  uint32_t nvmChecksum_ = 0U; /* Rolling value, finalised by getNVMChecksum */
 
   /*-- Private Function Declarations -------------------------------------------------*/
 

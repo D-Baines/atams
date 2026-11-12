@@ -35,7 +35,6 @@
 #include <stdint.h>
 
 #include "../Shared/AtamsTypedefs.hpp"
-#include "../Shared/Utilities/CRC32.hpp"
 #include "Platform.hpp"
 #include "Developer/FramingConstants.hpp"
 #include "Developer/WriteList.hpp"
@@ -258,10 +257,6 @@ public NodeCallbackHandler
     bool                    newDataReady           {false};
     bool                    ackReceived            {false};
   };
-
-  /*-- Static Private Objects -------------------------------------------------------*/
-
-  static Atams::CRC32 s_nodeCRC;
 
   /*-- Private Objects --------------------------------------------------------------*/
 

@@ -34,6 +34,7 @@
 /*************************************************************************************/
 
 #include <stdint.h>
+
 #include "WatchdogHandler.hpp"
 
 /*************************************************************************************/
@@ -75,7 +76,7 @@ class UniversalBlockManager
   /* Default Constructor */
   UniversalBlockManager(void) = delete;
 
-  /* Destructor */
+  /* Default Destructor */
   ~UniversalBlockManager(void) = default;
 
   /* Copy Constructor */

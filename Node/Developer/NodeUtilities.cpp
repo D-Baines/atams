@@ -83,9 +83,9 @@ static bool validateUniversalBlockNVM(const NodeSharedMemoryMap_t &memoryMap)
 static bool validateGenNvmChecksum(const MemoryMap_t &memoryMap)
 {
   const NodeSharedMemoryMap_t &sharedMap {memoryMap.sharedMap};
-  Atams::CRC32                &crc       {Atams::getAtamsCRC32()};
+  uint32_t                     rollingCRC;
 
-  crc.beginRollingCRC();
+  Atams::beginRollingCRC(rollingCRC);
 
   for (uint16_t varID {BlockUniversal::NUMBER_OF_VARS}; varID < sharedMap.genInfo.noOfVars; varID++)
   {
@@ -94,15 +94,15 @@ static bool validateGenNvmChecksum(const MemoryMap_t &memoryMap)
 
     Atams::uint32ToBuffer(varInfo.nvmHash, nvmHashBytes);
 
-    crc.updateRollingCRC(varInfo.NVMStorage);
+    Atams::updateRollingCRC(rollingCRC, varInfo.NVMStorage);
 
     for (const uint8_t nvmHashByte : nvmHashBytes)
     {
-      crc.updateRollingCRC(nvmHashByte);
+      Atams::updateRollingCRC(rollingCRC, nvmHashByte);
     }
   }
 
-  return (memoryMap.genNvmChecksum == crc.getRollingCRC());
+  return (memoryMap.genNvmChecksum == Atams::getRollingCRC(rollingCRC));
 }
 
 /*************************************************************************************/
