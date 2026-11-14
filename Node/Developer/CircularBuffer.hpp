@@ -35,7 +35,7 @@
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "../CommsCore/CommsPlatform.hpp"
+#include "CommsPlatform.hpp"
 #include "../../Shared/Utilities/CircularBuffer.hpp"
 
 /*************************************************************************************/

@@ -4,14 +4,30 @@ project(AtamsHub
         VERSION 1.0.0
         LANGUAGES C CXX)
 
+# Required: folder holding the application's HubPlatform.hpp and HubPlatform.cpp. Copy the
+# templates in Hub/Platform into your project, complete them, and set this to that folder
+# as an absolute path, before add_subdirectory() or with -DATAMS_HUB_PLATFORM_DIR=<path>.
+if(NOT DEFINED ATAMS_HUB_PLATFORM_DIR)
+    message(FATAL_ERROR "ATAMS_HUB_PLATFORM_DIR is not set. Copy the templates in "
+                        "${CMAKE_CURRENT_SOURCE_DIR}/Platform into your project, complete "
+                        "them, and set ATAMS_HUB_PLATFORM_DIR to that folder.")
+endif()
+
+# Optional: folder holding the generated Hub Memory Maps. All .cpp and .hpp files under it
+# are compiled. Defaults to Hub/Maps, and is set the same way as ATAMS_HUB_PLATFORM_DIR.
+if(NOT DEFINED ATAMS_HUB_MAPS_DIR)
+    set(ATAMS_HUB_MAPS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Maps")
+endif()
+
+# Atams root folder, which library and Memory Map headers include from
+get_filename_component(ATAMS_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
+
 # Explicitly list all source and header files for the Hub implementation
 set(ATAMS_HUB_LIB_SOURCES
     Bus.hpp
     Bus.cpp
     Node.hpp
     Node.cpp
-    Platform.hpp
-    Platform.cpp
     NodeActions.hpp
     NodeActions.cpp
     Developer/CircularBuffer.hpp
@@ -30,14 +46,20 @@ set(ATAMS_HUB_LIB_SOURCES
     ../Shared/Utilities/CRC32.cpp
 )
 
-# Add all .cpp and .hpp files in Atams/Hub/Maps and its subdirectories
+set(ATAMS_HUB_PLATFORM_SOURCES
+    "${ATAMS_HUB_PLATFORM_DIR}/HubPlatform.hpp"
+    "${ATAMS_HUB_PLATFORM_DIR}/HubPlatform.cpp"
+)
+
+# Add all .cpp and .hpp files in the Maps folder and its subdirectories
 file(GLOB_RECURSE ATAMS_HUB_MAPS_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/Maps/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Maps/*.hpp"
+    "${ATAMS_HUB_MAPS_DIR}/*.cpp"
+    "${ATAMS_HUB_MAPS_DIR}/*.hpp"
 )
 
 set(ATAMS_HUB_SOURCES
     ${ATAMS_HUB_LIB_SOURCES}
+    ${ATAMS_HUB_PLATFORM_SOURCES}
     ${ATAMS_HUB_MAPS_SOURCES}
 )
 
@@ -45,7 +67,18 @@ add_library(${PROJECT_NAME} ${ATAMS_HUB_SOURCES})
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
-# Add user-supplied include directories, libraries, and sources if set
+# Public because Bus.hpp and Node.hpp include HubPlatform.hpp, and applications include
+# both those and the Memory Map headers
+target_include_directories(${PROJECT_NAME} PUBLIC
+    "${ATAMS_HUB_PLATFORM_DIR}"
+    "${ATAMS_ROOT_DIR}"
+)
+
+# Optional extras for the Platform files:
+#   ATAMS_HUB_USER_INCLUDES - include directories for dependencies without a CMake target
+#   ATAMS_HUB_USER_LIBS     - libraries or CMake targets the Platform files depend on
+#                             (a target's include directories come with it)
+#   ATAMS_HUB_USER_SOURCES  - additional Platform source files
 if(ATAMS_HUB_USER_INCLUDES)
     target_include_directories(${PROJECT_NAME} PUBLIC "${ATAMS_HUB_USER_INCLUDES}")
 endif()

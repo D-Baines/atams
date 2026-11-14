@@ -1,13 +1,13 @@
 /**
   ******************************************************************************
-  * @file    AppPlatform.hpp
+  * @file    AppPlatform.cpp
   *
   * @author  D. Baines
   *
   * @brief   Platform implementation for the Atams Node Application Core.
   *
   * @details Implements the platform abstraction layer (PAL) for the Atams Node
-  *          Application Core. Function definitions are left empty for the user 
+  *          Application Core. Function definitions are left empty for the user
   *          to populate with their platform-specific implementation.
   *
   * @version v1.0
@@ -34,8 +34,6 @@
 /* USER INCLUDES                                                                     */
 /*************************************************************************************/
 
-#include "main.h"
-#include "stm32h7xx_hal.h"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -56,17 +54,17 @@ namespace Atams { namespace NodePlatform {
  */
 uint32_t getMillis(void)
 {
-  return (HAL_GetTick());
+  return (0U);
 }
 
 /**
  * @brief   Acquire the lock protecting the Node variable storage from concurrent access.
  *
  * @details This function will be called before Node variable storage access. The variable storage
- *          may be accessed from multiple threads or cores depending on the user's platform. The user 
+ *          may be accessed from multiple threads or cores depending on the user's platform. The user
  *          must ensure that the lock is held until NodePlatform::releaseVarStorageLock() is called.
  *
- *          For multi-threaded platforms, the user should use a mutex or similar mechanism. For dual-core 
+ *          For multi-threaded platforms, the user should use a mutex or similar mechanism. For dual-core
  *          platforms, the user should use a hardware semaphore or similar mechanism. A combination of both
  *          may be required for multi-threaded dual-core platforms.
  *
@@ -81,16 +79,13 @@ uint32_t getMillis(void)
  */
 void acquireVarStorageLock(void)
 {
-  while (HAL_HSEM_FastTake(0U) != HAL_OK)
-  {
-    /* Wait */
-  };
+
 }
 
 /**
  * @brief   Release the lock protecting the Node variable storage from concurrent access.
  *
- * @details This function will be called after Node variable storage access. The user must 
+ * @details This function will be called after Node variable storage access. The user must
  *          release or unlock the mechanism locked in NodePlatform::acquireVarStorageLock().
  *
  * @return  None
@@ -100,7 +95,7 @@ void acquireVarStorageLock(void)
  */
 void releaseVarStorageLock(void)
 {
-  HAL_HSEM_Release(0U, 0);
+
 }
 
 } } /* End Namespace - Atams::NodePlatform */

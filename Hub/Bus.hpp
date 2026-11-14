@@ -45,7 +45,7 @@
 
 #include "../Shared/AtamsTypedefs.hpp"
 #include "Developer/CircularBuffer.hpp"
-#include "Platform.hpp"
+#include "HubPlatform.hpp"
 #include "Developer/FramingConstants.hpp"
 #include "NodeActions.hpp"
 #include "Node.hpp"

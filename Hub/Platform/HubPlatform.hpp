@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    Platform.hpp
+  * @file    HubPlatform.hpp
   *
   * @author  D. Baines
   *
@@ -10,7 +10,10 @@
   *          the BusPeripheral, MemoryLock, and CommsLock classes that the user must
   *          implement to port the library to a specific hardware platform. Also exposes
   *          platform-specific constants and the inline getMillis() time function.
-  *          This file should be modified to match the target platform.
+  *
+  *          This file and HubPlatform.cpp are templates. Copy both into the application
+  *          project, complete them for the target platform, and point
+  *          ATAMS_HUB_PLATFORM_DIR at the folder holding them (see Hub/CMakeLists.txt).
   *
   * @version v1.0
   ******************************************************************************
@@ -35,16 +38,12 @@
 
 #include <stdint.h>
 
-#include "../Shared/AtamsTypedefs.hpp"
+#include "Shared/AtamsTypedefs.hpp"
 
 /*************************************************************************************/
 /* USER INCLUDES                                                                     */
 /*************************************************************************************/
 
-#include <chrono>
-#include <condition_variable>
-#include <mutex>
-#include "asio.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -63,7 +62,7 @@ constexpr uint16_t NUMBER_OF_NODES_PER_BUS {Atams::MAX_NUMBER_OF_NODES_PER_BUS};
 constexpr uint16_t NODE_NUMBER_OF_VARS {Atams::MAX_NUMBER_OF_VARS};
 
 /** @brief The maximum packet size compatible with the applications communications peripheral */
-constexpr uint16_t MAX_BUS_PACKET_SIZE {64U};
+constexpr uint16_t MAX_BUS_PACKET_SIZE {Atams::MINIMUM_MAXIMUM_BUS_PACKET_SIZE};
 
 /**
 *  @brief The circular buffer size used for receiving Atams packets.
@@ -96,13 +95,13 @@ constexpr uint64_t NVM_STORAGE_TIMEOUT {5000U};
 /* PUBLIC CLASSES                                                                    */
 /*************************************************************************************/
 
-/** 
- * @brief Platform comms peripheral class for the transmit and receive of raw byte buffers. 
- *        BusPeripheral is inherited and used by the Atams::Bus class. A single 
+/**
+ * @brief Platform comms peripheral class for the transmit and receive of raw byte buffers.
+ *        BusPeripheral is inherited and used by the Atams::Bus class. A single
  *        BusPeripheral object is constructed for each Atams::Bus object.
  *
  * @note  ATAMS PLATFORM REQUIREMENT - ALL
- */ 
+ */
 class BusPeripheral
 {
   /*-- Public -----------------------------------------------------------------------*/
@@ -115,16 +114,15 @@ class BusPeripheral
    * @brief   User data structure for the BusPeripheral class.
    *
    * @details The user should populate this structure with any data required for
-   *          the platform comms peripheral to operate. This structure is passed
-   *          to the Atams::Bus constructor. Empty until the platform layer for
-   *          this application is implemented.
+   *          the platform comms peripheral to operate, such as references to
+   *          peripheral objects owned by the application. This structure is passed
+   *          to the Atams::Bus constructor.
    *
    * @note    ATAMS PLATFORM REQUIREMENT - OPTIONAL
    */
   struct UserData_t
   {
-    asio::io_context  &ioContext;
-    asio::serial_port &serialPort;
+
   };
 
   /*-- Required Public Function Declarations ----------------------------------------*/
@@ -139,7 +137,7 @@ class BusPeripheral
 
   void update(void);
 
-  private: 
+  private:
 
   /*-- Required Private Variables ---------------------------------------------------*/
 
@@ -148,17 +146,13 @@ class BusPeripheral
 
   /*-- User Private Variables -------------------------------------------------------*/
 
-  uint8_t rxBuffer_[MAX_BUS_PACKET_SIZE];
-
-  /** @brief True between startReceive() and stopReceive() */
-  bool isReceiving_ {false};
 
   /*-- Required Private Function Declarations ---------------------------------------*/
 
   /**
    * @brief   Callback function for received bytes.
    *
-   * @param   rxBufferPtr    Pointer to the received data buffer (optionally use rxBuffer_).
+   * @param   rxBufferPtr    Pointer to the received data buffer.
    * @param   rxBufferLength Length of the received data buffer.
    *
    * @details The user must call this function when new bytes have been received.
@@ -185,12 +179,10 @@ class BusPeripheral
 
   /*-- User Private Function Declarations -------------------------------------------*/
 
-  void rxHandler(asio::error_code ec, size_t xfr);
 
-  void txHandler(asio::error_code ec, size_t xfr);
 };
 
-/** 
+/**
  *  @brief   Memory lock class for multi-threaded applications.
  *
  *  @details This class provides a lock mechanism for protecting access to
@@ -222,7 +214,7 @@ class MemoryLock
 
   /*-- User Private Variables -------------------------------------------------------*/
 
-  std::mutex _memoryLock;
+
 };
 
 /**
@@ -249,7 +241,7 @@ class CommsLock
 
   /*-- User Private Variables -------------------------------------------------------*/
 
-  std::mutex _commsLock;
+
 };
 
 /**
@@ -279,9 +271,7 @@ class BinarySemaphore
 
   /*-- User Private Variables -------------------------------------------------------*/
 
-  std::mutex              mutex_;
-  std::condition_variable cv_;
-  bool                    released_ {false};
+
 };
 
 /*************************************************************************************/
@@ -297,7 +287,7 @@ class BinarySemaphore
  */
 inline uint32_t getMillis(void)
 {
-  return (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
+  return (0U);
 }
 
 } } /* End Namespace - Atams::HubPlatform */

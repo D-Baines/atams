@@ -33,7 +33,7 @@
 
 #include <stdint.h>
 
-#include "../Platform.hpp"
+#include "HubPlatform.hpp"
 #include "../../Shared/AtamsTypedefs.hpp"
 
 /*************************************************************************************/

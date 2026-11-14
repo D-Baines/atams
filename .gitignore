@@ -10,3 +10,9 @@ Autogen/dist/
 
 #Eclipse Workspace
 .metadata/
+
+#VS Code workspace settings
+.vscode/
+
+#Local build folders
+build/

@@ -29,7 +29,7 @@
 
 #include "NodeUtilities.hpp"
 
-#include "../SharedPlatform.hpp"
+#include "SharedPlatform.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"
 #include "../../Shared/Utilities/AtamsUtilities.hpp"
 

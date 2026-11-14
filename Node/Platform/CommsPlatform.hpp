@@ -6,11 +6,11 @@
   *
   * @brief   Platform interface declarations for the Atams Node Comms Core.
   *
-  * @details Defines the platform abstraction layer (PAL) for the Atams Node 
-  *          Comms Core. Contains the constants, types, and function 
-  *          declarations that must be implemented by the user to port the Atams 
+  * @details Defines the platform abstraction layer (PAL) for the Atams Node
+  *          Comms Core. Contains the constants, types, and function
+  *          declarations that must be implemented by the user to port the Atams
   *          Node library to a specific hardware platform. The interface covers
-  *          communications peripheral management, concurrency primitives, 
+  *          communications peripheral management, concurrency primitives,
   *          non-volatile memory access, and system control.
   *
   * @version v1.0
@@ -36,8 +36,8 @@
 
 #include <stdint.h>
 
-#include "../../Shared/AtamsTypedefs.hpp"
-#include "../SharedPlatform.hpp"
+#include "Shared/AtamsTypedefs.hpp"
+#include "SharedPlatform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -55,7 +55,7 @@ namespace Atams { namespace NodePlatform {
  * @details Used to set the size of static request and response buffers.
  *
  */
-constexpr uint16_t MAX_BUS_PACKET_SIZE {64U};
+constexpr uint16_t MAX_BUS_PACKET_SIZE {Atams::MINIMUM_MAXIMUM_BUS_PACKET_SIZE};
 
 /**
  * @brief The circular buffer size used for receiving Atams packets.
@@ -81,7 +81,7 @@ constexpr uint32_t NVM_UNIT_SIZE {32U};
  *
  *          - Exact size: Atams::Map<YourMapName>::REQUIRED_NVM_SIZE + NodePlatform::NVM_UNIT_SIZE,
  *            once a Memory Map has been generated. REQUIRED_NVM_SIZE is the exact minimum for
- *            the Memory Map's NVM-stored variable. NVM_UNIT_SIZE must be added to allow for 
+ *            the Memory Map's NVM-stored variable. NVM_UNIT_SIZE must be added to allow for
  *            write-unit headroom.
  *
  *          - Platform maximum: the full NVM region available on the platform (e.g. a whole
@@ -97,7 +97,7 @@ constexpr uint32_t NVM_STORAGE_SIZE {1024U};
 /* PUBLIC TYPEDEFS                                                                   */
 /*************************************************************************************/
 
-/** 
+/**
  * @brief   Identifiers for the Node devices communication peripherals.
  *
  * @details Used to identify which communication peripheral is being referenced

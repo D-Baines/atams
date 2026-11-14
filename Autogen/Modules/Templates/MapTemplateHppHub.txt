@@ -29,8 +29,8 @@
 /*************************************************************************************/
 
 #include <stdint.h>
-#include "../../Node.hpp"
-#include "../../../Shared/Maps/BlockUniversal.hpp"
+#include "Hub/Node.hpp"
+#include "Shared/Maps/BlockUniversal.hpp"
 $$$AUTOGEN$$$DATA_BLOCK_FILE_INCLUDES$$$AUTOGEN$$$
 
 /*************************************************************************************/

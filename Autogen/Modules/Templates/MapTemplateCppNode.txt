@@ -27,14 +27,12 @@
 
 #include "Map$$$AUTOGEN$$$MAP_NAME_PASCAL$$$AUTOGEN$$$.hpp"
 
-#include "../../SharedPlatform.hpp"
+#include "SharedPlatform.hpp"
 
 #ifdef COMMS_CORE_DETECT
-#include "../../CommsCore/CommsCore.hpp"
-#include "../../CommsCore/CommsPlatform.hpp"
+#include "Node/CommsCore/CommsCore.hpp"
 #else
-#include "../../AppCore/AppCore.hpp"
-#include "../../AppCore/AppPlatform.hpp"
+#include "Node/AppCore/AppCore.hpp"
 #endif
 
 /*************************************************************************************/

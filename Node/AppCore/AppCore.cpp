@@ -35,7 +35,7 @@
 #include <string.h>
 #include <atomic>
 
-#include "../SharedPlatform.hpp"
+#include "SharedPlatform.hpp"
 #include "AppPlatform.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"
 #include "../../Shared/Utilities/AtamsUtilities.hpp"

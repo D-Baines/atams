@@ -35,7 +35,7 @@
 #include <stdint.h>
 
 #include "../Shared/AtamsTypedefs.hpp"
-#include "Platform.hpp"
+#include "HubPlatform.hpp"
 #include "Developer/FramingConstants.hpp"
 #include "Developer/WriteList.hpp"
 #include "Developer/NodeCallbackHandler.hpp"

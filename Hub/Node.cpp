@@ -33,7 +33,7 @@
 
 #include <cstring>
 
-#include "Platform.hpp"
+#include "HubPlatform.hpp"
 #include "../Shared/Utilities/AtamsUtilities.hpp"
 #include "../Shared/Maps/BlockUniversal.hpp"
 

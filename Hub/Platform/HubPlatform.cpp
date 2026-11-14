@@ -1,19 +1,19 @@
 /**
   ******************************************************************************
-  * @file    Platform.cpp
+  * @file    HubPlatform.cpp
   *
   * @author  D. Baines
   *
   * @brief   Platform abstraction layer (PAL) implementation for the Atams Hub.
   *
   * @details Provides empty implementations of the PAL functions required by the
-  *          Atams Hub. Users must complete these functions with their own 
-  *          platform-specific code to provide serial communications and locking 
+  *          Atams Hub. Users must complete these functions with their own
+  *          platform-specific code to provide serial communications and locking
   *          for their target environment. Refer to the @note tags on each
   *          function for platform requirement classifications.
-  * 
+  *
   *          The 'BusPeripheral - USER PRIVATE FUNCTION DEFINITIONS' section
-  *          can be used to define implementations for any user declared 
+  *          can be used to define implementations for any user declared
   *          BusPeripheral functions.
   *
   * @version v1.0
@@ -30,13 +30,11 @@
   ******************************************************************************
   */
 
-/* Pragma to prevent recursive inclusion --------------------------------------------*/
-
 /*************************************************************************************/
 /* INCLUDES                                                                          */
 /*************************************************************************************/
 
-#include "Platform.hpp"
+#include "HubPlatform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -49,10 +47,10 @@ namespace Atams { namespace HubPlatform {
 /*************************************************************************************/
 
 /** @brief Constructor. */
-BusPeripheral::BusPeripheral(UserData_t userData) : 
+BusPeripheral::BusPeripheral(UserData_t userData) :
 userData_(userData)
 {
-  
+  static_cast<void>(userData_);
 }
 
 /** @brief   Start receiving data on the user comms peripheral.
@@ -69,24 +67,7 @@ userData_(userData)
  */
 bool BusPeripheral::startReceive(void)
 {
-  if (!userData_.serialPort.is_open())
-  {
-    return (false);
-  }
-
-  if (isReceiving_)
-  {
-    return (true); /* Only one read may be outstanding on the port. */
-  }
-
-  isReceiving_ = true;
-
-  userData_.serialPort.async_read_some(asio::buffer(rxBuffer_),
-                                       std::bind(&BusPeripheral::rxHandler,
-                                                 this,
-                                                 asio::placeholders::error,
-                                                 asio::placeholders::bytes_transferred));
-  return (true);
+  return (false);
 }
 
 /** @brief   Stop receiving data on the user comms peripheral.
@@ -101,14 +82,7 @@ bool BusPeripheral::startReceive(void)
  */
 void BusPeripheral::stopReceive(void)
 {
-  if (isReceiving_)
-  {
-    asio::error_code ec;
 
-    userData_.serialPort.cancel(ec);
-
-    isReceiving_ = false;
-  }
 }
 
 /** @brief   Transmit bytes using the user comms peripheral.
@@ -133,22 +107,13 @@ void BusPeripheral::stopReceive(void)
  */
 bool BusPeripheral::transmit(uint8_t *buffer, const uint16_t length)
 {
-  if (!userData_.serialPort.is_open())
-  {
-    return (false);
-  }
+  static_cast<void>(buffer);
+  static_cast<void>(length);
 
-  asio::async_write(userData_.serialPort,
-                    asio::buffer(buffer, length),
-                    std::bind(&BusPeripheral::txHandler,
-                              this,
-                              asio::placeholders::error,
-                              asio::placeholders::bytes_transferred));
-
-  return (true);
+  return (false);
 }
 
-/** 
+/**
  * @brief   User update function called at regular intervals during Bus Update Cycles
  *
  * @details Users can use this function to poll communications peripherals, check for
@@ -165,83 +130,55 @@ void BusPeripheral::update(void)
 /* BusPeripheral - USER PRIVATE FUNCTION DEFINITIONS                                 */
 /*************************************************************************************/
 
-void BusPeripheral::rxHandler(asio::error_code ec, size_t xfr)
-{
-  if (ec)
-  {
-    return; /* Cancelled by stopReceive, port closed, or device removed - don't re-arm. */
-  }
 
-  if (xfr > 0)
-  {
-    rxCallback(rxBuffer_, xfr);
-  }
-
-  userData_.serialPort.async_read_some(asio::buffer(rxBuffer_), 
-                                       std::bind(&BusPeripheral::rxHandler, 
-                                                 this, 
-                                                 asio::placeholders::error, 
-                                                 asio::placeholders::bytes_transferred));
-}
-
-void BusPeripheral::txHandler(asio::error_code ec, size_t xfr)
-{
-  static_cast<void>(xfr);
-
-  if (!ec)
-  {
-    txCallback();
-  }
-}
 
 /*************************************************************************************/
 /* MemoryLock - REQUIRED PUBLIC FUNCTION DEFINITIONS                                 */
 /*************************************************************************************/
 
-/** 
+/**
  *  @brief Acquire the memory lock.
  *
  *  @note  ATAMS PLATFORM REQUIREMENT - MULTI-THREADED
  */
 void MemoryLock::acquireLock(void)
 {
-  _memoryLock.lock();
+
 }
 
-/** 
+/**
  *  @brief Release the memory lock.
  *
  *  @note  ATAMS PLATFORM REQUIREMENT - MULTI-THREADED
  */
 void MemoryLock::releaseLock(void)
 {
-  _memoryLock.unlock();
+
 }
 
 /*************************************************************************************/
 /* CommsLock - REQUIRED PUBLIC FUNCTION DEFINITIONS                                  */
 /*************************************************************************************/
 
-/** 
+/**
  *  @brief Acquire the comms lock.
  *
  *  @note  ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
  */
 void CommsLock::acquireLock(void)
 {
-  _commsLock.lock();
+
 }
 
-/** 
+/**
  *  @brief Release the comms lock.
  *
  *  @note  ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
  */
 void CommsLock::releaseLock(void)
 {
-  _commsLock.unlock();
-}
 
+}
 
 /*************************************************************************************/
 /* BinarySemaphore - REQUIRED PUBLIC FUNCTION DEFINITIONS                            */
@@ -254,13 +191,7 @@ void CommsLock::releaseLock(void)
  */
 void BinarySemaphore::waitWithTimeout(uint32_t timeoutMilliseconds)
 {
-  std::unique_lock<std::mutex> lock(mutex_);
-
-  cv_.wait_for(lock,
-               std::chrono::milliseconds(timeoutMilliseconds),
-               [this]{ return released_; });
-
-  released_ = false;
+  static_cast<void>(timeoutMilliseconds);
 }
 
 /**
@@ -270,11 +201,7 @@ void BinarySemaphore::waitWithTimeout(uint32_t timeoutMilliseconds)
  */
 void BinarySemaphore::release(void)
 {
-  std::unique_lock<std::mutex> lock(mutex_);
-  released_ = true;
-  lock.unlock();
 
-  cv_.notify_one();
 }
 
 } } /* End Namespace - Atams::HubPlatform */

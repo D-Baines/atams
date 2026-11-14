@@ -36,7 +36,7 @@
 #include <stdint.h>
 
 #include "../../Shared/AtamsTypedefs.hpp"
-#include "../SharedPlatform.hpp"
+#include "SharedPlatform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */

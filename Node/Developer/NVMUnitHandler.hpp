@@ -36,7 +36,7 @@
 #include <stdint.h>
 
 #include "../../Shared/AtamsTypedefs.hpp"
-#include "../CommsCore/CommsPlatform.hpp"
+#include "CommsPlatform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */

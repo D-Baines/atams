@@ -4,15 +4,17 @@
   *
   * @author  D. Baines
   *
-  * @brief   Shared platform constants and macros for dual-core Atams Node platforms.
+  * @brief   Platform constants and macros shared by the Atams Node Comms Core and App Core.
   *
-  * @details Defines the platform constants and preprocessor macros shared between the
-  *          Application Core and Communications Core on dual-core Atams Node platforms.
-  *          Includes NODE_NUMBER_OF_VARS for variable storage sizing, the
+  * @details Defines the platform constants and preprocessor macros used by both the
+  *          Communications Core and, on dual-core platforms, the Application Core.
+  *          Includes NODE_NUMBER_OF_VARS for variable storage sizing and the
   *          ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE linker section attribute for
-  *          placing shared data in a dedicated memory region accessible by both cores,
-  *          and the COMMS_CORE_DETECT macro for identifying the communications core
-  *          at compile time.
+  *          placing shared data in a dedicated memory region accessible by both cores.
+  *
+  *          This file is a template. Copy the Node Platform files into the application
+  *          project, complete them for the target platform, and point
+  *          ATAMS_NODE_PLATFORM_DIR at the folder holding them (see Node/CMakeLists.txt).
   *
   * @version v1.0
   ******************************************************************************
@@ -37,7 +39,7 @@
 
 #include <stdint.h>
 
-#include "../Shared/AtamsTypedefs.hpp"
+#include "Shared/AtamsTypedefs.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -52,7 +54,9 @@ namespace Atams { namespace NodePlatform {
 /**
 *   @brief Define used in dual-core applications to place shared variables in a
 *          dedicated shared memory section accessible by both cores. This section
-*          should be defined in the application linker script.
+*          should be defined in the application linker script, for example:
+*          __attribute__((section(".atamsSharedRAM"))). Leave empty on single-core
+*          platforms.
 *
 *   @details The size of the shared memory section must be at least:
 *            12 + (4 * NodePlatform::NODE_NUMBER_OF_VARS) bytes.
@@ -64,31 +68,17 @@ namespace Atams { namespace NodePlatform {
 *
 *   @note    ATAMS PLATFORM REQUIREMENT - DUAL-CORE
 */
-#define ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE __attribute__((section(".atamsSharedRAM")))
-
-/**
-*   @brief Replace ATAMS_COMMS_CORE in the #ifdef below with the preprocessor symbol your
-*          build system defines for the core responsible for Atams communications, or add
-*          -D ATAMS_COMMS_CORE to the Comms Core build target only to use it as-is.
-*
-*          Example: STM32CubeIDE automatically defines CORE_CM4 / CORE_CM7 per core project.
-*          If the M4 handles Atams communications, replace ATAMS_COMMS_CORE with CORE_CM4.
-*
-*   @note  ATAMS PLATFORM REQUIREMENT - DUAL-CORE
-*/
-#ifdef CORE_CM4 //ATAMS_COMMS_CORE
-#define COMMS_CORE_DETECT 1
-#endif
+#define ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 
 /*************************************************************************************/
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-/** 
+/**
 *   @brief The number of vars in the Atams Memory Map that will be used to initialise the Node.
 *          This value must be less than or equal to @ref Atams::MAX_NUMBER_OF_VARS.
 */
-constexpr uint16_t NODE_NUMBER_OF_VARS {144U};
+constexpr uint16_t NODE_NUMBER_OF_VARS {Atams::MAX_NUMBER_OF_VARS};
 
 
 } } /* End Namespace - Atams::NodePlatform */

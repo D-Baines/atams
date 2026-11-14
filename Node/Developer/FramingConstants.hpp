@@ -33,7 +33,7 @@
 
 #include <stdint.h>
 
-#include "../CommsCore/CommsPlatform.hpp"
+#include "CommsPlatform.hpp"
 #include "../../Shared/AtamsTypedefs.hpp"
 
 /*************************************************************************************/

@@ -35,7 +35,7 @@
 
 #include "Node.hpp"
 #include "../Shared/Maps/BlockUniversal.hpp"
-#include "Platform.hpp"
+#include "HubPlatform.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */

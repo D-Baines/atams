@@ -33,7 +33,7 @@
 #include "UniversalBlockManager.hpp"
 
 #include "../CommsCore/CommsCore.hpp"
-#include "../CommsCore/CommsPlatform.hpp"
+#include "CommsPlatform.hpp"
 #include "../../Shared/Maps/BlockUniversal.hpp"
 
 /*************************************************************************************/

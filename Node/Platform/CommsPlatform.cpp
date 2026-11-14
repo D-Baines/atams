@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    CommsPlatform.hpp
+  * @file    CommsPlatform.cpp
   *
   * @author  D. Baines
   *
@@ -8,8 +8,10 @@
   *
   * @details Implements the platform abstraction layer (PAL) for the Atams Node
   *          Communications Core. Provides all required platform functions covering
-  *          system time, variable storage locking, serial peripheral management,
+  *          system time, variable storage locking, comms peripheral management,
   *          circular buffer locking, non-volatile memory access, and system control.
+  *          Function definitions are left empty for the user to populate with their
+  *          platform-specific implementation.
   *
   * @version v1.0
   ******************************************************************************
@@ -35,9 +37,6 @@
 /* USER INCLUDES                                                                     */
 /*************************************************************************************/
 
-#include "main.h"
-#include "string.h"
-#include "PeripheralLayer/SerialPort.hpp"
 
 /*************************************************************************************/
 /* NAMESPACE                                                                         */
@@ -59,7 +58,6 @@ namespace Atams { namespace NodePlatform {
 /* PRIVATE VARIABLES                                                                 */
 /*************************************************************************************/
 
-static SerialPort s_serialPort(SerialPort::PORT_ID_MESH);
 
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
@@ -79,17 +77,17 @@ static SerialPort s_serialPort(SerialPort::PORT_ID_MESH);
  */
 uint32_t getMillis(void)
 {
-  return (HAL_GetTick());
+  return (0U);
 }
 
 /**
  * @brief   Acquire the lock protecting the Node variable storage from invalid concurrent access.
  *
  * @details This function will be called before Node variable storage access. The variable storage
- *          may be accessed from multiple threads or cores depending on the user's platform. The user 
+ *          may be accessed from multiple threads or cores depending on the user's platform. The user
  *          must ensure that the lock is held until NodePlatform::releaseVarStorageLock() is called.
  *
- *          For multi-threaded platforms, the user should use a mutex or similar mechanism. For dual-core 
+ *          For multi-threaded platforms, the user should use a mutex or similar mechanism. For dual-core
  *          platforms, the user should use a hardware semaphore or similar mechanism. A combination of both
  *          may be required for multi-threaded, dual-core platforms.
  *
@@ -104,16 +102,13 @@ uint32_t getMillis(void)
  */
 void acquireVarStorageLock(void)
 {
-  while (HAL_HSEM_FastTake(0U) != HAL_OK)
-  {
-    /* Wait */
-  };
+
 }
 
 /**
  * @brief   Release the lock protecting the Node variable storage from invalid concurrent access.
  *
- * @details This function will be called after Node variable storage access. The user must 
+ * @details This function will be called after Node variable storage access. The user must
  *          release or unlock the mechanism locked in NodePlatform::acquireVarStorageLock().
  *
  * @return  None
@@ -123,7 +118,7 @@ void acquireVarStorageLock(void)
  */
 void releaseVarStorageLock(void)
 {
-  HAL_HSEM_Release(0U, 0);
+
 }
 
 /**
@@ -142,13 +137,9 @@ void releaseVarStorageLock(void)
  */
 bool beginReceive(CommsReceiveCallback_t receiveCallback)
 {
-  s_serialPort.setReceiveCallback(receiveCallback);
+  static_cast<void>(receiveCallback);
 
-
-  HAL_GPIO_WritePin(RS485_RE_GPIO_Port, RS485_RE_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_RESET);
-
-  return (s_serialPort.beginReceive() == SerialPort::ERROR_NONE);
+  return (false);
 }
 
 /**
@@ -160,8 +151,7 @@ bool beginReceive(CommsReceiveCallback_t receiveCallback)
  */
 void stopReceive(void)
 {
-  s_serialPort.stopReceive();
-  HAL_GPIO_WritePin(RS485_RE_GPIO_Port, RS485_RE_Pin, GPIO_PIN_SET);
+
 }
 
 /**
@@ -176,13 +166,7 @@ void stopReceive(void)
  */
 void update(void)
 {
-  if (s_serialPort.getError() != SerialPort::ERROR_NONE)
-  {
-    while (s_serialPort.beginReceive() != SerialPort::ERROR_NONE)
-    {
-      s_serialPort.stopReceive();
-    }
-  }
+
 }
 
 /**
@@ -200,7 +184,7 @@ bool transmitReady(const CommsPeripheralID_t peripheralID)
 {
   static_cast<void>(peripheralID);
 
-  return (s_serialPort.transmitReady());
+  return (false);
 }
 
 /**
@@ -224,15 +208,10 @@ bool transmitReady(const CommsPeripheralID_t peripheralID)
 bool transmitBuffer(const CommsPeripheralID_t peripheralID, uint8_t * buffer, const uint16_t length)
 {
   static_cast<void>(peripheralID);
+  static_cast<void>(buffer);
+  static_cast<void>(length);
 
-  HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_SET);               // @suppress("C-Style cast instead of C++ cast")
-  HAL_GPIO_WritePin(LED_RS485_GREEN_GPIO_Port, LED_RS485_GREEN_Pin, GPIO_PIN_SET); // @suppress("C-Style cast instead of C++ cast")
-
-  SerialPort::Error_t transmitResult = s_serialPort.transmitBuffer(buffer, length);
-
-  if (transmitResult != SerialPort::ERROR_NONE) return (false);
-
-  return (true);
+  return (false);
 }
 
 /**
@@ -259,8 +238,6 @@ bool transmitBuffer(const CommsPeripheralID_t peripheralID, uint8_t * buffer, co
 void acquireCommsBufferLock(const CommsPeripheralID_t peripheralToLock)
 {
   static_cast<void>(peripheralToLock);
-  HAL_NVIC_DisableIRQ(USART2_IRQn);
-  HAL_NVIC_DisableIRQ(DMA1_Stream0_IRQn);
 }
 
 /**
@@ -280,8 +257,6 @@ void acquireCommsBufferLock(const CommsPeripheralID_t peripheralToLock)
 void releaseCommsBufferLock(const CommsPeripheralID_t peripheralToUnlock)
 {
   static_cast<void>(peripheralToUnlock);
-  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
-  HAL_NVIC_EnableIRQ(USART2_IRQn);
 }
 
 /**
@@ -298,13 +273,13 @@ void releaseCommsBufferLock(const CommsPeripheralID_t peripheralToUnlock)
  *
  * @note    ATAMS PLATFORM REQUIREMENT - MULTI-THREAD + EVENT DRIVEN COMMS
  */
-void acquireWaitOnReceiveSempahore(const uint32_t timeoutMilliseconds)
+void acquireWaitOnReceiveSempahore(const uint32_t timeoutInMilliseconds)
 {
-  static_cast<void>(timeoutMilliseconds);
+  static_cast<void>(timeoutInMilliseconds);
 }
 
 /**
- * @brief   Wake up the thread blocked in NodePlatform::waitOnCommsBufferSemaphore().
+ * @brief   Wake up the thread blocked in NodePlatform::acquireWaitOnReceiveSempahore().
  *
  * @details If Atams::updateCommsBlocking() is used, this function will be called to
  *          wake up the thread on reception of new bytes.
@@ -333,29 +308,7 @@ void releaseWaitOnReceiveSemaphore(void)
  */
 bool eraseNVM(void)
 {
-  FLASH_EraseInitTypeDef eraseInitStruct;
-  uint32_t               sectorError {0U};
-
-  /* Fill EraseInit structure*/
-  eraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
-  eraseInitStruct.VoltageRange  = FLASH_VOLTAGE_RANGE_3;
-  eraseInitStruct.Banks         = FLASH_BANK_2;
-  eraseInitStruct.Sector        = FLASH_SECTOR_7;
-  eraseInitStruct.NbSectors     = 1U;
-
-  __HAL_FLASH_CLEAR_FLAG_BANK2(FLASH_FLAG_ALL_ERRORS_BANK2);
-
-  if (HAL_FLASH_Unlock() != HAL_OK) return (false);
-
-  if (HAL_FLASHEx_Erase(&eraseInitStruct, &sectorError) != HAL_OK)
-  {
-    HAL_FLASH_Lock();
-    return (false);
-  }
-
-  if (HAL_FLASH_Lock() != HAL_OK) return (false);
-
-  return (true);
+  return (false);
 }
 
 /**
@@ -373,11 +326,11 @@ bool eraseNVM(void)
  */
 bool readFromNVM(const uint32_t readIndex, uint8_t * outputPtr, const uint32_t readLength)
 {
-  if (outputPtr == nullptr) return (false);
+  static_cast<void>(readIndex);
+  static_cast<void>(outputPtr);
+  static_cast<void>(readLength);
 
-  memcpy(outputPtr, reinterpret_cast<uint8_t*>(0x081E0000 + readIndex), readLength);
-
-  return (HAL_FLASH_GetError() == HAL_OK);
+  return (false);
 }
 
 /**
@@ -401,17 +354,10 @@ bool readFromNVM(const uint32_t readIndex, uint8_t * outputPtr, const uint32_t r
  */
 bool writeToNVM(const uint32_t writeIndex, const uint8_t (&nvmUnit)[NodePlatform::NVM_UNIT_SIZE])
 {
-  if (HAL_FLASH_Unlock() != HAL_OK) return (false);
+  static_cast<void>(writeIndex);
+  static_cast<void>(nvmUnit);
 
-  if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_FLASHWORD, (0x081E0000 + writeIndex), reinterpret_cast<uint32_t>(nvmUnit)) != HAL_OK)
-  {
-    HAL_FLASH_Lock();
-    return (false);
-  }
-
-  if (HAL_FLASH_Lock() != HAL_OK) return (false);
-
-  return (true);
+  return (false);
 }
 
 /**
@@ -436,7 +382,7 @@ bool writeToNVM(const uint32_t writeIndex, const uint8_t (&nvmUnit)[NodePlatform
  */
 bool enterConfigurationState(void)
 {
-  return (true);
+  return (false);
 }
 
 /**
@@ -455,7 +401,6 @@ void exitConfigurationState(void)
 
 }
 
-
 /**
  * @brief   Set the bitrate for all communications peripherals.
  *
@@ -466,7 +411,7 @@ void exitConfigurationState(void)
  *
  * @note    ATAMS PLATFORM REQUIREMENT - ALL
  */
-void setBitrate(Atams::BitrateOption_t bitrateOption)
+void setBitrate(const Atams::BitrateOption_t bitrateOption)
 {
   static_cast<void>(bitrateOption);
 }
@@ -483,8 +428,6 @@ void setBitrate(Atams::BitrateOption_t bitrateOption)
  */
 Atams::Error_t resetNode(void)
 {
-  HAL_NVIC_SystemReset();
-
   return (Atams::ERROR_PLATFORM);
 }
 
