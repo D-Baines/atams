@@ -145,6 +145,9 @@ bool beginReceive(CommsReceiveCallback_t receiveCallback)
 /**
  * @brief  Stop reception on all peripherals.
  *
+ * @details Also called at the start of Node initialisation, before reception has been
+ *          started, so it must be safe to call when reception is not active.
+ *
  * @return None
  *
  * @note   ATAMS PLATFORM REQUIREMENT - EVENT DRIVEN COMMS
@@ -171,6 +174,10 @@ void update(void)
 
 /**
  * @brief  Check if the specified communications peripheral is ready to transmit new bytes.
+ *
+ * @details Atams only writes to the buffer passed to the last NodePlatform::transmitBuffer() call
+ *          once this function returns true, so it must return false until that buffer is no longer
+ *          in use by the peripheral. Atams drops a response rather than waiting while this is false.
  *
  * @param  peripheralID The ID of the communications peripheral to check.
  *

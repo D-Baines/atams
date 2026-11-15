@@ -151,11 +151,13 @@ class NodeActions
     START               = 0U,
     COLLECT_STATUS_PRE  = 1U,
     CHECK_STATUS_PRE    = 2U,
-    WRITE_PASSCODE      = 3U,
-    COLLECT_STATUS_POST = 4U,
-    CHECK_STATUS_POST   = 5U,
-    COMPLETE            = 6U,
-    ERROR               = 7U
+    CLEAR_PASSCODE      = 3U,
+    CHECK_CLEAR_ACK     = 4U,
+    WRITE_PASSCODE      = 5U,
+    COLLECT_STATUS_POST = 6U,
+    CHECK_STATUS_POST   = 7U,
+    COMPLETE            = 8U,
+    ERROR               = 9U
   };
 
   enum class ConfigExitState : uint8_t

@@ -114,6 +114,15 @@ uint32_t WatchdogHandler::getWatchdogFault(void)
   return (m_watchdogStatus == WATCHDOG_FAULT_ACTIVE);
 }
 
+void WatchdogHandler::reset(void)
+{
+  m_prevWatchdogUpdateTime = 0U;
+  m_prevWatchdogReset      = Atams::WATCHDOG_RESET_PASSCODE;
+  m_watchdogPeriod         = 0U;
+  m_watchdogCount          = 0U;
+  m_watchdogStatus         = WATCHDOG_FAULT_INACTIVE;
+}
+
 
 } /* End Namespace - Atams */
 

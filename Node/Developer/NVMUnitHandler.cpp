@@ -46,6 +46,7 @@ namespace Atams {
 Atams::Error_t NVMUnitHandler::eraseNVM(void)
 {
   unitStartIndex_ = 0U;
+  unitIndex_      = 0U;
 
   Atams::beginRollingCRC(nvmChecksum_);
 

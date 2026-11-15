@@ -100,23 +100,30 @@ UniversalBlockManager::ProcessID_t UniversalBlockManager::update(void)
 
   updateRequired_ = false;
 
+  uint32_t configPasskey {0U};
+
+  static_cast<void>(Atams::getVar(BlockUniversal::VAR_CONFIGURATION_PASSKEY, configPasskey));
+
   switch (configurationState_)
   {
     case CONFIGURATION_STATUS_INACTIVE:
     case CONFIGURATION_STATUS_DENIED:
     case CONFIGURATION_STATUS_APPLIED:
-      checkConfigurationStateEntry();
+      checkConfigurationStateEntry(configPasskey);
       break;
 
     case CONFIGURATION_STATUS_ACTIVE:
       checkConfigurationPasscodes();
-      checkConfigurationStateExit();
+      checkConfigurationStateExit(configPasskey);
       break;
 
     default:
       /* Do Nothing */
       break;
   }
+
+  /* Recorded in every state, so entry only triggers on a change to the access passkey */
+  prevConfigPasskey_ = configPasskey;
 
   static_cast<void>(Atams::setVar(BlockUniversal::VAR_CONFIGURATION_STATUS,
                     static_cast<uint8_t>(configurationState_)));
@@ -209,24 +216,41 @@ uint8_t UniversalBlockManager::getFinalSyncNodeID(void)
   return (finalSyncNodeID_);
 }
 
+void UniversalBlockManager::reset(void)
+{
+  if (configurationState_ == Atams::CONFIGURATION_STATUS_ACTIVE) NodePlatform::exitConfigurationState();
+
+  for (PasscodeChecker_t &checker : configPasscodeCheckers_)
+  {
+    checker.passcode     = 0U;
+    checker.prevPasscode = 0U;
+  }
+
+  updateRequired_     = false;
+  configurationState_ = Atams::CONFIGURATION_STATUS_INACTIVE;
+  pendingProcessID_   = PROCESS_ID_UNKNOWN;
+  prevConfigPasskey_  = 0U;
+
+  localNodeID_     = 0U;
+  prevSyncNodeID_  = 0U;
+  finalSyncNodeID_ = 0U;
+  firstSyncNodeID_ = 0U;
+  bitrateOption_   = static_cast<uint8_t>(Atams::BITRATE_OPTION_0);
+}
+
 /*************************************************************************************/
 /* PRIVATE FUNCTION DEFINITIONS                                                      */
 /*************************************************************************************/
 
-void UniversalBlockManager::checkConfigurationStateEntry(void)
+void UniversalBlockManager::checkConfigurationStateEntry(const uint32_t configPasskey)
 {
-  static uint32_t s_prevConfigStatePasskey {0U};
-  uint32_t        configStatePasskey       {0U};
-
   if (configurationState_ == Atams::CONFIGURATION_STATUS_ACTIVE)
   {
     return; /* Early Return */
   }
 
-  static_cast<void>(Atams::getVar(BlockUniversal::VAR_CONFIGURATION_PASSKEY, configStatePasskey));
-
-  if ((configStatePasskey       == Atams::CONFIGURATION_PASSKEY_ACCESS) &&
-      (s_prevConfigStatePasskey != Atams::CONFIGURATION_PASSKEY_ACCESS) )
+  if ((configPasskey      == Atams::CONFIGURATION_PASSKEY_ACCESS) &&
+      (prevConfigPasskey_ != Atams::CONFIGURATION_PASSKEY_ACCESS) )
   {
     if (NodePlatform::enterConfigurationState() == true)
     {
@@ -239,24 +263,20 @@ void UniversalBlockManager::checkConfigurationStateEntry(void)
   }
 }
 
-void UniversalBlockManager::checkConfigurationStateExit(void)
+void UniversalBlockManager::checkConfigurationStateExit(const uint32_t configPasskey)
 {
   if (configurationState_ != Atams::CONFIGURATION_STATUS_ACTIVE)
   {
     return; /* Early Return */
   }
 
-  uint32_t configStatePasskey {0U};
-
-  static_cast<void>(Atams::getVar(BlockUniversal::VAR_CONFIGURATION_PASSKEY, configStatePasskey));
-
-  if (configStatePasskey == Atams::CONFIGURATION_PASSKEY_APPLY)
+  if (configPasskey == Atams::CONFIGURATION_PASSKEY_APPLY)
   {
     static_cast<void>(applyUniversalConfiguration());
     NodePlatform::exitConfigurationState();
     configurationState_ = Atams::CONFIGURATION_STATUS_APPLIED;
   }
-  else if (configStatePasskey != Atams::CONFIGURATION_PASSKEY_ACCESS)
+  else if (configPasskey != Atams::CONFIGURATION_PASSKEY_ACCESS)
   {
     cancelConfigurationValueChange();
     NodePlatform::exitConfigurationState();

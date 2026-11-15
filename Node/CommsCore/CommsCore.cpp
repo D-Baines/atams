@@ -68,8 +68,9 @@ enum NodeCommsState_t: uint8_t
   NODE_STATE_RESTART_COMMS   = 4U
 };
 
-struct ChannelResponse_t
+struct ChannelResponse
 {
+  /* reset() must return every variable below to its initial value */
   uint8_t              buffer[NodePlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   uint16_t             index            {0U};
   bool                 aborted          {false};
@@ -77,12 +78,30 @@ struct ChannelResponse_t
   uint8_t              activeSyncCount  {0U};
   uint8_t              encodedBuffer[NodePlatform::MAX_BUS_PACKET_SIZE];
   uint16_t             encodedLength    {0U};
+
+  void reset(void)
+  {
+    memset(buffer, 0U, sizeof(buffer));
+    index            = 0U;
+    aborted          = false;
+    abortMessageType = Atams::MESSAGE_ABORT_RESPONSE;
+    activeSyncCount  = 0U;
+    memset(encodedBuffer, 0U, sizeof(encodedBuffer));
+    encodedLength    = 0U;
+  }
 };
 
-struct ChannelSyncPacket_t
+struct ChannelSyncPacket
 {
+  /* reset() must return every variable below to its initial value */
   uint8_t  buffer[NodePlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
   uint16_t length {0U};
+
+  void reset(void)
+  {
+    memset(buffer, 0U, sizeof(buffer));
+    length = 0U;
+  }
 };
 
 /*************************************************************************************/
@@ -103,6 +122,9 @@ static NVMUnitHandler        s_nvmUnitHandler;
 static uint16_t         s_validVarCount       {0U};
 static NodeCommsState_t s_nodeCommsState      {NODE_STATE_UNINITIALISED};
 static bool             s_appCoreInitRequired {true};
+
+static ChannelSyncPacket s_commsChannelSyncPackets[NodePlatform::NUMBER_OF_COMMS_PERIPHERALS];
+static ChannelResponse   s_commsChannelResponses[NodePlatform::NUMBER_OF_COMMS_PERIPHERALS];
 
 ATAMS_DUAL_CORE_SHARED_MEMORY_ATTRIBUTE
 static SharedData_t s_sharedData;
@@ -128,6 +150,32 @@ static void invalidateMemoryMap(void)
   s_validVarCount = 0U;
   s_memoryMapPtr  = nullptr;
   resetVars();
+}
+
+static void resetCommsState(void)
+{
+  s_nodeCommsState = Atams::NODE_STATE_UNINITIALISED;
+
+  for (CircularBuffer &circularBuffer : s_circularBuffers)
+  {
+    circularBuffer.reset();
+  }
+
+  s_watchdogHandler.reset();
+
+  s_sharedData.watchdogFault.store(0U, std::memory_order_relaxed);
+
+  s_uniBlockManager.reset();
+
+  for (ChannelSyncPacket &syncPacket : s_commsChannelSyncPackets)
+  {
+    syncPacket.reset();
+  }
+
+  for (ChannelResponse &response : s_commsChannelResponses)
+  {
+    response.reset();
+  }
 }
 
 static Atams::Error_t externalTransfer(const Access_t       accessRequest,
@@ -201,7 +249,7 @@ static void receiveCallback(const NodePlatform::CommsPeripheralID_t commsChannel
   }
 }
 
-static void resetResponse(ChannelResponse_t &response, const uint8_t syncCount)
+static void resetResponse(ChannelResponse &response, const uint8_t syncCount)
 {
   response.activeSyncCount               = syncCount;
   response.aborted                       = false;
@@ -209,7 +257,7 @@ static void resetResponse(ChannelResponse_t &response, const uint8_t syncCount)
   response.index                         = HEADER_INDEX_FIRST_DATAGRAM;
 }
 
-static void abortResponse(ChannelResponse_t &response, const Atams::Error_t error, const Atams::VarID_t varID)
+static void abortResponse(ChannelResponse &response, const Atams::Error_t error, const Atams::VarID_t varID)
 {
   response.buffer[HEADER_INDEX_NODE_ID]  = s_uniBlockManager.getLocalNodeID();
   response.buffer[HEADER_INDEX_MSG_TYPE] = response.abortMessageType;
@@ -220,16 +268,23 @@ static void abortResponse(ChannelResponse_t &response, const Atams::Error_t erro
   response.aborted                       = true;
 }
 
-static void abortResponseSyncMismatch(ChannelResponse_t &response, const uint8_t syncCount)
+static void abortResponseSyncMismatch(ChannelResponse &response, const uint8_t syncCount)
 {
   response.activeSyncCount = syncCount;
   abortResponse(response, Atams::ERROR_SYNC_COUNT, Atams::VAR_ID_NULL);
 }
 
 static void sendResponsePacket(const NodePlatform::CommsPeripheralID_t commsChannel,
-                               ChannelResponse_t                      &response,
+                               ChannelResponse                        &response,
                                const Atams::MessageType_t              messageType)
 {
+  /* Atams relies on fast, up-to-date responses, so a response is dropped rather than queued while the
+     previous transmission is still in progress. Encoding now would overwrite the bytes being sent. */
+  if (NodePlatform::transmitReady(commsChannel) == false)
+  {
+    return; /* Early Return */
+  }
+
   if (response.aborted == false)
   {
     response.buffer[HEADER_INDEX_MSG_TYPE] = messageType;
@@ -244,11 +299,11 @@ static void sendResponsePacket(const NodePlatform::CommsPeripheralID_t commsChan
                       sizeof(response.encodedBuffer),
                       response.encodedLength        ) == Atams::ERROR_NONE)
   {
-    NodePlatform::transmitBuffer(commsChannel, response.encodedBuffer, response.encodedLength);
+    static_cast<void>(NodePlatform::transmitBuffer(commsChannel, response.encodedBuffer, response.encodedLength));
   }
 }
 
-static void processDatagramRead(ChannelResponse_t &response,
+static void processDatagramRead(ChannelResponse   &response,
                                 DatagramHeader_t   datagramHeader,
                                 uint16_t          &requestPacketDatagramIndex,
                                 const uint8_t      payloadLength)
@@ -272,7 +327,7 @@ static void processDatagramRead(ChannelResponse_t &response,
   }
 }
 
-static void processDatagramWrite(ChannelResponse_t &response,
+static void processDatagramWrite(ChannelResponse   &response,
                                  DatagramHeader_t   datagramHeader,
                                  uint16_t          &requestPacketDatagramIndex,
                                  uint8_t * const    datagramPayload,
@@ -312,7 +367,7 @@ static void processDatagramWrite(ChannelResponse_t &response,
   }
 }
 
-static void validateRequestPacket(ChannelResponse_t &response,
+static void validateRequestPacket(ChannelResponse   &response,
                                   uint8_t * const    requestPacket,
                                   const uint16_t     requestPacketLength)
 {
@@ -359,7 +414,7 @@ static void validateRequestPacket(ChannelResponse_t &response,
   }
 }
 
-static void processRequestPacket(ChannelResponse_t &response,
+static void processRequestPacket(ChannelResponse   &response,
                                  uint8_t * const    requestPacket,
                                  const uint16_t     requestPacketLength)
 {
@@ -405,7 +460,7 @@ static void processRequestPacket(ChannelResponse_t &response,
   }
 }
 
-static inline void copyRequestToSyncPacket(ChannelSyncPacket_t  &syncPacket,
+static inline void copyRequestToSyncPacket(ChannelSyncPacket    &syncPacket,
                                            const uint8_t * const requestBuffer,
                                            const uint16_t        requestLength)
 {
@@ -413,7 +468,7 @@ static inline void copyRequestToSyncPacket(ChannelSyncPacket_t  &syncPacket,
   syncPacket.length = requestLength;
 }
 
-static inline void setAbortMessageType(ChannelResponse_t &response, const MessageType_t messageType)
+static inline void setAbortMessageType(ChannelResponse &response, const MessageType_t messageType)
 {
   switch (messageType)
   {
@@ -433,10 +488,8 @@ static void processEncodedMeshPacket(const NodePlatform::CommsPeripheralID_t com
                                      const uint8_t * const                   packetBuffer,
                                      const uint16_t                          packetLength)
 {
-  static uint8_t             s_decodedPacket[NodePlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
-  static uint16_t            s_decodedLength {0U};
-  static ChannelSyncPacket_t s_commsChannelSyncPackets[NodePlatform::NUMBER_OF_COMMS_PERIPHERALS];
-  static ChannelResponse_t   s_commsChannelResponses[NodePlatform::NUMBER_OF_COMMS_PERIPHERALS];
+  static uint8_t  s_decodedPacket[NodePlatform::MAX_BUS_PACKET_SIZE_PRE_FRAMING];
+  static uint16_t s_decodedLength {0U};
 
   if (decodeBusPacket(packetBuffer,
                       packetLength,
@@ -452,8 +505,8 @@ static void processEncodedMeshPacket(const NodePlatform::CommsPeripheralID_t com
     const uint8_t       prevSyncNodeID  {s_uniBlockManager.getPrevSyncNodeID()};
     const uint8_t       packetSyncCount {s_decodedPacket[HEADER_INDEX_SYNC]};
 
-    ChannelSyncPacket_t &syncPacket {s_commsChannelSyncPackets[commsChannel]};
-    ChannelResponse_t   &response   {s_commsChannelResponses[commsChannel]};
+    ChannelSyncPacket &syncPacket {s_commsChannelSyncPackets[commsChannel]};
+    ChannelResponse   &response   {s_commsChannelResponses[commsChannel]};
 
     setAbortMessageType(response, messageType);
 
@@ -509,9 +562,11 @@ static void processEncodedMeshPacket(const NodePlatform::CommsPeripheralID_t com
   }
   else
   {
-    static uint32_t s_errorCount {0U};
-    s_errorCount++;
-    Atams::setVar(BlockUniversal::VAR_CRC_ERROR_COUNT, s_errorCount);
+    uint32_t crcErrorCount {0U};
+
+    static_cast<void>(Atams::getVar(BlockUniversal::VAR_CRC_ERROR_COUNT, crcErrorCount));
+    if (crcErrorCount < UINT32_MAX) crcErrorCount++;
+    static_cast<void>(Atams::setVar(BlockUniversal::VAR_CRC_ERROR_COUNT, crcErrorCount));
   }
 }
 
@@ -661,6 +716,15 @@ static uint32_t getNVMVarSpaceRequirement(void)
   }
 
   return (requiredVarSpace);
+}
+
+/* Returns the NVM space a store writes for the given number of data bytes. The final NVM unit is
+   padded to a full NodePlatform::NVM_UNIT_SIZE write, so this is rounded up to whole units. */
+static uint32_t getNVMSpaceRequirement(const uint32_t unpaddedNVMSpace)
+{
+  const uint32_t numberOfUnits {(unpaddedNVMSpace + NodePlatform::NVM_UNIT_SIZE - 1U) / NodePlatform::NVM_UNIT_SIZE};
+
+  return (numberOfUnits * NodePlatform::NVM_UNIT_SIZE);
 }
 
 static Atams::Error_t constructAndStoreFooter(const uint32_t nvmSpaceUsed)
@@ -1071,6 +1135,9 @@ Atams::Error_t getVarImpl(const Atams::VarID_t varID, T &outputRef)
  *          See param details above.
  *
  * @note    This function must be called before accessing any Node variables.
+ *
+ * @note    Calling this again re-initialises the Node: all Comms Core state is reset as at power-on.
+ *          NVM contents are kept and reloaded.
  */
 Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmError)
 {
@@ -1106,9 +1173,16 @@ Atams::Error_t initSingleCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmE
  *          See param details above.
  *
  * @note    This function must be called before accessing any Node variables.
+ *
+ * @note    Calling this again re-initialises the Node: all Comms Core state is reset as at power-on.
+ *          NVM contents are kept and reloaded.
  */
 Atams::Error_t initCommsCore(const MemoryMap_t &memoryMap, Atams::Error_t &nvmError)
 {
+  NodePlatform::stopReceive();
+  
+  resetCommsState();
+
   if (s_appCoreInitRequired) waitForAppCoreInit();
 
   Atams::Error_t error {NodeUtilities::validateMemoryMap(memoryMap)};
@@ -1413,14 +1487,15 @@ Atams::Error_t storeAll(void)
 
   if (getMemoryMapIsValid() != Atams::ERROR_NONE) return (Atams::ERROR_MEMORY_MAP); /* Early Return */
 
-  const uint32_t requiredNVMVarSpace {getNVMVarSpaceRequirement()};
-  const uint32_t requiredNVMSpace    {Atams::NVM_HEADER_SIZE + requiredNVMVarSpace + Atams::NVM_FOOTER_SIZE};
-  const uint32_t nvmFooterIndex      {Atams::NVM_HEADER_SIZE + requiredNVMVarSpace};
+  const uint32_t requiredNVMVarSpace      {getNVMVarSpaceRequirement()};
+  const uint32_t unpaddedRequiredNVMSpace {Atams::NVM_HEADER_SIZE + requiredNVMVarSpace + Atams::NVM_FOOTER_SIZE};
+  const uint32_t nvmFooterIndex           {Atams::NVM_HEADER_SIZE + requiredNVMVarSpace};
+  const uint32_t paddedRequiredNVMSpace   {getNVMSpaceRequirement(unpaddedRequiredNVMSpace)};
 
-  if (requiredNVMSpace > NodePlatform::NVM_STORAGE_SIZE) return (Atams::ERROR_NVM_PLATFORM_SIZE); /* Early Return */
+  if (paddedRequiredNVMSpace > NodePlatform::NVM_STORAGE_SIZE) return (Atams::ERROR_NVM_PLATFORM_SIZE); /* Early Return */
 
   nvmHeader.identifier = Atams::NVM_HEADER_IDENTIFIER_VALID;
-  nvmHeader.length     = requiredNVMSpace;
+  nvmHeader.length     = unpaddedRequiredNVMSpace;
 
   /* Erase NVM to invalidate */
   Atams::Error_t error {s_nvmUnitHandler.eraseNVM()};

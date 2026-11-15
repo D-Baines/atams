@@ -44,7 +44,8 @@ namespace $$$AUTOGEN$$$FRAMEWORK_NAME$$$AUTOGEN$$$ { namespace Map$$$AUTOGEN$$$M
 /* PUBLIC CONSTANTS                                                                  */
 /*************************************************************************************/
 
-/* Minimum NodePlatform::NVM_STORAGE_SIZE required to store this map's NVMStorage variables. */
+/* Bytes of NVM data this map stores. NodePlatform::NVM_STORAGE_SIZE must be at least
+   REQUIRED_NVM_SIZE + NodePlatform::NVM_UNIT_SIZE (the last NVM unit is padded). */
 inline constexpr uint32_t REQUIRED_NVM_SIZE {$$$AUTOGEN$$$REQUIRED_NVM_SIZE$$$AUTOGEN$$$};
 
 /* Autogen's own mirrored size constants (used to compute REQUIRED_NVM_SIZE above) must match

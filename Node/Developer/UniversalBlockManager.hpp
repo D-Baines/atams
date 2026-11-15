@@ -113,6 +113,8 @@ class UniversalBlockManager
 
   void notifyStorageProcessComplete(const Atams::Error_t processStatus);
 
+  void reset(void);
+
   private:
 
   /*-- Private Constants ------------------------------------------------------------*/
@@ -135,11 +137,13 @@ class UniversalBlockManager
 
   /*-- Private Variables ------------------------------------------------------------*/
 
+  /* reset() must return every non-const variable below to its initial value */
   WatchdogHandler             &watchdogHandler_;
   PasscodeChecker_t            configPasscodeCheckers_[NUMBER_OF_PROCESSES];
   bool                         updateRequired_     {false};
   Atams::ConfigurationStatus_t configurationState_ {Atams::CONFIGURATION_STATUS_INACTIVE};
   ProcessID_t                  pendingProcessID_   {PROCESS_ID_UNKNOWN};
+  uint32_t                     prevConfigPasskey_  {0U};
 
   /* Configuration Parameters */
   uint8_t localNodeID_     {0U};
@@ -150,9 +154,9 @@ class UniversalBlockManager
 
   /*-- Private Function Declarations -------------------------------------------------*/
 
-  void checkConfigurationStateEntry(void);
+  void checkConfigurationStateEntry(const uint32_t configPasskey);
 
-  void checkConfigurationStateExit(void);
+  void checkConfigurationStateExit(const uint32_t configPasskey);
 
   void checkConfigurationPasscodes(void);
 

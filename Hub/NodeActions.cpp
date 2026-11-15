@@ -225,6 +225,7 @@ Atams::ProcessState_t NodeActions::updateConfigStateEntry(Atams::Error_t &error)
 
   Node          &node        {*process.nodePtr};
   uint8_t        configState {Atams::CONFIGURATION_STATUS_INACTIVE};
+  bool           ackReceived {false};
   Atams::Error_t stepError   {Atams::ERROR_NONE};
 
   switch (process.specificState)
@@ -239,7 +240,19 @@ Atams::ProcessState_t NodeActions::updateConfigStateEntry(Atams::Error_t &error)
       stepError = node.stopStreamGetVarIfDataReady(BlockUniversal::VAR_CONFIGURATION_STATUS, configState);
       if      (stepError)                                         process.terminate(stepError);
       else if (configState == Atams::CONFIGURATION_STATUS_ACTIVE) process.setProcessComplete();
-      else                                                        process.specificState = ConfigEntryState::WRITE_PASSCODE;
+      else                                                        process.specificState = ConfigEntryState::CLEAR_PASSCODE;
+      break;
+    case ConfigEntryState::CLEAR_PASSCODE:
+      /* The Node only enters on a change to the access passkey, so a passkey left over from a denied entry must be cleared first */
+      stepError = node.clearAckSetWriteStream(BlockUniversal::VAR_CONFIGURATION_PASSKEY, Atams::CONFIGURATION_PASSKEY_CANCEL);
+      if (stepError) process.terminate(stepError);
+      else           process.specificState = ConfigEntryState::CHECK_CLEAR_ACK;
+      break;
+    case ConfigEntryState::CHECK_CLEAR_ACK:
+      stepError = node.stopStreamGetWriteAck(BlockUniversal::VAR_CONFIGURATION_PASSKEY, ackReceived);
+      if      (stepError)    process.terminate(stepError);
+      else if (!ackReceived) process.terminate(Atams::ERROR_ACK_NOT_RECEIVED);
+      else                   process.specificState = ConfigEntryState::WRITE_PASSCODE;
       break;
     case ConfigEntryState::WRITE_PASSCODE:
       stepError = node.clearAckSetWriteStream(BlockUniversal::VAR_CONFIGURATION_PASSKEY, Atams::CONFIGURATION_PASSKEY_ACCESS);
@@ -247,8 +260,9 @@ Atams::ProcessState_t NodeActions::updateConfigStateEntry(Atams::Error_t &error)
       else           process.specificState = ConfigEntryState::COLLECT_STATUS_POST;
       break;
     case ConfigEntryState::COLLECT_STATUS_POST:
-      static_cast<void>(node.stopStream(BlockUniversal::VAR_CONFIGURATION_PASSKEY));
-      stepError = node.clearDataReadySetReadStream(BlockUniversal::VAR_CONFIGURATION_STATUS);
+      stepError = node.stopStreamGetWriteAck(BlockUniversal::VAR_CONFIGURATION_PASSKEY, ackReceived);
+      if (!stepError && !ackReceived) stepError = Atams::ERROR_ACK_NOT_RECEIVED;
+      if (!stepError)                 stepError = node.clearDataReadySetReadStream(BlockUniversal::VAR_CONFIGURATION_STATUS);
       if (stepError) process.terminate(stepError);
       else           process.specificState = ConfigEntryState::CHECK_STATUS_POST;
       break;

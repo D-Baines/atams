@@ -89,6 +89,8 @@ class WatchdogHandler
 
   uint32_t getWatchdogFault(void);
 
+  void reset(void);
+
   private:
 
   /*-- Private Constants ------------------------------------------------------------*/
@@ -103,6 +105,7 @@ class WatchdogHandler
 
   /*-- Private Variables ------------------------------------------------------------*/
 
+  /* reset() must return every variable below to its initial value */
   uint32_t m_prevWatchdogUpdateTime {0U};
   uint32_t m_prevWatchdogReset      {Atams::WATCHDOG_RESET_PASSCODE};
   uint32_t m_watchdogPeriod         {0U};
